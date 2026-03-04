@@ -1,7 +1,7 @@
 ---
 name: init-docs
 description: Deep-discover a codebase and generate a full set of Confluence documentation pages
-argument-hint: [confluence-space-key] [parent-page-title]
+argument-hint: "[confluence-space-key] [parent-page-title]"
 ---
 
 # Project Documentation: Init
