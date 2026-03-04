@@ -1,0 +1,18 @@
+{
+  "name": "ajudd-claude-plugins",
+  "version": "1.0.0",
+  "description": "Personal Claude Code plugins for Aaron Judd",
+  "owner": {
+    "name": "Aaron Judd",
+    "email": "aaroncjudd@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "project-docs",
+      "description": "Deep-discover a codebase and generate/maintain a full set of Confluence documentation pages (Project Overview, Architecture, Runbook, API Reference, Known Issues, Test Coverage)",
+      "source": "./project-docs",
+      "category": "development",
+      "keywords": ["confluence", "documentation", "docs", "architecture", "runbook"]
+    }
+  ]
+}
