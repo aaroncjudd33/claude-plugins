@@ -13,6 +13,13 @@
       "source": "./project-docs",
       "category": "development",
       "keywords": ["confluence", "documentation", "docs", "architecture", "runbook"]
+    },
+    {
+      "name": "cab",
+      "description": "Create and manage CAB (Change Advisory Board) cards in Jira for Young Living production deployments. Handles all required fields, ADF formatting, submission, assignee update, and full deploy execution.",
+      "source": "./cab",
+      "category": "development",
+      "keywords": ["cab", "change", "jira", "deploy", "production", "release"]
     }
   ]
 }
