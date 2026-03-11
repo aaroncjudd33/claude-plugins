@@ -1,0 +1,13 @@
+{
+  "name": "jira",
+  "version": "1.0.0",
+  "description": "Create and manage Jira stories in the BPT2 project. Handles required fields, markdown-to-ADF quirks, assignment, and status transitions.",
+  "author": {
+    "name": "Aaron Judd",
+    "email": "ajudd@youngliving.com"
+  },
+  "skills": ["./skills/jira"],
+  "commands": [
+    "./commands/create-story.md"
+  ]
+}
