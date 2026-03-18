@@ -64,12 +64,12 @@ Run two JQL queries in parallel using `searchJiraIssuesUsingJql`:
 
 **Query 1 — My tickets:**
 ```jql
-assignee = "620147d91fec260068c1097d" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success) ORDER BY status ASC, duedate ASC
+assignee = "620147d91fec260068c1097d" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, duedate ASC
 ```
 
 **Query 2 — Handed off (tickets I worked on, now assigned to someone else):**
 ```jql
-assignee WAS "620147d91fec260068c1097d" AND assignee != "620147d91fec260068c1097d" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success) ORDER BY status ASC, updated DESC
+assignee WAS "620147d91fec260068c1097d" AND assignee != "620147d91fec260068c1097d" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, updated DESC
 ```
 
 For Query 1: Group results by status. Within each group, sort by due date (earliest first, nulls last).
