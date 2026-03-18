@@ -27,6 +27,13 @@
       "source": "./jira",
       "category": "development",
       "keywords": ["jira", "story", "bpt2", "backlog", "create"]
+    },
+    {
+      "name": "daily-prep",
+      "description": "Morning setup routine — Jira briefing, Confluence updates, git repo scan, AWS SSO + CodeArtifact login.",
+      "source": "./daily-prep",
+      "category": "productivity",
+      "keywords": ["morning", "setup", "briefing", "jira", "confluence", "git", "aws", "sso"]
     }
   ]
 }
