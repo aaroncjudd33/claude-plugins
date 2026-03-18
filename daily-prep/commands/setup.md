@@ -60,18 +60,26 @@ If any step fails, report the error clearly and continue with the rest of the br
 
 ### 3. JIRA — Open Tickets
 
-Query Jira using `searchJiraIssuesUsingJql`:
+Run two JQL queries in parallel using `searchJiraIssuesUsingJql`:
 
+**Query 1 — My tickets:**
 ```jql
-assignee = "620147d91fec260068c1097d" AND status not in (Done, Closed, Cancelled, Resolved) ORDER BY status ASC, duedate ASC
+assignee = "620147d91fec260068c1097d" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success) ORDER BY status ASC, duedate ASC
 ```
 
-Group results by status. Within each group, sort by due date (earliest first, nulls last).
+**Query 2 — Handed off (tickets I worked on, now assigned to someone else):**
+```jql
+assignee WAS "620147d91fec260068c1097d" AND assignee != "620147d91fec260068c1097d" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success) ORDER BY status ASC, updated DESC
+```
+
+For Query 1: Group results by status. Within each group, sort by due date (earliest first, nulls last).
 
 Flag tickets:
 - `DUE TODAY` if duedate = today
 - `OVERDUE (YYYY-MM-DD)` if duedate < today
 - Show due date normally if set and in the future
+
+For Query 2: Group by status. Show current assignee name after each ticket with `→ assigned to <Name>`.
 
 **Output format:**
 ```
@@ -87,9 +95,18 @@ JIRA (N open tickets)
   Open (2)
     - BPT2-6250  Future work item
     - BPT2-6251  Another item                                OVERDUE (2026-03-15)
+
+JIRA — Handed Off (N tickets you worked on)
+
+  Ready For Test (1)
+    - BPT2-6189  TH Direct Deposit Info Capture              → assigned to Heber
+
+  QA In-Progress (1)
+    - BPT2-6207  Allyant 473 ARIA treegrid                   → assigned to Fernando
 ```
 
 If no open tickets: `JIRA — No open tickets`
+If no handed-off tickets: omit the Handed Off section entirely.
 
 ### 4. CONFLUENCE — Recent Activity
 
@@ -116,24 +133,31 @@ Use relative dates where helpful: "today", "yesterday", "2 days ago", or the dat
 
 Scan for git repos in `C:\dev\*` and `C:\claude\*` (immediate subdirectories only).
 
-For each directory containing a `.git` folder, run:
-```bash
-git -C <path> status --porcelain | wc -l
-git -C <path> log @{u}..HEAD --oneline 2>/dev/null | wc -l
-git -C <path> branch --show-current
-```
+For each directory containing a `.git` folder, check for:
+- **Modified files**: tracked files with changes (staged or unstaged)
+- **Untracked files**: new files not yet tracked by git
+- **Unpushed commits**: commits ahead of the upstream branch
 
-Only show repos that have uncommitted changes OR unpushed commits. Skip clean repos.
+**Noise filtering**: Exclude these untracked patterns from counts and reporting — they are tool artifacts, not real work:
+- `^?? \.claude/`
+- `^?? \.idea/`
+- `^?? CLAUDE\.md`
+- `^?? node_modules/`
+- `^?? \.vs/`
+
+Only show repos that have modified files, meaningful untracked files, or unpushed commits after filtering. Skip clean repos.
+
+Use precise labels: "modified files", "untracked files", "unpushed commits" — never the vague "uncommitted changes".
 
 **Output format:**
 ```
 GIT (N repos need attention)
 
   C:\dev\virtual-office (integration/BPT2-6189-BPT2-6207)
-    - 3 uncommitted changes
+    - 2 modified files
     - 1 unpushed commit
-  C:\claude\forge (main)
-    - 2 unpushed commits
+  C:\dev\openid-server (feature/BPT2-6170-signin-button-not-a-button)
+    - 3 untracked files
 ```
 
 If all repos are clean: `GIT — All repos clean`
