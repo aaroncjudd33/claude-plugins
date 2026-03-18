@@ -6,73 +6,109 @@ argument-hint: "[summary] [deploy-date] [linked-story]"
 
 # CAB: Create Card
 
-Create a fully-populated CAB (Change Advisory Board) card in Jira, submit it for review, and update the assignee. Uses all known field IDs and workflows from the `cab` skill so the card is complete and ready to go from the start.
+Create a fully-populated CAB (Change Advisory Board) card in Jira. Uses all known field IDs and workflows from the `cab` skill so the card is complete from the start.
 
 ## Instructions
 
 When this command is invoked:
 
-### 1. Collect inputs
+### 1. Gather context first
 
-If not provided as arguments, ask the user for:
-- **Summary** — short title (will be formatted as `<TEAM> - <Project> - <Change Description>`)
-- **Deploy date and time** — local time + timezone (will be converted to UTC)
-- **Linked Jira story/stories** — one or more BPT2-XXXX keys
-- **What is being deployed** — brief description (used for Description + Release Notes)
-- **Platform Component(s)** — which AWS/platform components (default: AWS)
-- **Is there a rollback plan?** — yes/no and brief description
+Before prompting the user, silently gather as much as possible from:
+- Current working directory (project type: VO vs CDK)
+- Current git branch name (for Component Version(s) and linked stories)
+- Memory files (active stories, branch names, linked Jira keys)
+- CLAUDE.md (field IDs, defaults, team info)
+- Existing PRs on the current branch (`gh pr list`)
 
-Infer anything reasonable from project context (CLAUDE.md, memory files) without asking. Minimize questions.
+Use this context to pre-fill defaults for as many fields as possible.
 
-### 2. Build all field content
+### 2. Prompt with defaults — required inputs
 
-Using the `cab` skill field reference, construct:
+Present these fields that need user input. If context provides a reasonable value, show it as the default. The user presses Enter to accept or types a replacement.
+
+```
+=== CAB Card Creation ===
+
+Summary:           [inferred from branch/story, e.g. "BP2 - Virtual Office - TH Direct Deposit"]
+Deploy date/time:  [none — user must provide, e.g. "tomorrow 1pm MDT"]
+Linked stories:    [inferred from branch, e.g. "BPT2-6189, BPT2-6207"]
+What's deploying:  [inferred from memory/story context if available]
+```
+
+Only ask for fields where no reasonable default can be inferred. If all required inputs are provided as arguments or inferable from context, skip straight to the confirmation step.
+
+### 3. Prompt with defaults — configurable fields
+
+Present ALL configurable fields with their defaults. The user can press Enter to accept all defaults, or type a number to override specific ones.
+
+```
+=== Defaults (Enter to accept all, or type numbers to change) ===
+
+ 1. CAB Impact:              Low
+ 2. CAB Risk:                Low
+ 3. CAB Request Type:        Standard
+ 4. Requires Outage Window:  No
+ 5. Can it be rolled back:   Yes
+ 6. Expenditures:            Opex
+ 7. Platform Component(s):   [inferred — e.g. "Virtual Office" for VO, "AWS" for CDK]
+ 8. Clone/Stage Status:      Part of This Deployment
+ 9. Config/Settings Changes:  None
+10. Code Review Approver:    Heber Iraheta
+11. QA Approved By:          Heber Iraheta
+12. Date of Code Review:     [today's date]
+13. Date Tested in Clone/Stage: [today's date]
+14. Change Conductor:        Aaron Judd
+15. Dev Team:                BP2
+```
+
+If the user types nothing (Enter), accept all defaults. If they type e.g. "1, 2" then prompt for just those fields with the available options.
+
+### 4. Build all field content
+
+Using the `cab` skill field reference, construct all fields:
 
 - **Summary**: `<TEAM> - <Project> - <Change Description>`
-- **Description** (ADF): Full deployment description — what is being deployed, why, any phased approach
+- **Description** (ADF): Full deployment description — what, why, phased approach if any
 - **Release Notes** (`customfield_10512`, ADF): What changed from a user/business perspective
-- **Deployment Plan** (`customfield_13142`, ADF): Step-by-step deploy instructions based on the project's CI/CD setup
-- **Rollback Plan** (`customfield_13101`, ADF): Step-by-step rollback based on the stack type (CDK destroy, git revert, etc.)
-- **Pre-Deployment Tests** (`customfield_13099`, ADF): What to verify before deploying
-- **Post-Deployment Tests** (`customfield_13100`, ADF): What to verify after deploying
-- **Config/Settings Changes** (`customfield_13176`, ADF): SSM params, env vars, feature flags — or "None"
+- **Deployment Plan** (`customfield_13142`, ADF): Project-specific template from `cab` skill (VO or CDK)
+- **Deployment Playbook** (`customfield_13143`, ADF): Same content as Deployment Plan
+- **Rollback Plan** (`customfield_13101`, ADF): Project-specific template from `cab` skill (VO or CDK)
+- **Pre-Deployment Tests** (`customfield_13099`, ADF): Project-specific (VO: "Tested in env6", CDK: "Tested in dev/stage")
+- **Post-Deployment Tests** (`customfield_13100`, ADF): Project-specific (VO: "Tested in Prod", CDK: "Tested in Prod")
+- **Config/Settings Changes** (`customfield_13176`, ADF): As specified or "None"
 - **Component Version(s)** (`customfield_13141`, ADF): Table with Repository / Branch / PR columns
-- All option fields: CAB Impact (default Low), CAB Risk (default Low), CAB Request Type (default Standard), Dev Team (BP2), Requires Outage Window (default No), Can it be rolled back (default Yes)
-- **Change Conductor** (`customfield_13109`): Aaron Judd — `620147d91fec260068c1097d`
-- **Platform Component(s)** (`customfield_13076`): Array of option IDs per skill reference
-- **Requested Deployment Date/Time** (`customfield_13137`): Convert to UTC ISO 8601
+- **PRs Deploying** (`customfield_14670`, ADF): PR title + link, formatted per skill reference
+- All option/user fields from the confirmed defaults above
+- **Requested Deployment Date/Time** (`customfield_13137`): Convert user's local time to UTC ISO 8601
 
-### 3. Create the issue
+### 5. Create the issue
 
 Call `createJiraIssue` with all fields in a single call. Project: `CAB`, Issue Type ID: `11101`.
 
-### 4. Link related stories
+Then immediately call `editJiraIssue` to set the description with proper markdown formatting (createJiraIssue treats description as literal text).
 
-For each linked Jira story, call `jiraWrite` with `action=createIssueLink`, `type="Relates"`.
+### 6. Link related stories
 
-### 5. Submit for review — immediately update assignee
+For each linked Jira story, call `createIssueLink` with `type="Deploy Location"` (outward direction: CAB "deploys" the story).
 
-In the same turn, back-to-back:
-1. Call `transitionJiraIssue` (transition ID `201`) with `customfield_13174` set to Heber Iraheta (`557058:055d4592-8fbf-4b3c-8115-0dc48da8a1b4`)
-2. Immediately call `editJiraIssue` to set assignee to Sudhakar Seerapu (`60aeba90f3fab100683274d9`)
+### 7. Ensure Component Version(s) has branch and PR
 
-Do both in the same message before the issue can lock.
+**Never submit for review without the branch and PR populated.** If the deployment PR does not exist yet, note this to the user — the card should not be submitted until the PR is created and the Component Version(s) field has the repository, branch, and PR link.
 
-### 6. Handle PRs Deploying
+### 8. Stop — user handles submission
 
-If the deployment PR does not exist yet (master branch not created, PR not opened):
-- Do NOT try to set `customfield_13156` — it is not the PRs Deploying field
-- Add a comment to the issue explaining the PR will be created immediately before deployment and will auto-link via GitHub for Jira once the PR references the CAB issue key
+Do NOT call `transitionJiraIssue` for Send For Review or change the assignee. The user handles these steps manually.
 
-### 7. Save to memory
+### 9. Save to memory
 
-Save the CAB card URL and key to the project's `prod-deploy-checklist.md` or `MEMORY.md`.
+Save the CAB card URL and key to the project's memory.
 
 ## Output
 
 Report:
 - CAB card URL and key
-- Status (should be "Change Review" after submission)
-- Assignee (should be Sudhakar Seerapu)
+- Current status (should be Open/New)
 - Any fields that could not be populated and why
-- Next step: wait for Sudhakar to approve, then proceed with deploy
+- Whether the PR exists yet (if not, remind user to submit after PR is created)
+- Next step: user submits for review once branch/PR are confirmed

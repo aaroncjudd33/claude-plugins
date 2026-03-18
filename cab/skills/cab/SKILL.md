@@ -52,23 +52,24 @@ All fields that must be populated. ADF fields use `{ "type": "doc", "version": 1
 | Platform Component(s) | `customfield_13076` | array of option IDs | Multi-select. AWS: `14916`, Virtual Office: `13243`, MainSite: `13232`, Legacy DB: `13231`, Brand Partner ACL: `18163` |
 | Component Version(s) | `customfield_13141` | ADF | Table: Repository / Branch / Pull Request |
 | Config/Settings Changes | `customfield_13176` | ADF | SSM params, env vars, feature flags, etc. Use "None" if not applicable. |
-| Deployment Plan | `customfield_13142` | ADF | Step-by-step deploy instructions |
-| Rollback Plan | `customfield_13101` | ADF | Step-by-step rollback instructions |
+| Expenditures | `customfield_10902` | option ID | **Opex: `10948`**, Capex: `10949`. Default: Opex. |
+| Deployment Plan | `customfield_13142` | ADF | Step-by-step deploy instructions (see project-specific templates below) |
+| Deployment Playbook | `customfield_13143` | ADF | Typically same content as Deployment Plan |
+| Rollback Plan | `customfield_13101` | ADF | Step-by-step rollback instructions (see project-specific templates below) |
 | Pre-Deployment Tests | `customfield_13099` | ADF | What to verify before deploy |
 | Post-Deployment Tests | `customfield_13100` | ADF | What to verify after deploy |
+| Code Review Approver | `customfield_13612` | user (accountId) | **Heber Iraheta: `557058:055d4592-8fbf-4b3c-8115-0dc48da8a1b4`** |
+| Date of Code Review | `customfield_14671` | date string | e.g. `2026-03-18` |
+| Clone/Stage Status | `customfield_14664` | option ID | Not Required: `16376`, Previously Deployed: `16377`, **Part of This Deployment: `16378`** |
+| Date Tested in Clone/Stage | `customfield_14665` | date string | e.g. `2026-03-18` |
 
-### Optional Fields
-
-| Field | Custom Field ID | Type | Notes |
-|-------|----------------|------|-------|
-| Deployment Playbook | `customfield_13143` | ADF | Link to Confluence playbook if available |
+| PRs Deploying | `customfield_14670` | ADF | PR title + link. Format: `"<PR title> - Pull Request #<N> - <org>/<repo>"` with link to PR URL. |
 
 ### Do Not Use
 
 | Field | Note |
 |-------|------|
-| `customfield_13156` | Internal field — not PRs Deploying. Leave null. |
-| PRs Deploying | **Read-only** — auto-populated by GitHub for Jira when a PR references the CAB issue key. Cannot be set via API. |
+| `customfield_13156` | "Platform Components" — NOT PRs Deploying. Leave null. |
 
 ---
 
@@ -90,35 +91,15 @@ Use `createJiraIssue`. Populate all fields from the table above in a single call
 
 ### Step 2 — Link related Jira stories
 
-Use `jiraWrite` with `action=createIssueLink`, `type="Relates"` to link each related story/epic.
+Use `jiraWrite` with `action=createIssueLink`, `type="Deploy Location"` to link each related story/epic. This semantically means "this CAB deploys this story".
 
-### Step 3 — Submit for review
+### Step 3 — Ensure Component Version(s) has branch and PR
 
-Use `transitionJiraIssue` with transition ID `201` ("Send For Review"). This transition **requires** `customfield_13174` (QA Approved By) — always set to Heber Iraheta: `557058:055d4592-8fbf-4b3c-8115-0dc48da8a1b4`.
+**Never submit for review without the branch and PR populated in Component Version(s) (`customfield_13141`).** If the PR does not exist yet, wait until it does before submitting. The card should have the repository, branch name, and PR link filled in.
 
-```json
-{
-  "transition": { "id": "201" },
-  "fields": {
-    "customfield_13174": { "accountId": "557058:055d4592-8fbf-4b3c-8115-0dc48da8a1b4" }
-  }
-}
-```
+### Step 4 — Submit for review (user handles manually)
 
-### Step 4 — Update assignee to Sudhakar
-
-Use `editJiraIssue` immediately after transition (before the issue locks):
-```json
-{ "assignee": { "accountId": "60aeba90f3fab100683274d9" } }
-```
-
-**Important:** The API blocks edits once the card moves past Change Review. Do this step immediately after the transition call, in the same turn.
-
-### Step 5 — Add PRs Deploying comment (if no PR exists yet)
-
-If the deployment PR doesn't exist yet (e.g. first deploy, master branch not created), add a comment explaining why:
-- Note that the PR will be created immediately before deployment
-- Reference the related Jira story
+Do NOT call `transitionJiraIssue` for Send For Review or change the assignee — the user handles these steps manually. Stop after all fields are populated and stories are linked.
 
 ---
 
@@ -130,6 +111,56 @@ If the deployment PR doesn't exist yet (e.g. first deploy, master branch not cre
 | Cancel Change | `111` | |
 | Mark Implementation | (auto after approval) | Card moves to Implementation after CAB approval |
 | Mark Success | Look up at time of use | Set after successful prod deploy |
+
+---
+
+## Project-Specific Templates
+
+### Virtual Office (VO)
+
+**Deployment Plan / Deployment Playbook:**
+1. Merge Virtual Office PR to master
+2. Build and Deploy master to prod
+3. Bust Front End Cache: `https://www.youngliving.com/vo/cache/invalidate`
+4. Clear NHibernate Cache: `https://www.youngliving.com/api/shopping/dev/cache/clear`
+5. QA Testing and app support validation
+6. Mark cards as Released
+7. Close CAB
+
+**Rollback Plan:**
+1. Revert the last commit on the master branch on Virtual Office
+2. Deploy previous version of Virtual Office
+3. App support validation in PROD
+4. Run automation tests
+
+**Pre-Deployment Tests:** Tested in env6
+
+**Post-Deployment Tests:** Tested in Prod
+
+**Platform Component(s):** Virtual Office (`13243`)
+
+### CDK Services (AWS Lambda / API Gateway)
+
+**Deployment Plan / Deployment Playbook:**
+1. Merge PR to master
+2. GitHub Actions build/test job runs automatically
+3. Approve prod environment gate in GitHub
+4. CDK deploy executes automatically
+5. Verify CloudFormation stacks show UPDATE_COMPLETE
+6. Verify Lambda functions are active
+7. QA Testing
+8. Close CAB
+
+**Rollback Plan:**
+1. `cdk destroy` the failing stacks (or revert commit and redeploy)
+2. Verify rollback via CloudFormation console
+3. App support validation
+
+**Pre-Deployment Tests:** Tested in dev/stage environments
+
+**Post-Deployment Tests:** Tested in Prod — verify API endpoints return expected responses
+
+**Platform Component(s):** AWS (`14916`)
 
 ---
 
