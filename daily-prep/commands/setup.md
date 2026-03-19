@@ -72,12 +72,12 @@ assignee = "620147d91fec260068c1097d" AND status not in (Done, Closed, Cancelled
 
 **Query 2 — Handed off (reassigned to someone else):**
 ```jql
-assignee WAS "620147d91fec260068c1097d" AND assignee != "620147d91fec260068c1097d" AND assignee is not EMPTY AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated, "Approved for Release") ORDER BY status ASC, updated DESC
+project = BPT2 AND assignee WAS "620147d91fec260068c1097d" AND assignee != "620147d91fec260068c1097d" AND assignee is not EMPTY AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated, "Approved for Release") ORDER BY status ASC, updated DESC
 ```
 
 **Query 3 — Handed off (now unassigned):**
 ```jql
-assignee WAS "620147d91fec260068c1097d" AND assignee is EMPTY AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated, "Approved for Release") ORDER BY status ASC, updated DESC
+project = BPT2 AND assignee WAS "620147d91fec260068c1097d" AND assignee is EMPTY AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated, "Approved for Release") ORDER BY status ASC, updated DESC
 ```
 
 Merge Query 2 and Query 3 results into a single "Handed Off" section for display.

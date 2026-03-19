@@ -23,12 +23,12 @@ assignee = "620147d91fec260068c1097d" AND status not in (Done, Closed, Cancelled
 
 **Query 2 — Previously assigned to me (reassigned to someone else):**
 ```jql
-assignee WAS "620147d91fec260068c1097d" AND assignee != "620147d91fec260068c1097d" AND assignee is not EMPTY AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated, "Approved for Release") ORDER BY status ASC, updated DESC
+project = BPT2 AND assignee WAS "620147d91fec260068c1097d" AND assignee != "620147d91fec260068c1097d" AND assignee is not EMPTY AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated, "Approved for Release") ORDER BY status ASC, updated DESC
 ```
 
 **Query 3 — Previously assigned to me (now unassigned):**
 ```jql
-assignee WAS "620147d91fec260068c1097d" AND assignee is EMPTY AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated, "Approved for Release") ORDER BY status ASC, updated DESC
+project = BPT2 AND assignee WAS "620147d91fec260068c1097d" AND assignee is EMPTY AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated, "Approved for Release") ORDER BY status ASC, updated DESC
 ```
 
 Request fields: `summary, status, assignee, duedate, priority`
