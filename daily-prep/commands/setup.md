@@ -60,17 +60,27 @@ If any step fails, report the error clearly and continue with the rest of the br
 
 ### 3. JIRA — Open Tickets
 
-Run two JQL queries in parallel using `searchJiraIssuesUsingJql`:
+<!-- SYNC NOTE: These 3 JQL queries are duplicated in jira/commands/my-stories.md (section 1).
+     If you change them here, update that file too. -->
+
+Run three JQL queries in parallel using `searchJiraIssuesUsingJql`:
 
 **Query 1 — My tickets:**
 ```jql
 assignee = "620147d91fec260068c1097d" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated, "Approved for Release") ORDER BY status ASC, duedate ASC
 ```
 
-**Query 2 — Handed off (tickets I worked on, now assigned to someone else):**
+**Query 2 — Handed off (reassigned to someone else):**
 ```jql
-assignee WAS "620147d91fec260068c1097d" AND assignee != "620147d91fec260068c1097d" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated, "Approved for Release") ORDER BY status ASC, updated DESC
+assignee WAS "620147d91fec260068c1097d" AND assignee != "620147d91fec260068c1097d" AND assignee is not EMPTY AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated, "Approved for Release") ORDER BY status ASC, updated DESC
 ```
+
+**Query 3 — Handed off (now unassigned):**
+```jql
+assignee WAS "620147d91fec260068c1097d" AND assignee is EMPTY AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated, "Approved for Release") ORDER BY status ASC, updated DESC
+```
+
+Merge Query 2 and Query 3 results into a single "Handed Off" section for display.
 
 For Query 1: Group results by status. Within each group, sort by due date (earliest first, nulls last).
 
