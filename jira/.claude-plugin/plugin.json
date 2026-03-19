@@ -8,6 +8,7 @@
   },
   "skills": ["./skills/jira"],
   "commands": [
-    "./commands/create-story.md"
+    "./commands/create-story.md",
+    "./commands/my-stories.md"
   ]
 }
