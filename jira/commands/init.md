@@ -41,7 +41,7 @@ powershell -ExecutionPolicy Bypass -File "C:\Users\ajudd\.claude\scripts\Open-Ed
 ```
 
 **Order:**
-1. Named links from browser-links.json (jira:board first, then others)
+1. Named links from browser-links.json (jira:calendar first, then jira:board, then any others)
 2. Each in-progress story: `https://younglivingeo.atlassian.net/browse/<KEY>`
 
 Wait 2 seconds after the first URL (window creation), then 1 second between subsequent URLs.
