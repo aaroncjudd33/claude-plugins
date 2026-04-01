@@ -9,6 +9,7 @@
   "skills": ["./skills/jira"],
   "commands": [
     "./commands/create-story.md",
-    "./commands/my-stories.md"
+    "./commands/my-stories.md",
+    "./commands/init.md"
   ]
 }
