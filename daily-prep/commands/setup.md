@@ -174,20 +174,42 @@ If all repos are clean: `GIT — All repos clean`
 
 Run all git checks in a single Bash call using a loop for efficiency.
 
-### 6. Future Sections (stubs)
+### 6. OUTLOOK — Inbox Triage
 
-Print:
+Pull inbox emails using `list_emails` (folder: inbox, top: 50). Apply all known sender rules from memory file `project_inbox_triage.md` silently:
+
+- **Non-Action moves** (Github, AWS, Jira, Braze, Teams, Bamboo, Docs, Training, Archive, Amplitude, etc.): mark as read first (`mail.mark_read`), then move (`mail.move`). Run in parallel batches.
+- **Action moves**: leave unread, move to Action folder.
+
+After auto-routing, if any emails remain that don't match a known sender rule, list them grouped by sender and ask the user what to do with each group:
+- Move to a folder (and add a new rule)
+- Leave in inbox
+- Skip for now
+
+**Output format:**
 ```
 OUTLOOK
 
-  Coming soon — email summary via Microsoft 365
+  Inbox: 3 emails processed
+    - Github (2) → Github
+    - AWS (1) → AWS
+  Inbox clear.
+```
 
+If unknowns remain after auto-routing, list them after the summary and wait for user input before continuing to the next section.
+
+If inbox is already empty: `OUTLOOK — Inbox already clear`
+
+### 7. CALENDAR
+
+Print:
+```
 CALENDAR
 
   Coming soon — today's meetings via Microsoft 365
 ```
 
-### 7. Done
+### 8. Done
 
 Print a closing line:
 ```
