@@ -1,0 +1,13 @@
+{
+  "name": "chrome",
+  "version": "1.0.0",
+  "description": "Launch and manage the persistent Playwright test browser for VO E2E tasks. Handles auth, session startup, and task execution.",
+  "author": {
+    "name": "Aaron Judd",
+    "email": "aaroncjudd@gmail.com"
+  },
+  "skills": ["./skills/chrome"],
+  "commands": [
+    "./commands/start.md"
+  ]
+}
