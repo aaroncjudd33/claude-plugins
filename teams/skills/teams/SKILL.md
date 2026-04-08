@@ -21,10 +21,10 @@ These apply to every Teams message, no exceptions:
 ```html
 <p>[Intro — who this is for and why you're sending it]</p>
 
-<h3>SECTION TITLE</h3><br>
+<h3>SECTION TITLE</h3>
 <p>or <ul> content here</p>
 
-<h3>ANOTHER SECTION</h3><br>
+<h3>ANOTHER SECTION</h3>
 <ul>
   <li>Bullet point</li>
 </ul>
@@ -32,7 +32,30 @@ These apply to every Teams message, no exceptions:
 <p><em>Posted by Claude on behalf of Aaron Judd</em></p>
 ```
 
-Use `<table>` with `<th>` headers for structured data (estimates, breakdowns, comparisons).
+Do NOT put `<br>` after `</h3>` — Teams already gives `<h3>` enough bottom margin. Adding `<br>` pushes the gap too wide.
+
+### Tables
+
+Use this pattern for all structured data (estimates, breakdowns, comparisons). Always include borders, cell padding, and a styled header row:
+
+```html
+<table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse;">
+  <tr style="background-color: #e8e8e8;">
+    <th style="text-align: left;">Column A</th>
+    <th style="text-align: left;">Column B</th>
+  </tr>
+  <tr>
+    <td>Row 1 value</td>
+    <td>Row 1 value</td>
+  </tr>
+  <tr style="background-color: #f5f5f5;">
+    <td>Row 2 value (alternating shade)</td>
+    <td>Row 2 value</td>
+  </tr>
+</table>
+```
+
+Alternate row background colors (`#f5f5f5` / none) for readability on longer tables.
 
 ---
 
