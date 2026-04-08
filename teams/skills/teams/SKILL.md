@@ -1,0 +1,63 @@
+# Teams Messaging Skill
+
+Governs all Microsoft Teams messages sent via the `yl-msoffice` MCP tools. Load this skill any time a Teams message is being composed or sent.
+
+---
+
+## Non-Negotiable Rules
+
+These apply to every Teams message, no exceptions:
+
+1. **Always preview before sending.** Show the full message content to the user and wait for explicit approval before calling `confirm_action`. Never auto-confirm.
+2. **Always include a signature.** Every message ends with: `<p><em>Posted by Claude on behalf of Aaron Judd</em></p>`
+3. **Always use HTML formatting.** The `yl-msoffice` `send_chat_message` body supports HTML and renders it properly. Never send plain text for multi-section messages.
+4. **Always add `<br>` after section headers.** Put `<br>` immediately after each closing `</h3>` (or `</h2>`) tag so there is visible breathing room between the header and its content.
+5. **Always open with an intro paragraph.** Before the first section header, include a `<p>` that sets context — who this is for and why you're sending it.
+
+---
+
+## HTML Message Template
+
+```html
+<p>[Intro — who this is for and why you're sending it]</p>
+
+<h3>SECTION TITLE</h3><br>
+<p>or <ul> content here</p>
+
+<h3>ANOTHER SECTION</h3><br>
+<ul>
+  <li>Bullet point</li>
+</ul>
+
+<p><em>Posted by Claude on behalf of Aaron Judd</em></p>
+```
+
+Use `<table>` with `<th>` headers for structured data (estimates, breakdowns, comparisons).
+
+---
+
+## Sending a Message
+
+Use the `yl-msoffice` MCP tools in this order:
+
+1. **Find the chat ID** — look up the chat name in `references/known-chats.md`. If not listed, use `list_chats` or `teams.create_chat` to find or create it, then add it to `known-chats.md`.
+2. **Compose the message** using the HTML template above.
+3. **Show the full preview** to the user in plain readable text (not raw HTML).
+4. **Wait for approval** — the user must say yes (or request edits) before proceeding.
+5. **Call `send_chat_message`** — this returns a pending `actionId`.
+6. **Call `confirm_action`** with that `actionId` only after user approval.
+
+---
+
+## Creating a New Chat
+
+When creating a new group chat:
+1. Use `teams.create_chat` with member emails and a topic.
+2. Save the returned chat ID to `references/known-chats.md` under a friendly name.
+3. Confirm the chat was created before sending the first message.
+
+---
+
+## Reference Files
+
+- `references/known-chats.md` — maps friendly chat names to Teams chat IDs

@@ -29,6 +29,13 @@
       "keywords": ["jira", "story", "bpt2", "backlog", "create"]
     },
     {
+      "name": "teams",
+      "description": "Send formatted messages to Microsoft Teams chats. Enforces HTML formatting, section spacing, signature, and always previews before sending.",
+      "source": "./teams",
+      "category": "productivity",
+      "keywords": ["teams", "chat", "message", "send", "microsoft"]
+    },
+    {
       "name": "daily-prep",
       "description": "Morning setup routine — Jira briefing, Confluence updates, git repo scan, AWS SSO + CodeArtifact login.",
       "source": "./daily-prep",
