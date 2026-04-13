@@ -112,6 +112,16 @@ gh pr merge --merge
 
 Use `gh run list` and `gh run watch` to monitor progress.
 
+### 5c. Clone deploy (VO-specific)
+
+After the main prod deploy succeeds, trigger a deploy to the clone workspace:
+
+```bash
+gh workflow run build-deploy-dev.yml --ref <release-branch> --field deploy_workspace=clone
+```
+
+Use `gh run list` and `gh run watch` to monitor. This must complete before closing the CAB card.
+
 ### 6b. Post-deploy cache busting (VO-specific)
 
 After successful deploy, bust caches:
