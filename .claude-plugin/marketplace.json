@@ -48,6 +48,13 @@
       "source": "./chrome",
       "category": "development",
       "keywords": ["playwright", "browser", "chrome", "e2e", "tasks", "test", "cdp"]
+    },
+    {
+      "name": "session",
+      "description": "Session lifecycle commands — start a session with intent, checkpoint to save work state and leave nothing behind.",
+      "source": "./session",
+      "category": "productivity",
+      "keywords": ["session", "checkpoint", "start", "wrap", "state", "context", "handoff"]
     }
   ]
 }

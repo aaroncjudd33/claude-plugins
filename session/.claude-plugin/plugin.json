@@ -1,0 +1,13 @@
+{
+  "name": "session",
+  "version": "1.0.0",
+  "description": "Session lifecycle commands — start a session with intent, checkpoint to save work state and leave nothing behind.",
+  "author": {
+    "name": "Aaron Judd",
+    "email": "aaroncjudd@gmail.com"
+  },
+  "commands": [
+    "./commands/start.md",
+    "./commands/checkpoint.md"
+  ]
+}
