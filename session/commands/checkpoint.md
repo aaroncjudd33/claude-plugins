@@ -51,9 +51,11 @@ If a story was worked on this session:
 
 - **Jira status** — is it current for where things actually stand?
 - **Jira comment** — does it need one before closing?
-- **Local story doc** — `C:\Users\ajudd\claude\jira-stories\<project>\<slug>.md` — up to date?
+- **Local story doc** — check `C:\Users\ajudd\claude\jira-stories\<project>\<slug>.md`:
+  - If it exists: is it up to date with what was done this session?
+  - If it doesn't exist: **create it now** — do not just flag it. Write it inline based on conversation context, then confirm with user.
 
-Flag anything stale and offer to fix it inline. Skip this section entirely if no story was active.
+Skip this section entirely if no story was active.
 
 ### 5. Teams Update (Contextual)
 
