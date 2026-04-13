@@ -112,23 +112,25 @@ gh pr merge --merge
 
 Use `gh run list` and `gh run watch` to monitor progress.
 
-### 5c. Clone deploy (VO-specific)
+### 6b. Post-deploy cache busting (VO-specific)
 
-After the main prod deploy succeeds, trigger a deploy to the clone workspace:
+Immediately after the prod deploy succeeds, bust caches so QA is testing with fresh content:
+1. **Front End Cache:** `https://www.youngliving.com/vo/cache/invalidate`
+2. **NHibernate Cache:** `https://www.youngliving.com/api/shopping/dev/cache/clear`
+
+### 7b. Clone deploy (VO-specific)
+
+After cache busting, prompt the user to trigger the clone workspace deploy:
 
 ```bash
 gh workflow run build-deploy-dev.yml --ref <release-branch> --field deploy_workspace=clone
 ```
 
-Use `gh run list` and `gh run watch` to monitor. This must complete before closing the CAB card.
+Use `gh run list` and `gh run watch` to monitor.
 
-### 6b. Post-deploy cache busting (VO-specific)
+**Important:** The user may defer this step if there are concerns during QA testing. If deferred, note that **the CAB card cannot be closed until the clone deploy has been completed**. Remind the user before attempting to close the CAB.
 
-After successful deploy, bust caches:
-1. **Front End Cache:** `https://www.youngliving.com/vo/cache/invalidate`
-2. **NHibernate Cache:** `https://www.youngliving.com/api/shopping/dev/cache/clear`
-
-### 7b. Post-deploy verification (VO)
+### 8b. Post-deploy verification (VO)
 
 - QA testing in prod
 - App support validation
@@ -138,6 +140,8 @@ After successful deploy, bust caches:
 ## Common Final Steps
 
 ### Close the CAB card
+
+Before closing, verify the clone deploy (step 7b) has been completed. If it was deferred, do not close the CAB — remind the user it must be done first.
 
 Transition the CAB card to **Success** status using `transitionJiraIssue`.
 
