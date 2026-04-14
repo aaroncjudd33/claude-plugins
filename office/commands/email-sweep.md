@@ -1,6 +1,6 @@
 ---
 name: email-sweep
-description: Clean the inbox — applies sender routing rules silently, moves matched emails to their folders, routes everything else to Action (unread). Fast, no prompts.
+description: Clean the inbox — applies sender routing rules silently, then interactive triage for unmatched emails.
 argument-hint: "[limit]"
 ---
 
@@ -11,9 +11,10 @@ Clean the inbox. Pass a `limit` for testing (e.g. `3`). Default is 50.
 ## Steps
 
 1. Run `/office:email-grab inbox [limit]` — fetches inbox headers into `C:\temp\email-cache.json`
-2. Run `/office:email-apply-rules` — classifies, shows plan, executes moves via Haiku, cleans up
+2. Run `/office:email-apply-rules` — classifies, silently processes matched senders, then interactive triage
 
-## Rules
-- Matched sender → correct folder (marked read first)
-- No match → Action (left unread)
-- No prompts. No rule wizard. Rule management happens when processing Action folder.
+## Behavior
+- **Non-Archive rule matches** → marked read + moved to target folder (silent, Haiku sub-agent)
+- **Archive-mapped senders** → marked read only, stay in inbox (user moves to Archive manually — avoids move token cost)
+- **Unmatched** → count shown, user picks review mode (all at once or one at a time), interactive triage
+- **Triage actions**: skip (leave in inbox) / action / move/\<folder\> / rule/\<folder\> / read / delete
