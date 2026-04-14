@@ -13,11 +13,14 @@ Three phases: classify (no API calls), silent execute via Haiku, then interactiv
 
 Read `C:\temp\email-cache.json` and `project_inbox_triage.md` (sender rules + folder IDs).
 
-Classify each email into one of three buckets:
+Classify each email into one of four buckets:
 
+0. **`to_accept`** — matches a row in `## Meeting Accept Rules` (from + subject contains) → accept calendar event silently, mark read, leave in inbox
 1. **`to_move`** — rule matches a non-Archive folder → mark read + move silently
 2. **`to_mark_read_only`** — rule matches Archive → mark read only, leave in inbox (user archives manually — no move cost)
 3. **`unmatched`** — no rule match → interactive triage
+
+Check `to_accept` first (before sender-only rules). For each match, find the calendar event using `list_events` filtered by subject, call `calendar.respond_to_event` with `response=accept, sendResponse=false`. Then mark the email read and leave in inbox.
 
 Build the arrays:
 - `to_move`: `[{ id, folderId, folderName, isRead }]`
@@ -26,7 +29,8 @@ Build the arrays:
 
 Print the plan:
 ```
-Plan:  12 → silent moves (GitHub: 7, Bamboo: 3, Braze: 2)
+Plan:   2 → accept (BPT2 Daily Standup, BPT2 Refinement)
+       12 → silent moves (GitHub: 7, Bamboo: 3, Braze: 2)
         8 → mark-read only (Archive senders, stay in inbox)
        14 → interactive triage
 Executing silent phase...
