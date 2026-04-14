@@ -8,6 +8,9 @@
   },
   "skills": ["./skills/office"],
   "commands": [
-    "./commands/teams-send.md"
+    "./commands/teams-send.md",
+    "./commands/email-grab.md",
+    "./commands/email-apply-rules.md",
+    "./commands/email-sweep.md"
   ]
 }
