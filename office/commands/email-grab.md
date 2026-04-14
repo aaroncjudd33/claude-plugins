@@ -19,7 +19,7 @@ Look up the folder name in the Folder IDs table in `project_inbox_triage.md`.
 
 1. Launch a **Haiku sub-agent** with this minimal prompt:
 
-> Call `mcp__claude_ai_yl-msoffice__list_emails` with folderId `[resolved-id]` and limit `[limit]`.
+> Call `mcp__claude_ai_yl-msoffice__list_emails` with folderId `[resolved-id]`, limit `[limit]`, and orderBy `receivedDateTime desc`.
 > Return JSON array with only: id, subject, from.displayName, from.address, receivedDateTime, isRead.
 
 2. Parse the result. Write to `C:\temp\email-cache.json`:

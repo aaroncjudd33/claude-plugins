@@ -17,4 +17,4 @@ Clean the inbox. Pass a `limit` for testing (e.g. `3`). Default is 50.
 - **Non-Archive rule matches** → marked read + moved to target folder (silent, Haiku sub-agent)
 - **Archive-mapped senders** → marked read only, stay in inbox (user moves to Archive manually — avoids move token cost)
 - **Unmatched** → count shown, user picks review mode (all at once or one at a time), interactive triage
-- **Triage actions**: skip (leave in inbox) / action / move/\<folder\> / rule/\<folder\> / read / delete
+- **Triage actions**: skip / archive / action / move/\<folder\> / rule/\<folder\> / read / accept / remove / delete

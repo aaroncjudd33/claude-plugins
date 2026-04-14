@@ -114,7 +114,7 @@ For each `read` item, call `mcp__claude_ai_yl-msoffice__get_email` directly in t
 **After all annotations are resolved:**
 1. For any `rule/X` items: add the sender to the `## Sender Rules (auto-move)` table in `project_inbox_triage.md` using the Edit tool. Then scan the remaining `unmatched` list — any other emails from that sender are now resolved with the same action.
 2. Show a final decision summary: `8 skip, 3 action, 2 rule/braze, 1 delete — executing...`
-3. Batch execute all moves and deletes via Haiku sub-agent (same pattern as Phase 2, but include delete actions as `mail.delete`).
+3. Batch execute all moves and deletes via Haiku sub-agent (same pattern as Phase 2, but for delete actions use `mail.move` with `folder=deleteditems` — there is no `mail.delete` action).
 4. Delete `C:\temp\email-cache.json`.
 
 ---
@@ -139,7 +139,7 @@ Execute? (y/n)
 ```
 
 On confirmation:
-1. Batch execute all moves and deletes via Haiku sub-agent (same pattern as Phase 2).
+1. Batch execute all moves and deletes via Haiku sub-agent (same pattern as Phase 2, using `mail.move` with `folder=deleteditems` for deletes — no `mail.delete` action exists).
 2. Delete `C:\temp\email-cache.json`.
 
 ---
