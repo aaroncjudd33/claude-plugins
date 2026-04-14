@@ -42,16 +42,14 @@ You are executing email triage for Microsoft 365. Do not read any files or fetch
 First, call ToolSearch with query `select:mcp__claude_ai_yl-msoffice__execute_action` to load the execute_action tool.
 
 **Step 1 — Mark as read** (skip entirely if list is empty):
-For each ID in the list below, call execute_action with:
-`{ "action": "mail.mark_read", "parameters": { "id": "<id>", "isRead": true } }`
+For each ID in the list below, call execute_action with actionId="mail.mark_read" and params={"id": "<id>", "isRead": true}.
 Run up to 15 calls in parallel per batch. Wait for all results before starting the next batch.
 
 Mark-read list (email IDs):
 [PASTE to_mark_read array here]
 
 **Step 2 — Move**:
-For each item in the list below, call execute_action with:
-`{ "action": "mail.move", "parameters": { "id": "<id>", "folder": "<folderId>" } }`
+For each item in the list below, call execute_action with actionId="mail.move" and params={"id": "<id>", "folder": "<folderId>"}.
 Run up to 15 calls in parallel per batch. Wait for all results before starting the next batch.
 
 Move list (id + folderId + folderName for reference):
