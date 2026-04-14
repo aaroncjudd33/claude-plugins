@@ -20,18 +20,24 @@ These apply to every Teams message, no exceptions:
 ```html
 <p>[Intro — who this is for and why you're sending it]</p>
 
+<br>
+
 <h3>SECTION TITLE</h3>
-<p>or <ul> content here</p>
+<p>or list/table directly on next line — no <br> between h3 and its content</p>
+
+<br>
 
 <h3>ANOTHER SECTION</h3>
 <ul>
   <li>Bullet point</li>
 </ul>
 
+<br>
+
 <p><em>Posted by Claude on behalf of Aaron Judd</em></p>
 ```
 
-Do NOT put `<br>` after `</h3>` — Teams already gives `<h3>` enough bottom margin.
+Teams strips CSS `margin` and `padding` from inline styles — they have no effect. Use `<br>` tags between elements to create vertical spacing. Put a `<br>` after `</h3>` and after `</table>` before the signature.
 
 ### Tables
 
@@ -39,22 +45,22 @@ Use this pattern for all structured data (estimates, breakdowns, comparisons). A
 
 ```html
 <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse;">
-  <tr style="background-color: #e8e8e8;">
-    <th style="text-align: left;">Column A</th>
-    <th style="text-align: left;">Column B</th>
+  <tr style="background-color: #464775; color: #ffffff;">
+    <th style="text-align: left; font-weight: normal;">Column A</th>
+    <th style="text-align: left; font-weight: normal;">Column B</th>
   </tr>
   <tr>
     <td>Row 1 value</td>
     <td>Row 1 value</td>
   </tr>
-  <tr style="background-color: #f5f5f5;">
-    <td>Row 2 value (alternating shade)</td>
+  <tr>
+    <td>Row 2 value</td>
     <td>Row 2 value</td>
   </tr>
 </table>
 ```
 
-Alternate row background colors (`#f5f5f5` / none) for readability on longer tables.
+Use `#464775` (Teams indigo) with `color: #ffffff` on the header row — this reads clearly in both light and dark Teams themes. Do NOT use light grays (`#e8e8e8`, `#f5f5f5`) for header backgrounds — they invert badly in dark mode. No alternating row shading.
 
 ### Sending a Message
 
