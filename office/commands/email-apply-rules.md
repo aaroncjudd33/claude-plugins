@@ -20,7 +20,7 @@ Classify each email into one of four buckets:
 2. **`to_mark_read_only`** — rule matches Archive → mark read only, leave in inbox (user archives manually — no move cost)
 3. **`unmatched`** — no rule match → interactive triage
 
-Check `to_accept` first (before sender-only rules). For each match, find the calendar event using `list_events` filtered by subject, call `calendar.respond_to_event` with `response=accept, sendResponse=false`. Then mark the email read and leave in inbox.
+Check `to_accept` first (before sender-only rules). For each match, find the calendar event using `list_events` filtered by subject, call `calendar.respond_to_event` with `response=accept, sendResponse=false` (or `calendar.delete_event` for remove), then delete the email via `mail.move` with `folder=deleteditems`. Note: there is no `mail.delete` action.
 
 Build the arrays:
 - `to_move`: `[{ id, folderId, folderName, isRead }]`
@@ -93,11 +93,14 @@ Display the numbered list, columns aligned:
 Then show action codes:
 ```
 skip      leave in inbox (archive manually later)
+archive   mark read, leave in inbox (same as skip but explicit)
 action    move to Action folder
 move/X    move to folder X (e.g. move/github, move/braze)
 rule/X    add sender rule → folder X, then move
 read      fetch and summarize body first, then decide
-delete    delete the email
+accept    accept meeting invite, delete email
+remove    remove event from calendar, delete email
+delete    delete the email (mail.move to deleteditems — no mail.delete action exists)
 ```
 
 Wait for user annotations. Accept any reasonable format:
