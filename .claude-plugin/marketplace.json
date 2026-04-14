@@ -29,11 +29,11 @@
       "keywords": ["jira", "story", "bpt2", "backlog", "create"]
     },
     {
-      "name": "teams",
-      "description": "Send formatted messages to Microsoft Teams chats. Enforces HTML formatting, section spacing, signature, and always previews before sending.",
-      "source": "./teams",
+      "name": "office",
+      "description": "Microsoft 365 commands — Teams messaging, email triage, email send, and meeting invites via the yl-msoffice MCP.",
+      "source": "./office",
       "category": "productivity",
-      "keywords": ["teams", "chat", "message", "send", "microsoft"]
+      "keywords": ["teams", "email", "meeting", "office", "m365", "microsoft", "outlook", "sweep", "send"]
     },
     {
       "name": "daily-prep",

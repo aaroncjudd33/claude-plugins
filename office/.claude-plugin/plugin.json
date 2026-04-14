@@ -1,0 +1,13 @@
+{
+  "name": "office",
+  "version": "1.0.0",
+  "description": "Microsoft 365 commands — Teams messaging, email triage, email send, and meeting invites via the yl-msoffice MCP.",
+  "author": {
+    "name": "Aaron Judd",
+    "email": "aaroncjudd@gmail.com"
+  },
+  "skills": ["./skills/office"],
+  "commands": [
+    "./commands/teams-send.md"
+  ]
+}
