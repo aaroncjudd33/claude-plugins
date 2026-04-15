@@ -50,10 +50,10 @@ AWS
 
 ### 3. Jira
 
-<!-- SYNC NOTE: These 3 JQL queries are duplicated in jira/commands/my-stories.md (section 1), setup/commands/jira.md, and setup/skills/setup/SKILL.md.
-     If you change them here, update all three. -->
+<!-- SYNC NOTE: These 3 JQL queries are duplicated in jira/commands/my-stories.md (section 1), setup/commands/jira.md, setup/skills/setup/SKILL.md, and this file.
+     CANONICAL SOURCE: jira/skills/jira/SKILL.md — update there first, then sync all four. -->
 
-Run three JQL queries in parallel (searchJiraIssuesUsingJql):
+Run three JQL queries in parallel (searchJiraIssuesUsingJql). Request fields: `summary, status, assignee, duedate, priority`.
 
 **Query 1 — My tickets:**
 ```jql
