@@ -5,7 +5,7 @@ description: Start a working session. Loads last session context and routes into
 
 # Session Start
 
-Begin a working session. Loads existing work state and routes into the right workflow.
+Begin a working session. Establishes session identity, Teams chat, and routes into the right workflow.
 
 ## Instructions
 
@@ -13,78 +13,121 @@ Begin a working session. Loads existing work state and routes into the right wor
 
 Read `C:\Users\ajudd\.claude\memory\session_active.md`.
 
-If it exists, print a brief "where we left off":
+If it exists, print:
 ```
 Last session
-  Project:    [project name or path]
-  Story:      BPT2-XXXX — [title]  (omit if no active story)
-  Branch:     [branch]
+  Type:       [type]
+  Name:       [name]
+  Teams chat: [teams_chat or "none"]
+  Branch:     [branch]  (omit if n/a)
   Last work:  [1 sentence]
   Open items: [bullets or "none"]
   Next step:  [suggested action]
 ```
 
-If the file does not exist, skip and go straight to step 2.
+If the file does not exist, skip to step 2.
 
-### 2. Detect Project Context
+### 2. Detect Session Type
 
-Run `pwd` to get the current working directory and determine which type of project this is:
+Run `pwd` and map to a default session type:
+- **plugin** — path contains `ajudd-claude-plugins`
+- **story / cab** — path contains `C:\dev\` or `C:/dev/`
+- **general** — anything else
 
-- **Plugins project**: path contains `ajudd-claude-plugins`
-- **Work project**: path contains `C:\dev\` or `C:/dev/`
-- **Unknown**: anything else
+### 3. Present Options
 
-### 3. Ask What We're Doing
+**Plugin project:**
 
-**If last session state exists:**
-> "Resume [last context], or something different?"
-
-**If no last session state:**
-> "What are we working on?"
-
-Present options based on project context:
-
-**Plugins project options:**
-
-Read `.claude-plugin/marketplace.json` and list each plugin by name, then add two more:
-- Resume [last plugin work] *(only if session state exists)*
-- [plugin-name] — [plugin description, one short phrase]  *(one line per plugin)*
+Read `.claude-plugin/marketplace.json` and list each plugin by name, then add:
+- Resume [name] *(only if last session was plugin type)*
+- [plugin-name] — [one-phrase description] *(one line per plugin)*
 - New plugin
 - Something else — describe it
 
-**Work project options:**
-- Resume [story from last session] *(if session state exists)*
-- Pick up a new story (provide Jira URL or key)
-- Create a CAB
+**Work project:**
+- Resume [BPT2-XXXX — title] *(only if last session was story type)*
+- Pick up a story (Jira URL or key)
+- Start a CAB
 - Something else — describe it
 
-**Unknown project options:**
-- Resume [last context] *(if session state exists)*
-- Start something new — describe it
+**General / unknown project:**
+- Resume [name] *(only if last session was general type)*
+- Start something new — give it a name and category
 
-### 4. Route Based on Choice
+### 4. Establish Session Identity
 
-**Plugins — work on existing plugin:**
-1. Read the plugin's files (`plugin.json`, command `.md` files, skill `SKILL.md` if present)
+Once the user picks what they're working on, resolve:
+
+| Type | name | teams_chat |
+|------|------|------------|
+| plugin | plugin name (e.g. `Session`, `Office`) | `<Name> - Claude Plugin` |
+| story | story key (e.g. `BPT2-1234`) | `BPT2-XXXX — <title>` (from Jira) |
+| cab | CAB number (e.g. `CAB-456`) | `CAB-XXX — <description>` (from Jira) |
+| general | name the user provides | `<Name> - Claude <Category>` |
+
+For **general**, also ask for a category if not obvious: Research / Prototype / Training / Other.
+
+### 5. Teams Chat Setup
+
+Look in `C:\Users\ajudd\.claude\plugins\marketplaces\ajudd-claude-plugins\office\skills\office\references\known-chats.md` for a chat whose Name or Topic matches the expected `teams_chat` value.
+
+- **Found:** "Using Teams chat: [name]" — proceed, or offer to repoint if the user wants a different one
+- **Not found:** "No chat found for `[teams_chat]`. Create it? (Yes / Skip / Use a different chat)"
+  - **Yes:** create the chat via yl-msoffice MCP, add the entry to `known-chats.md`
+  - **Skip:** set `teams_chat` to `none` — Teams steps in checkpoint will be skipped
+  - **Different:** ask which existing chat to use, store that name instead
+
+### 6. Write Initial Session State
+
+Write `C:\Users\ajudd\.claude\memory\session_active.md` now so the session identity is persisted before work begins:
+
+```
+---
+updated: [today's date]
+---
+
+# Active Session State
+
+- **Type:** [type]
+- **Name:** [name]
+- **Category:** [category]   ← general only, omit for other types
+- **Teams chat:** [teams_chat or "none"]
+- **Project:** [project name or path]
+- **Branch:** [branch or "n/a"]
+- **Last worked on:** [will be updated at checkpoint]
+- **Open items:** [carried from previous session, or "none"]
+- **Next step:** [will be updated at checkpoint]
+```
+
+### 7. Route Based on Choice
+
+**Plugin — existing plugin:**
+1. Read `plugin.json`, all command `.md` files, and `SKILL.md` if present
 2. Ask what needs to change if not already stated
 3. Confirm approach before making changes
 
-**Plugins — new plugin:**
+**Plugin — new plugin:**
 1. Ask for the plugin name and what it should do
-2. Walk through the folder structure and create the files
+2. Create the folder structure and files
 3. Add entry to `marketplace.json`, commit, push, install
 
-**Work — resume story:**
-1. Read the Jira issue (`getJiraIssue`) — verify current status matches memory
-2. Check git branch — confirm it matches the story, offer to switch if not
-3. Summarize current state: what's done, what's open, what's next
+**Story — resume:**
+1. `getJiraIssue` — verify status matches memory
+2. Check git branch — confirm it matches, offer to switch if not
+3. Summarize: what's done, what's open, what's next
 
-**Work — pick up new story (kickoff):**
-- Read the Jira issue → transition to In Progress → create feature branch
-- Investigate codebase, check for Teams chat, check for Confluence page
+**Story — new kickoff:**
+1. `getJiraIssue` → transition to In Progress → create feature branch
+2. Investigate codebase, confirm Teams chat exists, check Confluence page
 
-**Work — create CAB:**
+**CAB — new:**
 - Route to `/cab:create-cab`
 
-**Something else (any project):**
-- Understand the task, load relevant context, confirm approach, proceed
+**CAB — resume:**
+1. Read the CAB card from Jira
+2. Check release branch status
+
+**General:**
+1. Ensure `~/.claude/sessions/<name>/` exists (create if not)
+2. Load any prior notes from that folder
+3. Understand the task, confirm approach, proceed

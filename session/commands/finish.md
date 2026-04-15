@@ -1,0 +1,120 @@
+---
+name: finish
+description: End-of-day close — full checklist including Jira, Teams, Confluence, browser, and session summary.
+---
+
+# Session Finish
+
+Full end-of-day close. Runs the complete checklist to ensure nothing is left behind.
+
+## Instructions
+
+### 0. Read Session Context
+
+Read `C:\Users\ajudd\.claude\memory\session_active.md` and extract:
+- `type` (plugin / story / cab / general)
+- `name`
+- `teams_chat`
+- `branch`
+
+If the file does not exist, treat as `type: general` with `teams_chat: none`.
+
+### 1. Header
+
+Output:
+```
+Session Finish — <DayOfWeek>, <Month> <Day>, <Year>
+================================================================
+```
+
+### 2. Git Scan
+
+| Type | Scope |
+|------|-------|
+| plugin | `~/.claude/plugins/marketplaces/ajudd-claude-plugins` |
+| story | current working directory (work repo) |
+| cab | current working directory — check release branch specifically |
+| general | skip |
+
+Check:
+- Uncommitted/unstaged changes (`git status`)
+- Stashed changes (`git stash list`)
+- Unpushed commits (`git log --oneline @{u}..HEAD 2>/dev/null`)
+- Current branch name
+
+Report anything that could be lost. If uncommitted changes exist: "Want to commit before closing?"
+
+If clean: "Git: clean"
+
+### 3. Memory
+
+Review the conversation for anything worth saving:
+- Feedback, corrections, or rules established
+- Workflow or convention changes
+- Project or session state updates
+- Anything non-obvious that future sessions should know
+
+Save what's missing. Report: "Saved: [list]" or "Memory: nothing new to save."
+
+### 4. Jira Update
+
+**story:**
+- Is the story status current? Transition if needed.
+- Does it need a progress comment before closing?
+- Check `C:\Users\ajudd\claude\jira-stories\<project>\<slug>.md` — update if it exists, create it if it doesn't
+
+**cab:**
+- Are the CAB card fields up to date?
+- Is the release branch reflected correctly?
+
+**plugin / general:** Skip.
+
+### 5. Teams Update
+
+**All types** — if `teams_chat` is not `none`:
+- Prompt: "Post a closing update to [teams_chat]?"
+- If yes: draft update, preview, wait for confirmation before sending
+
+Story and cab: prompt automatically.
+Plugin and general: only prompt if the user asks or something significant was resolved.
+
+### 6. Confluence
+
+**All types:** If this session's context has a linked Confluence page, prompt:
+"Does anything from this session need to go to Confluence?"
+
+Skip if no Confluence page is set up for this session's context.
+
+### 7. Browser
+
+**story only:** Check if `C:\dev\vo-playwright-tests\.browser-ws.txt` exists.
+- If it does: "Browser still running on port [N] — stop it?"
+- If yes: run `cd /c/dev/vo-playwright-tests && npm run browser:stop`
+
+**All other types:** Skip.
+
+### 8. Session Summary
+
+Update `C:\Users\ajudd\.claude\memory\session_active.md` with the final state for today:
+
+```
+---
+updated: [today's date]
+---
+
+# Active Session State
+
+- **Type:** [type]
+- **Name:** [name]
+- **Category:** [category]   ← general only, omit for other types
+- **Teams chat:** [teams_chat or "none"]
+- **Project:** [project name or path]
+- **Branch:** [branch or "n/a"]
+- **Last worked on:** [1 sentence — what was accomplished today]
+- **Open items:** [bullet list, or "none"]
+- **Next step:** [concrete first action when resuming tomorrow]
+```
+
+**General sessions only:** Also check `~/.claude/sessions/<name>/` — if notes, decisions, or outputs were produced today, ensure they are written there before closing.
+
+Print the summary to screen as the final output.
