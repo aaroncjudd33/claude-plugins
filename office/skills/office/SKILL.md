@@ -20,17 +20,17 @@ These apply to every Teams message, no exceptions:
 ### Standard Message Template
 
 ```html
-<b>Message Title</b>
+<p><b>Message Title</b></p>
 <hr/>
 <p>Intro — context, who this is for, why you're sending it.</p>
 <hr/>
-<b>Section One</b>
+<p><b>Section One</b></p>
 <ul>
   <li><b>Item</b> — detail</li>
   <li><b>Item</b> — detail</li>
 </ul>
 <hr/>
-<b>Section Two</b>
+<p><b>Section Two</b></p>
 <ul>
   <li>Top-level item
     <ul>

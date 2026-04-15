@@ -35,12 +35,14 @@ This guide applies to all plugins, all message types (session updates, CAB notic
 
 ## Section Label Pattern
 
-Do NOT use `<h3>`. Use `<b>` followed by `<br/>`:
+Do NOT use `<h3>`. Wrap `<b>` in `<p>` so it gets block-level margins above and below:
 
 ```
-<b>Section Title</b><br/>
+<p><b>Section Title</b></p>
 content here
 ```
+
+Do NOT use bare `<b>Section</b>` — it is inline and sits flush against the `<hr/>` with no breathing room.
 
 ---
 
@@ -125,16 +127,16 @@ When a table needs a legend, place it immediately after the closing `</table>` t
 ## Standard Message Template
 
 ```
-<b>Message Title</b>
+<p><b>Message Title</b></p>
 <hr/>
 <p>Intro — context, who this is for, why you're sending it.</p>
 <hr/>
-<b>Section One</b>
+<p><b>Section One</b></p>
 <ul>
   <li><b>Item</b> — detail</li>
 </ul>
 <hr/>
-<b>Section Two</b>
+<p><b>Section Two</b></p>
 <ul>
   <li>Sub-item
     <ul>
@@ -153,9 +155,10 @@ When a table needs a legend, place it immediately after the closing `</table>` t
 0. **ALWAYS end every message with the Claude signature** — no exceptions, no matter how short the message:
    `<p><em>Posted by Claude on behalf of Aaron Judd</em></p>`
 1. No `<pre>`, no `<code>` — ever
-2. No `<h2>`, `<h3>` — use `<b>` instead
-3. No `<th>` — use `<td>` with `<b>` inside for header cells
-4. No tables wider than 3 columns — use bullet lists
-5. No inline CSS — Teams ignores it
-6. Nested `<ul>` for any hierarchical or tree-shaped content
-7. `<hr/>` between sections for clean visual breaks
+2. No `<h2>`, `<h3>` — use `<p><b>...</b></p>` instead
+3. No bare `<b>Section</b>` for headers — always wrap in `<p>` for block-level spacing
+4. No `<th>` — use `<td>` with `<b>` inside for header cells
+5. No tables wider than 3 columns — use bullet lists
+6. No inline CSS — Teams ignores it
+7. Nested `<ul>` for any hierarchical or tree-shaped content
+8. `<hr/>` between sections for clean visual breaks
