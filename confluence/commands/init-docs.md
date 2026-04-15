@@ -41,4 +41,5 @@ Perform a deep codebase discovery and generate the full standard set of Confluen
 Report:
 - Links to all created pages
 - Any sections where discovery was incomplete (ask user to fill in)
-- Suggested next steps (e.g. a Proposed Work page if feature planning is active)
+
+After reporting, ask: "Is any feature currently being planned or scoped for this project? If so, run `/confluence:create-proposed-work` to create a Proposed Work planning page."

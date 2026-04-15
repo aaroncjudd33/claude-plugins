@@ -37,7 +37,7 @@ Every project gets a parent index page in Confluence. All other pages are childr
   ├── <PROJECT> — API Reference
   ├── <PROJECT> — Known Issues & Technical Debt
   ├── <PROJECT> — Test Coverage Analysis
-  ├── <PROJECT> — Proposed Work: <Feature>   ← created on demand
+  ├── <PROJECT> — Proposed Work: <Feature>   ← created by create-proposed-work
   └── Archive                                ← created by archive-docs
         └── <PROJECT> — Proposed Work: <completed feature>
 ```
@@ -51,7 +51,7 @@ Every project gets a parent index page in Confluence. All other pages are childr
 | 4 | `<PROJECT> — API Reference` | Every public endpoint: method, path, auth, request body, response codes, quirks |
 | 5 | `<PROJECT> — Known Issues & Technical Debt` | Active bugs, architectural debt, missing features — severity-ranked |
 | 6 | `<PROJECT> — Test Coverage Analysis` | What is tested, what is not, coverage gaps ranked by risk |
-| 7 | `<PROJECT> — Proposed Work: <Feature>` | Planning docs for upcoming features — archived when complete |
+| 7 | `<PROJECT> — Proposed Work: <Feature>` | Planning docs for upcoming features — created by `create-proposed-work`, archived when complete |
 
 ---
 
