@@ -15,14 +15,21 @@ Create a Proposed Work planning page for an upcoming feature. Use this when a fe
    - Confluence space key — check `MEMORY.md` "Confluence Pages" section first; if not there, ask
    - Parent page ID — check `MEMORY.md`; if not found, search Confluence for the project parent
 
-2. **Discover relevant context** — Read the codebase areas most relevant to this feature:
+2. **Check for an existing page** — Search for a Proposed Work page with this feature name before creating:
+   ```
+   searchConfluenceUsingCql:
+     cql: 'title = "<PROJECT> — Proposed Work: <Feature Name>" AND space = "<SPACE_KEY>"'
+   ```
+   If found, stop and tell the user: "A Proposed Work page for this feature already exists: [link]. Use `/confluence:update-docs` to edit it, or `/confluence:archive-docs` if it's ready to be archived."
+
+3. **Discover relevant context** — Read the codebase areas most relevant to this feature:
    - Existing code in the affected modules or services
    - Related Jira stories or epics (search by feature name or ask user for a story key)
    - Any prior planning notes in `MEMORY.md` or `CLAUDE.md`
 
-3. **Enter Plan Mode** — Use `EnterPlanMode`. Draft the Proposed Work page and present it for review before publishing.
+4. **Enter Plan Mode** — Use `EnterPlanMode`. Draft the Proposed Work page and present it for review before publishing.
 
-4. **Draft the page** using this structure:
+5. **Draft the page** using this structure:
 
    ```markdown
    # <PROJECT> — Proposed Work: <Feature Name>
@@ -57,9 +64,9 @@ Create a Proposed Work planning page for an upcoming feature. Use this when a fe
    - Branch: <branch name or "TBD">
    ```
 
-5. **Exit Plan Mode** — Use `ExitPlanMode` to present the draft and get explicit approval before publishing.
+6. **Exit Plan Mode** — Use `ExitPlanMode` to present the draft and get explicit approval before publishing.
 
-6. **Publish to Confluence** — Create the page as a child of the project parent:
+7. **Publish to Confluence** — Create the page as a child of the project parent:
 
    ```
    createConfluencePage:
@@ -70,13 +77,13 @@ Create a Proposed Work planning page for an upcoming feature. Use this when a fe
      body: <full drafted content>
    ```
 
-7. **Save page ID** — Add the new page to `MEMORY.md` under the "Confluence Pages" section:
+8. **Save page ID** — Add the new page to `MEMORY.md` under the "Confluence Pages" section:
 
    ```markdown
    - **Proposed Work — <Feature Name>:** [<PROJECT> — Proposed Work: <Feature Name>](<url>) — ID: `<id>`
    ```
 
-8. **Update parent index page** — Fetch the current parent index content and add the new page to the "Pages in this section" list.
+9. **Update parent index page** — Fetch the current parent index content and add the new page to the "Pages in this section" list.
 
 ## Notes
 

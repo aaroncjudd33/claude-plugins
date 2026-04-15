@@ -2,7 +2,8 @@
 name: confluence
 description: >
   Provides implementation context for the /confluence:init-docs,
-  /confluence:update-docs, and /confluence:archive-docs commands.
+  /confluence:update-docs, /confluence:archive-docs, and
+  /confluence:create-proposed-work commands.
   Load only when one of those commands is actively running — not in
   response to general requests to document, write up, or describe anything.
 ---
@@ -57,7 +58,9 @@ Every project gets a parent index page in Confluence. All other pages are childr
 
 ## Discovery Checklist
 
-Before writing any page, read these sources:
+Before writing any page, read these sources.
+
+**Monorepo note:** If the repo root contains multiple services or packages, ask the user which service to document before starting discovery. Scope all file reads to that service's subdirectory — do not attempt to document the entire monorepo as a single project.
 
 ### Always Read
 - `CLAUDE.md` at repo root — commands, architecture summary, key constants

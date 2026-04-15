@@ -18,23 +18,30 @@ Perform a deep codebase discovery and generate the full standard set of Confluen
    - Project name / acronym (e.g. `MMC`, `Mass Marketing Consent`)
    - GitHub repo URL (check `git remote` if not provided)
 
-3. **Enter Plan Mode** — Use `EnterPlanMode`. Perform full discovery and present the documentation plan before writing anything.
+3. **Check for existing docs** — Search Confluence for a page matching the project name in the target space:
+   ```
+   searchConfluenceUsingCql:
+     cql: 'title = "<Project Name>" AND space = "<SPACE_KEY>"'
+   ```
+   If a page is found, stop and tell the user: "A Confluence page for this project already exists. Run `/confluence:update-docs` to refresh existing pages, or confirm you want to create a new set from scratch (this will not delete existing pages)." Only proceed if the user explicitly confirms.
 
-4. **Deep Discovery Phase** — Follow the `confluence` skill discovery checklist. The skill defines exactly what to read for each page type.
+4. **Enter Plan Mode** — Use `EnterPlanMode`. Perform full discovery and present the documentation plan before writing anything.
 
-5. **Query Jira (optional)** — Search for open epics, bugs, or tech debt tickets linked to this project. Use findings to populate Known Issues.
+5. **Deep Discovery Phase** — Follow the `confluence` skill discovery checklist. The skill defines exactly what to read for each page type.
 
-6. **Draft all pages** following the `confluence` skill page content standards. Show the full outline and key content for each page. Wait for approval before publishing.
+6. **Query Jira (optional)** — Search for open epics, bugs, or tech debt tickets linked to this project. Use findings to populate Known Issues.
 
-7. **Exit Plan Mode** — Use `ExitPlanMode` to present the plan and get explicit approval.
+7. **Draft all pages** following the `confluence` skill page content standards. Show the full outline and key content for each page. Wait for approval before publishing.
 
-8. **Publish to Confluence** — After approval, create pages using the Atlassian MCP. See `references/confluence-patterns.md` for exact tool usage, parent/child structure, and content format. Create in this order:
+8. **Exit Plan Mode** — Use `ExitPlanMode` to present the plan and get explicit approval.
+
+9. **Publish to Confluence** — After approval, create pages using the Atlassian MCP. See `references/confluence-patterns.md` for exact tool usage, parent/child structure, and content format. Create in this order:
    - Parent index page first
    - Child pages in order: Overview → Architecture → Runbook → API Reference → Known Issues → Test Coverage
 
-9. **Save page IDs** — After creation, save all page URLs and IDs to the project `MEMORY.md` under a "Confluence Pages" section.
+10. **Save page IDs** — After creation, save all page URLs and IDs to the project `MEMORY.md` under a "Confluence Pages" section.
 
-10. **Update CLAUDE.md** — Add a "Documentation" section with a link to the Confluence parent page.
+11. **Update CLAUDE.md** — Add a "Documentation" section with a link to the Confluence parent page.
 
 ## Output
 
