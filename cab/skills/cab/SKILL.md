@@ -102,7 +102,7 @@ Use `jiraWrite` with `action=createIssueLink`, `type="Deploy Location"` to link 
 
 **Never submit for review without the branch and PR populated in Component Version(s) (`customfield_13141`).** If the PR does not exist yet, wait until it does before submitting. The card should have the repository, branch name, and PR link filled in.
 
-### Step 4 — Submit for review (user handles manually)
+### Step 3 — Submit for review (user handles manually)
 
 Do NOT call `transitionJiraIssue` for Send For Review or change the assignee — the user handles these steps manually. Stop after all fields are populated and stories are linked.
 

@@ -18,6 +18,16 @@ Before invoking this command, confirm:
 
 ## Instructions
 
+### 0. Identify the CAB card
+
+Run `pwd` and extract the repo slug (last path component).
+
+If a CAB key is provided as an argument, use it. Otherwise read `~/.claude/memory/sessions/<slug>/_active` to get the active session name, then read that session file for the CAB key.
+
+If neither is available, prompt: "Which CAB card? (e.g. CAB-456)"
+
+Store the CAB key — it is used throughout all steps below.
+
 ### 1. Detect project type
 
 Determine whether this is a **CDK service** or **Virtual Office** deploy based on the current working directory and project context. This determines which flow to follow below.
@@ -36,7 +46,7 @@ Confirm with the user before proceeding past this point.
 
 If `master` branch does not yet exist on the remote:
 - A PR cannot be created (branches are identical)
-- Skip to step 4a — direct push is required
+- Skip steps 3a-1 and go directly to step 4a — direct push is required, no PR link to write back
 
 If `master` already exists and `develop` has new commits:
 - Use `gh pr create --base master --head develop` with:
