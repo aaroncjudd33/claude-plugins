@@ -1,6 +1,6 @@
 ---
 name: archive-docs
-description: Archive completed proposed work / planning pages in Confluence
+description: Archive a completed planning page — moves it under an Archive section, updates the parent index, and records the change in MEMORY.md
 argument-hint: "[page-title | page-id]"
 ---
 

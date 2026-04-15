@@ -1,7 +1,7 @@
 ---
 name: init-docs
 description: Deep-discover a codebase and generate a full set of Confluence documentation pages
-argument-hint: "[confluence-space-key] [parent-page-title]"
+argument-hint: "[space-key] [parent-page-title]"
 ---
 
 # /confluence:init-docs
@@ -10,7 +10,7 @@ Perform a deep codebase discovery and generate the full standard set of Confluen
 
 ## Steps
 
-1. **Check for CLAUDE.md** — If none exists at the repo root, run `/init` to create one. Wait for completion.
+1. **Check for CLAUDE.md** — If none exists at the repo root, run `/session:start` to initialize the project (which creates CLAUDE.md). If `session` is not installed, create a minimal CLAUDE.md manually: include the project name, tech stack, key commands, and any gotchas. Wait for completion before proceeding.
 
 2. **Collect parameters** — If not provided as arguments, ask for:
    - Confluence space key (e.g. `BP2`)

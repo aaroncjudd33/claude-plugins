@@ -1,3 +1,12 @@
+---
+name: confluence
+description: >
+  Provides implementation context for the /confluence:init-docs,
+  /confluence:update-docs, and /confluence:archive-docs commands.
+  Load only when one of those commands is actively running — not in
+  response to general requests to document, write up, or describe anything.
+---
+
 # Confluence Documentation Skill
 
 Guides Claude through deep codebase discovery and structured documentation generation, publishing results as a structured set of Confluence pages. Used by the `init-docs`, `update-docs`, and `archive-docs` commands.
@@ -166,6 +175,8 @@ Must include:
 ---
 
 ## Reference Files
+
+**Always read both reference files before drafting or updating any pages.**
 
 - `references/doc-structure.md` — Full markdown templates for each page type, section by section. Use as a checklist when drafting pages — every placeholder must be filled with real content.
 - `references/confluence-patterns.md` — Atlassian MCP tool usage: createConfluencePage, updateConfluencePage, parentId structure, content format, version messages

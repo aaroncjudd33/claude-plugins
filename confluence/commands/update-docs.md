@@ -43,6 +43,7 @@ Refresh existing Confluence documentation to reflect the current state of the co
 | `api` | API Reference |
 | `issues` | Known Issues & Technical Debt |
 | `coverage` | Test Coverage Analysis |
+| `index` | Parent index page only |
 | `all` | All pages |
 | *(none)* | Ask the user |
 
@@ -50,4 +51,4 @@ Refresh existing Confluence documentation to reflect the current state of the co
 
 - Always fetch current page content before updating — never overwrite manually curated content
 - If a major restructure is needed, run `init-docs` instead
-- Proposed Work pages are managed separately via `archive-docs`
+- Proposed Work pages are managed separately via `/confluence:archive-docs`
