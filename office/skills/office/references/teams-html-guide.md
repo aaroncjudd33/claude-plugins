@@ -131,6 +131,8 @@ For 4+ columns or anything with long text values, use bullet pairs instead:
 
 ## Quick Rules
 
+0. **ALWAYS end every message with the Claude signature** — no exceptions, no matter how short the message:
+   `<p><em>Posted by Claude on behalf of Aaron Judd</em></p>`
 1. No `<pre>`, no `<code>` — ever
 2. No `<h2>`, `<h3>` — use `<b>` instead
 3. No `<th>` — use `<td>` with `<b>` inside for header cells

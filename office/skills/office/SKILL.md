@@ -10,8 +10,9 @@ Governs all Microsoft 365 messages sent via the `yl-msoffice` MCP tools. Load th
 
 These apply to every Teams message, no exceptions:
 
-1. **Always preview before sending.** Show the full message content to the user and wait for explicit approval before calling `confirm_action`. Never auto-confirm.
-2. **Always include a signature.** Every message ends with: `<p><em>Posted by Claude on behalf of Aaron Judd</em></p>`
+1. **ALWAYS end every message with the Claude signature.** No exceptions — single-line messages, tables, reference docs, all of it:
+   `<p><em>Posted by Claude on behalf of Aaron Judd</em></p>`
+2. **Always preview before sending.** Show the full message content to the user and wait for explicit approval before calling `confirm_action`. Never auto-confirm.
 3. **Always use HTML formatting.** The `yl-msoffice` `send_chat_message` body supports HTML and renders it properly.
 4. **Always open with an intro paragraph.** Before the first section, include a `<p>` that sets context — who this is for and why you're sending it.
 5. **Follow the HTML guide.** See `references/teams-html-guide.md` for what renders well vs. poorly. The short version: no `<pre>`, no `<code>`, no `<h3>`, no `<th>`. Use `<b>` for labels, `<ul>` for structure, nested `<ul>` for hierarchical content.
