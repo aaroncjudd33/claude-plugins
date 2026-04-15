@@ -16,12 +16,15 @@ Send a formatted Teams message based on the current conversation context.
 3. **Compose the message** following all rules in `references/teams-html-guide.md`:
    - Intro `<p>` paragraph
    - `<hr/>` between every section
-   - `<b>Section Title</b>` for section labels — never `<h3>`
+   - `<p><b>Section Title</b></p>` for section labels — never bare `<b>` or `<h3>`
    - `<ul>`/`<li>` for bullets, nested `<ul>` for hierarchy
-   - `<p><em>Posted by Claude on behalf of Aaron Judd</em></p>` signature — always last, no exceptions
 
-4. **Show a preview** of the full message in readable form. Ask the user: "Ready to send, or would you like any changes?"
+4. **Enforce signature** — before showing any preview, verify the composed HTML ends with:
+   `<p><em>Posted by Claude on behalf of Aaron Judd</em></p>`
+   If it is missing or malformed, add it now. Do not proceed to preview until it is present.
 
-5. **Wait for explicit approval** before calling `send_chat_message`.
+5. **Show a preview** of the full message in readable form. Ask the user: "Ready to send, or would you like any changes?"
 
-6. **Send and confirm** — call `send_chat_message`, then call `confirm_action` with the returned `actionId`.
+6. **Wait for explicit approval** before calling `send_chat_message`.
+
+7. **Send and confirm** — call `send_chat_message`, then call `confirm_action` with the returned `actionId`.
