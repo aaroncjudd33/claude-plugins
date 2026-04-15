@@ -1,18 +1,16 @@
 ---
 name: update-docs
 description: Update existing Confluence project documentation to reflect current codebase state
-argument-hint: [page-name | all]
+argument-hint: "[page-name | all]"
 ---
 
-# Project Documentation: Update
+# /confluence:update-docs [page-name | all]
 
 Refresh existing Confluence documentation to reflect the current state of the codebase. Use this after a significant feature, refactor, or bug fix — not after every commit.
 
-## Instructions
+## Steps
 
-When this command is invoked:
-
-1. **Find existing pages** — Check `MEMORY.md` for saved Confluence page IDs. If not found, search Confluence using `searchConfluenceUsingCql` for pages matching the project name in the target space.
+1. **Find existing pages** — Check `MEMORY.md` for saved Confluence page IDs. If not found, search using `searchConfluenceUsingCql` for pages matching the project name in the target space.
 
 2. **Determine scope** — If an argument is provided (e.g. `architecture`, `runbook`, `all`), update only those pages. If no argument, ask the user which pages need updating or default to `all`.
 
@@ -20,18 +18,18 @@ When this command is invoked:
 
    a. **Fetch current content** using `getConfluencePage` — read what's already there.
 
-   b. **Re-discover the relevant codebase sections** using the `project-docs` skill discovery checklist for that page type.
+   b. **Re-discover relevant codebase sections** using the `confluence` skill discovery checklist for that page type.
 
-   c. **Identify what's changed or stale** — compare the current doc content against the current code. Look for:
+   c. **Identify what's changed or stale** — compare doc content against current code. Look for:
       - File paths that no longer exist
       - New files or components not yet documented
-      - Changed database schemas, endpoints, or environment config
-      - Resolved issues that are still listed as open
-      - New known issues not yet documented
+      - Changed schemas, endpoints, or environment config
+      - Resolved issues still listed as open
+      - New issues not yet documented
 
-   d. **Update only what has changed** — preserve sections that are still accurate. Add a brief change note at the top of updated sections: `> Updated: <date> — <what changed>`
+   d. **Update only what has changed** — preserve accurate sections. Add a brief change note at the top of updated sections: `> Updated: <date> — <what changed>`
 
-4. **Publish updates** using `updateConfluencePage` with a `versionMessage` describing what changed.
+4. **Publish updates** using `updateConfluencePage`. See `references/confluence-patterns.md` for version messages and update patterns.
 
 5. **Update MEMORY.md** if any page IDs have changed.
 
@@ -51,5 +49,5 @@ When this command is invoked:
 ## Notes
 
 - Always fetch current page content before updating — never overwrite manually curated content
-- If a major restructure is needed, consider running `init-docs` instead
-- Do not update Proposed Work pages — those are managed separately via `archive-docs`
+- If a major restructure is needed, run `init-docs` instead
+- Proposed Work pages are managed separately via `archive-docs`

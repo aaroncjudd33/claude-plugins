@@ -1,39 +1,54 @@
-# Project Documentation Skill
+# Confluence Documentation Skill
 
-This skill guides Claude through deep codebase discovery and structured documentation generation, publishing results as a set of Confluence pages. It is used by the `init-docs`, `update-docs`, and `archive-docs` commands.
+Guides Claude through deep codebase discovery and structured documentation generation, publishing results as a structured set of Confluence pages. Used by the `init-docs`, `update-docs`, and `archive-docs` commands.
 
 ---
 
 ## Atlassian Connection
 
-The global `CLAUDE.md` defines the Atlassian connection. Always use these without asking:
+Defined in the global `CLAUDE.md`. Always use these without asking:
 
 - Instance: `https://younglivingeo.atlassian.net`
 - Cloud ID: `9de6eb2b-2683-44e6-89ff-c622027e09b4`
 - Auth: Handled by the `claude.ai` Atlassian MCP
 
+For tool usage patterns (createConfluencePage, updateConfluencePage, parentId structure, version messages), see `references/confluence-patterns.md`.
+
 ---
 
-## Standard Page Set
+## Page Hierarchy
 
-Every project gets these pages under a parent index page:
+Every project gets a parent index page in Confluence. All other pages are children of that parent — think of it as a folder. The Archive page (created by `archive-docs`) is also a child of the parent, with completed Proposed Work pages nested under it.
+
+```
+<PROJECT>                          ← parent index page (the "folder")
+  ├── <PROJECT> — Project Overview
+  ├── <PROJECT> — Architecture & Data Flow
+  ├── <PROJECT> — Local Dev Runbook
+  ├── <PROJECT> — API Reference
+  ├── <PROJECT> — Known Issues & Technical Debt
+  ├── <PROJECT> — Test Coverage Analysis
+  ├── <PROJECT> — Proposed Work: <Feature>   ← created on demand
+  └── Archive                                ← created by archive-docs
+        └── <PROJECT> — Proposed Work: <completed feature>
+```
 
 | # | Page Title Pattern | Purpose |
 |---|-------------------|---------|
-| 0 | `<PROJECT>` | Parent/index page with quick links and page directory |
+| 0 | `<PROJECT>` | Parent index — quick links and page directory |
 | 1 | `<PROJECT> — Project Overview` | What it does, tech stack, key files, database, design patterns, status |
 | 2 | `<PROJECT> — Architecture & Data Flow` | System flows (with ASCII diagrams), data models, infrastructure stacks, known concerns |
 | 3 | `<PROJECT> — Local Dev Runbook` | Step-by-step local setup, CLI reference, SQL/DB quick reference, break-glass steps |
 | 4 | `<PROJECT> — API Reference` | Every public endpoint: method, path, auth, request body, response codes, quirks |
 | 5 | `<PROJECT> — Known Issues & Technical Debt` | Active bugs, architectural debt, missing features — severity-ranked |
 | 6 | `<PROJECT> — Test Coverage Analysis` | What is tested, what is not, coverage gaps ranked by risk |
-| 7 | `<PROJECT> — Proposed Work: <Feature>` | Planning docs for upcoming features — created on demand, archived when complete |
+| 7 | `<PROJECT> — Proposed Work: <Feature>` | Planning docs for upcoming features — archived when complete |
 
 ---
 
 ## Discovery Checklist
 
-Before writing any page, read these sources to extract information:
+Before writing any page, read these sources:
 
 ### Always Read
 - `CLAUDE.md` at repo root — commands, architecture summary, key constants
@@ -152,5 +167,5 @@ Must include:
 
 ## Reference Files
 
-- `references/doc-structure.md` — Detailed section-by-section templates for each page type
-- `references/confluence-patterns.md` — How to create and structure Confluence pages using the Atlassian MCP
+- `references/doc-structure.md` — Full markdown templates for each page type, section by section. Use as a checklist when drafting pages — every placeholder must be filled with real content.
+- `references/confluence-patterns.md` — Atlassian MCP tool usage: createConfluencePage, updateConfluencePage, parentId structure, content format, version messages
