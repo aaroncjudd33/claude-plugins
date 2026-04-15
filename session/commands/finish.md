@@ -23,11 +23,14 @@ Read `~/.claude/memory/sessions/<slug>/<name>.md` and extract:
 
 If `_active` does not exist, treat as `type: general` with `teams_chat: none`.
 
+If `_active` exists but `<name>.md` does not, warn the user: "Session file for `<name>` not found — run `/session:start` to re-establish." and stop.
+
 ### 1. Header
 
 Output:
 ```
-Session Finish — <DayOfWeek>, <Month> <Day>, <Year>
+Session Finish — <name> (<type>)
+<DayOfWeek>, <Month> <Day>, <Year>
 ================================================================
 ```
 
@@ -120,6 +123,16 @@ updated: [today's date]
 - **Related stories:** [BPT2-XXXX, BPT2-YYYY or "none"]   ← cab type only, omit for other types
 ```
 
-**General sessions only:** Also check `~/.claude/sessions/<name>/` — if notes, decisions, or outputs were produced today, ensure they are written there before closing.
+**General sessions only:** Also check `~/.claude/memory/sessions/<slug>/<name>/` — if notes, decisions, or outputs were produced today, ensure they are written there before closing.
+
+Before writing, ask the user: "What's the first thing to pick up next time?" Use their answer for the `Next step` field. If they say "same" or similar, carry forward the current value.
 
 Print the summary to screen as the final output.
+
+### 9. Deactivate Session
+
+Remove the active marker so no future conversation inherits stale state:
+
+```bash
+rm ~/.claude/memory/sessions/<slug>/_active
+```

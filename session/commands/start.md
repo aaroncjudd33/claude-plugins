@@ -29,8 +29,8 @@ For each file, read it and extract: `Name`, `Branch`, `Last worked on`.
 If sessions exist, print a numbered list:
 ```
 Sessions in <slug>
-  [1]  <name>  |  <branch>  |  <last worked on — 1 sentence>
-  [2]  <name>  |  <branch>  |  <last worked on — 1 sentence>
+  [1]  <name>  |  <type>  |  <branch>  |  <last worked on — 1 sentence>
+  [2]  <name>  |  <type>  |  <branch>  |  <last worked on — 1 sentence>
 ```
 
 If the directory does not exist or is empty, skip this section.
@@ -88,6 +88,8 @@ For **general**, also ask for a category if not obvious: Research / Prototype / 
 ### 6. Teams Chat Setup
 
 Look in `C:\Users\ajudd\.claude\plugins\marketplaces\ajudd-claude-plugins\office\skills\office\references\known-chats.md` for a chat whose Name or Topic matches the expected `teams_chat` value and has `Active=yes`.
+
+Match on the Name column (exact, case-insensitive) first; fall back to substring match on Topic if no Name match.
 
 - **Found:** "Using Teams chat: [name]" — proceed, or offer to repoint if the user wants a different one
 - **Not found:** "No chat found for `[teams_chat]`. Create it? (Yes / Skip / Use a different chat)"
@@ -155,6 +157,6 @@ BPT2-1234
 2. Check release branch status
 
 **General:**
-1. Ensure `~/.claude/sessions/<name>/` exists (create if not)
+1. Ensure `~/.claude/memory/sessions/<slug>/<name>/` exists (create if not)
 2. Load any prior notes from that folder
 3. Understand the task, confirm approach, proceed

@@ -51,7 +51,7 @@
     },
     {
       "name": "session",
-      "description": "Session lifecycle commands — start a session with intent, checkpoint to save work state and leave nothing behind.",
+      "description": "Session lifecycle commands — start a session with intent, checkpoint mid-session to save state, and finish at end of day.",
       "source": "./session",
       "category": "productivity",
       "keywords": ["session", "checkpoint", "start", "wrap", "state", "context", "handoff"]
