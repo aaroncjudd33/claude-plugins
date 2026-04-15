@@ -100,7 +100,15 @@ For each linked Jira story, call `createIssueLink` with `type="Deploy Location"`
 
 Do NOT call `transitionJiraIssue` for Send For Review or change the assignee. The user handles these steps manually.
 
-### 9. Save to memory
+### 9. Write session cross-references
+
+Run `pwd` and extract the repo slug (last path component).
+
+**Write/update the CAB session file** at `~/.claude/memory/sessions/<slug>/CAB-XXX.md`:
+- Set `Related stories` to the comma-separated list of linked story keys (e.g. `BPT2-1234, BPT2-1235`)
+- If the file does not exist yet, create it with the full session template (Type: cab, Branch: n/a, etc.)
+
+**Back-link each story session file**: for each linked story key, check if `~/.claude/memory/sessions/<slug>/BPT2-XXXX.md` exists. If it does, update its `Related CAB` field to `CAB-XXX`.
 
 Save the CAB card URL and key to the project's memory.
 

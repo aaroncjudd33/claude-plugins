@@ -116,6 +116,8 @@ updated: [today's date]
 - **Last worked on:** [1 sentence — what was accomplished today]
 - **Open items:** [bullet list, or "none"]
 - **Next step:** [concrete first action when resuming tomorrow]
+- **Related CAB:** [CAB-XXX or "none"]   ← story type only, omit for other types
+- **Related stories:** [BPT2-XXXX, BPT2-YYYY or "none"]   ← cab type only, omit for other types
 ```
 
 **General sessions only:** Also check `~/.claude/sessions/<name>/` — if notes, decisions, or outputs were produced today, ensure they are written there before closing.

@@ -147,9 +147,19 @@ Transition the CAB card to **Success** status using `transitionJiraIssue`.
 
 Look up the available transitions with `getTransitionsForJiraIssue` to get the correct transition ID for Success.
 
+### Transition related stories
+
+Run `pwd` and extract the repo slug (last path component).
+
+Read `~/.claude/memory/sessions/<slug>/CAB-XXX.md` and check `Related stories`.
+
+For each story key listed, prompt: "Transition BPT2-XXXX to Done?"
+- If yes: call `getTransitionsForJiraIssue` to find the Done transition ID, then `transitionJiraIssue`
+- After transitioning, update that story's session file (`BPT2-XXXX.md`) to set `Related CAB` to `none`
+
 ### Update memory
 
-Update the project's memory to mark the deploy complete.
+Update the CAB session file to mark the deploy complete. Clear `Related stories` only after all story transitions are resolved (or explicitly skipped).
 
 ## Output
 

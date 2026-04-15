@@ -60,10 +60,12 @@ If the directory does not exist or is empty, skip this section.
 - Display the full last session block:
   ```
   Resuming <name>
-    Branch:     [branch]
-    Last work:  [last worked on]
-    Open items: [bullets or "none"]
-    Next step:  [next step]
+    Branch:          [branch]
+    Last work:       [last worked on]
+    Open items:      [bullets or "none"]
+    Next step:       [next step]
+    Related CAB:     [CAB-XXX]   ← story type only, omit if none
+    Related stories: [BPT2-XXXX, ...]   ← cab type only, omit if none
   ```
 
 **New story/plugin/general — session filename:**
@@ -115,6 +117,8 @@ updated: [today's date]
 - **Last worked on:** [will be updated at checkpoint]
 - **Open items:** [carried from previous session, or "none"]
 - **Next step:** [will be updated at checkpoint]
+- **Related CAB:** [CAB-XXX or "none"]   ← story type only, omit for other types
+- **Related stories:** [BPT2-XXXX, BPT2-YYYY or "none"]   ← cab type only, omit for other types
 ```
 
 Write `~/.claude/memory/sessions/<slug>/_active` (plain text, just the name — no `.md` extension):
