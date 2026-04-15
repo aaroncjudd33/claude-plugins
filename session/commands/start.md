@@ -26,34 +26,63 @@ Last session
 
 If the file does not exist, skip and go straight to step 2.
 
-### 2. Ask What We're Doing
+### 2. Detect Project Context
 
-If last session state exists:
+Run `pwd` to get the current working directory and determine which type of project this is:
+
+- **Plugins project**: path contains `ajudd-claude-plugins`
+- **Work project**: path contains `C:\dev\` or `C:/dev/`
+- **Unknown**: anything else
+
+### 3. Ask What We're Doing
+
+**If last session state exists:**
 > "Resume [last context], or something different?"
 
-If no last session state:
+**If no last session state:**
 > "What are we working on?"
 
-Options to present:
-- **Resume** [story/project from last session]
-- **Pick up a new story** (provide Jira URL or key)
-- **Create a CAB**
-- **Something else** — describe it
+Present options based on project context:
 
-### 3. Route Based on Choice
+**Plugins project options:**
+- Resume [last plugin work] *(if session state exists)*
+- Work on an existing plugin (fix, update, or improve)
+- Add a new plugin
+- Something else — describe it
 
-**Resume story:**
+**Work project options:**
+- Resume [story from last session] *(if session state exists)*
+- Pick up a new story (provide Jira URL or key)
+- Create a CAB
+- Something else — describe it
+
+**Unknown project options:**
+- Resume [last context] *(if session state exists)*
+- Start something new — describe it
+
+### 4. Route Based on Choice
+
+**Plugins — work on existing plugin:**
+1. Ask which plugin and what needs to change
+2. Read the relevant plugin files (`plugin.json`, command `.md`, skill `SKILL.md`)
+3. Summarize current state and confirm approach before making changes
+
+**Plugins — add new plugin:**
+1. Ask for the plugin name and what it should do
+2. Walk through the folder structure and create the files
+3. Add entry to `marketplace.json`, commit, push, install
+
+**Work — resume story:**
 1. Read the Jira issue (`getJiraIssue`) — verify current status matches memory
 2. Check git branch — confirm it matches the story, offer to switch if not
 3. Summarize current state: what's done, what's open, what's next
 
-**Pick up new story (kickoff):**
+**Work — pick up new story (kickoff):**
 - Read the Jira issue → transition to In Progress → create feature branch
 - Investigate codebase, check for Teams chat, check for Confluence page
-- Follow any kickoff workflow saved in project memory
 
-**Create CAB:**
+**Work — create CAB:**
 - Route to `/cab:create-cab`
 
-**Something else:**
+**Something else (any project):**
 - Understand the task, load relevant context, confirm approach, proceed
