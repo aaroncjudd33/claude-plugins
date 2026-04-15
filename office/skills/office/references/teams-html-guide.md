@@ -81,7 +81,7 @@ Use `<td>` for ALL cells — never `<th>` — to avoid dark bold headers.
 Add a border and padding so rows are visually separated:
 
 ```
-<table border="1" cellpadding="5" cellspacing="0" style="border-collapse:collapse;">
+<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;">
   <tr>
     <td><b>Column A</b></td>
     <td><b>Column B</b></td>
@@ -100,6 +100,25 @@ For 4+ columns or anything with long text values, use bullet pairs instead:
 <li><b>Label:</b> value</li>
 </ul>
 ```
+
+### Table Legend
+
+When a table needs a legend, place it immediately after the closing `</table>` tag — no `<br/>` gap between them. Use `<em>` for each legend item to render it as secondary/lighter text. Put each item on its own line:
+
+```
+</table>
+<em>term = explanation</em><br/>
+<em>term = explanation</em><br/>
+<em>* = footnote</em>
+<br/><br/>
+<p><em>Posted by Claude on behalf of Aaron Judd</em></p>
+```
+
+### Table Spacing
+
+- `<br/><br/>` between the title and the table
+- No gap between table and legend (legend sits flush under the table)
+- `<br/><br/>` between legend and signature
 
 ---
 
