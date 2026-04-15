@@ -69,7 +69,7 @@ For **general**, also ask for a category if not obvious: Research / Prototype / 
 
 ### 5. Teams Chat Setup
 
-Look in `C:\Users\ajudd\.claude\plugins\marketplaces\ajudd-claude-plugins\office\skills\office\references\known-chats.md` for a chat whose Name or Topic matches the expected `teams_chat` value.
+Look in `C:\Users\ajudd\.claude\plugins\marketplaces\ajudd-claude-plugins\office\skills\office\references\known-chats.md` for a chat whose Name or Topic matches the expected `teams_chat` value **and has `Active=yes`**. If multiple entries match, prefer the one with `Active=yes`.
 
 - **Found:** "Using Teams chat: [name]" — proceed, or offer to repoint if the user wants a different one
 - **Not found:** "No chat found for `[teams_chat]`. Create it? (Yes / Skip / Use a different chat)"
