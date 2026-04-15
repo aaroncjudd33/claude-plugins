@@ -45,9 +45,11 @@ Run `pwd` to get the current working directory and determine which type of proje
 Present options based on project context:
 
 **Plugins project options:**
-- Resume [last plugin work] *(if session state exists)*
-- Work on an existing plugin (fix, update, or improve)
-- Add a new plugin
+
+Read `.claude-plugin/marketplace.json` and list each plugin by name, then add two more:
+- Resume [last plugin work] *(only if session state exists)*
+- [plugin-name] — [plugin description, one short phrase]  *(one line per plugin)*
+- New plugin
 - Something else — describe it
 
 **Work project options:**
@@ -63,11 +65,11 @@ Present options based on project context:
 ### 4. Route Based on Choice
 
 **Plugins — work on existing plugin:**
-1. Ask which plugin and what needs to change
-2. Read the relevant plugin files (`plugin.json`, command `.md`, skill `SKILL.md`)
-3. Summarize current state and confirm approach before making changes
+1. Read the plugin's files (`plugin.json`, command `.md` files, skill `SKILL.md` if present)
+2. Ask what needs to change if not already stated
+3. Confirm approach before making changes
 
-**Plugins — add new plugin:**
+**Plugins — new plugin:**
 1. Ask for the plugin name and what it should do
 2. Walk through the folder structure and create the files
 3. Add entry to `marketplace.json`, commit, push, install
