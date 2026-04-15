@@ -12,18 +12,18 @@ Save work state and ensure nothing important is lost. Works mid-session or at en
 ### 1. Closing or Mid-Session?
 
 Ask the user one question: "Closing for the day, or mid-session checkpoint?"
-- **Closing**: run full checklist including Playwright browser prompt
+- **Closing**: run full checklist including browser prompt
 - **Mid-session**: same checklist, skip browser prompt, frame summary as "current state" not "pick up here"
 
 Output a header:
 ```
-Session Checkpoint — <DayOfWeek>, <Month> <Day>, <Year> <HH:MM>
+Session Checkpoint — <DayOfWeek>, <Month> <Day>, <Year>
 ================================================================
 ```
 
 ### 2. Git Scan (Auto)
 
-Scope to the current working directory's repo only — do NOT scan all of C:\dev\*.
+Scope to the current working directory's repo only.
 
 Check:
 - Uncommitted or unstaged changes (`git status`)
@@ -37,7 +37,7 @@ If everything is clean: "Git: clean"
 
 ### 3. Memory (Auto)
 
-Review the conversation for anything worth saving that isn't already captured:
+Review the conversation for anything worth saving:
 - New feedback or corrections from the user
 - Workflow changes or rules established
 - Project or story state changes
@@ -49,39 +49,42 @@ Save what's missing. Report: "Saved: [list]" or "Memory: nothing new to save."
 
 If a story was worked on this session:
 
-- **Jira status** — is it current for where things actually stand?
+- **Jira status** — is it current?
 - **Jira comment** — does it need one before closing?
 - **Local story doc** — check `C:\Users\ajudd\claude\jira-stories\<project>\<slug>.md`:
-  - If it exists: is it up to date with what was done this session?
-  - If it doesn't exist: **create it now** — do not just flag it. Write it inline based on conversation context, then confirm with user.
+  - If it exists: is it up to date?
+  - If it doesn't exist: create it now based on conversation context, then confirm with user
 
-Skip this section entirely if no story was active.
+Skip entirely if no story was active.
 
 ### 5. Teams Update (Contextual)
 
-If a story has a Teams chat and meaningful work happened this session:
+If a story has a Teams chat and meaningful work happened:
 - Prompt: "Does [BPT2-XXXX] need a Teams update before you close?"
 - If yes: draft one, preview, wait for confirmation before sending
-- Skip if no story or no meaningful work happened
+
+Skip if no story or no meaningful work happened.
 
 ### 6. Confluence (Contextual)
 
-If implementation decisions were made or scope changed from the proposed approach:
+If implementation decisions were made or scope changed:
 - Prompt: "Does the Confluence page for [BPT2-XXXX] need updating?"
-- Skip if no Confluence page exists for this story, or nothing changed
 
-### 7. Playwright Browser (Closing only — Auto)
+Skip if no Confluence page exists for this story, or nothing changed.
 
-Check `C:\dev\vo-playwright-tests\.browser-ws.txt`:
-- If file exists: "Browser still running on port [N] — stop it?"
+### 7. Browser (Closing only — Contextual)
+
+Check if `C:\dev\vo-playwright-tests\.browser-ws.txt` exists.
+- If it does: "Browser still running on port [N] — stop it?"
 - If yes: run `cd /c/dev/vo-playwright-tests && npm run browser:stop`
-- If mid-session: skip this step entirely
+- Skip entirely if the file doesn't exist or if mid-session.
 
 ### 8. Session Summary
 
-Write current work state to memory file `project_active_session.md` (update if exists, create if not).
+Write current work state to `C:\Users\ajudd\.claude\memory\session_active.md` (update if exists, create if not).
 
 Content to save:
+- Project: [name or working directory]
 - Story: [BPT2-XXXX] — [title] (or "No active story")
 - Status: [current Jira status]
 - Branch: [current branch]
