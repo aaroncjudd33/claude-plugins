@@ -83,6 +83,7 @@ updated: [today's date]
 - **Last worked on:** [1 sentence — what is happening right now]
 - **Open items:** [bullet list, or "none"]
 - **Next step:** [concrete next action]
+- **Plugin reviewed:** [yes / no]   ← plugin type only, omit for other types
 - **Related CAB:** [CAB-XXX or "none"]   ← story type only, omit for other types
 - **Related stories:** [BPT2-XXXX, BPT2-YYYY or "none"]   ← cab type only, omit for other types
 ```

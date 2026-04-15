@@ -119,6 +119,7 @@ updated: [today's date]
 - **Last worked on:** [will be updated at checkpoint]
 - **Open items:** [carried from previous session, or "none"]
 - **Next step:** [will be updated at checkpoint]
+- **Plugin reviewed:** [yes / no]   ← plugin type only, omit for other types
 - **Related CAB:** [CAB-XXX or "none"]   ← story type only, omit for other types
 - **Related stories:** [BPT2-XXXX, BPT2-YYYY or "none"]   ← cab type only, omit for other types
 ```
@@ -132,8 +133,11 @@ BPT2-1234
 
 **Plugin — existing plugin:**
 1. Read `plugin.json`, all command `.md` files, and `SKILL.md` if present
-2. Ask what needs to change if not already stated
-3. Confirm approach before making changes
+2. Check the session file for `plugin_reviewed: yes`. If missing or `no`, show:
+   > "⚠ This plugin has not been reviewed with plugin-dev tools yet. Run the code-reviewer agent against it when you get a chance."
+   Continue regardless — this is a reminder, not a blocker.
+3. Ask what needs to change if not already stated
+4. Confirm approach before making changes
 
 **Plugin — new plugin:**
 1. Ask for the plugin name and what it should do
