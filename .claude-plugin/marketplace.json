@@ -36,11 +36,11 @@
       "keywords": ["teams", "email", "meeting", "office", "m365", "microsoft", "outlook", "sweep", "send"]
     },
     {
-      "name": "daily-prep",
-      "description": "Morning setup routine — Jira briefing, Confluence updates, git repo scan, AWS SSO + CodeArtifact login.",
-      "source": "./daily-prep",
+      "name": "setup",
+      "description": "Morning setup — AWS login, Jira briefing, Confluence activity, calendar. Dashboard to start the day.",
+      "source": "./setup",
       "category": "productivity",
-      "keywords": ["morning", "setup", "briefing", "jira", "confluence", "git", "aws", "sso"]
+      "keywords": ["morning", "setup", "briefing", "jira", "confluence", "calendar", "aws", "sso", "dashboard"]
     },
     {
       "name": "chrome",

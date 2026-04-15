@@ -36,8 +36,8 @@ Read `~/.claude/jira-stories.json`. If it doesn't exist, start with an empty obj
 
 ### 2. Run JQL Queries
 
-<!-- SYNC NOTE: These 3 JQL queries are duplicated in daily-prep/commands/setup.md (section 3).
-     If you change them here, update that file too. -->
+<!-- SYNC NOTE: These 3 JQL queries are duplicated in setup/commands/jira.md, setup/commands/local.md (section 3), and setup/skills/setup/SKILL.md.
+     If you change them here, update all three. -->
 
 Use `searchJiraIssuesUsingJql` on cloud ID `9de6eb2b-2683-44e6-89ff-c622027e09b4`. Run all three queries in parallel.
 
