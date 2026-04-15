@@ -1,6 +1,6 @@
 ---
 name: create-cab
-description: Create a complete CAB card in Jira for a Young Living production deployment, populate all required fields, submit for review, and assign to Sudhakar.
+description: Create a complete CAB card in Jira for a Young Living production deployment and populate all required fields. Stops before submission — user handles Send For Review and assignee update manually.
 argument-hint: "[summary] [deploy-date] [linked-story]"
 ---
 

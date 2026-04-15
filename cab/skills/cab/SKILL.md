@@ -1,3 +1,8 @@
+---
+name: cab
+description: This skill should be used when the user needs to create, update, submit, or execute a CAB (Change Advisory Board) card in Jira for a Young Living production deployment. Trigger phrases include "create a CAB card", "I need to deploy to prod", "set up a CAB for this release", "update the CAB card", "submit for review", "execute the deploy", or any mention of a CAB number (e.g. CAB-456).
+---
+
 # CAB Card Skill
 
 This skill encodes everything needed to create, populate, and submit a CAB (Change Advisory Board) card in Jira at Young Living. All field IDs, option IDs, workflows, and quirks are documented here.
@@ -59,10 +64,10 @@ All fields that must be populated. ADF fields use `{ "type": "doc", "version": 1
 | Pre-Deployment Tests | `customfield_13099` | ADF | What to verify before deploy |
 | Post-Deployment Tests | `customfield_13100` | ADF | What to verify after deploy |
 | Code Review Approver | `customfield_13612` | user (accountId) | **Heber Iraheta: `557058:055d4592-8fbf-4b3c-8115-0dc48da8a1b4`** |
+| QA Approved By | `customfield_13174` | user (accountId) | **Heber Iraheta: `557058:055d4592-8fbf-4b3c-8115-0dc48da8a1b4`** — required for Send For Review transition |
 | Date of Code Review | `customfield_14671` | date string | e.g. `2026-03-18` |
 | Clone/Stage Status | `customfield_14664` | option ID | Not Required: `16376`, Previously Deployed: `16377`, **Part of This Deployment: `16378`** |
 | Date Tested in Clone/Stage | `customfield_14665` | date string | e.g. `2026-03-18` |
-
 | PRs Deploying | `customfield_14670` | ADF | PR title + link. Format: `"<PR title> - Pull Request #<N> - <org>/<repo>"` with link to PR URL. |
 
 ### Do Not Use
@@ -93,7 +98,7 @@ Use `createJiraIssue`. Populate all fields from the table above in a single call
 
 Use `jiraWrite` with `action=createIssueLink`, `type="Deploy Location"` to link each related story/epic. This semantically means "this CAB deploys this story".
 
-### Step 3 — Ensure Component Version(s) has branch and PR
+### Gate — Component Version(s) must have branch and PR before submission
 
 **Never submit for review without the branch and PR populated in Component Version(s) (`customfield_13141`).** If the PR does not exist yet, wait until it does before submitting. The card should have the repository, branch name, and PR link filled in.
 
@@ -105,12 +110,12 @@ Do NOT call `transitionJiraIssue` for Send For Review or change the assignee —
 
 ## Transition IDs
 
-| Transition | ID | Notes |
-|-----------|-----|-------|
-| Send For Review | `201` | Requires `customfield_13174` (QA Approved By) |
-| Cancel Change | `111` | |
-| Mark Implementation | (auto after approval) | Card moves to Implementation after CAB approval |
-| Mark Success | Look up at time of use | Set after successful prod deploy |
+| Transition | ID | Notes | Used by |
+|-----------|-----|-------|---------|
+| Send For Review | `201` | Requires `customfield_13174` (QA Approved By) | user manually |
+| Cancel Change | `111` | | user manually |
+| Mark Implementation | (auto after approval) | Card moves to Implementation after CAB approval | automatic |
+| Mark Success | Look up at time of use | Set after successful prod deploy | `execute-deploy` |
 
 ---
 

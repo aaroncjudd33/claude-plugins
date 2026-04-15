@@ -44,6 +44,12 @@ If `master` already exists and `develop` has new commits:
   - Body: include the CAB card key (e.g. `CAB-8994`) so GitHub for Jira auto-links the PR to the CAB card's "PRs Deploying" field
   - Reference the linked Jira story
 
+### 3a-1. Update CAB card with PR link
+
+After the PR is created, call `editJiraIssue` to write the PR back into the CAB card:
+- `customfield_14670` (PRs Deploying): PR title + link, formatted as `"<title> - Pull Request #<N> - <org>/<repo>"`
+- `customfield_13141` (Component Version(s)): ADF table with Repository / Branch / Pull Request columns
+
 ### 4a. Push to master (confirm with user first)
 
 **Always confirm with the user before this step — it triggers the live prod deploy.**
@@ -99,6 +105,12 @@ Use AWS CLI via `aws cloudformation describe-stacks` and `aws lambda list-functi
   - Title: descriptive deploy title
   - Body: include the CAB card key so GitHub for Jira auto-links
   - Reference the linked Jira stories
+
+### 3b-1. Update CAB card with PR link
+
+After the PR is created, call `editJiraIssue` to write the PR back into the CAB card:
+- `customfield_14670` (PRs Deploying): PR title + link, formatted as `"<title> - Pull Request #<N> - <org>/<repo>"`
+- `customfield_13141` (Component Version(s)): ADF table with Repository / Branch / Pull Request columns
 
 ### 4b. Merge to master (confirm with user first)
 

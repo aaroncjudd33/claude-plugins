@@ -53,7 +53,7 @@ Accept multiple selections (e.g. "1, 3"). Run each selected update in sequence.
 
 1. Prompt for the story key to remove
 2. Call `getJiraIssue` for the CAB and find the issue link ID for that story in `fields.issuelinks`
-3. Use `search_actions` (category: jira) to find and execute a delete issue link action, or note to the user that the link must be removed manually in the Jira UI if no delete action is available
+3. Note to the user that deleting issue links must be done manually in the Jira UI — no MCP tool is available for this action
 4. Remove the story key from `Related stories` in the CAB session file
 5. If `~/.claude/memory/sessions/<slug>/BPT2-XXXX.md` exists, set its `Related CAB` field to `none`
 
