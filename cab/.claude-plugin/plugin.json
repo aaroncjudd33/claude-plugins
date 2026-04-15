@@ -1,6 +1,6 @@
 {
   "name": "cab",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Create and manage CAB (Change Advisory Board) cards in Jira for Young Living production deployments. Handles all required fields, ADF formatting, story linking, and full production deploy execution.",
   "author": {
     "name": "Aaron Judd",

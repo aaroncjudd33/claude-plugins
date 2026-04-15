@@ -1,146 +1,178 @@
 ---
 name: create-cab
-description: Create a complete CAB card in Jira for a Young Living production deployment, resolve or create the deployment PR, and populate all required fields. Stops before submission — user handles Send For Review and assignee update manually.
-argument-hint: "[summary] [deploy-date] [linked-story]"
+description: Create a complete CAB card for a Young Living production deployment. Fetches linked stories for context, creates the release branch (release/CAB-XXXX), creates the PR, populates all card fields, and comments the CAB back onto each story. Stops before submission — user handles Send For Review manually.
+argument-hint: "[BPT2-XXXX BPT2-YYYY ...]"
 ---
 
 # CAB: Create Card
 
-Create a fully-populated CAB (Change Advisory Board) card in Jira. Uses all known field IDs and workflows from the `cab` skill so the card is complete from the start — including the deployment PR, which must exist before the card can be approved.
+Create a fully-populated CAB (Change Advisory Board) card in Jira. Stories feed into the CAB — their summaries become Release Notes, their context seeds the Description. The CAB key is created first so the release branch can be named after it (`release/CAB-XXXX`). The PR comes from that branch. When done, the CAB key and deploy date are commented back onto each story.
 
 ## Instructions
 
-When this command is invoked:
+### 1. Gather context
 
-### 1. Gather context first
+Silently collect before prompting:
+- Current working directory → project type (VO vs CDK)
+- Current git branch → may indicate feature branches already merged
+- Memory files → active story keys, branch names
+- CLAUDE.md → field IDs, defaults, team info
 
-Before prompting the user, silently gather as much as possible from:
-- Current working directory (project type: VO vs CDK)
-- Current git branch name (for Component Version(s) and linked stories)
-- Memory files (active stories, branch names, linked Jira keys)
-- CLAUDE.md (field IDs, defaults, team info)
-- Existing PRs on the current branch (`gh pr list --state open`)
+### 2. Fetch linked stories
 
-Use this context to pre-fill defaults for as many fields as possible.
+For each story key (from arguments, memory, or prompt), call `getJiraIssue`.
 
-### 2. Prompt with defaults — required inputs
+Extract:
+- **Summary** → will become a bullet in Release Notes
+- **Description / acceptance criteria** → seeds CAB Description
+- **Status** → warn if any story is not in a deployable state (e.g. not Done / Ready for Deploy). Ask the user to confirm before continuing.
+- **Component / label** → helps confirm Platform Component (VO vs CDK)
 
-Present these fields that need user input. If context provides a reasonable value, show it as the default. The user presses Enter to accept or types a replacement.
+If no story keys are available from context or arguments, prompt:
+```
+Which stories are in this release? (e.g. BPT2-6189 BPT2-6207)
+```
+
+### 3. Prompt required inputs
+
+Present with pre-seeded defaults from story data. User presses Enter to accept or types a replacement.
 
 ```
 === CAB Card Creation ===
 
-Summary:           [inferred from branch/story, e.g. "BP2 - Virtual Office - TH Direct Deposit"]
-Deploy date/time:  [none — user must provide, e.g. "tomorrow 1pm MDT"]
-Linked stories:    [inferred from branch, e.g. "BPT2-6189, BPT2-6207"]
-What's deploying:  [inferred from memory/story context if available]
+Summary:           [inferred — e.g. "BP2 - Virtual Office - TH Direct Deposit"]
+Deploy date/time:  [none — user must provide, e.g. "Friday 1pm MDT"]
+What's deploying:  [seeded from story summaries — confirm or refine]
 ```
 
-Only ask for fields where no reasonable default can be inferred. If all required inputs are provided as arguments or inferable from context, skip straight to the confirmation step.
-
-### 3. Prompt with defaults — configurable fields
-
-Present ALL configurable fields with their defaults. The user can press Enter to accept all defaults, or type a number to override specific ones.
+### 4. Prompt configurable defaults
 
 ```
 === Defaults (Enter to accept all, or type numbers to change) ===
 
- 1. CAB Impact:              Low
- 2. CAB Risk:                Low
- 3. CAB Request Type:        Standard
- 4. Requires Outage Window:  No
- 5. Can it be rolled back:   Yes
- 6. Expenditures:            Opex
- 7. Platform Component(s):   [inferred — e.g. "Virtual Office" for VO, "AWS" for CDK]
- 8. Clone/Stage Status:      Part of This Deployment
- 9. Config/Settings Changes:  None
-10. Code Review Approver:    Heber Iraheta
-11. QA Approved By:          Heber Iraheta
-12. Date of Code Review:     [today's date]
-13. Date Tested in Clone/Stage: [today's date]
-14. Change Conductor:        Aaron Judd
-15. Dev Team:                BP2
+ 1. CAB Impact:                 Low
+ 2. CAB Risk:                   Low
+ 3. CAB Request Type:           Standard
+ 4. Requires Outage Window:     No
+ 5. Can it be rolled back:      Yes
+ 6. Expenditures:               Opex
+ 7. Platform Component(s):      [inferred from stories/project — VO or CDK]
+ 8. Clone/Stage Status:         Part of This Deployment
+ 9. Config/Settings Changes:    None
+10. Code Review Approver:       Heber Iraheta
+11. QA Approved By:             Heber Iraheta
+12. Date of Code Review:        [today]
+13. Date Tested in Clone/Stage: [today]
+14. Change Conductor:           Aaron Judd
+15. Dev Team:                   BP2
 ```
 
-If the user types nothing (Enter), accept all defaults. If they type e.g. "1, 2" then prompt for just those fields with the available options.
+### 5. Create the Jira issue (minimal — to get the CAB key)
 
-### 4. Resolve the deployment PR
+Call `createJiraIssue` with summary and all non-ADF fields (option IDs, user IDs, datetime). Do not include ADF fields yet — they are set in step 8 after the PR is known.
 
-The CAB card cannot be submitted for review or approved without a PR. Resolve it now before creating the card.
+Project: `CAB`, Issue Type ID: `11101`.
 
-Run `gh pr list --state open` to check for an existing PR on the current branch.
+Store the returned CAB key (e.g. `CAB-8994`). It is used in every subsequent step.
 
-**If a PR is found:** display it and confirm it is the correct one for this deployment. Use it for `Component Version(s)` and `PRs Deploying`.
+### 6. Create the release branch
 
-**If no PR exists:**
+Branch name: `release/CAB-XXXX` (using the key from step 5).
 
-- **CDK first deploy** (master branch does not exist on remote — check with `git ls-remote --exit-code origin master`): The first deploy uses a direct push to master. No PR can be created yet. Populate `Component Version(s)` with the repository and branch. Set `PRs Deploying` to a note: "First deploy — direct push to master (no PR)". Continue.
+**Virtual Office:**
+```bash
+git checkout -b release/CAB-XXXX
+```
+Guide the user to merge each story's feature branch into the release branch:
+```bash
+git merge feature/BPT2-XXXX
+git merge feature/BPT2-YYYY
+```
+Resolve any merge conflicts before continuing.
 
-- **All other cases:** Offer to create the PR now:
+Confirm: "Has this release branch been deployed to env6 and tested? [Y/N]"
+- If No: stop. "Deploy `release/CAB-XXXX` to env6, complete QA testing, then return to continue."
 
-  ```
-  No open PR found. Create it now? (recommended — CAB cannot be approved without a PR)
-  [Y] Yes — create PR   [S] Skip — I'll add it later via /cab:update-cab
-  ```
+**CDK:**
+```bash
+git checkout -b release/CAB-XXXX develop
+```
+Confirm: "Are all feature PRs merged into `develop` and tests passing? [Y/N]"
+- If No: stop. "Merge outstanding feature PRs into `develop` first."
 
-  - **Yes:** Create the PR using `gh pr create`:
-    - Base: `master`
-    - Head: current branch
-    - Title: descriptive deploy title matching the CAB summary
-    - Body: include the CAB summary, linked story keys, and a note that this PR corresponds to the CAB card being created
-    - Use the returned PR number and URL for `Component Version(s)` and `PRs Deploying`
+Push the release branch:
+```bash
+git push -u origin release/CAB-XXXX
+```
 
-  - **Skip:** Warn the user: "The CAB card will be created, but it cannot be submitted for review without a PR. Add it via `/cab:update-cab` → Update PR / branch info before submitting." Continue with `Component Version(s)` showing repo and branch only, `PRs Deploying` left blank.
+### 7. Create the PR
 
-### 5. Build all field content
+```bash
+gh pr create --base master --head release/CAB-XXXX
+```
 
-Using the `cab` skill field reference, construct all fields:
+- **Title:** descriptive deploy title matching the CAB summary
+- **Body:** include the CAB key (`CAB-XXXX`) so GitHub for Jira auto-links, list the linked story keys, brief description of what's deploying
 
-- **Summary**: `<TEAM> - <Project> - <Change Description>`
-- **Description** (ADF): Full deployment description — what, why, phased approach if any
-- **Release Notes** (`customfield_10512`, ADF): What changed from a user/business perspective
-- **Deployment Plan** (`customfield_13142`, ADF): Project-specific template from `cab` skill (VO or CDK)
-- **Deployment Playbook** (`customfield_13143`, ADF): Same content as Deployment Plan
-- **Rollback Plan** (`customfield_13101`, ADF): Project-specific template from `cab` skill (VO or CDK)
-- **Pre-Deployment Tests** (`customfield_13099`, ADF): Project-specific (VO: "Tested in env6", CDK: "Tested in dev/stage")
-- **Post-Deployment Tests** (`customfield_13100`, ADF): Project-specific (VO: "Tested in Prod", CDK: "Tested in Prod")
+**CDK first deploy** (master does not exist — check with `git ls-remote --exit-code origin master`):
+- Skip PR creation. Note in the card: "First deploy — direct push to master (no PR)".
+- `Component Version(s)`: repository + branch only, no PR column.
+
+Store the PR number and URL for step 8.
+
+### 8. Populate all remaining CAB fields
+
+Call `editJiraIssue` to set all ADF fields now that the PR is known:
+
+- **Description** (ADF): What is being deployed, why, any phased approach — seeded from story descriptions
+- **Release Notes** (`customfield_10512`, ADF): Bullet list of story summaries, one per story
+- **Deployment Plan** (`customfield_13142`, ADF): Project-specific template from `cab` skill
+- **Deployment Playbook** (`customfield_13143`, ADF): Same as Deployment Plan
+- **Rollback Plan** (`customfield_13101`, ADF): Project-specific template from `cab` skill
+- **Pre-Deployment Tests** (`customfield_13099`, ADF): VO: "Tested in env6" / CDK: "Tested in dev/stage"
+- **Post-Deployment Tests** (`customfield_13100`, ADF): "Tested in Prod"
 - **Config/Settings Changes** (`customfield_13176`, ADF): As specified or "None"
-- **Component Version(s)** (`customfield_13141`, ADF): Table with Repository / Branch / PR columns — use PR info from step 4
-- **PRs Deploying** (`customfield_14670`, ADF): PR title + link from step 4, formatted per skill reference
-- All option/user fields from the confirmed defaults above
-- **Requested Deployment Date/Time** (`customfield_13137`): Convert user's local time to UTC ISO 8601
+- **Component Version(s)** (`customfield_13141`, ADF): Table — Repository / `release/CAB-XXXX` / PR link
+- **PRs Deploying** (`customfield_14670`, ADF): `"<PR title> - Pull Request #<N> - <org>/<repo>"` with link
 
-### 6. Create the issue
+### 9. Link related stories
 
-Call `createJiraIssue` with all fields in a single call. Project: `CAB`, Issue Type ID: `11101`.
+For each story key, call `createIssueLink` with `type="Deploy Location"` (outward: CAB "deploys" the story).
 
-Then immediately call `editJiraIssue` to set the description with proper markdown formatting (createJiraIssue treats description as literal text).
+### 10. Comment back on each story
 
-### 7. Link related stories
+For each linked story, call `addCommentToJiraIssue`:
 
-For each linked Jira story, call `createIssueLink` with `type="Deploy Location"` (outward direction: CAB "deploys" the story).
+```
+Deploying in CAB-XXXX — [CAB summary]
+Scheduled: [deploy date/time in local time]
+Release branch: release/CAB-XXXX
+PR: [PR title] — Pull Request #N ([link])
+```
 
-### 8. Stop — user handles submission
+This makes the deployment visible to anyone looking at the story in Jira — QA, PM, app support.
 
-Do NOT call `transitionJiraIssue` for Send For Review or change the assignee. The user handles these steps manually after reviewing the card in the Jira UI.
+### 11. Stop — user handles submission
 
-### 9. Write session cross-references
+Do NOT call `transitionJiraIssue` for Send For Review or update the assignee. The user reviews the card in Jira and submits manually.
+
+### 12. Write session cross-references
 
 Run `pwd` and extract the repo slug (last path component).
 
-**Write/update the CAB session file** at `~/.claude/memory/sessions/<slug>/CAB-XXX.md`:
-- Set `Related stories` to the comma-separated list of linked story keys (e.g. `BPT2-1234, BPT2-1235`)
-- If the file does not exist yet, create it with the full session template (Type: cab, Branch: n/a, etc.)
+**Write/update the CAB session file** at `~/.claude/memory/sessions/<slug>/CAB-XXXX.md`:
+- Type: cab
+- Branch: `release/CAB-XXXX`
+- Related stories: comma-separated story keys
 
-**Back-link each story session file**: for each linked story key, check if `~/.claude/memory/sessions/<slug>/BPT2-XXXX.md` exists. If it does, update its `Related CAB` field to `CAB-XXX`.
-
-Save the CAB card URL and key to the project's memory.
+**Back-link each story session file**: if `~/.claude/memory/sessions/<slug>/BPT2-XXXX.md` exists, set its `Related CAB` field to `CAB-XXXX`.
 
 ## Output
 
 Report:
 - CAB card URL and key
-- Current status (should be Open/New)
-- PR status (existing / newly created / skipped — with reminder if skipped)
-- Any fields that could not be populated and why
-- Next step: user submits for review once satisfied with the card
+- Release branch created and pushed
+- PR created (or first-deploy note)
+- Stories linked and commented
+- Any story status warnings from step 2
+- Next step: user reviews card in Jira and submits for review

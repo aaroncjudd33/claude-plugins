@@ -90,23 +90,39 @@ All fields that must be populated. ADF fields use `{ "type": "doc", "version": 1
 
 ## Workflow
 
-### Step 1 — Resolve the deployment PR
+### Step 1 — Fetch linked stories
 
-Before creating the card, check for an existing open PR (`gh pr list --state open`). If none exists, create it via `gh pr create`. The PR must be present in the card when it goes to the CAB committee for approval — this is not optional.
+Call `getJiraIssue` for each story. Extract summaries (→ Release Notes), descriptions (→ CAB Description seed), and validate status. Warn if any story is not in a deployable state.
 
-Exception: CDK first deploy (master branch does not yet exist) — use a direct push, note "first deploy" in PRs Deploying.
+### Step 2 — Create the Jira issue (minimal — to get the CAB key)
 
-### Step 2 — Create the issue
+Call `createJiraIssue` with summary and all non-ADF fields (option IDs, user IDs, datetime) to get the CAB key immediately. ADF fields are set in step 5 after the PR is known.
 
-Use `createJiraIssue`. Populate all fields from the table above in a single call, including `Component Version(s)` and `PRs Deploying` using the PR from step 1. Do not leave ADF fields empty — use "None" or "N/A" in a paragraph node if not applicable.
+### Step 3 — Create the release branch
 
-### Step 3 — Link related Jira stories
+Branch name: `release/CAB-XXXX`. For VO, merge each story's feature branch into it and confirm env6 testing before continuing. For CDK, branch from `develop` and confirm all feature PRs are merged.
 
-Use `createIssueLink` with `type="Deploy Location"` to link each related story/epic. This semantically means "this CAB deploys this story".
+Push: `git push -u origin release/CAB-XXXX`
 
-### Step 4 — Submit for review (user handles manually)
+### Step 4 — Create the PR
 
-Do NOT call `transitionJiraIssue` for Send For Review or change the assignee — the user handles these steps manually. Stop after all fields are populated and stories are linked.
+`gh pr create --base master --head release/CAB-XXXX`. Include the CAB key in the PR body so GitHub for Jira auto-links. Exception: CDK first deploy (no master) — skip PR, note "first deploy — direct push to master".
+
+### Step 5 — Populate all ADF fields via editJiraIssue
+
+Set description, Release Notes (auto-built from story summaries), deployment plan, rollback plan, pre/post-deploy tests, config changes, Component Version(s), and PRs Deploying — all in one `editJiraIssue` call.
+
+### Step 6 — Link related Jira stories
+
+Call `createIssueLink` with `type="Deploy Location"` for each story. This semantically means "this CAB deploys this story".
+
+### Step 7 — Comment back on each story
+
+Call `addCommentToJiraIssue` on each linked story with the CAB key, deploy date, release branch, and PR link. This surfaces deployment context to QA, PM, and app support without them needing to find the CAB card.
+
+### Step 8 — Submit for review (user handles manually)
+
+Do NOT call `transitionJiraIssue` for Send For Review or change the assignee — the user handles these steps manually. Stop after all fields are populated, stories are linked, and comments are posted.
 
 ---
 
