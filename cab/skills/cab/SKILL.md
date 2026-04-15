@@ -90,19 +90,21 @@ All fields that must be populated. ADF fields use `{ "type": "doc", "version": 1
 
 ## Workflow
 
-### Step 1 — Create the issue
+### Step 1 — Resolve the deployment PR
 
-Use `createJiraIssue`. Populate all fields from the table above in a single call. Do not leave ADF fields empty — use "None" or "N/A" in a paragraph node if not applicable.
+Before creating the card, check for an existing open PR (`gh pr list --state open`). If none exists, create it via `gh pr create`. The PR must be present in the card when it goes to the CAB committee for approval — this is not optional.
 
-### Step 2 — Link related Jira stories
+Exception: CDK first deploy (master branch does not yet exist) — use a direct push, note "first deploy" in PRs Deploying.
 
-Use `jiraWrite` with `action=createIssueLink`, `type="Deploy Location"` to link each related story/epic. This semantically means "this CAB deploys this story".
+### Step 2 — Create the issue
 
-### Gate — Component Version(s) must have branch and PR before submission
+Use `createJiraIssue`. Populate all fields from the table above in a single call, including `Component Version(s)` and `PRs Deploying` using the PR from step 1. Do not leave ADF fields empty — use "None" or "N/A" in a paragraph node if not applicable.
 
-**Never submit for review without the branch and PR populated in Component Version(s) (`customfield_13141`).** If the PR does not exist yet, wait until it does before submitting. The card should have the repository, branch name, and PR link filled in.
+### Step 3 — Link related Jira stories
 
-### Step 3 — Submit for review (user handles manually)
+Use `createIssueLink` with `type="Deploy Location"` to link each related story/epic. This semantically means "this CAB deploys this story".
+
+### Step 4 — Submit for review (user handles manually)
 
 Do NOT call `transitionJiraIssue` for Send For Review or change the assignee — the user handles these steps manually. Stop after all fields are populated and stories are linked.
 

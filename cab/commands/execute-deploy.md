@@ -1,17 +1,18 @@
 ---
 name: execute-deploy
-description: Execute a production deployment — create the PR, push to master, monitor the GitHub Actions workflow, notify when reviewer approval is needed, verify post-deploy, and close the CAB card.
+description: Execute a production deployment — merge the existing PR, monitor the GitHub Actions workflow, notify when reviewer approval is needed, verify post-deploy, and close the CAB card.
 argument-hint: "[cab-card-key]"
 ---
 
 # CAB: Execute Deploy
 
-Run the full production deployment sequence. This command handles everything from creating the PR to closing the CAB card. Supports both CDK services and Virtual Office deployments.
+Run the full production deployment sequence. The CAB card must already be in **Implementation** status (approved) and the deployment PR must already exist (created during `/cab:create-cab`). Supports both CDK services and Virtual Office deployments.
 
 ## Prerequisites
 
 Before invoking this command, confirm:
 - CAB card is in **Implementation** status (approved by Sudhakar)
+- Deployment PR exists and is open (created during `/cab:create-cab`)
 - For CDK: All SSM parameters exist in the prod AWS account
 - For CDK: `develop` branch is up to date and tests are passing
 - For VO: Integration branch is deployed and tested in env6
@@ -42,23 +43,17 @@ Confirm with the user before proceeding past this point.
 
 ## CDK Service Flow
 
-### 3a. Create the develop → master PR
+### 3a. Find the existing PR
 
-If `master` branch does not yet exist on the remote:
-- A PR cannot be created (branches are identical)
-- Skip steps 3a-1 and go directly to step 4a — direct push is required, no PR link to write back
+Run `gh pr list --base master --state open` to locate the deployment PR.
 
-If `master` already exists and `develop` has new commits:
-- Use `gh pr create --base master --head develop` with:
-  - Title: descriptive deploy title
-  - Body: include the CAB card key (e.g. `CAB-8994`) so GitHub for Jira auto-links the PR to the CAB card's "PRs Deploying" field
-  - Reference the linked Jira story
+**First deploy** (master branch does not exist on remote — check with `git ls-remote --exit-code origin master`):
+- No PR exists — a direct push will be used
+- Confirm with the user and proceed to step 4a
 
-### 3a-1. Update CAB card with PR link
+**PR found:** confirm it is the correct one and proceed.
 
-After the PR is created, call `editJiraIssue` to write the PR back into the CAB card:
-- `customfield_14670` (PRs Deploying): PR title + link, formatted as `"<title> - Pull Request #<N> - <org>/<repo>"`
-- `customfield_13141` (Component Version(s)): ADF table with Repository / Branch / Pull Request columns
+**No PR found (and not first deploy):** Stop. "No open PR found targeting master. Verify the PR was created during `/cab:create-cab`, or run `/cab:update-cab` → Update PR / branch info to add it."
 
 ### 4a. Push to master (confirm with user first)
 
@@ -109,18 +104,13 @@ Use AWS CLI via `aws cloudformation describe-stacks` and `aws lambda list-functi
 
 ## Virtual Office Flow
 
-### 3b. Create the integration → master PR
+### 3b. Find the existing PR
 
-- Use `gh pr create --base master --head <integration-branch>` with:
-  - Title: descriptive deploy title
-  - Body: include the CAB card key so GitHub for Jira auto-links
-  - Reference the linked Jira stories
+Run `gh pr list --base master --state open` to locate the deployment PR.
 
-### 3b-1. Update CAB card with PR link
+**PR found:** confirm it is the correct one and proceed.
 
-After the PR is created, call `editJiraIssue` to write the PR back into the CAB card:
-- `customfield_14670` (PRs Deploying): PR title + link, formatted as `"<title> - Pull Request #<N> - <org>/<repo>"`
-- `customfield_13141` (Component Version(s)): ADF table with Repository / Branch / Pull Request columns
+**No PR found:** Stop. "No open PR found targeting master. Verify the PR was created during `/cab:create-cab`, or run `/cab:update-cab` → Update PR / branch info to add it."
 
 ### 4b. Merge to master (confirm with user first)
 
