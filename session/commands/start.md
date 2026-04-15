@@ -9,67 +9,83 @@ Begin a working session. Establishes session identity, Teams chat, and routes in
 
 ## Instructions
 
-### 1. Load Last Session State
+### 1. Derive Repo Slug and Session Type
 
-Read `C:\Users\ajudd\.claude\memory\session_active.md`.
+Run `pwd` and extract the **last path component** as the repo slug:
+- `/c/Users/ajudd/.claude/plugins/marketplaces/ajudd-claude-plugins` → `ajudd-claude-plugins`
+- `/c/dev/gen-leadership-bonus` → `gen-leadership-bonus`
 
-If it exists, print:
-```
-Last session
-  Type:       [type]
-  Name:       [name]
-  Teams chat: [teams_chat or "none"]
-  Branch:     [branch]  (omit if n/a)
-  Last work:  [1 sentence]
-  Open items: [bullets or "none"]
-  Next step:  [suggested action]
-```
-
-If the file does not exist, skip to step 2.
-
-### 2. Detect Session Type
-
-Run `pwd` and map to a default session type:
+Detect session type from the path:
 - **plugin** — path contains `ajudd-claude-plugins`
-- **story / cab** — path contains `C:\dev\` or `C:/dev/`
+- **story / cab** — path contains `/dev/`
 - **general** — anything else
+
+### 2. Load Repo Sessions
+
+List all `.md` files in `~/.claude/memory/sessions/<slug>/` (skip `_active`).
+
+For each file, read it and extract: `Name`, `Branch`, `Last worked on`.
+
+If sessions exist, print a numbered list:
+```
+Sessions in <slug>
+  [1]  <name>  |  <branch>  |  <last worked on — 1 sentence>
+  [2]  <name>  |  <branch>  |  <last worked on — 1 sentence>
+```
+
+If the directory does not exist or is empty, skip this section.
 
 ### 3. Present Options
 
-**Plugin project:**
-
-Read `.claude-plugin/marketplace.json` and list each plugin by name, then add:
-- Resume [name] *(only if last session was plugin type)*
-- [plugin-name] — [one-phrase description] *(one line per plugin)*
+**Plugin project** — read `.claude-plugin/marketplace.json` and list each plugin:
+- **[N] Resume <plugin-name>** — <last worked on> *(one line per existing session)*
+- **<plugin-name>** — <one-phrase description> *(one line per plugin in marketplace.json not already in sessions list)*
 - New plugin
 - Something else — describe it
 
 **Work project:**
-- Resume [BPT2-XXXX — title] *(only if last session was story type)*
+- **[N] Resume <BPT2-XXXX>** — <last worked on> *(one line per existing session)*
 - Pick up a story (Jira URL or key)
 - Start a CAB
 - Something else — describe it
 
 **General / unknown project:**
-- Resume [name] *(only if last session was general type)*
+- **[N] Resume <name>** — <last worked on> *(one line per existing session)*
 - Start something new — give it a name and category
 
-### 4. Establish Session Identity
+### 4. User Picks — Load or Create Session File
 
-Once the user picks what they're working on, resolve:
+**Resume existing [N]:**
+- Read `~/.claude/memory/sessions/<slug>/<name>.md`
+- Display the full last session block:
+  ```
+  Resuming <name>
+    Branch:     [branch]
+    Last work:  [last worked on]
+    Open items: [bullets or "none"]
+    Next step:  [next step]
+  ```
+
+**New story/plugin/general — session filename:**
+- story → `BPT2-XXXX.md`
+- plugin → `<plugin-name>.md`
+- cab → `CAB-XXX.md`
+- general → `<name>.md`
+
+### 5. Establish Session Identity
 
 | Type | name | teams_chat |
 |------|------|------------|
-| plugin | plugin name (e.g. `Session`, `Office`) | `<Name> - Claude Plugin` |
+| plugin | plugin name (e.g. `office`) | `<Name> - Claude Plugin` |
 | story | story key (e.g. `BPT2-1234`) | `BPT2-XXXX — <title>` (from Jira) |
 | cab | CAB number (e.g. `CAB-456`) | `CAB-XXX — <description>` (from Jira) |
 | general | name the user provides | `<Name> - Claude <Category>` |
 
 For **general**, also ask for a category if not obvious: Research / Prototype / Training / Other.
 
-### 5. Teams Chat Setup
+### 6. Teams Chat Setup
 
-Look in `C:\Users\ajudd\.claude\plugins\marketplaces\ajudd-claude-plugins\office\skills\office\references\known-chats.md` for a chat whose Name or Topic matches the expected `teams_chat` value **and has `Active=yes`**. If multiple entries match, prefer the one with `Active=yes`.
+Look in `C:\Users\ajudd\.claude\plugins\marketplaces\ajudd-claude-plugins\office\skills\office\references\known-chats.md` for a chat whose Name or Topic matches the expected `teams_chat` value and has `Active=yes`.
 
 - **Found:** "Using Teams chat: [name]" — proceed, or offer to repoint if the user wants a different one
 - **Not found:** "No chat found for `[teams_chat]`. Create it? (Yes / Skip / Use a different chat)"
@@ -77,29 +93,36 @@ Look in `C:\Users\ajudd\.claude\plugins\marketplaces\ajudd-claude-plugins\office
   - **Skip:** set `teams_chat` to `none` — Teams steps in checkpoint will be skipped
   - **Different:** ask which existing chat to use, store that name instead
 
-### 6. Write Initial Session State
+### 7. Write Session State
 
-Write `C:\Users\ajudd\.claude\memory\session_active.md` now so the session identity is persisted before work begins:
+Create `~/.claude/memory/sessions/<slug>/` if it does not exist.
+
+Write `~/.claude/memory/sessions/<slug>/<name>.md`:
 
 ```
 ---
 updated: [today's date]
 ---
 
-# Active Session State
+# Session State — <name>
 
 - **Type:** [type]
 - **Name:** [name]
 - **Category:** [category]   ← general only, omit for other types
 - **Teams chat:** [teams_chat or "none"]
-- **Project:** [project name or path]
+- **Project:** [project path]
 - **Branch:** [branch or "n/a"]
 - **Last worked on:** [will be updated at checkpoint]
 - **Open items:** [carried from previous session, or "none"]
 - **Next step:** [will be updated at checkpoint]
 ```
 
-### 7. Route Based on Choice
+Write `~/.claude/memory/sessions/<slug>/_active` (plain text, just the name — no `.md` extension):
+```
+BPT2-1234
+```
+
+### 8. Route Based on Choice
 
 **Plugin — existing plugin:**
 1. Read `plugin.json`, all command `.md` files, and `SKILL.md` if present

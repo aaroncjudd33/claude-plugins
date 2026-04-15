@@ -11,13 +11,17 @@ Quick mid-session save. Captures current state so nothing is lost if the session
 
 ### 0. Read Session Context
 
-Read `C:\Users\ajudd\.claude\memory\session_active.md` and extract:
+Run `pwd` and extract the repo slug (last path component).
+
+Read `~/.claude/memory/sessions/<slug>/_active` to get the session name.
+
+Read `~/.claude/memory/sessions/<slug>/<name>.md` and extract:
 - `type` (plugin / story / cab / general)
 - `name`
 - `teams_chat`
 - `branch`
 
-If the file does not exist, treat as `type: general` with `teams_chat: none`.
+If `_active` does not exist, treat as `type: general` with `teams_chat: none`.
 
 ### 1. Header
 
@@ -58,20 +62,20 @@ Save what's missing. Report: "Saved: [list]" or "Memory: nothing new to save."
 
 ### 4. Session Summary
 
-Update `C:\Users\ajudd\.claude\memory\session_active.md` with the current state:
+Write `~/.claude/memory/sessions/<slug>/<name>.md` with the current state:
 
 ```
 ---
 updated: [today's date]
 ---
 
-# Active Session State
+# Session State — <name>
 
 - **Type:** [type]
 - **Name:** [name]
 - **Category:** [category]   ← general only, omit for other types
 - **Teams chat:** [teams_chat or "none"]
-- **Project:** [project name or path]
+- **Project:** [project path]
 - **Branch:** [branch or "n/a"]
 - **Last worked on:** [1 sentence — what is happening right now]
 - **Open items:** [bullet list, or "none"]
