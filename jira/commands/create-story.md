@@ -54,7 +54,35 @@ If there's additional content to add as a comment (technical details, queries, p
 
 ### 6. Link related issues (if any)
 
-If the user mentions related Jira issues, link them using `jiraWrite` with `action=createIssueLink`, `type="Relates"`.
+If the user mentions related Jira issues, link them using the `createIssueLink` MCP tool with `type="Relates"`.
+
+### 7. Write session file
+
+Run `pwd` and extract the last path component as `<slug>`.
+
+Construct the feature branch name: `feature/BPT2-XXXX-<short-slug>` where `<short-slug>` is the story summary lowercased, spaces replaced with hyphens, special characters removed, truncated to ~40 chars.
+
+Write `~/.claude/memory/sessions/<slug>/BPT2-XXXX.md`:
+
+```
+---
+updated: <today's date>
+---
+
+# Session State — BPT2-XXXX
+
+- **Type:** story
+- **Name:** BPT2-XXXX
+- **Teams chat:** none
+- **Project:** <pwd>
+- **Branch:** feature/BPT2-XXXX-<short-slug>
+- **Last worked on:** Created — <summary>
+- **Open items:** none
+- **Next step:** Create feature branch: feature/BPT2-XXXX-<short-slug>
+- **Related CAB:** none
+```
+
+Create `~/.claude/memory/sessions/<slug>/` if it does not exist.
 
 ## Output
 
@@ -62,5 +90,6 @@ Report:
 - Story URL and key (e.g. `BPT2-6190`)
 - Status (Backlog, In Progress, etc.)
 - Assignee
+- Feature branch name: `feature/BPT2-XXXX-<short-slug>`
 - Whether description and comments rendered correctly
 - Any fields that could not be populated and why

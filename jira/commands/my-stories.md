@@ -36,8 +36,7 @@ Read `~/.claude/jira-stories.json`. If it doesn't exist, start with an empty obj
 
 ### 2. Run JQL Queries
 
-<!-- SYNC NOTE: These 3 JQL queries are duplicated in setup/commands/jira.md, setup/commands/local.md (section 3), and setup/skills/setup/SKILL.md.
-     If you change them here, update all three. -->
+<!-- CANONICAL SOURCE: jira/skills/jira/SKILL.md — update queries there first, then sync here and in setup/commands/jira.md, setup/commands/local.md, setup/skills/setup/SKILL.md. -->
 
 Use `searchJiraIssuesUsingJql` on cloud ID `9de6eb2b-2683-44e6-89ff-c622027e09b4`. Run all three queries in parallel.
 
@@ -64,7 +63,7 @@ Merge Query 2 and Query 3 results into a single "HANDED OFF" group for display.
 
 For each story returned by the queries:
 
-1. **Auto-populate**: If the story key doesn't exist in the registry, add it with defaults (`hidden: false`, current status/assignee, `lastSeen: today`, empty tags, null notes)
+1. **Auto-populate**: If the story key doesn't exist in the registry, add it with defaults (`hidden: false`, current status/assignee, `lastSeen: today`)
 2. **Detect changes**: Compare current status and assignee against `lastStatus` and `lastAssignee` in the registry. Collect changes for display.
 3. **Auto-unhide**: If a story is marked `hidden: true` BUT it appears in Query 1 (currently assigned to me), automatically set `hidden: false` and `hideReason: null`. Add to changes list: "auto-unhidden (reassigned to you)"
 4. **Update**: Set `lastStatus`, `lastAssignee`, and `lastSeen` to current values

@@ -1,7 +1,6 @@
 ---
 name: init
 description: Initialize the Jira browser window — close, reopen, load board, calendar, and in-progress stories
-user_invocable: true
 ---
 
 # Jira: Init
@@ -12,6 +11,7 @@ Set up the Jira browser window with the board, calendar, and any in-progress sto
 
 ### 1. Close existing Jira window
 
+<!-- Machine-specific paths — update C:\Users\ajudd if running on a different machine -->
 ```bash
 powershell -ExecutionPolicy Bypass -File "C:\Users\ajudd\.claude\scripts\Close-EdgeWindow.ps1" -WindowName "Jira"
 ```
@@ -20,14 +20,16 @@ Wait 2 seconds for it to fully close.
 
 ### 2. Load named links
 
-Read `C:\Users\ajudd\.claude\browser-links.json`. Collect all entries where `window` is `"Jira"`.
+Read `C:\Users\ajudd\.claude\browser-links.json` (machine-specific path). Collect all entries where `window` is `"Jira"`.
+
+Schema: each entry has `window` (string), `name` (string), and `url` (string).
 
 ### 3. Query assigned in-progress stories
 
 Use `searchJiraIssuesUsingJql` on cloud ID `9de6eb2b-2683-44e6-89ff-c622027e09b4`:
 
 ```jql
-assignee = "620147d91fec260068c1097d" AND status = "In Progress" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY duedate ASC
+assignee = "620147d91fec260068c1097d" AND status = "In Progress" ORDER BY duedate ASC
 ```
 
 Request fields: `summary, status, assignee, duedate, priority`

@@ -1,3 +1,8 @@
+---
+name: jira
+description: Use this skill when the user wants to create a Jira story, log a ticket, track a feature or bug, check their open stories, look up what's assigned to them, or manage work items in the BPT2 project. Trigger phrases include "create a story", "log a Jira ticket", "add a ticket for this", "what stories do I have open", "show my Jira work", "check my stories", or any mention of a BPT2 issue key (e.g. BPT2-6190).
+---
+
 # Jira Stories Skill — BPT2
 
 Everything needed to create, populate, and manage stories in the BPT2 (Brand Partner Team Two) Jira project.
@@ -110,6 +115,44 @@ Available transitions from Backlog (starting state):
 | Architecture Review | `511` | Architecture Review |
 | Failed Testing | `211` | Failed Testing |
 | QA In-Progress | `601` | QA In-Progress |
+
+---
+
+## Registry Schema — `~/.claude/jira-stories.json`
+
+Flat JSON object keyed by story key (e.g. `"BPT2-6190"`). Each value:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `hidden` | boolean | Whether the story is suppressed from default view |
+| `hideReason` | string \| null | User-provided reason for hiding |
+| `hiddenDate` | string \| null | ISO date the story was hidden (reserved for future auto-expiry) |
+| `lastStatus` | string | Status as of last `/jira:my-stories` run — used for change detection |
+| `lastAssignee` | string | Assignee as of last run — used for change detection |
+| `lastSeen` | string | ISO date of last run that touched this entry |
+
+Do not add extra fields without updating this schema.
+
+---
+
+## Canonical JQL Queries
+
+These queries are the source of truth. `my-stories.md` and `setup` commands reference them — update here first if they change.
+
+**Currently assigned to me:**
+```jql
+assignee = "620147d91fec260068c1097d" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, duedate ASC
+```
+
+**Previously assigned (reassigned to someone else, last 30 days):**
+```jql
+project = BPT2 AND assignee WAS "620147d91fec260068c1097d" AND assignee != "620147d91fec260068c1097d" AND assignee is not EMPTY AND updated >= -30d AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, updated DESC
+```
+
+**Previously assigned (now unassigned, last 30 days):**
+```jql
+project = BPT2 AND assignee WAS "620147d91fec260068c1097d" AND assignee is EMPTY AND updated >= -30d AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, updated DESC
+```
 
 ---
 
