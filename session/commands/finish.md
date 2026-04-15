@@ -94,8 +94,8 @@ Skip if no Confluence page is set up for this session's context.
 ### 7. Browser
 
 **story only:** Check if `C:\dev\vo-playwright-tests\.browser-ws.txt` exists.
-- If it does: "Browser still running on port [N] — stop it?"
-- If yes: run `cd /c/dev/vo-playwright-tests && npm run browser:stop`
+- If it does: "Browser still running on port [N] — stop it? (or run `/chrome:stop`)"
+- If yes: run `npm run browser:stop` from `/c/dev/vo-playwright-tests`, then delete `.browser-ws.txt`
 
 **All other types:** Skip.
 

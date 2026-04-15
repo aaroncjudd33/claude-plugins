@@ -1,6 +1,6 @@
 ---
-name: start
 description: Launch the persistent Playwright test browser, auto-login via SSO, and confirm it is ready for task runs.
+allowed-tools: [Bash]
 ---
 
 # Chrome Start
@@ -11,13 +11,23 @@ Launch the persistent Playwright test browser for VO E2E task validation.
 
 ### 1. Check if browser is already running
 
-Read `C:\dev\vo-playwright-tests\.browser-ws.txt`. If it exists, try a quick connection check:
+Read `.browser-ws.txt` and do a live CDP probe:
 
 ```bash
-cd /c/dev/vo-playwright-tests && cat .browser-ws.txt
+port=$(cat /c/dev/vo-playwright-tests/.browser-ws.txt 2>/dev/null)
+if [ -n "$port" ]; then
+  curl -s "http://localhost:$port/json/version" > /dev/null 2>&1 && echo "alive:$port" || echo "stale"
+fi
 ```
 
-If the file exists and the browser is responding, report "Browser already running on port <N>" and stop — no need to start a new one.
+- If `alive:<port>` — report "Browser already running on port `<N>`" and stop.
+- If `stale` — the file exists but Chrome is not responding (crashed or killed). Delete the stale file and proceed to Step 2:
+
+```bash
+rm /c/dev/vo-playwright-tests/.browser-ws.txt
+```
+
+- If no file — proceed to Step 2.
 
 ### 2. Start the browser in the background
 
@@ -34,13 +44,18 @@ Run with `run_in_background: true`. The script:
 
 ### 3. Poll for ready signal
 
-After starting, poll `.browser-ws.txt` every 5 seconds (max 60 seconds) until it appears:
+Poll `.browser-ws.txt` every 5 seconds for up to 60 seconds:
 
 ```bash
-sleep 5 && cat /c/dev/vo-playwright-tests/.browser-ws.txt 2>/dev/null
+for i in $(seq 1 12); do
+  sleep 5
+  port=$(cat /c/dev/vo-playwright-tests/.browser-ws.txt 2>/dev/null)
+  [ -n "$port" ] && echo "ready:$port" && break
+  echo "waiting... attempt $i/12"
+done
 ```
 
-The file contains the CDP port number (e.g. `9222`). Its presence means the browser is up and VO is loaded.
+The file contains the CDP port number (e.g. `9222`). Its presence means the browser is up and VO is loaded. If the loop completes without finding the file, proceed to Step 5 (timeout path).
 
 ### 4. Report success
 
@@ -52,7 +67,7 @@ Once ready:
 
 - **Port already in use**: the script handles this gracefully — it tries a CDP close first. If it fails, report the error and suggest `npm run browser:stop` first.
 - **Auth failure**: if SSO_PASS is missing or wrong, the script will log an error but keep the browser open for manual login. Report what happened and suggest the user log in manually.
-- **Timeout (60s)**: if `.browser-ws.txt` never appears, check the background task output for errors and report them.
+- **Timeout (60s)**: if `.browser-ws.txt` never appears, check the background task output for errors and report them. Delete any partial `.browser-ws.txt` if it exists (`rm /c/dev/vo-playwright-tests/.browser-ws.txt 2>/dev/null`).
 
 ## Output
 

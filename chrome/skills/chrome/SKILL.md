@@ -1,3 +1,8 @@
+---
+name: chrome
+description: This skill should be used when the user wants to launch, start, or manage the persistent Playwright test browser for VO E2E testing. Trigger phrases include "start the browser", "launch playwright", "browser isn't running", "start chrome", "run VO tasks", or any request to run automated tests against the Virtual Office environment.
+---
+
 # Chrome / Playwright Browser Skill
 
 ## Purpose
@@ -45,12 +50,6 @@ After a successful login, `auth.json` is saved. The session lasts ~20 minutes. `
 - Default port: 9222. If held, use `CDP_PORT=9333 npm run browser:start`
 - IPv6 on Windows — Chrome binds to `[::1]` not `127.0.0.1`. The runner handles both.
 - `.browser-ws.txt` contains the CDP port number — written when the browser is ready
-
-## Task Navigation
-
-Tasks use `waitUntil: 'domcontentloaded'` for `page.goto` — the default `load` hangs on VO.
-
-Origin detection: use `VO_BASE_URL` from `.env` (default `https://env6.youngliving.com`) as fallback — never use the current page origin if it's not a `youngliving.com` URL (e.g. after a redirect to auth-stage or Microsoft login).
 
 ## Never Force-Kill
 
