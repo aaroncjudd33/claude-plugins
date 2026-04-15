@@ -1,6 +1,6 @@
 {
   "name": "setup",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Morning setup — AWS login, Jira briefing, Confluence activity, calendar. Run /setup:local to start your day.",
   "author": {
     "name": "Aaron Judd",
@@ -11,7 +11,6 @@
     "./commands/local.md",
     "./commands/aws.md",
     "./commands/jira.md",
-    "./commands/confluence.md",
-    "./commands/calendar.md"
+    "./commands/confluence.md"
   ]
 }

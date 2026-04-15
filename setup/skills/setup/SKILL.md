@@ -1,3 +1,8 @@
+---
+name: setup
+description: Use this skill when the user wants to start their day, run morning setup, log into AWS, refresh CodeArtifact credentials, check open Jira tickets, check Confluence activity, or see today's calendar. Trigger phrases include "start my day", "morning setup", "setup:local", "log into AWS", "refresh credentials", "check my Jira tickets", "what do I have today", or "show my open tickets".
+---
+
 # Setup Skill
 
 Reference data and formatting rules for the morning setup routine.
@@ -15,13 +20,25 @@ Reference data and formatting rules for the morning setup routine.
 
 ## Jira
 
-<!-- SYNC NOTE: Query 1 is duplicated in setup/commands/jira.md, setup/commands/local.md, and jira/commands/my-stories.md.
-     If you change it here, update all three. -->
+<!-- SYNC NOTE: These 3 JQL queries are duplicated in setup/commands/jira.md, setup/commands/local.md, jira/commands/my-stories.md, and this file.
+     CANONICAL SOURCE: jira/skills/jira/SKILL.md — update there first, then sync all four. -->
 
-### Open Tickets Query (Query 1 — My tickets)
+### Query 1 — Currently assigned to me
 
 ```jql
 assignee = "620147d91fec260068c1097d" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, duedate ASC
+```
+
+### Query 2 — Previously assigned to me (reassigned to someone else)
+
+```jql
+project = BPT2 AND assignee WAS "620147d91fec260068c1097d" AND assignee != "620147d91fec260068c1097d" AND assignee is not EMPTY AND updated >= -30d AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, updated DESC
+```
+
+### Query 3 — Previously assigned to me (now unassigned)
+
+```jql
+project = BPT2 AND assignee WAS "620147d91fec260068c1097d" AND assignee is EMPTY AND updated >= -30d AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, updated DESC
 ```
 
 ### Status Grouping Order

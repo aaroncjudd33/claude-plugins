@@ -30,6 +30,7 @@ aws sts get-caller-identity 2>/dev/null
 - Succeeds → "SSO session active." Parse `~/.aws/sso/cache/*.json` for expiry — warn if < 2 hours.
 - Fails → run `aws sso login` (blocks until browser auth finishes).
 
+<!-- SYNC NOTE: These bash commands are duplicated in setup/commands/aws.md. If you change them here, update there too. -->
 **Step 2 — CodeArtifact (both in parallel):**
 ```bash
 aws --profile devops codeartifact login --tool dotnet --repository youngliving --domain yl --domain-owner 534914120180 --region us-west-2
@@ -96,6 +97,7 @@ If Atlassian MCP unavailable: `JIRA — Unavailable`
 
 ### 4. Confluence
 
+<!-- SYNC NOTE: These CQL queries are duplicated in setup/commands/confluence.md. If you change them here, update there too. -->
 Run two CQL searches in parallel (searchConfluenceUsingCql):
 1. `watcher = "620147d91fec260068c1097d" AND lastmodified > now("-7d") ORDER BY lastmodified DESC`
 2. `mention = "620147d91fec260068c1097d" AND lastmodified > now("-7d") ORDER BY lastmodified DESC`

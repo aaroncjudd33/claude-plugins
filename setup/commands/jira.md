@@ -12,7 +12,7 @@ Fetch and display open Jira tickets assigned to you, plus recently handed-off wo
 <!-- SYNC NOTE: These 3 JQL queries are duplicated in jira/commands/my-stories.md (section 1), setup/commands/local.md (section 3), and setup/skills/setup/SKILL.md.
      If you change them here, update all three. -->
 
-Run three JQL queries in parallel using `searchJiraIssuesUsingJql`:
+Run three JQL queries in parallel using `searchJiraIssuesUsingJql`. Request fields: `summary, status, assignee, duedate, priority`.
 
 **Query 1 — My tickets:**
 ```jql
