@@ -137,7 +137,7 @@ Do not add extra fields without updating this schema.
 
 ## Canonical JQL Queries
 
-These queries are the source of truth. `my-stories.md` and `setup` commands reference them — update here first if they change.
+<!-- CANONICAL SOURCE — update here first, then sync to: jira/commands/my-stories.md, setup/commands/jira.md, setup/commands/local.md, setup/skills/setup/SKILL.md -->
 
 **Currently assigned to me:**
 ```jql
