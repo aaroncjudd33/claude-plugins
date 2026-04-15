@@ -9,9 +9,18 @@ Three phases: classify (no API calls), silent execute via Haiku, then interactiv
 
 **Why sub-agent for silent phase:** `mail.move` and `mail.mark_read` responses return full message objects with HTML bodies (5K–15K tokens each). Running them in the main session causes context bloat. Delegating to Haiku keeps those responses out of main context.
 
+## Pre-flight Check
+
+Before Phase 1, verify `C:\temp\email-cache.json` exists and is fresh:
+- **Missing** → stop and tell the user: "No email cache found. Run `/office:email-grab [folder]` first."
+- **Stale** (older than 4 hours) → warn: "Cache is from [fetchedAt time]. Run `/office:email-grab` again for fresh results, or continue with the existing cache?"
+- **Present and fresh** → proceed to Phase 1.
+
 ## Phase 1 — Classify (no API calls)
 
 Read `C:\temp\email-cache.json` and `project_inbox_triage.md` (sender rules + folder IDs).
+
+> **Note:** `project_inbox_triage.md` is a project-level memory file, not part of this plugin. It lives in the active project's memory folder (e.g. `~/.claude/projects/<slug>/memory/project_inbox_triage.md`) and is loaded automatically as project context. It contains the Folder IDs table and Sender Rules table specific to that project's email setup.
 
 Classify each email into one of four buckets:
 
