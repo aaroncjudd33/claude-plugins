@@ -36,4 +36,6 @@ Links (3)
 
    The bracketed value at the end of each link row lists its workspaces (or blank if none).
 
-5. If no results → "No links or workspaces matched '[query]'"
+5. Workspaces with empty `links` arrays still appear in results — show them with "(no links)" in place of the member count.
+
+6. If no results → "No links or workspaces matched '[query]'"

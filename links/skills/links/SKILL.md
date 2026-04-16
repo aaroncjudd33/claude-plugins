@@ -1,6 +1,6 @@
 ---
 name: links
-description: Use this skill when the user wants to open a URL, navigate to a named link, open or manage a workspace in Edge, search for a saved link, add a new link or workspace, or when any plugin needs to open something in the browser. Trigger phrases include "open", "go to", "launch", "show me", "open workspace", "search links", "add link", "register link", "open BPT2-XXXX", "open CAB-XXX", "open the Jira workspace", "open Github".
+description: This skill should be used when the user wants to open a URL, navigate to a named link, open or manage a workspace in Edge, close a workspace window, search for a saved link, add a new link or workspace, or when any plugin needs to open something in the browser. Trigger phrases include "open", "go to", "launch", "show me", "open workspace", "close workspace", "close window", "close the [name] window", "search links", "add link", "register link", "open BPT2-XXXX", "open CAB-XXX", "open the Jira workspace", "open Github workspace".
 ---
 
 # Links Skill
@@ -41,7 +41,7 @@ Read before any link operation. Write back after any mutation.
   "workspaces": {
     "WorkspaceName": {
       "description": "...",
-      "type": "story|cab|custom",
+      "type": "story|cab",
       "links": ["key1", "key2"]
     }
   },
@@ -56,6 +56,8 @@ Read before any link operation. Write back after any mutation.
 ```
 
 `window` on a link is a hard override — the link always opens in that window regardless of workspace context. Omit it in most cases; `prefixDefaults` handles resolution automatically.
+
+`type` on a workspace identifies story (`story`) or CAB (`cab`) workspaces. Omit it for custom workspaces — most workspaces are custom and have no type.
 
 ---
 
@@ -147,7 +149,8 @@ When creating a resource, register it in `browser-links.json` and add it to the 
 | `aws:` | AWS console link | `aws:accounts` |
 | `ai:` | AI tool | `ai:claude`, `ai:gpt` |
 | `claude:` | Claude-specific URLs | `claude:usage` |
-| `forge:` | Forge personal project | `forge:ui`, `forge:supabase` |
+| `forge:` | Forge personal project — Forge and ForgeDev workspaces | `forge:ui`, `forge:supabase` |
+| `yl:` | Young Living internal tools | `yl:bridge` |
 | `trans:` | Contentful / translations | `trans:login` |
 | `openid:` | OpenID admin tool | `openid:dashboard` |
 | `youtube:` | YouTube | `youtube:volbeat` |

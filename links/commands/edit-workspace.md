@@ -33,6 +33,8 @@ Edit an existing workspace interactively.
    done                save and exit
    ```
 
+   **Known limitation:** workspace `type` cannot be changed via edit. To change the type, delete the workspace and recreate it with `/links:add-workspace`.
+
 5. For `add [key]`:
    - Verify the key exists in `links` section. If not → "Link '[key]' not found. Add it first with `/links:add-link`."
    - Append to workspace's `links` array

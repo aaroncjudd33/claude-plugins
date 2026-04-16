@@ -21,8 +21,9 @@ Open a named link or all links in a workspace.
 3. **Opening a link:**
    - Resolve window (priority order):
      1. Link has `window` field → use that
-     2. Look up key prefix in `prefixDefaults`
-     3. No match → open without named window
+     2. Called from workspace context (step 4) → use workspace name
+     3. Look up key prefix in `prefixDefaults`
+     4. No match → open without named window
    - Run:
      ```bash
      powershell -ExecutionPolicy Bypass -File "C:\Users\ajudd\.claude\scripts\Open-EdgeUrl.ps1" -Url "<url>" -WindowName "<window>"

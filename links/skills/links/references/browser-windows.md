@@ -20,6 +20,7 @@ Each workspace in `browser-links.json` maps 1:1 to a named Edge browser window. 
 | OpenID | OpenID | OpenID admin tool |
 | YouTube | YouTube | YouTube |
 | DL | DL | Digital Library |
+| YL | YL | Young Living internal tools — Bridge learning platform |
 
 ## Testing Browser
 

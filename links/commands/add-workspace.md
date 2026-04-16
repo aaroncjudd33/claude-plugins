@@ -27,11 +27,10 @@ Create a new workspace. The workspace name becomes the Edge window title used wh
    ```json
    "WorkspaceName": {
      "description": "...",
-     "type": "custom",
      "links": []
    }
    ```
-   Omit `type` if custom. Add any validated initial links to the array.
+   Include `"type": "story"` or `"type": "cab"` only for story/CAB workspaces. Omit `type` entirely for custom workspaces. Add any validated initial links to the array.
 
 7. Write back to `browser-links.json`
 
