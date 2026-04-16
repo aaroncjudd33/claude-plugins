@@ -56,7 +56,35 @@ If there's additional content to add as a comment (technical details, queries, p
 
 If the user mentions related Jira issues, link them using the `createIssueLink` MCP tool with `type="Relates"`.
 
-### 7. Write session file
+### 7. Register links workspace
+
+Read `C:\Users\ajudd\.claude\browser-links.json`.
+
+Always:
+- Add `story:BPT2-XXXX` to the `links` section (if not already present):
+  ```json
+  "story:BPT2-XXXX": {
+    "url": "https://younglivingeo.atlassian.net/browse/BPT2-XXXX",
+    "description": "<summary>"
+  }
+  ```
+- Add `BPT2-XXXX` workspace to the `workspaces` section (if not already present):
+  ```json
+  "BPT2-XXXX": {
+    "description": "<summary>",
+    "type": "story",
+    "links": ["story:BPT2-XXXX"]
+  }
+  ```
+
+If a repo name is inferable from conversation context (e.g., the user mentioned a repo, or pwd implies one):
+- If `git:repo-name` exists in the `links` section → append it to the workspace's `links` array
+- If `actions:repo-name` exists in the `links` section → append it to the workspace's `links` array
+- Do not create new `git:` or `actions:` entries — only add existing ones to the workspace
+
+Write back `C:\Users\ajudd\.claude\browser-links.json`. Do not prompt the user during this step.
+
+### 8. Write session file
 
 Run `pwd` and extract the last path component as `<slug>`.
 
