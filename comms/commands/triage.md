@@ -22,25 +22,22 @@ Read `C:\temp\email-cache.json` and `project_inbox_triage.md` (sender rules + fo
 
 > **Note:** `project_inbox_triage.md` is a project-level memory file, not part of this plugin. It lives in the active project's memory folder (e.g. `~/.claude/projects/<slug>/memory/project_inbox_triage.md`) and is loaded automatically as project context. It contains the Folder IDs table and Sender Rules table specific to that project's email setup.
 
-Classify each email into one of four buckets:
+Classify each email into one of three buckets:
 
 0. **`to_accept`** — matches a row in `## Meeting Accept Rules` (from + subject contains) → accept calendar event silently, mark read, leave in inbox
-1. **`to_move`** — rule matches a non-Archive folder → mark read + move silently
-2. **`to_mark_read_only`** — rule matches Archive → mark read only, leave in inbox (user archives manually — no move cost)
-3. **`unmatched`** — no rule match → interactive triage
+1. **`to_move`** — rule matches any folder (including Archive) → move silently; mark read unless Action folder (`markRead: false` for Action, `markRead: true` for all others)
+2. **`unmatched`** — no rule match → interactive triage
 
 Check `to_accept` first (before sender-only rules). For each match, find the calendar event using `list_events` filtered by subject, call `calendar.respond_to_event` with `response=accept, sendResponse=false` (or `calendar.delete_event` for remove), then delete the email via `mail.move` with `folder=deleteditems`. Note: there is no `mail.delete` action.
 
 Build the arrays:
-- `to_move`: `[{ id, folderId, folderName, isRead }]`
-- `to_mark_read_only`: `[{ id, isRead }]`
+- `to_move`: `[{ id, folderId, folderName, isRead, markRead }]`
 - `unmatched`: `[{ id, subject, fromName, fromAddress, receivedAt, isRead }]`
 
 Print the plan:
 ```
 Plan:   2 → accept (BPT2 Daily Standup, BPT2 Refinement)
        12 → silent moves (GitHub: 7, Bamboo: 3, Braze: 2)
-        8 → mark-read only (Archive senders, stay in inbox)
        14 → interactive triage
 Executing silent phase...
 ```
@@ -55,11 +52,11 @@ You are executing email triage for Microsoft 365. Do not read any files or fetch
 First, call ToolSearch with query `select:mcp__claude_ai_yl-msoffice__execute_action` to load the execute_action tool.
 
 **Step 1 — Mark as read** (skip entirely if list is empty):
-Collect all IDs where `isRead` is false from BOTH `to_move` and `to_mark_read_only`. Call execute_action with actionId="mail.mark_read" and params={"id": "<id>", "isRead": true} for each.
+Collect all IDs from `to_move` where `markRead=true` AND `isRead=false`. Call execute_action with actionId="mail.mark_read" and params={"id": "<id>", "isRead": true} for each.
 Run up to 15 calls in parallel per batch. Wait for all results before starting next batch.
 
-Mark-read IDs (combined from to_move and to_mark_read_only where isRead=false):
-[PASTE combined mark-read ID list here]
+Mark-read IDs (from to_move where markRead=true and isRead=false):
+[PASTE mark-read ID list here]
 
 **Step 2 — Move** (skip entirely if list is empty):
 For each item in to_move, call execute_action with actionId="mail.move" and params={"id": "<id>", "folder": "<folderId>"}.
