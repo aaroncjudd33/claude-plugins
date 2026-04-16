@@ -1,6 +1,6 @@
 {
   "name": "links",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Browser link and workspace management — open named links and workspaces (named Edge windows), search across all registered links, and manage the link registry.",
   "author": {
     "name": "Aaron Judd",
@@ -10,8 +10,9 @@
   "commands": [
     "./commands/open.md",
     "./commands/search.md",
-    "./commands/add-link.md",
-    "./commands/add-workspace.md",
-    "./commands/edit-workspace.md"
+    "./commands/link.md",
+    "./commands/workspace.md",
+    "./commands/prefix.md",
+    "./commands/delete.md"
   ]
 }

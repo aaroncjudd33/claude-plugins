@@ -1,27 +1,44 @@
 ---
 name: open
-description: Open a named link by key or a workspace by name in Edge
-argument-hint: "[key | workspace-name]"
+description: Open a named link or workspace in Edge. Supports partial matching and scope flags.
+argument-hint: "<key | workspace> [-w | -l | -a]"
 ---
 
-# /links:open [key | workspace-name]
+# /links:open <key | workspace> [-w | -l | -a]
 
-Open a named link or all links in a workspace.
+Open a named link by key or all links in a workspace in Edge.
+
+## Flags
+
+- `-w` — search workspaces only
+- `-l` — search link keys only
+- `-a` — search all (default)
 
 ## Steps
 
 1. Read `C:\Users\ajudd\.claude\browser-links.json`
 
-2. Match the argument against the data:
-   - Workspace match: argument equals a key in `workspaces` (case-insensitive)
-   - Link match: argument equals a key in `links`
-   - **Both match** → ask: "Found both a workspace and a link named '[arg]'. Open workspace (all links) or just the link?"
-   - **No match** → run search: "No exact match for '[arg]'. Searching..." and show results from `/links:search [arg]`
+2. Parse any flag from the argument (`-w`, `-l`, `-a`). Default scope is all.
 
-3. **Opening a link:**
+3. Match the argument (case-insensitive) against the scoped data:
+
+   **Exact matches first:**
+   - Workspace key matches (e.g. `jira`, `forge-dev`) → workspace match
+   - Link key matches (e.g. `jira:board`) → link match
+   - Both match → ask: "Found both a workspace and a link named '[arg]'. Open workspace (all links) or just the link?"
+
+   **Partial matches if no exact match:**
+   - Filter workspaces and/or links where the key contains the argument
+   - 1 result → open it
+   - 2+ results → print the matched names and ask: "Which did you mean? [list]"
+
+   **No match at all:**
+   - Print: "No match for '[arg]'. Searching..." and show results from `/links:search [arg]`
+
+4. **Opening a link:**
    - Resolve window (priority order):
      1. Link has `window` field → use that
-     2. Called from workspace context (step 4) → use workspace name
+     2. Called from workspace context (step 5) → use workspace name
      3. Look up key prefix in `prefixDefaults`
      4. No match → open without named window
    - Run:
@@ -30,7 +47,7 @@ Open a named link or all links in a workspace.
      ```
    - Print: `Opened [key] → [window] window`
 
-4. **Opening a workspace:**
+5. **Opening a workspace:**
    - Window = workspace name
    - For each key in workspace's `links` array:
      - Look up link in `links` section
