@@ -150,6 +150,21 @@ When a table needs a legend, place it immediately after the closing `</table>` t
 
 ---
 
+## Paragraph Separation
+
+Adjacent `<p>` tags do NOT create enough visual space in Teams — paragraphs run together.
+Always add `<br/>` between `</p>` and the next `<p>` for readability:
+
+```
+<p>First paragraph content.</p>
+<br/>
+<p>Second paragraph content.</p>
+<br/>
+<p><em>Posted by Claude on behalf of Aaron Judd</em></p>
+```
+
+---
+
 ## Quick Rules
 
 0. **ALWAYS end every message with the Claude signature** — no exceptions, no matter how short the message:
@@ -162,3 +177,4 @@ When a table needs a legend, place it immediately after the closing `</table>` t
 6. No inline CSS — Teams ignores it
 7. Nested `<ul>` for any hierarchical or tree-shaped content
 8. `<hr/>` between sections for clean visual breaks
+9. **Always add `<br/>` between `</p>` and the next `<p>`** — adjacent paragraphs run together without it
