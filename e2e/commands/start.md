@@ -3,7 +3,7 @@ description: Launch the persistent Playwright test browser, auto-login via SSO, 
 allowed-tools: [Bash]
 ---
 
-# Browser Start
+# E2E Start
 
 Launch the persistent Playwright test browser for VO E2E task validation.
 

@@ -43,9 +43,9 @@
       "keywords": ["morning", "setup", "briefing", "jira", "confluence", "calendar", "aws", "sso", "dashboard"]
     },
     {
-      "name": "browser",
-      "description": "Launch and manage the persistent Playwright test browser for VO E2E tasks. Handles SSO auth, session startup, and CDP connection.",
-      "source": "./browser",
+      "name": "e2e",
+      "description": "Launch and manage the persistent Playwright test browser for VO end-to-end tasks. Handles SSO auth, session startup, and CDP connection.",
+      "source": "./e2e",
       "category": "development",
       "keywords": ["playwright", "browser", "chrome", "e2e", "tasks", "test", "cdp"]
     },

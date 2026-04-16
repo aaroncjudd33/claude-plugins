@@ -3,7 +3,7 @@ description: Stop the persistent Playwright test browser gracefully.
 allowed-tools: [Bash]
 ---
 
-# Browser Stop
+# E2E Stop
 
 Stop the persistent Playwright test browser.
 
