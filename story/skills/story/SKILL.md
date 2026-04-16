@@ -156,6 +156,19 @@ project = BPT2 AND assignee WAS "620147d91fec260068c1097d" AND assignee is EMPTY
 
 ---
 
+## Link Registration
+
+After creating or picking up a story, register it in `C:\Users\ajudd\.claude\browser-links.json` using the links plugin pattern:
+
+1. Read `browser-links.json`
+2. Add to `links` section: `"story:BPT2-XXXX": { "url": "https://younglivingeo.atlassian.net/browse/BPT2-XXXX", "description": "<story summary>" }`
+3. Create workspace `BPT2-XXXX` if it doesn't exist: `{ "type": "story", "description": "<story summary>", "links": ["story:BPT2-XXXX"] }`
+4. Write back to `browser-links.json`
+
+Also add any related `git:repo-name` to the story workspace if the repo is known.
+
+---
+
 ## Creation Pattern
 
 ```

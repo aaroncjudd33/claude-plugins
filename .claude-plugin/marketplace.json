@@ -55,6 +55,13 @@
       "source": "./session",
       "category": "productivity",
       "keywords": ["session", "checkpoint", "start", "wrap", "state", "context", "handoff"]
+    },
+    {
+      "name": "links",
+      "description": "Browser link and workspace management — open named links and workspaces (named Edge windows), search across all registered links, and manage the link registry.",
+      "source": "./links",
+      "category": "productivity",
+      "keywords": ["links", "browser", "workspace", "open", "navigate", "edge", "url", "search"]
     }
   ]
 }

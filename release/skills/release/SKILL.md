@@ -126,6 +126,22 @@ Do NOT call `transitionJiraIssue` for Send For Review or change the assignee —
 
 ---
 
+## Link Registration
+
+After creating a CAB card and PR, register all artifacts in `C:\Users\ajudd\.claude\browser-links.json`:
+
+1. Read `browser-links.json`
+2. Add CAB link: `"cab:CAB-XXX": { "url": "https://younglivingeo.atlassian.net/browse/CAB-XXX", "description": "<CAB summary>" }`
+3. Add PR link: `"pr:repo-name#NNN": { "url": "<github PR url>", "description": "<PR title>" }`
+4. For each linked story workspace (`BPT2-XXXX`): add `cab:CAB-XXX` and `pr:repo-name#NNN` to that workspace's `links` array
+5. Write back to `browser-links.json`
+
+During `release:deploy`, also register the Actions run:
+- `"actions:repo-name#run-NNN": { "url": "<actions run url>", "description": "Deploy run for CAB-XXX" }`
+- Add to the story workspace(s)
+
+---
+
 ## Transition IDs
 
 | Transition | ID | Notes | Used by |
