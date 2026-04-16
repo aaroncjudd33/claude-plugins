@@ -1,16 +1,16 @@
 ---
-name: confluence
+name: docs
 description: >
-  Provides implementation context for the /confluence:init-docs,
-  /confluence:update-docs, /confluence:archive-docs, and
-  /confluence:create-proposed-work commands.
+  Provides implementation context for the /docs:init,
+  /docs:update, /docs:archive, and
+  /docs:propose commands.
   Load only when one of those commands is actively running — not in
   response to general requests to document, write up, or describe anything.
 ---
 
-# Confluence Documentation Skill
+# Docs Skill
 
-Guides Claude through deep codebase discovery and structured documentation generation, publishing results as a structured set of Confluence pages. Used by the `init-docs`, `update-docs`, and `archive-docs` commands.
+Guides Claude through deep codebase discovery and structured documentation generation, publishing results as a structured set of Confluence pages. Used by the `init`, `update`, and `archive` commands.
 
 ---
 
@@ -38,8 +38,8 @@ Every project gets a parent index page in Confluence. All other pages are childr
   ├── <PROJECT> — API Reference
   ├── <PROJECT> — Known Issues & Technical Debt
   ├── <PROJECT> — Test Coverage Analysis
-  ├── <PROJECT> — Proposed Work: <Feature>   ← created by create-proposed-work
-  └── Archive                                ← created by archive-docs
+  ├── <PROJECT> — Proposed Work: <Feature>   ← created by propose
+  └── Archive                                ← created by archive
         └── <PROJECT> — Proposed Work: <completed feature>
 ```
 
@@ -52,7 +52,7 @@ Every project gets a parent index page in Confluence. All other pages are childr
 | 4 | `<PROJECT> — API Reference` | Every public endpoint: method, path, auth, request body, response codes, quirks |
 | 5 | `<PROJECT> — Known Issues & Technical Debt` | Active bugs, architectural debt, missing features — severity-ranked |
 | 6 | `<PROJECT> — Test Coverage Analysis` | What is tested, what is not, coverage gaps ranked by risk |
-| 7 | `<PROJECT> — Proposed Work: <Feature>` | Planning docs for upcoming features — created by `create-proposed-work`, archived when complete |
+| 7 | `<PROJECT> — Proposed Work: <Feature>` | Planning docs for upcoming features — created by `propose`, archived when complete |
 
 ---
 

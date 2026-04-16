@@ -1,18 +1,18 @@
 ---
-name: execute-deploy
+name: deploy
 description: Execute a production deployment — merge the existing PR, monitor the GitHub Actions workflow, notify when reviewer approval is needed, verify post-deploy, and close the CAB card.
 argument-hint: "[cab-card-key]"
 ---
 
 # CAB: Execute Deploy
 
-Run the full production deployment sequence. The CAB card must already be in **Implementation** status (approved) and the deployment PR must already exist (created during `/cab:create-cab`). Supports both CDK services and Virtual Office deployments.
+Run the full production deployment sequence. The CAB card must already be in **Implementation** status (approved) and the deployment PR must already exist (created during `/release:create`). Supports both CDK services and Virtual Office deployments.
 
 ## Prerequisites
 
 Before invoking this command, confirm:
 - CAB card is in **Implementation** status (approved by Sudhakar)
-- Deployment PR exists and is open (created during `/cab:create-cab`)
+- Deployment PR exists and is open (created during `/release:create`)
 - For CDK: All SSM parameters exist in the prod AWS account
 - For CDK: `develop` branch is up to date and tests are passing
 - For VO: Integration branch is deployed and tested in env6
@@ -53,7 +53,7 @@ Run `gh pr list --base master --state open` to locate the deployment PR.
 
 **PR found:** confirm it is the correct one and proceed.
 
-**No PR found (and not first deploy):** Stop. "No open PR found targeting master. Verify the PR was created during `/cab:create-cab`, or run `/cab:update-cab` → Update PR / branch info to add it."
+**No PR found (and not first deploy):** Stop. "No open PR found targeting master. Verify the PR was created during `/release:create`, or run `/release:update` → Update PR / branch info to add it."
 
 ### 4a. Push to master (confirm with user first)
 
@@ -110,7 +110,7 @@ Run `gh pr list --base master --state open` to locate the deployment PR.
 
 **PR found:** confirm it is the correct one and proceed.
 
-**No PR found:** Stop. "No open PR found targeting master. Verify the PR was created during `/cab:create-cab`, or run `/cab:update-cab` → Update PR / branch info to add it."
+**No PR found:** Stop. "No open PR found targeting master. Verify the PR was created during `/release:create`, or run `/release:update` → Update PR / branch info to add it."
 
 ### 4b. Merge to master (confirm with user first)
 

@@ -1,11 +1,11 @@
 ---
-name: init
-description: Initialize the Jira browser window — close, reopen, load board, calendar, and in-progress stories
+name: workspace
+description: Open the Jira workspace — close, reopen, load board, calendar, and in-progress stories
 ---
 
-# Jira: Init
+# Jira: Workspace
 
-Set up the Jira browser window with the board, calendar, and any in-progress stories assigned to me.
+Open the Jira workspace with the board, calendar, and any in-progress stories assigned to me.
 
 ## Instructions
 

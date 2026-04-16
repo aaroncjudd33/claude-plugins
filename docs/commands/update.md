@@ -1,10 +1,10 @@
 ---
-name: update-docs
+name: update
 description: Update existing Confluence project documentation to reflect current codebase state
 argument-hint: "[page-name | all]"
 ---
 
-# /confluence:update-docs [page-name | all]
+# /docs:update [page-name | all]
 
 Refresh existing Confluence documentation to reflect the current state of the codebase. Use this after a significant feature, refactor, or bug fix — not after every commit.
 
@@ -18,7 +18,7 @@ Refresh existing Confluence documentation to reflect the current state of the co
 
    a. **Fetch current content** using `getConfluencePage` — read what's already there.
 
-   b. **Re-discover relevant codebase sections** using the `confluence` skill discovery checklist for that page type.
+   b. **Re-discover relevant codebase sections** using the `docs` skill discovery checklist for that page type.
 
    c. **Identify what's changed or stale** — compare doc content against current code. Look for:
       - File paths that no longer exist
@@ -50,5 +50,5 @@ Refresh existing Confluence documentation to reflect the current state of the co
 ## Notes
 
 - Always fetch current page content before updating — never overwrite manually curated content
-- If a major restructure is needed, run `init-docs` instead
-- Proposed Work pages are intentionally excluded from all scope keywords including `all` — they are planning documents, not state-of-the-world docs. Edit them directly in Confluence or recreate via `/confluence:create-proposed-work`. When a feature ships, archive the page with `/confluence:archive-docs`
+- If a major restructure is needed, run `/docs:init` instead
+- Proposed Work pages are intentionally excluded from all scope keywords including `all` — they are planning documents, not state-of-the-world docs. Edit them directly in Confluence or recreate via `/docs:propose`. When a feature ships, archive the page with `/docs:archive`

@@ -1,15 +1,15 @@
 ---
-name: my-stories
+name: dashboard
 description: List open Jira stories assigned to me or previously assigned to me, with status, assignee, and due dates. Supports hide/unhide and change detection.
 ---
 
-# Jira: My Stories
+# Jira: Dashboard
 
 Show all open/active Jira stories that are mine or were recently mine.
 
 ## Arguments
 
-Parse the user's arguments (everything after `/story:my-stories`):
+Parse the user's arguments (everything after `/story:dashboard`):
 
 - **No args** — default view (hidden stories excluded)
 - **`-all`** — show all stories including hidden, mark hidden ones with `[HIDDEN]`

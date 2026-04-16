@@ -1,10 +1,10 @@
 ---
-name: archive-docs
+name: archive
 description: Archive a completed planning page — moves it under an Archive section, updates the parent index, and records the change in MEMORY.md
 argument-hint: "[page-title | page-id]"
 ---
 
-# /confluence:archive-docs [page-title | page-id]
+# /docs:archive [page-title | page-id]
 
 Move a completed planning or proposed work page to an Archive section under the project's Confluence parent page. Use this when a feature has shipped and its planning doc is no longer active reference material.
 

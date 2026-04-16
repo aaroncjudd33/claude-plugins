@@ -1,10 +1,10 @@
 ---
-name: add-comment
+name: comment
 description: Add a comment to a Jira story — for progress notes, PR links, deploy status, decisions, and handoff notes. Does not modify story fields or requirements.
 argument-hint: "[BPT2-XXXX] [comment text]"
 ---
 
-# /story:add-comment [BPT2-XXXX] [comment text]
+# /story:comment [BPT2-XXXX] [comment text]
 
 Add a comment to an existing Jira story. Use this for anything that happens *after* a story is in flight — progress updates, PR links, deployment notes, decisions made during implementation, handoff context. Comments do not alter the original requirements on the card.
 
@@ -31,4 +31,4 @@ Add a comment to an existing Jira story. Use this for anything that happens *aft
 
 - Comments are the right tool once a story is In Progress — they preserve the original requirements while keeping the card up to date
 - The CAB plugin posts its own comment automatically when a CAB card is created — no need to duplicate that
-- For state transitions (In Progress → In Review → Done), use `/story:update-story` when that command exists
+- For state transitions (In Progress → In Review → Done), use `/story:update`

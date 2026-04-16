@@ -1,5 +1,5 @@
 ---
-name: create-cab
+name: create
 description: Create a complete CAB card for a Young Living production deployment. Fetches linked stories for context, creates the release branch (release/CAB-XXXX), creates the PR, populates all card fields, and comments the CAB back onto each story. Stops before submission — user handles Send For Review manually.
 argument-hint: "[BPT2-XXXX BPT2-YYYY ...]"
 ---
@@ -126,9 +126,9 @@ Call `editJiraIssue` to set all ADF fields now that the PR is known:
 
 - **Description** (ADF): What is being deployed, why, any phased approach — seeded from story descriptions
 - **Release Notes** (`customfield_10512`, ADF): Bullet list of story summaries, one per story
-- **Deployment Plan** (`customfield_13142`, ADF): Project-specific template from `cab` skill
+- **Deployment Plan** (`customfield_13142`, ADF): Project-specific template from `release` skill
 - **Deployment Playbook** (`customfield_13143`, ADF): Same as Deployment Plan
-- **Rollback Plan** (`customfield_13101`, ADF): Project-specific template from `cab` skill
+- **Rollback Plan** (`customfield_13101`, ADF): Project-specific template from `release` skill
 - **Pre-Deployment Tests** (`customfield_13099`, ADF): VO: "Tested in env6" / CDK: "Tested in dev/stage"
 - **Post-Deployment Tests** (`customfield_13100`, ADF): "Tested in Prod"
 - **Config/Settings Changes** (`customfield_13176`, ADF): As specified or "None"

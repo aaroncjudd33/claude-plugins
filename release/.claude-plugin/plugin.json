@@ -1,6 +1,6 @@
 {
   "name": "release",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Plan and execute production releases at Young Living. Creates and manages CAB cards in Jira, handles all required fields, ADF formatting, story linking, and full deploy execution.",
   "author": {
     "name": "Aaron Judd",
@@ -8,8 +8,8 @@
   },
   "skills": ["./skills/release"],
   "commands": [
-    "./commands/create-cab.md",
-    "./commands/update-cab.md",
-    "./commands/execute-deploy.md"
+    "./commands/create.md",
+    "./commands/update.md",
+    "./commands/deploy.md"
   ]
 }

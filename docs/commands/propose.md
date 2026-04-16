@@ -1,12 +1,12 @@
 ---
-name: create-proposed-work
+name: propose
 description: Create a Proposed Work planning page in Confluence for an upcoming feature — discovers relevant codebase context, drafts the page, and saves the ID to MEMORY.md
 argument-hint: "[feature-name]"
 ---
 
-# /confluence:create-proposed-work [feature-name]
+# /docs:propose [feature-name]
 
-Create a Proposed Work planning page for an upcoming feature. Use this when a feature is being actively designed or scoped — before implementation begins. The page lives as a child of the project parent and can be archived via `/confluence:archive-docs` when the feature ships.
+Create a Proposed Work planning page for an upcoming feature. Use this when a feature is being actively designed or scoped — before implementation begins. The page lives as a child of the project parent and can be archived via `/docs:archive` when the feature ships.
 
 ## Steps
 
@@ -20,7 +20,7 @@ Create a Proposed Work planning page for an upcoming feature. Use this when a fe
    searchConfluenceUsingCql:
      cql: 'title = "<PROJECT> — Proposed Work: <Feature Name>" AND space = "<SPACE_KEY>"'
    ```
-   If found, stop and tell the user: "A Proposed Work page for this feature already exists: [link]. Use `/confluence:update-docs` to edit it, or `/confluence:archive-docs` if it's ready to be archived."
+   If found, stop and tell the user: "A Proposed Work page for this feature already exists: [link]. Use `/docs:update` to edit it, or `/docs:archive` if it's ready to be archived."
 
 3. **Discover relevant context** — Read the codebase areas most relevant to this feature:
    - Existing code in the affected modules or services
@@ -87,6 +87,6 @@ Create a Proposed Work planning page for an upcoming feature. Use this when a fe
 
 ## Notes
 
-- Do not create this page for features that are already in progress — use `/confluence:update-docs` to document an existing feature's state instead
-- When the feature ships, run `/confluence:archive-docs` to move this page to the Archive section
+- Do not create this page for features that are already in progress — use `/docs:update` to document an existing feature's state instead
+- When the feature ships, run `/docs:archive` to move this page to the Archive section
 - Open Questions and Acceptance Criteria are the most valuable sections — don't leave them blank

@@ -1,10 +1,10 @@
 ---
-name: update-story
+name: update
 description: Update a Jira story — fields, status transitions, and assignment. Enforces lifecycle rules (description locked once In Progress or beyond).
 argument-hint: "[BPT2-XXXX]"
 ---
 
-# /story:update-story [BPT2-XXXX]
+# /story:update [BPT2-XXXX]
 
 Update fields, status, or assignment on an existing BPT2 story. Enforces lifecycle-aware field rules — description is protected once the story is in implementation.
 

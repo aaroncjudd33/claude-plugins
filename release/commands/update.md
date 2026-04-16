@@ -1,5 +1,5 @@
 ---
-name: update-cab
+name: update
 description: Update an existing CAB card — add or remove linked stories, update PR/branch info, or edit other fields. Keeps Jira issue links and session cross-references in sync.
 argument-hint: "[cab-key]"
 ---

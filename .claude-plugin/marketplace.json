@@ -8,9 +8,9 @@
   },
   "plugins": [
     {
-      "name": "confluence",
+      "name": "docs",
       "description": "Deep-discover a codebase and generate/maintain a full set of Confluence documentation pages (Project Overview, Architecture, Runbook, API Reference, Known Issues, Test Coverage)",
-      "source": "./confluence",
+      "source": "./docs",
       "category": "development",
       "keywords": ["confluence", "documentation", "docs", "architecture", "runbook"]
     },
@@ -43,9 +43,9 @@
       "keywords": ["morning", "setup", "briefing", "jira", "confluence", "calendar", "aws", "sso", "dashboard"]
     },
     {
-      "name": "chrome",
+      "name": "browser",
       "description": "Launch and manage the persistent Playwright test browser for VO E2E tasks. Handles SSO auth, session startup, and CDP connection.",
-      "source": "./chrome",
+      "source": "./browser",
       "category": "development",
       "keywords": ["playwright", "browser", "chrome", "e2e", "tasks", "test", "cdp"]
     },

@@ -133,7 +133,7 @@ Do NOT call `transitionJiraIssue` for Send For Review or change the assignee —
 | Send For Review | `201` | Requires `customfield_13174` (QA Approved By) | user manually |
 | Cancel Change | `111` | | user manually |
 | Mark Implementation | (auto after approval) | Card moves to Implementation after CAB approval | automatic |
-| Mark Success | Look up at time of use | Set after successful prod deploy | `execute-deploy` |
+| Mark Success | Look up at time of use | Set after successful prod deploy | `deploy` |
 
 ---
 

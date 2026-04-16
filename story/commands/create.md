@@ -1,5 +1,5 @@
 ---
-name: create-story
+name: create
 description: Create a Jira story in BPT2 with proper formatting, assignment, and optional status transition.
 argument-hint: "[summary] [work-type] [assignee]"
 ---

@@ -1,16 +1,16 @@
 {
-  "name": "confluence",
-  "version": "1.3.0",
+  "name": "docs",
+  "version": "1.4.0",
   "description": "Generate, update, and archive structured project documentation in Confluence. Performs deep codebase discovery to produce a standard set of pages: project overview, architecture & data flow, local dev runbook, API reference, known issues & tech debt, test coverage analysis, and a proposed work section for upcoming features.",
   "author": {
     "name": "Aaron Judd",
     "email": "aaroncjudd@gmail.com"
   },
-  "skills": ["./skills/confluence"],
+  "skills": ["./skills/docs"],
   "commands": [
-    "./commands/init-docs.md",
-    "./commands/update-docs.md",
-    "./commands/archive-docs.md",
-    "./commands/create-proposed-work.md"
+    "./commands/init.md",
+    "./commands/update.md",
+    "./commands/archive.md",
+    "./commands/propose.md"
   ]
 }

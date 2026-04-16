@@ -1,10 +1,10 @@
 ---
-name: init-docs
+name: init
 description: Deep-discover a codebase and generate a full set of Confluence documentation pages
 argument-hint: "[space-key] [parent-page-title]"
 ---
 
-# /confluence:init-docs
+# /docs:init
 
 Perform a deep codebase discovery and generate the full standard set of Confluence documentation pages for this project. Run once when a project has never been documented.
 
@@ -23,11 +23,11 @@ Perform a deep codebase discovery and generate the full standard set of Confluen
    searchConfluenceUsingCql:
      cql: 'title = "<Project Name>" AND space = "<SPACE_KEY>"'
    ```
-   If a page is found, stop and tell the user: "A Confluence page for this project already exists. Run `/confluence:update-docs` to refresh existing pages, or confirm you want to create a new set from scratch (this will not delete existing pages)." Only proceed if the user explicitly confirms.
+   If a page is found, stop and tell the user: "A Confluence page for this project already exists. Run `/docs:update` to refresh existing pages, or confirm you want to create a new set from scratch (this will not delete existing pages)." Only proceed if the user explicitly confirms.
 
 4. **Enter Plan Mode** — Use `EnterPlanMode`. Perform full discovery and present the documentation plan before writing anything.
 
-5. **Deep Discovery Phase** — Follow the `confluence` skill discovery checklist. The skill defines exactly what to read for each page type.
+5. **Deep Discovery Phase** — Follow the `docs` skill discovery checklist. The skill defines exactly what to read for each page type.
 
 6. **Query Jira (optional)** — Search for open epics, bugs, or tech debt tickets linked to this project. Use findings to populate Known Issues.
 
@@ -49,4 +49,4 @@ Report:
 - Links to all created pages
 - Any sections where discovery was incomplete (ask user to fill in)
 
-After reporting, ask: "Is any feature currently being planned or scoped for this project? If so, run `/confluence:create-proposed-work` to create a Proposed Work planning page."
+After reporting, ask: "Is any feature currently being planned or scoped for this project? If so, run `/docs:propose` to create a Proposed Work planning page."

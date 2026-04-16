@@ -1,9 +1,9 @@
 ---
-name: chrome
+name: browser
 description: This skill should be used when the user wants to launch, start, or manage the persistent Playwright test browser for VO E2E testing. Trigger phrases include "start the browser", "launch playwright", "browser isn't running", "start chrome", "run VO tasks", or any request to run automated tests against the Virtual Office environment.
 ---
 
-# Chrome / Playwright Browser Skill
+# Browser / Playwright Skill
 
 ## Purpose
 
