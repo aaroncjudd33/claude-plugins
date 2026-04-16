@@ -15,16 +15,16 @@
       "keywords": ["confluence", "documentation", "docs", "architecture", "runbook"]
     },
     {
-      "name": "cab",
-      "description": "Create and manage CAB (Change Advisory Board) cards in Jira for Young Living production deployments. Handles all required fields, ADF formatting, submission, assignee update, and full deploy execution.",
-      "source": "./cab",
+      "name": "release",
+      "description": "Plan and execute production releases at Young Living. Creates and manages CAB cards in Jira, handles all required fields, ADF formatting, story linking, and full deploy execution.",
+      "source": "./release",
       "category": "development",
       "keywords": ["cab", "change", "jira", "deploy", "production", "release"]
     },
     {
-      "name": "jira",
-      "description": "Create and manage Jira stories in BPT2. Handles required fields, markdown-to-ADF quirks, assignment, and status transitions.",
-      "source": "./jira",
+      "name": "story",
+      "description": "Create and manage BPT2 stories. Handles required fields, markdown-to-ADF quirks, assignment, lifecycle rules, and status transitions.",
+      "source": "./story",
       "category": "development",
       "keywords": ["jira", "story", "bpt2", "backlog", "create"]
     },

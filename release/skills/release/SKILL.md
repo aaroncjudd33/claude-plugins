@@ -1,6 +1,6 @@
 ---
-name: cab
-description: This skill should be used when the user needs to create, update, submit, or execute a CAB (Change Advisory Board) card in Jira for a Young Living production deployment. Trigger phrases include "create a CAB card", "I need to deploy to prod", "set up a CAB for this release", "update the CAB card", "submit for review", "execute the deploy", or any mention of a CAB number (e.g. CAB-456).
+name: release
+description: Use this skill when the user needs to create, update, submit, or execute a production release at Young Living. Trigger phrases include "create a CAB card", "I need to deploy to prod", "set up a CAB for this release", "update the CAB card", "submit for review", "execute the deploy", or any mention of a CAB number (e.g. CAB-456).
 ---
 
 # CAB Card Skill

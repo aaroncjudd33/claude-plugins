@@ -9,7 +9,7 @@ Show all open/active Jira stories that are mine or were recently mine.
 
 ## Arguments
 
-Parse the user's arguments (everything after `/jira:my-stories`):
+Parse the user's arguments (everything after `/story:my-stories`):
 
 - **No args** — default view (hidden stories excluded)
 - **`-all`** — show all stories including hidden, mark hidden ones with `[HIDDEN]`
@@ -36,7 +36,7 @@ Read `~/.claude/jira-stories.json`. If it doesn't exist, start with an empty obj
 
 ### 2. Run JQL Queries
 
-<!-- CANONICAL SOURCE: jira/skills/jira/SKILL.md — update queries there first, then sync here and in setup/commands/jira.md, setup/commands/local.md, setup/skills/setup/SKILL.md. -->
+<!-- CANONICAL SOURCE: story/skills/story/SKILL.md — update queries there first, then sync here and in setup/commands/jira.md, setup/commands/local.md, setup/skills/setup/SKILL.md. -->
 
 Use `searchJiraIssuesUsingJql` on cloud ID `9de6eb2b-2683-44e6-89ff-c622027e09b4`. Run all three queries in parallel.
 

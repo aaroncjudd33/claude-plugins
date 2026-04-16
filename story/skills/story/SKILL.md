@@ -1,5 +1,5 @@
 ---
-name: jira
+name: story
 description: Use this skill when the user wants to create a Jira story, log a ticket, track a feature or bug, check their open stories, look up what's assigned to them, or manage work items in the BPT2 project. Trigger phrases include "create a story", "log a Jira ticket", "add a ticket for this", "what stories do I have open", "show my Jira work", "check my stories", or any mention of a BPT2 issue key (e.g. BPT2-6190).
 ---
 
@@ -127,7 +127,7 @@ Flat JSON object keyed by story key (e.g. `"BPT2-6190"`). Each value:
 | `hidden` | boolean | Whether the story is suppressed from default view |
 | `hideReason` | string \| null | User-provided reason for hiding |
 | `hiddenDate` | string \| null | ISO date the story was hidden (reserved for future auto-expiry) |
-| `lastStatus` | string | Status as of last `/jira:my-stories` run — used for change detection |
+| `lastStatus` | string | Status as of last `/story:my-stories` run — used for change detection |
 | `lastAssignee` | string | Assignee as of last run — used for change detection |
 | `lastSeen` | string | ISO date of last run that touched this entry |
 
@@ -137,7 +137,7 @@ Do not add extra fields without updating this schema.
 
 ## Canonical JQL Queries
 
-<!-- CANONICAL SOURCE — update here first, then sync to: jira/commands/my-stories.md, setup/commands/jira.md, setup/commands/local.md, setup/skills/setup/SKILL.md -->
+<!-- CANONICAL SOURCE — update here first, then sync to: story/commands/my-stories.md, setup/commands/jira.md, setup/commands/local.md, setup/skills/setup/SKILL.md -->
 
 **Currently assigned to me:**
 ```jql

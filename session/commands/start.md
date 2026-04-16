@@ -154,7 +154,7 @@ BPT2-1234
 2. Investigate codebase, confirm Teams chat exists, check Confluence page
 
 **CAB — new:**
-- Route to `/cab:create-cab`
+- Route to `/release:create-cab`
 
 **CAB — resume:**
 1. Read the CAB card from Jira

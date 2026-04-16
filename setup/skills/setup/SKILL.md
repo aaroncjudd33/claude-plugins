@@ -20,8 +20,8 @@ Reference data and formatting rules for the morning setup routine.
 
 ## Jira
 
-<!-- SYNC NOTE: These 3 JQL queries are duplicated in setup/commands/jira.md, setup/commands/local.md, jira/commands/my-stories.md, and this file.
-     CANONICAL SOURCE: jira/skills/jira/SKILL.md — update there first, then sync all four. -->
+<!-- SYNC NOTE: These 3 JQL queries are duplicated in setup/commands/jira.md, setup/commands/local.md, story/commands/my-stories.md, and this file.
+     CANONICAL SOURCE: story/skills/story/SKILL.md — update there first, then sync all four. -->
 
 ### Query 1 — Currently assigned to me
 
