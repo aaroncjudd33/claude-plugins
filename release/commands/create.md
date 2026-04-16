@@ -152,11 +152,38 @@ PR: [PR title] — Pull Request #N ([link])
 
 This makes the deployment visible to anyone looking at the story in Jira — QA, PM, app support.
 
-### 11. Stop — user handles submission
+### 11. Register links
+
+Read `C:\Users\ajudd\.claude\browser-links.json`.
+
+**Always add to `links` section (if not already present):**
+- `cab:CAB-XXX` → `https://younglivingeo.atlassian.net/browse/CAB-XXX`, description: CAB summary
+- `pr:repo-name#NNN` → PR URL, description: PR title *(skip on first-deploy where no PR was created)*
+
+**Create `CAB-XXX` workspace** (type: `cab`) with all relevant keys:
+```json
+"CAB-XXX": {
+  "description": "<CAB summary>",
+  "type": "cab",
+  "links": ["cab:CAB-XXX", "pr:repo-name#NNN", "story:BPT2-XXXX", ...]
+}
+```
+- Include `story:BPT2-XXXX` for each linked story that exists in the `links` section
+- Include `git:repo-name` if it exists in the `links` section
+- Omit `pr:` entry on first-deploy
+
+**Append to each linked story workspace** (if the workspace exists in `browser-links.json`):
+- `cab:CAB-XXX`
+- `pr:repo-name#NNN` *(skip on first-deploy)*
+- `git:repo-name` if it exists in the `links` section
+
+Write back `C:\Users\ajudd\.claude\browser-links.json`. Do not prompt the user during this step.
+
+### 12. Stop — user handles submission
 
 Do NOT call `transitionJiraIssue` for Send For Review or update the assignee. The user reviews the card in Jira and submits manually.
 
-### 12. Write session cross-references
+### 13. Write session cross-references
 
 Run `pwd` and extract the repo slug (last path component).
 
