@@ -29,11 +29,11 @@
       "keywords": ["jira", "story", "bpt2", "backlog", "create"]
     },
     {
-      "name": "office",
-      "description": "Microsoft 365 commands — Teams messaging, email triage, email send, and meeting invites via the yl-msoffice MCP.",
-      "source": "./office",
+      "name": "comms",
+      "description": "Microsoft 365 communications — Teams messaging, email triage, and inbox sweep via the yl-msoffice MCP.",
+      "source": "./comms",
       "category": "productivity",
-      "keywords": ["teams", "email", "meeting", "office", "m365", "microsoft", "outlook", "sweep", "send"]
+      "keywords": ["teams", "email", "meeting", "comms", "m365", "microsoft", "outlook", "sweep", "send", "message"]
     },
     {
       "name": "setup",

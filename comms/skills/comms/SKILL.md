@@ -1,9 +1,9 @@
 ---
-name: office
+name: comms
 description: This skill should be used when the user wants to send a Teams chat message, post an update to a Teams chat, compose or send an email, run an inbox sweep, schedule a meeting, or perform any Microsoft 365 communication via the yl-msoffice MCP. Trigger phrases include: "send a Teams message", "message the team", "post to the chat", "send an email to", "draft an email", "email sweep", "clean the inbox", "schedule a meeting", "create a meeting invite", "notify Heber", "let the team know via Teams".
 ---
 
-# Office Communications Skill
+# Comms Skill
 
 Governs all Microsoft 365 communication via the `yl-msoffice` MCP — Teams messages, email triage, and meeting invites.
 
@@ -86,10 +86,10 @@ When creating a new group chat:
 
 ## Email Triage
 
-The email commands (`email-grab`, `email-apply-rules`, `email-sweep`) work as a pipeline. Key behavioral rules:
+The email commands (`fetch`, `triage`, `sweep`) work as a pipeline. Key behavioral rules:
 
-- **Cache contract.** All email commands read from / write to `C:\temp\email-cache.json`. This file must be fresh before running triage. If it is absent or stale, instruct the user to run `/office:email-grab` first.
-- **Always show the plan before executing.** Phase 1 of `email-apply-rules` produces a move/mark-read plan. Display it and wait for confirmation before launching the Haiku sub-agent for batch execution.
+- **Cache contract.** All email commands read from / write to `C:\temp\email-cache.json`. This file must be fresh before running triage. If it is absent or stale, instruct the user to run `/comms:fetch` first.
+- **Always show the plan before executing.** Phase 1 of `triage` produces a move/mark-read plan. Display it and wait for confirmation before launching the Haiku sub-agent for batch execution.
 - **Delegate batch moves to Haiku.** `mail.move` and `mail.mark_read` responses return full message objects (5K–15K tokens each). Batch these calls in a Haiku sub-agent to keep the main context clean.
 - **No signature in emails.** The "Posted by Claude on behalf of Aaron Judd" signature is for Teams messages only — do not append it to email bodies.
 - **`mail.move` to `deleteditems` for deletes.** There is no `mail.delete` action — use `mail.move` with `folder=deleteditems` for all delete operations.

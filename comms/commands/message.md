@@ -1,10 +1,10 @@
 ---
-name: teams-send
+name: message
 description: Format the current conversation context as a Teams message and send it to a named chat
 argument-hint: "[chat-name]"
 ---
 
-# /office:teams-send [chat-name]
+# /comms:message [chat-name]
 
 Send a formatted Teams message based on the current conversation context.
 

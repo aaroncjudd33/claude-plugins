@@ -1,10 +1,10 @@
 ---
-name: email-grab
-description: Fetch email headers from a folder and cache to C:\temp\email-cache.json. Reusable by email-sweep and email-process.
+name: fetch
+description: Fetch email headers from a folder and cache to C:\temp\email-cache.json. Reusable by sweep and triage.
 argument-hint: "[folder] [limit]"
 ---
 
-# /office:email-grab [folder] [limit]
+# /comms:fetch [folder] [limit]
 
 Fetch email headers and write to cache. No bodies fetched.
 
@@ -15,7 +15,7 @@ Fetch email headers and write to cache. No bodies fetched.
 ## Folder IDs (from project_inbox_triage.md)
 Look up the folder name in the Folder IDs table in `project_inbox_triage.md`.
 
-> **Note:** `project_inbox_triage.md` is a project-level memory file, not part of this plugin. It lives in the active project's memory folder and is loaded automatically as project context. It is not bundled with the office plugin.
+> **Note:** `project_inbox_triage.md` is a project-level memory file, not part of this plugin. It lives in the active project's memory folder and is loaded automatically as project context. It is not bundled with the comms plugin.
 
 ## Steps
 

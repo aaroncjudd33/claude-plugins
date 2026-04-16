@@ -1,0 +1,16 @@
+{
+  "name": "comms",
+  "version": "1.4.0",
+  "description": "Microsoft 365 communications — Teams messaging, email triage, and inbox sweep via the yl-msoffice MCP.",
+  "author": {
+    "name": "Aaron Judd",
+    "email": "aaroncjudd@gmail.com"
+  },
+  "skills": ["./skills/comms"],
+  "commands": [
+    "./commands/message.md",
+    "./commands/fetch.md",
+    "./commands/triage.md",
+    "./commands/sweep.md"
+  ]
+}

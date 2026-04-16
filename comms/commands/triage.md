@@ -1,9 +1,9 @@
 ---
-name: email-apply-rules
+name: triage
 description: Classify emails in C:\temp\email-cache.json, silently process matched senders via Haiku sub-agent, then run interactive triage for unmatched emails.
 ---
 
-# /office:email-apply-rules
+# /comms:triage
 
 Three phases: classify (no API calls), silent execute via Haiku, then interactive triage for unmatched emails.
 
@@ -12,8 +12,8 @@ Three phases: classify (no API calls), silent execute via Haiku, then interactiv
 ## Pre-flight Check
 
 Before Phase 1, verify `C:\temp\email-cache.json` exists and is fresh:
-- **Missing** → stop and tell the user: "No email cache found. Run `/office:email-grab [folder]` first."
-- **Stale** (older than 4 hours) → warn: "Cache is from [fetchedAt time]. Run `/office:email-grab` again for fresh results, or continue with the existing cache?"
+- **Missing** → stop and tell the user: "No email cache found. Run `/comms:fetch [folder]` first."
+- **Stale** (older than 4 hours) → warn: "Cache is from [fetchedAt time]. Run `/comms:fetch` again for fresh results, or continue with the existing cache?"
 - **Present and fresh** → proceed to Phase 1.
 
 ## Phase 1 — Classify (no API calls)
