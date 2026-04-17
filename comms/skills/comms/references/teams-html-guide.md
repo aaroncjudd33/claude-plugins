@@ -152,13 +152,15 @@ When a table needs a legend, place it immediately after the closing `</table>` t
 
 ## Paragraph Separation
 
-Adjacent `<p>` tags do NOT create enough visual space in Teams — paragraphs run together.
-Always add `<br/>` between `</p>` and the next `<p>` for readability:
+Adjacent `<p>` tags give a small natural margin in Teams — use them for flowing text. This looks like a normal message.
+
+Do NOT add `<br/>` between every `<p>` — it creates a full blank line and feels like a section break, not a paragraph break.
+
+Reserve `<br/>` for spacing around structural elements (before/after a table, after a bullet list before the signature):
 
 ```
-<p>First paragraph content.</p>
-<br/>
-<p>Second paragraph content.</p>
+<p>First paragraph.</p>
+<p>Second paragraph.</p>
 <br/>
 <p><em>Posted by Claude on behalf of Aaron Judd</em></p>
 ```
@@ -177,4 +179,4 @@ Always add `<br/>` between `</p>` and the next `<p>` for readability:
 6. No inline CSS — Teams ignores it
 7. Nested `<ul>` for any hierarchical or tree-shaped content
 8. `<hr/>` between sections for clean visual breaks
-9. **Always add `<br/>` between `</p>` and the next `<p>`** — adjacent paragraphs run together without it
+9. **Do NOT add `<br/>` between paragraphs** — adjacent `<p>` tags have natural spacing; `<br/>` is for spacing around tables/lists only
