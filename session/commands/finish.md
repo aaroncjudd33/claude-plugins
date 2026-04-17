@@ -80,7 +80,7 @@ Save what's missing. Report: "Saved: [list]" or "Memory: nothing new to save."
 
 **All types** — if `teams_chat` is not `none`:
 - Prompt: "Post a closing update to [teams_chat]?"
-- If yes: draft update, preview, wait for confirmation before sending
+- If yes: read `~/.claude/plugins/marketplaces/ajudd-claude-plugins/comms/skills/comms/references/teams-html-guide.md`, draft using the Standard Message Template, preview, wait for confirmation before sending
 
 Story and cab: prompt automatically.
 Plugin, personal, and general: only prompt if the user asks or something significant was resolved.

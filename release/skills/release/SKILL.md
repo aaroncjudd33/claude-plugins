@@ -208,3 +208,31 @@ During `release:deploy`, also register the Actions run:
 - MST (standard, Nov–Mar): UTC-7 → add 7 hours to local time
 - MDT (daylight saving, Mar–Nov): UTC-6 → add 6 hours to local time
 - Example: 12:30 PM MST = 19:30 UTC = `2026-03-10T19:30:00.000+0000`
+
+---
+
+## Teams Messaging
+
+Whenever any step in this plugin posts a Teams message, apply these rules without exception:
+
+1. **Always end with the Claude signature** — no exceptions:
+   `<p><em>Posted by Claude on behalf of Aaron Judd</em></p>`
+2. **Always preview before sending.** Show the full message content and wait for explicit approval before calling `send_chat_message`.
+3. **Always use HTML formatting.** `send_chat_message` body supports and renders HTML.
+4. **Always open with an intro paragraph** (`<p>`) before the first section.
+5. **Follow the HTML guide.** Read `~/.claude/plugins/marketplaces/ajudd-claude-plugins/comms/skills/comms/references/teams-html-guide.md` before drafting any message.
+
+Standard message template:
+
+```html
+<p><b>Message Title</b></p>
+<hr/>
+<p>Intro — context, who this is for, why you're sending it.</p>
+<hr/>
+<p><b>Section One</b></p>
+<ul>
+  <li><b>Item</b> — detail</li>
+</ul>
+<hr/>
+<p><em>Posted by Claude on behalf of Aaron Judd</em></p>
+```

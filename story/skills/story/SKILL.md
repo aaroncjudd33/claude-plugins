@@ -188,3 +188,31 @@ Step 3 (optional): transitionJiraIssue
 Step 4 (optional): addCommentToJiraIssue
   - commentBody: "Additional details with **markdown** and ```code blocks```"
 ```
+
+---
+
+## Teams Messaging
+
+Whenever any step in this plugin posts a Teams message, apply these rules without exception:
+
+1. **Always end with the Claude signature** — no exceptions:
+   `<p><em>Posted by Claude on behalf of Aaron Judd</em></p>`
+2. **Always preview before sending.** Show the full message content and wait for explicit approval before calling `send_chat_message`.
+3. **Always use HTML formatting.** `send_chat_message` body supports and renders HTML.
+4. **Always open with an intro paragraph** (`<p>`) before the first section.
+5. **Follow the HTML guide.** Read `~/.claude/plugins/marketplaces/ajudd-claude-plugins/comms/skills/comms/references/teams-html-guide.md` before drafting any message.
+
+Standard message template:
+
+```html
+<p><b>Message Title</b></p>
+<hr/>
+<p>Intro — context, who this is for, why you're sending it.</p>
+<hr/>
+<p><b>Section One</b></p>
+<ul>
+  <li><b>Item</b> — detail</li>
+</ul>
+<hr/>
+<p><em>Posted by Claude on behalf of Aaron Judd</em></p>
+```
