@@ -105,12 +105,12 @@ If the file does not exist or contains only the header, skip silently.
 | plugin | plugin name (e.g. `office`) | `<Name> - Claude Plugin` |
 | story | story key (e.g. `BPT2-1234`) | `BPT2-XXXX — <title>` (from Jira) |
 | cab | CAB number (e.g. `CAB-456`) | `CAB-XXX — <description>` (from Jira) |
-| personal | name the user provides | `<Name> - Personal Project` |
+| personal | name the user provides | `none` |
 | general | name the user provides | `<Name> - Claude <Category>` |
 
 For **general**, also ask for a category if not obvious: Research / Prototype / Training / Other.
 
-For **personal**, no category prompt — the type itself is the category.
+For **personal**, no category prompt — and Teams chat is always `none` (no lookup or creation).
 
 ### 7. Teams Chat Setup
 
@@ -142,7 +142,7 @@ updated: [today's date]
 - **Category:** [category]   ← general only, omit for other types
 - **Teams chat:** [teams_chat or "none"]
 - **Project:** [project path]
-- **Scope:** [scope path]   ← story/cab: pwd; plugin: ~/.claude/plugins/marketplaces/ajudd-claude-plugins/<name>; omit for personal and general
+- **Scope:** [scope path]   ← story/cab/personal: pwd; plugin: ~/.claude/plugins/marketplaces/ajudd-claude-plugins/<name>; omit for general
 - **Branch:** [branch or "n/a"]
 - **Last worked on:** [will be updated at checkpoint]
 - **Open items:** [carried from previous session, or "none"]
@@ -188,9 +188,13 @@ BPT2-1234
 1. Read the CAB card from Jira
 2. Check release branch status
 
-**Personal:**
-1. Ensure `~/.claude/memory/sessions/<slug>/<name>/` exists (create if not)
-2. Load any prior notes from that folder
+**Personal — resume:**
+1. Check git branch — confirm it matches the session file, offer to switch if not
+2. Summarize: what's done, what's open, what's next
+
+**Personal — new:**
+1. Ask for the project name
+2. Check current git branch, record it in the session file
 3. Understand the task, confirm approach, proceed
 
 **General:**
