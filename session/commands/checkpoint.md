@@ -63,7 +63,35 @@ Review the conversation for anything worth saving:
 
 Save what's missing. Report: "Saved: [list]" or "Memory: nothing new to save."
 
-### 4. Session Summary
+### 4. Scope Check
+
+Read the `Scope:` field from the session file. If the field is missing or the session type is `general`, skip this step.
+
+Review file paths accessed or modified during this conversation. Any path not beginning with the `Scope:` value is out-of-scope.
+
+If out-of-scope work is found, warn but do not block:
+
+```
+Out-of-scope work detected — will be excluded from this checkpoint.
+
+  Out-of-scope:
+    - <file path>  (belongs in: <target slug>)
+
+  Write a handoff note to the target session's inbox? (Yes / Skip)
+```
+
+If Yes: derive the target slug from the file path and append to `~/.claude/memory/sessions/<target-slug>/_inbox.md`:
+
+```markdown
+## [date] from <source-slug> / <session-name>
+- <description of out-of-scope work done>
+```
+
+Create the file if it does not exist, starting with `# Inbox — <target-slug>` as the first line.
+
+Continue with the checkpoint for in-scope work only.
+
+### 5. Session Summary
 
 Write `~/.claude/memory/sessions/<slug>/<name>.md` with the current state:
 
@@ -79,6 +107,7 @@ updated: [today's date]
 - **Category:** [category]   ← general only, omit for other types
 - **Teams chat:** [teams_chat or "none"]
 - **Project:** [project path]
+- **Scope:** [scope path]   ← story/cab: pwd; plugin: ~/.claude/plugins/marketplaces/ajudd-claude-plugins/<name>; omit for general
 - **Branch:** [branch or "n/a"]
 - **Last worked on:** [1 sentence — what is happening right now]
 - **Open items:** [bullet list, or "none"]

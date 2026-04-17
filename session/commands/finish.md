@@ -99,7 +99,42 @@ Skip if no Confluence page is set up for this session's context.
 
 **All other types:** Skip.
 
-### 8. Session Summary
+### 8. Cross-Scope Guard
+
+Read the `Scope:` field from the session file. If the field is missing or the session type is `general`, skip this step.
+
+Review file paths that were accessed or modified during this conversation (Read, Edit, Write, Bash file operations). Any path that does not begin with the `Scope:` value is out-of-scope.
+
+If out-of-scope work is found, **hard block** — do not proceed to the Session Summary:
+
+```
+Cross-scope work detected — cannot close this session cleanly.
+
+  Out-of-scope changes:
+    - <file path>  (belongs in: <target slug>)
+
+  Options:
+    [1] Write a handoff note to the correct session's inbox and exclude from this record
+    [2] Acknowledge as out-of-scope, exclude from record (no handoff)
+    [3] Cancel finish — I'll handle it manually
+```
+
+**Option [1]:** Derive the target slug from the file path (e.g. `ajudd-claude-plugins` for plugin files; last component of `/dev/` paths for work projects). Append to `~/.claude/memory/sessions/<target-slug>/_inbox.md`:
+
+```markdown
+## [date] from <source-slug> / <session-name>
+- <description of out-of-scope work done>
+```
+
+Create the file if it does not exist, starting with `# Inbox — <target-slug>` as the first line.
+
+**Option [2]:** Note the excluded work in the session summary's Open items field.
+
+**Option [3]:** Stop. Do not write the Session Summary or Deactivate the session.
+
+Only proceed to step 9 once all flagged items are resolved (or none were found).
+
+### 9. Session Summary
 
 Write `~/.claude/memory/sessions/<slug>/<name>.md` with the final state for today:
 
@@ -115,6 +150,7 @@ updated: [today's date]
 - **Category:** [category]   ← general only, omit for other types
 - **Teams chat:** [teams_chat or "none"]
 - **Project:** [project path]
+- **Scope:** [scope path]   ← story/cab: pwd; plugin: ~/.claude/plugins/marketplaces/ajudd-claude-plugins/<name>; omit for general
 - **Branch:** [branch or "n/a"]
 - **Last worked on:** [1 sentence — what was accomplished today]
 - **Open items:** [bullet list, or "none"]
@@ -130,7 +166,7 @@ Before writing, ask the user: "What's the first thing to pick up next time?" Use
 
 Print the summary to screen as the final output.
 
-### 9. Deactivate Session
+### 10. Deactivate Session
 
 Remove the active marker so no future conversation inherits stale state:
 

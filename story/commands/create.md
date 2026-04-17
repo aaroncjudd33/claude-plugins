@@ -108,6 +108,7 @@ updated: <today's date>
 - **Name:** BPT2-XXXX
 - **Teams chat:** none
 - **Project:** <pwd>
+- **Scope:** <pwd>
 - **Branch:** feature/BPT2-XXXX-<short-slug>
 - **Last worked on:** Created — <summary>
 - **Open items:** none
@@ -116,6 +117,8 @@ updated: <today's date>
 ```
 
 Create `~/.claude/memory/sessions/<slug>/` if it does not exist.
+
+Also ensure `~/.claude/memory/sessions/<slug>/_inbox.md` exists. If it does not, create it with just the header line `# Inbox — <slug>`.
 
 ## Output
 

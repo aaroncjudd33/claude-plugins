@@ -74,7 +74,25 @@ If the directory does not exist or is empty, skip this section.
 - cab → `CAB-XXX.md`
 - general → `<name>.md`
 
-### 5. Establish Session Identity
+### 5. Check Inbox
+
+After loading or creating the session file, check for `~/.claude/memory/sessions/<slug>/_inbox.md`.
+
+If the file exists and has content beyond the header line:
+
+```
+Inbox (<N> item(s))
+  [date] from <source-slug> / <session-name>
+    - <item>
+```
+
+Ask: "Clear inbox? (Yes / Keep)"
+- **Yes:** overwrite the file with just the header: `# Inbox — <slug>`
+- **Keep:** leave it; note the inbox items in the `Open items` field of the session state
+
+If the file does not exist or contains only the header, skip silently.
+
+### 6. Establish Session Identity
 
 | Type | name | teams_chat |
 |------|------|------------|
@@ -85,7 +103,7 @@ If the directory does not exist or is empty, skip this section.
 
 For **general**, also ask for a category if not obvious: Research / Prototype / Training / Other.
 
-### 6. Teams Chat Setup
+### 7. Teams Chat Setup
 
 Look in `C:\Users\ajudd\.claude\plugins\marketplaces\ajudd-claude-plugins\office\skills\office\references\known-chats.md` for a chat whose Name or Topic matches the expected `teams_chat` value and has `Active=yes`.
 
@@ -97,7 +115,7 @@ Match on the Name column (exact, case-insensitive) first; fall back to substring
   - **Skip:** set `teams_chat` to `none` — Teams steps in checkpoint will be skipped
   - **Different:** ask which existing chat to use, store that name instead
 
-### 7. Write Session State
+### 8. Write Session State
 
 Create `~/.claude/memory/sessions/<slug>/` if it does not exist.
 
@@ -115,6 +133,7 @@ updated: [today's date]
 - **Category:** [category]   ← general only, omit for other types
 - **Teams chat:** [teams_chat or "none"]
 - **Project:** [project path]
+- **Scope:** [scope path]   ← story/cab: pwd; plugin: ~/.claude/plugins/marketplaces/ajudd-claude-plugins/<name>; omit for general
 - **Branch:** [branch or "n/a"]
 - **Last worked on:** [will be updated at checkpoint]
 - **Open items:** [carried from previous session, or "none"]
@@ -129,7 +148,7 @@ Write `~/.claude/memory/sessions/<slug>/_active` (plain text, just the name — 
 BPT2-1234
 ```
 
-### 8. Route Based on Choice
+### 9. Route Based on Choice
 
 **Plugin — existing plugin:**
 1. Read `plugin.json`, all command `.md` files, and `SKILL.md` if present
