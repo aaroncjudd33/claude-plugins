@@ -18,6 +18,7 @@ Run `pwd` and extract the **last path component** as the repo slug:
 Detect session type from the path:
 - **plugin** — path contains `ajudd-claude-plugins`
 - **story / cab** — path contains `/dev/`
+- **personal** — path contains `/c/claude/`
 - **general** — anything else
 
 ### 2. Load Repo Sessions
@@ -49,6 +50,10 @@ If the directory does not exist or is empty, skip this section.
 - Start a CAB
 - Something else — describe it
 
+**Personal project** (path under `/c/claude/`):
+- **[N] Resume <name>** — <last worked on> *(one line per existing session)*
+- Start something new — give it a name
+
 **General / unknown project:**
 - **[N] Resume <name>** — <last worked on> *(one line per existing session)*
 - Start something new — give it a name and category
@@ -68,10 +73,11 @@ If the directory does not exist or is empty, skip this section.
     Related stories: [BPT2-XXXX, ...]   ← cab type only, omit if none
   ```
 
-**New story/plugin/general — session filename:**
+**New story/plugin/personal/general — session filename:**
 - story → `BPT2-XXXX.md`
 - plugin → `<plugin-name>.md`
 - cab → `CAB-XXX.md`
+- personal → `<name>.md`
 - general → `<name>.md`
 
 ### 5. Check Inbox
@@ -99,9 +105,12 @@ If the file does not exist or contains only the header, skip silently.
 | plugin | plugin name (e.g. `office`) | `<Name> - Claude Plugin` |
 | story | story key (e.g. `BPT2-1234`) | `BPT2-XXXX — <title>` (from Jira) |
 | cab | CAB number (e.g. `CAB-456`) | `CAB-XXX — <description>` (from Jira) |
+| personal | name the user provides | `<Name> - Personal Project` |
 | general | name the user provides | `<Name> - Claude <Category>` |
 
 For **general**, also ask for a category if not obvious: Research / Prototype / Training / Other.
+
+For **personal**, no category prompt — the type itself is the category.
 
 ### 7. Teams Chat Setup
 
@@ -133,7 +142,7 @@ updated: [today's date]
 - **Category:** [category]   ← general only, omit for other types
 - **Teams chat:** [teams_chat or "none"]
 - **Project:** [project path]
-- **Scope:** [scope path]   ← story/cab: pwd; plugin: ~/.claude/plugins/marketplaces/ajudd-claude-plugins/<name>; omit for general
+- **Scope:** [scope path]   ← story/cab: pwd; plugin: ~/.claude/plugins/marketplaces/ajudd-claude-plugins/<name>; omit for personal and general
 - **Branch:** [branch or "n/a"]
 - **Last worked on:** [will be updated at checkpoint]
 - **Open items:** [carried from previous session, or "none"]
@@ -178,6 +187,11 @@ BPT2-1234
 **CAB — resume:**
 1. Read the CAB card from Jira
 2. Check release branch status
+
+**Personal:**
+1. Ensure `~/.claude/memory/sessions/<slug>/<name>/` exists (create if not)
+2. Load any prior notes from that folder
+3. Understand the task, confirm approach, proceed
 
 **General:**
 1. Ensure `~/.claude/memory/sessions/<slug>/<name>/` exists (create if not)

@@ -16,7 +16,7 @@ Run `pwd` and extract the repo slug (last path component).
 Read `~/.claude/memory/sessions/<slug>/_active` to get the session name.
 
 Read `~/.claude/memory/sessions/<slug>/<name>.md` and extract:
-- `type` (plugin / story / cab / general)
+- `type` (plugin / story / cab / personal / general)
 - `name`
 - `teams_chat`
 - `branch`
@@ -41,6 +41,7 @@ Session Finish — <name> (<type>)
 | plugin | `~/.claude/plugins/marketplaces/ajudd-claude-plugins` |
 | story | current working directory (work repo) |
 | cab | current working directory — check release branch specifically |
+| personal | skip |
 | general | skip |
 
 Check:
@@ -73,7 +74,7 @@ Save what's missing. Report: "Saved: [list]" or "Memory: nothing new to save."
 - Are the CAB card fields up to date?
 - Is the release branch reflected correctly?
 
-**plugin / general:** Skip.
+**plugin / personal / general:** Skip.
 
 ### 5. Teams Update
 
@@ -82,7 +83,7 @@ Save what's missing. Report: "Saved: [list]" or "Memory: nothing new to save."
 - If yes: draft update, preview, wait for confirmation before sending
 
 Story and cab: prompt automatically.
-Plugin and general: only prompt if the user asks or something significant was resolved.
+Plugin, personal, and general: only prompt if the user asks or something significant was resolved.
 
 ### 6. Confluence
 
@@ -101,7 +102,7 @@ Skip if no Confluence page is set up for this session's context.
 
 ### 8. Cross-Scope Guard
 
-Read the `Scope:` field from the session file. If the field is missing or the session type is `general`, skip this step.
+Read the `Scope:` field from the session file. If the field is missing or the session type is `personal` or `general`, skip this step.
 
 Review file paths that were accessed or modified during this conversation (Read, Edit, Write, Bash file operations). Any path that does not begin with the `Scope:` value is out-of-scope.
 
@@ -150,7 +151,7 @@ updated: [today's date]
 - **Category:** [category]   ← general only, omit for other types
 - **Teams chat:** [teams_chat or "none"]
 - **Project:** [project path]
-- **Scope:** [scope path]   ← story/cab: pwd; plugin: ~/.claude/plugins/marketplaces/ajudd-claude-plugins/<name>; omit for general
+- **Scope:** [scope path]   ← story/cab: pwd; plugin: ~/.claude/plugins/marketplaces/ajudd-claude-plugins/<name>; omit for personal and general
 - **Branch:** [branch or "n/a"]
 - **Last worked on:** [1 sentence — what was accomplished today]
 - **Open items:** [bullet list, or "none"]
@@ -160,7 +161,7 @@ updated: [today's date]
 - **Related stories:** [BPT2-XXXX, BPT2-YYYY or "none"]   ← cab type only, omit for other types
 ```
 
-**General sessions only:** Also check `~/.claude/memory/sessions/<slug>/<name>/` — if notes, decisions, or outputs were produced today, ensure they are written there before closing.
+**Personal and general sessions:** Also check `~/.claude/memory/sessions/<slug>/<name>/` — if notes, decisions, or outputs were produced today, ensure they are written there before closing.
 
 Before writing, ask the user: "What's the first thing to pick up next time?" Use their answer for the `Next step` field. If they say "same" or similar, carry forward the current value.
 

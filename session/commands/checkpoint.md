@@ -16,7 +16,7 @@ Run `pwd` and extract the repo slug (last path component).
 Read `~/.claude/memory/sessions/<slug>/_active` to get the session name.
 
 Read `~/.claude/memory/sessions/<slug>/<name>.md` and extract:
-- `type` (plugin / story / cab / general)
+- `type` (plugin / story / cab / personal / general)
 - `name`
 - `teams_chat`
 - `branch`
@@ -41,6 +41,7 @@ Session Checkpoint — <name> (<type>)
 | plugin | `~/.claude/plugins/marketplaces/ajudd-claude-plugins` |
 | story | current working directory (work repo) |
 | cab | current working directory — check release branch specifically |
+| personal | skip |
 | general | skip |
 
 Check:
@@ -65,7 +66,7 @@ Save what's missing. Report: "Saved: [list]" or "Memory: nothing new to save."
 
 ### 4. Scope Check
 
-Read the `Scope:` field from the session file. If the field is missing or the session type is `general`, skip this step.
+Read the `Scope:` field from the session file. If the field is missing or the session type is `personal` or `general`, skip this step.
 
 Review file paths accessed or modified during this conversation. Any path not beginning with the `Scope:` value is out-of-scope.
 
@@ -107,7 +108,7 @@ updated: [today's date]
 - **Category:** [category]   ← general only, omit for other types
 - **Teams chat:** [teams_chat or "none"]
 - **Project:** [project path]
-- **Scope:** [scope path]   ← story/cab: pwd; plugin: ~/.claude/plugins/marketplaces/ajudd-claude-plugins/<name>; omit for general
+- **Scope:** [scope path]   ← story/cab: pwd; plugin: ~/.claude/plugins/marketplaces/ajudd-claude-plugins/<name>; omit for personal and general
 - **Branch:** [branch or "n/a"]
 - **Last worked on:** [1 sentence — what is happening right now]
 - **Open items:** [bullet list, or "none"]
