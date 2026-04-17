@@ -82,6 +82,11 @@ If a repo name is inferable from conversation context (e.g., the user mentioned 
 - If `actions:repo-name` exists in the `links` section → append it to the workspace's `links` array
 - Do not create new `git:` or `actions:` entries — only add existing ones to the workspace
 
+For any other links explicitly referenced or created during this invocation:
+- **Confluence pages**: if a `docs:*` key was created or referenced (e.g. a Proposed Work page, Architecture page, etc.) → append it to the workspace's `links` array. If the `docs:*` key doesn't exist yet in `links`, create it with the URL and a short description before appending.
+- **Any URL the user explicitly provides** (PR, design doc, external reference, etc.): register it as `<prefix>:<story-key>-<short-label>` in the `links` section and append it to the workspace.
+- Deduplicate — never add the same key twice to a workspace's `links` array.
+
 Write back `C:\Users\ajudd\.claude\browser-links.json`. Do not prompt the user during this step.
 
 ### 8. Write session file
