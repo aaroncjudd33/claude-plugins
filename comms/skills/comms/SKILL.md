@@ -26,15 +26,15 @@ These apply to every Teams message, no exceptions:
 
 ```html
 <p><b>Message Title</b></p>
-<hr/>
+<p>&nbsp;</p>
 <p>Intro — context, who this is for, why you're sending it.</p>
-<hr/>
+<p>&nbsp;</p>
 <p><b>Section One</b></p>
 <ul>
   <li><b>Item</b> — detail</li>
   <li><b>Item</b> — detail</li>
 </ul>
-<hr/>
+<p>&nbsp;</p>
 <p><b>Section Two</b></p>
 <ul>
   <li>Top-level item
@@ -43,7 +43,7 @@ These apply to every Teams message, no exceptions:
     </ul>
   </li>
 </ul>
-<hr/>
+<p>&nbsp;</p>
 <p><em>Posted by Claude on behalf of Aaron Judd</em></p>
 ```
 

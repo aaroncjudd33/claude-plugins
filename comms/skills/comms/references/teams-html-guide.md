@@ -12,9 +12,9 @@ This guide applies to all plugins, all message types (session updates, CAB notic
 | `<b>` | Section labels, emphasis |
 | `<i>` / `<em>` | Signature line, secondary notes |
 | `<ul>` / `<li>` | Almost everything — primary layout tool |
-| `<hr/>` | Section dividers |
-| `<p>` | Intro and closing paragraphs |
-| `<br/>` | Vertical spacing between elements |
+| `<p>` | All paragraphs, titles, and spacing |
+| `<p>&nbsp;</p>` | Spacer between any two elements |
+| `<br/>` | Spacing immediately before/after a table only |
 | `<a href>` | Links |
 | `<table>` (2–3 col) | True tabular data only — see rules below |
 
@@ -24,9 +24,10 @@ This guide applies to all plugins, all message types (session updates, CAB notic
 
 | Element | Problem | Use instead |
 |---------|---------|-------------|
+| `<hr/>` | Adds an unwanted visible line AND extra spacing | `<p>&nbsp;</p>` spacer |
 | `<pre>` | Solid black background — unreadable in dark mode | Nested `<ul>` |
 | `<code>` | Dark inline background — clashes in dark mode | Plain text or `<b>` |
-| `<h2>` / `<h3>` | Too heavy, over-prominent | `<b>` on its own line |
+| `<h2>` / `<h3>` | Too heavy, over-prominent | `<p><b>...</b></p>` |
 | `<th>` | Dark bold header, hard to read | `<td>` for all cells |
 | 4+ column tables | Too wide, cramped on screen | Bullet list with bold labels |
 | Inline CSS | Ignored by Teams entirely | Don't bother |
@@ -42,7 +43,28 @@ Do NOT use `<h3>`. Wrap `<b>` in `<p>` so it gets block-level margins above and 
 content here
 ```
 
-Do NOT use bare `<b>Section</b>` — it is inline and sits flush against the `<hr/>` with no breathing room.
+Do NOT use bare `<b>Section</b>` — it is inline and renders without natural spacing.
+
+---
+
+## Spacing — Universal Rule
+
+Use `<p>&nbsp;</p>` between every element that needs visual separation — between paragraphs, between a paragraph and a section header, between a section and a list, and before the signature.
+
+**Never use `<hr/>` for spacing.** It renders a visible horizontal line that clutters the message.
+
+```
+<p>First paragraph.</p>
+<p>&nbsp;</p>
+<p>Second paragraph.</p>
+<p>&nbsp;</p>
+<p><b>Section Header</b></p>
+<ul>
+  <li>Item</li>
+</ul>
+<p>&nbsp;</p>
+<p><em>Posted by Claude on behalf of Aaron Judd</em></p>
+```
 
 ---
 
@@ -103,24 +125,32 @@ For 4+ columns or anything with long text values, use bullet pairs instead:
 </ul>
 ```
 
+### Table Spacing
+
+Wrap tables with `<br/>` immediately before and after the `<table>` tag. Use `<p>&nbsp;</p>` for everything else:
+
+```
+<p><b>Table Title</b></p>
+<br/>
+<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;">
+  ...
+</table>
+<br/>
+<p>&nbsp;</p>
+<p><em>Posted by Claude on behalf of Aaron Judd</em></p>
+```
+
 ### Table Legend
 
-When a table needs a legend, place it immediately after the closing `</table>` tag — no `<br/>` gap between them. Use `<em>` for each legend item to render it as secondary/lighter text. Put each item on its own line:
+When a table needs a legend, place `<em>` items immediately after `</table>` with no gap:
 
 ```
 </table>
 <em>term = explanation</em><br/>
-<em>term = explanation</em><br/>
 <em>* = footnote</em>
-<br/><br/>
+<p>&nbsp;</p>
 <p><em>Posted by Claude on behalf of Aaron Judd</em></p>
 ```
-
-### Table Spacing
-
-- `<br/><br/>` between the title and the table
-- No gap between table and legend (legend sits flush under the table)
-- `<br/><br/>` between legend and signature
 
 ---
 
@@ -128,14 +158,14 @@ When a table needs a legend, place it immediately after the closing `</table>` t
 
 ```
 <p><b>Message Title</b></p>
-<hr/>
+<p>&nbsp;</p>
 <p>Intro — context, who this is for, why you're sending it.</p>
-<hr/>
+<p>&nbsp;</p>
 <p><b>Section One</b></p>
 <ul>
   <li><b>Item</b> — detail</li>
 </ul>
-<hr/>
+<p>&nbsp;</p>
 <p><b>Section Two</b></p>
 <ul>
   <li>Sub-item
@@ -144,24 +174,7 @@ When a table needs a legend, place it immediately after the closing `</table>` t
     </ul>
   </li>
 </ul>
-<hr/>
-<p><em>Posted by Claude on behalf of Aaron Judd</em></p>
-```
-
----
-
-## Paragraph Separation
-
-Adjacent `<p>` tags give a small natural margin in Teams — use them for flowing text. This looks like a normal message.
-
-Do NOT add `<br/>` between every `<p>` — it creates a full blank line and feels like a section break, not a paragraph break.
-
-Reserve `<br/>` for spacing around structural elements (before/after a table, after a bullet list before the signature):
-
-```
-<p>First paragraph.</p>
-<p>Second paragraph.</p>
-<br/>
+<p>&nbsp;</p>
 <p><em>Posted by Claude on behalf of Aaron Judd</em></p>
 ```
 
@@ -173,10 +186,11 @@ Reserve `<br/>` for spacing around structural elements (before/after a table, af
    `<p><em>Posted by Claude on behalf of Aaron Judd</em></p>`
 1. No `<pre>`, no `<code>` — ever
 2. No `<h2>`, `<h3>` — use `<p><b>...</b></p>` instead
-3. No bare `<b>Section</b>` for headers — always wrap in `<p>` for block-level spacing
+3. No bare `<b>Section</b>` for headers — always wrap in `<p>`
 4. No `<th>` — use `<td>` with `<b>` inside for header cells
 5. No tables wider than 3 columns — use bullet lists
 6. No inline CSS — Teams ignores it
-7. Nested `<ul>` for any hierarchical or tree-shaped content
-8. `<hr/>` between sections for clean visual breaks
-9. **Do NOT add `<br/>` between paragraphs** — adjacent `<p>` tags have natural spacing; `<br/>` is for spacing around tables/lists only
+7. No `<hr/>` — ever. Use `<p>&nbsp;</p>` for spacing instead
+8. Nested `<ul>` for any hierarchical or tree-shaped content
+9. `<p>&nbsp;</p>` between every element that needs visual separation — paragraphs, headers, lists, and before the signature
+10. `<br/>` only immediately before/after `<table>` tags — nowhere else
