@@ -127,17 +127,15 @@ For 4+ columns or anything with long text values, use bullet pairs instead:
 
 ### Table Spacing
 
-Wrap tables with `<br/>` immediately before and after the `<table>` tag. Use `<p>&nbsp;</p>` for everything else:
+Place the table immediately after the header `<p>` — no `<br/>` before it. Add `<br/>` after the closing `</table>` tag before the next element:
 
 ```
 <p><b>Table Title</b></p>
-<br/>
 <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;">
   ...
 </table>
 <br/>
-<p>&nbsp;</p>
-<p><em>Posted by Claude on behalf of Aaron Judd</em></p>
+<p>Next paragraph or signature.</p>
 ```
 
 ### Table Legend
@@ -193,4 +191,4 @@ When a table needs a legend, place `<em>` items immediately after `</table>` wit
 7. No `<hr/>` — ever. Use `<p>&nbsp;</p>` for spacing instead
 8. Nested `<ul>` for any hierarchical or tree-shaped content
 9. `<p>&nbsp;</p>` between every element that needs visual separation — paragraphs, headers, lists, and before the signature
-10. `<br/>` only immediately before/after `<table>` tags — nowhere else
+10. `<br/>` only immediately **after** `</table>` — no `<br/>` before the table
