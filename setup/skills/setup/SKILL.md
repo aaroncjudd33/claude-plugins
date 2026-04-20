@@ -114,8 +114,28 @@ If any section fails (MCP auth issue, network error, etc.), print the error unde
 
 ---
 
-## Future — Calendar
+## Calendar
 
-When implementing `setup:calendar`:
-- Use `mcp__claude_ai_Microsoft_365__outlook_calendar_search` for today's calendar
-- Format: show time, title, attendees
+<!-- SYNC NOTE: Mirrors setup/commands/calendar.md. Update both together. -->
+
+Tool: `mcp__claude_ai_yl-msoffice__list_events`
+
+Date range: today 00:00–23:59 local time in UTC. Mountain Time — MDT (UTC-6) April–October, MST (UTC-7) otherwise.
+
+Parameters: `startDateTime`, `endDateTime` (ISO 8601 UTC), `top: 20`.
+
+Post-processing:
+- Filter out events where response status is `declined`
+- Sort by start time ascending
+- Duration = end − start; format as `(30 min)`, `(1h)`, `(1h 30m)`
+- Location hint: `— Teams` if `isOnlineMeeting` or Teams join URL present; else location name if non-empty
+
+Output format:
+```
+CALENDAR (N events)
+
+  9:00 AM   Daily Standup                 (30 min)  — Teams
+  10:30 AM  Sprint Planning               (1h)
+```
+
+No events → `CALENDAR — No events today`. Failure → `CALENDAR — Unavailable`.

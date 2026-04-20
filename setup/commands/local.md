@@ -117,12 +117,22 @@ If unavailable: `CONFLUENCE — Unavailable`
 
 ### 5. Calendar
 
-Print:
-```
-CALENDAR
+<!-- SYNC NOTE: These calendar instructions are duplicated in setup/commands/calendar.md. If you change them here, update there too. -->
 
-  Coming soon — today's meetings via Microsoft 365
+Compute today's date range in UTC (MDT = UTC-6, April–October; MST = UTC-7 otherwise). Call `mcp__claude_ai_yl-msoffice__list_events` with `startDateTime` (today 00:00 local → UTC), `endDateTime` (today 23:59 local → UTC), `top: 20`. Filter out declined events. Sort by start time ascending.
+
+For each event: time in 12-hour format, duration (end − start), location hint (`— Teams` if online meeting, else location name if present).
+
+Output:
 ```
+CALENDAR (N events)
+
+  9:00 AM   Daily Standup                 (30 min)  — Teams
+  10:30 AM  Sprint Planning               (1h)
+  2:00 PM   1:1 with Heber               (1h)  — Teams
+```
+
+If no events: `CALENDAR — No events today`. If call fails: `CALENDAR — Unavailable`.
 
 ### 6. Done
 
