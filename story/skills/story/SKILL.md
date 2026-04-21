@@ -205,11 +205,11 @@ Whenever any step in this plugin posts a Teams message, apply these rules withou
 Standard message template:
 
 ```html
-<p><b>Message Title</b></p>
+<h2>Message Title</h2>
 <p>&nbsp;</p>
 <p>Intro — context, who this is for, why you're sending it.</p>
 <p>&nbsp;</p>
-<p><b>Section One</b></p>
+<h2>Section One</h2>
 <ul>
   <li><b>Item</b> — detail</li>
 </ul>

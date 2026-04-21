@@ -12,6 +12,7 @@ This guide applies to all plugins, all message types (session updates, CAB notic
 | `<b>` | Section labels, emphasis |
 | `<i>` / `<em>` | Signature line, secondary notes |
 | `<ul>` / `<li>` | Almost everything — primary layout tool |
+| `<h2>` | Section headers — renders visibly larger than body text |
 | `<p>` | All paragraphs, titles, and spacing |
 | `<p>&nbsp;</p>` | Spacer between any two elements |
 | `<br/>` | Spacing immediately before/after a table only |
@@ -27,7 +28,8 @@ This guide applies to all plugins, all message types (session updates, CAB notic
 | `<hr/>` | Adds an unwanted visible line AND extra spacing | `<p>&nbsp;</p>` spacer |
 | `<pre>` | Solid black background — unreadable in dark mode | Nested `<ul>` |
 | `<code>` | Dark inline background — clashes in dark mode | Plain text or `<b>` |
-| `<h2>` / `<h3>` | Too heavy, over-prominent | `<p><b>...</b></p>` |
+| `<h1>` | Too large for chat messages | `<h2>` for section headers |
+| `<h3>` | Renders at or below body text size — no visual hierarchy | `<h2>` for section headers |
 | `<th>` | Dark bold header, hard to read | `<td>` for all cells |
 | 4+ column tables | Too wide, cramped on screen | Bullet list with bold labels |
 | Inline CSS | Ignored by Teams entirely | Don't bother |
@@ -36,13 +38,16 @@ This guide applies to all plugins, all message types (session updates, CAB notic
 
 ## Section Label Pattern
 
-Do NOT use `<h3>`. Wrap `<b>` in `<p>` so it gets block-level margins above and below:
+Use `<h2>` for section headers — renders visibly larger than body text with clear visual hierarchy:
 
 ```
-<p><b>Section Title</b></p>
+<h2>Section Title</h2>
 content here
 ```
 
+Do NOT use `<h3>` — renders at or below body text size in Teams (no visual hierarchy).
+Do NOT use `<h1>` — too large for chat messages.
+Use `<p><b>...</b></p>` for minor labels within a section (same-size bold, not a heading).
 Do NOT use bare `<b>Section</b>` — it is inline and renders without natural spacing.
 
 ---
@@ -77,6 +82,13 @@ Use `<ul>` with bold labels for most structured content — commands, types, sco
 <li><b>Label</b> — description or value</li>
 <li><b>Label</b> — description or value</li>
 </ul>
+```
+
+**Caution: bold label + description in `<li>` inflates vertical spacing.** When list items contain rich content (bold label plus description text that wraps), Teams adds paragraph-level margins between bullets. Keep `<li>` to one short idea. For title+description pairs that may wrap, use `<p>` elements instead:
+
+```
+<p><b>Title</b> — description text</p>
+<p><b>Another title</b> — another description</p>
 ```
 
 ---
@@ -155,16 +167,16 @@ When a table needs a legend, place `<em>` items immediately after `</table>` wit
 ## Standard Message Template
 
 ```
-<p><b>Message Title</b></p>
+<h2>Message Title</h2>
 <p>&nbsp;</p>
 <p>Intro — context, who this is for, why you're sending it.</p>
 <p>&nbsp;</p>
-<p><b>Section One</b></p>
+<h2>Section One</h2>
 <ul>
   <li><b>Item</b> — detail</li>
 </ul>
 <p>&nbsp;</p>
-<p><b>Section Two</b></p>
+<h2>Section Two</h2>
 <ul>
   <li>Sub-item
     <ul>
@@ -183,8 +195,8 @@ When a table needs a legend, place `<em>` items immediately after `</table>` wit
 0. **ALWAYS end every message with the Claude signature** — no exceptions, no matter how short the message:
    `<p><em>Posted by Claude on behalf of Aaron Judd</em></p>`
 1. No `<pre>`, no `<code>` — ever
-2. No `<h2>`, `<h3>` — use `<p><b>...</b></p>` instead
-3. No bare `<b>Section</b>` for headers — always wrap in `<p>`
+2. No `<h1>` (too large) and no `<h3>` (renders at body text size) — use `<h2>` for section headers
+3. No bare `<b>Section</b>` for minor labels — wrap in `<p><b>...</b></p>`
 4. No `<th>` — use `<td>` with `<b>` inside for header cells
 5. No tables wider than 3 columns — use bullet lists
 6. No inline CSS — Teams ignores it

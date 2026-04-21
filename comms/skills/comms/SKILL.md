@@ -20,22 +20,22 @@ These apply to every Teams message, no exceptions:
 2. **Always preview before sending.** Show the full message content to the user and wait for explicit approval before calling `send_chat_message`. Never auto-confirm.
 3. **Always use HTML formatting.** The `yl-msoffice` `send_chat_message` body supports HTML and renders it properly.
 4. **Always open with an intro paragraph.** Before the first section, include a `<p>` that sets context — who this is for and why you're sending it.
-5. **Follow the HTML guide.** See `references/teams-html-guide.md` for what renders well vs. poorly. The short version: no `<pre>`, no `<code>`, no `<h3>`, no `<th>`. Use `<b>` for labels, `<ul>` for structure, nested `<ul>` for hierarchical content.
+5. **Follow the HTML guide.** See `references/teams-html-guide.md` for what renders well vs. poorly. The short version: no `<pre>`, no `<code>`, no `<h1>`, no `<h3>`, no `<th>`. Use `<h2>` for section headers, `<b>` for labels, `<ul>` for structure, nested `<ul>` for hierarchical content.
 
 ### Standard Message Template
 
 ```html
-<p><b>Message Title</b></p>
+<h2>Message Title</h2>
 <p>&nbsp;</p>
 <p>Intro — context, who this is for, why you're sending it.</p>
 <p>&nbsp;</p>
-<p><b>Section One</b></p>
+<h2>Section One</h2>
 <ul>
   <li><b>Item</b> — detail</li>
   <li><b>Item</b> — detail</li>
 </ul>
 <p>&nbsp;</p>
-<p><b>Section Two</b></p>
+<h2>Section Two</h2>
 <ul>
   <li>Top-level item
     <ul>
