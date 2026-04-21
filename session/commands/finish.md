@@ -126,14 +126,20 @@ Cross-scope work detected — cannot close this session cleanly.
     [3] Cancel finish — I'll handle it manually
 ```
 
-**Option [1]:** Derive the target slug from the file path (e.g. `ajudd-claude-plugins` for plugin files; last component of `/dev/` paths for work projects). Append to `~/.claude/memory/sessions/<target-slug>/_inbox.md`:
+**Option [1]:** Derive the target slug from the file path (e.g. `ajudd-claude-plugins` for plugin files; last component of `/dev/` paths for work projects).
+
+If the target slug is `ajudd-claude-plugins`, also determine the target plugin:
+- If the file path contains `ajudd-claude-plugins/<plugin>/` → write to `~/.claude/memory/sessions/ajudd-claude-plugins/_inbox_<plugin>.md`. Create the file if it doesn't exist with header `# Inbox — <plugin> plugin`.
+- If the item is a new plugin idea (no specific existing plugin maps to the file path) → write to `~/.claude/memory/sessions/ajudd-claude-plugins/_inbox.md` with a `[new-plugin]` tag on the entry. Create the file if it doesn't exist with header `# Inbox — ajudd-claude-plugins`.
+
+For all other target slugs, append to `~/.claude/memory/sessions/<target-slug>/_inbox.md`. Create the file if it doesn't exist with header `# Inbox — <target-slug>`.
+
+In all cases, the entry format is:
 
 ```markdown
 ## [date] from <source-slug> / <session-name>
 - <description of out-of-scope work done>
 ```
-
-Create the file if it does not exist, starting with `# Inbox — <target-slug>` as the first line.
 
 **Option [2]:** Note the excluded work in the session summary's Open items field.
 

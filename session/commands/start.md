@@ -82,9 +82,11 @@ If the directory does not exist or is empty, skip this section.
 
 ### 5. Check Inbox
 
-After loading or creating the session file, check for `~/.claude/memory/sessions/<slug>/_inbox.md`.
+**For plugin sessions**, check `~/.claude/memory/sessions/<slug>/_inbox_<name>.md` (e.g. `_inbox_release.md`). This is the plugin-specific inbox where cross-scope work from other sessions is routed.
 
-If the file exists and has content beyond the header line:
+**For all other sessions**, check `~/.claude/memory/sessions/<slug>/_inbox.md`.
+
+If the inbox file exists and has content beyond the header line, display it:
 
 ```
 Inbox (<N> item(s))
@@ -93,10 +95,20 @@ Inbox (<N> item(s))
 ```
 
 Ask: "Clear inbox? (Yes / Keep)"
-- **Yes:** overwrite the file with just the header: `# Inbox — <slug>`
+- **Yes:** overwrite the file with just the header (`# Inbox — <name> plugin` for plugin type, `# Inbox — <slug>` otherwise)
 - **Keep:** leave it; note the inbox items in the `Open items` field of the session state
 
 If the file does not exist or contains only the header, skip silently.
+
+**Additionally**, for plugin sessions, check `~/.claude/memory/sessions/<slug>/_inbox.md` for any global items (new plugin ideas or undirected notes). If it has content, show it separately:
+
+```
+Global inbox (<N> item(s)) — new plugin ideas or undirected notes
+  [date] from <source-slug> / <session-name>
+    - <item>
+```
+
+Global inbox items are never auto-cleared — they stay until the user decides to act on them (create a new plugin) or explicitly discards them.
 
 ### 6. Establish Session Identity
 
