@@ -50,6 +50,7 @@ All fields that must be populated. ADF fields use `{ "type": "doc", "version": 1
 | CAB Risk | `customfield_13144` | option ID | Low: `13523`, Medium: `13524`, High: `13525` |
 | CAB Request Type | `customfield_13159` | option ID | **Standard: `13544`**, Emergency: `13545` |
 | Dev Team | `customfield_13110` | option ID | **BP2: `14429`** |
+| Prioritization | `customfield_13044` | option ID | **P3 is typical for standard deploys** |
 | Requested Deployment Date/Time | `customfield_13137` | datetime string | ISO 8601 UTC. MST = UTC-7, MDT = UTC-6. e.g. `2026-03-10T19:30:00.000+0000` |
 | Requires Outage Window | `customfield_11624` | option ID | **No: `11754`**, Yes: `11755` |
 | Can it be rolled back? | `customfield_12001` | option ID | **Yes: `12005`**, No: `12006` |
@@ -128,7 +129,7 @@ Do NOT call `transitionJiraIssue` for Send For Review or change the assignee —
 
 ## Link Registration
 
-After creating a CAB card and PR, register all artifacts in `C:\Users\ajudd\.claude\browser-links.json`:
+After creating a CAB card and PR, register all artifacts in `~/.claude/browser-links.json`:
 
 1. Read `browser-links.json`
 2. Add CAB link: `"cab:CAB-XXX": { "url": "https://younglivingeo.atlassian.net/browse/CAB-XXX", "description": "<CAB summary>" }`

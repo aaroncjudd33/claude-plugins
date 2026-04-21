@@ -165,7 +165,7 @@ Derive the repo name and org from the git remote:
 gh repo view --json nameWithOwner --jq '.nameWithOwner'
 ```
 
-Read `C:\Users\ajudd\.claude\browser-links.json`.
+Read `~/.claude/browser-links.json`.
 
 **Add to `links` section (if not already present):**
 - `actions:<repo-name>#run-<run-id>` → `https://github.com/<org>/<repo>/actions/runs/<run-id>`, description: `<CAB-XXX> deploy run`
@@ -176,7 +176,7 @@ Read `C:\Users\ajudd\.claude\browser-links.json`.
 **Append to each linked story workspace** (if those workspaces exist):
 - `actions:<repo-name>#run-<run-id>`
 
-Write back `C:\Users\ajudd\.claude\browser-links.json`. Do not prompt the user during this step.
+Write back `~/.claude/browser-links.json`. Do not prompt the user during this step.
 
 ### Close the CAB card
 

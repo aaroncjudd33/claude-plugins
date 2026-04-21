@@ -1,6 +1,6 @@
 ---
 name: create
-description: Create a complete CAB card for a Young Living production deployment. Fetches linked stories for context, creates the release branch (release/CAB-XXXX), creates the PR, populates all card fields, and comments the CAB back onto each story. Stops before submission — user handles Send For Review manually.
+description: Create a CAB card, release branch, and PR for a YL production deployment. Links stories, populates all fields, comments the CAB key back onto each story. Stops before Send For Review.
 argument-hint: "[BPT2-XXXX BPT2-YYYY ...]"
 ---
 
@@ -65,6 +65,7 @@ What's deploying:  [seeded from story summaries — confirm or refine]
 13. Date Tested in Clone/Stage: [today]
 14. Change Conductor:           Aaron Judd
 15. Dev Team:                   BP2
+16. Prioritization:             P3
 ```
 
 ### 5. Create the Jira issue (minimal — to get the CAB key)
@@ -154,7 +155,7 @@ This makes the deployment visible to anyone looking at the story in Jira — QA,
 
 ### 11. Register links
 
-Read `C:\Users\ajudd\.claude\browser-links.json`.
+Read `~/.claude/browser-links.json`.
 
 **Always add to `links` section (if not already present):**
 - `cab:CAB-XXX` → `https://younglivingeo.atlassian.net/browse/CAB-XXX`, description: CAB summary
@@ -177,7 +178,7 @@ Read `C:\Users\ajudd\.claude\browser-links.json`.
 - `pr:repo-name#NNN` *(skip on first-deploy)*
 - `git:repo-name` if it exists in the `links` section
 
-Write back `C:\Users\ajudd\.claude\browser-links.json`. Do not prompt the user during this step.
+Write back `~/.claude/browser-links.json`. Do not prompt the user during this step.
 
 ### 12. Stop — user handles submission
 
