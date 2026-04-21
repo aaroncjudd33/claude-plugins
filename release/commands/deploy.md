@@ -151,6 +151,33 @@ Use `gh run list` and `gh run watch` to monitor.
 
 ## Common Final Steps
 
+### Register deploy run link
+
+Get the deploy run ID from the completed workflow run. If you have been running `gh run watch` throughout, the run ID is already in context. Otherwise:
+
+```bash
+gh run list --limit 1 --json databaseId --jq '.[0].databaseId'
+```
+
+Derive the repo name and org from the git remote:
+
+```bash
+gh repo view --json nameWithOwner --jq '.nameWithOwner'
+```
+
+Read `C:\Users\ajudd\.claude\browser-links.json`.
+
+**Add to `links` section (if not already present):**
+- `actions:<repo-name>#run-<run-id>` → `https://github.com/<org>/<repo>/actions/runs/<run-id>`, description: `<CAB-XXX> deploy run`
+
+**Append to the CAB workspace** (if it exists in `browser-links.json`):
+- `actions:<repo-name>#run-<run-id>`
+
+**Append to each linked story workspace** (if those workspaces exist):
+- `actions:<repo-name>#run-<run-id>`
+
+Write back `C:\Users\ajudd\.claude\browser-links.json`. Do not prompt the user during this step.
+
 ### Close the CAB card
 
 Before closing, verify the clone deploy (step 7b) has been completed. If it was deferred, do not close the CAB — remind the user it must be done first.
