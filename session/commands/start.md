@@ -23,23 +23,27 @@ Detect session type from the path:
 
 ### 2. Load Repo Sessions
 
-List all `.md` files in `~/.claude/memory/sessions/<slug>/` (skip `_active`).
+List all `.md` files in `~/.claude/memory/sessions/<slug>/` (skip `_active` and `_inbox*` files).
 
 For each file, read it and extract: `Name`, `Branch`, `Last worked on`.
 
-If sessions exist, print a numbered list:
+For **plugin sessions**, also check `~/.claude/memory/sessions/<slug>/_inbox_<name>.md` and count lines that contain actual content (skip the header line and blank lines). If count > 0, note it for display.
+
+For **non-plugin sessions**, check `~/.claude/memory/sessions/<slug>/_inbox.md` and count content lines the same way.
+
+If sessions exist, print a numbered list. Append `📬 N` at the end of any line with inbox items:
 ```
 Sessions in <slug>
   [1]  <name>  |  <type>  |  <branch>  |  <last worked on — 1 sentence>
-  [2]  <name>  |  <type>  |  <branch>  |  <last worked on — 1 sentence>
+  [2]  <name>  |  <type>  |  <branch>  |  <last worked on — 1 sentence>  📬 3
 ```
 
 If the directory does not exist or is empty, skip this section.
 
 ### 3. Present Options
 
-**Plugin project** — read `.claude-plugin/marketplace.json` and list each plugin:
-- **[N] Resume <plugin-name>** — <last worked on> *(one line per existing session)*
+**Plugin project** — read `.claude-plugin/marketplace.json` and list each plugin. For plugins with existing sessions, check the inbox count (already computed in step 2) and append `📬 N` if items exist:
+- **[N] Resume <plugin-name>** — <last worked on>  📬 N *(if inbox items exist)*
 - **<plugin-name>** — <one-phrase description> *(one line per plugin in marketplace.json not already in sessions list)*
 - New plugin
 - Something else — describe it
