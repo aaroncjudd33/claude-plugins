@@ -96,7 +96,19 @@ Open the CAB card in the browser:
 powershell -ExecutionPolicy Bypass -File "C:\Users\ajudd\.claude\scripts\Open-EdgeUrl.ps1" -Url "https://younglivingeo.atlassian.net/browse/<CAB-KEY>" -WindowName "Jira"
 ```
 
-### 7. Write session state
+### 7. Link stories to the CAB card
+
+Establish all Jira issue links now — do not wait for Phase 3.
+
+For each BPT2 feature story, call `createIssueLink`:
+- Type: `Deploy Location` (outward: CAB card "deploys" the BPT2 story)
+- Inward issue: CAB-XXXX, Outward issue: BPT2-XXXX
+
+If a BPT2 CAB key was identified in step 2, call `createIssueLink`:
+- Type: `Relates` (CAB card relates to BPT2 CAB)
+- Inward issue: CAB-XXXX, Outward issue: BPT2-ZZZZ
+
+### 8. Write session state
 
 Write `~/.claude/memory/sessions/<slug>/CAB-XXXX.md`:
 

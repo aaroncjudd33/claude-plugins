@@ -1,11 +1,11 @@
 ---
 name: cab-link
-description: Phase 3 — Populate all CAB card ADF fields, link BPT2 stories, add deployment comments, and register browser links. Reads all context from session state. Requires Phase 2 (branch + PR) to be complete.
+description: Phase 3 — Populate all CAB card ADF fields, add deployment comments, and register browser links. Story links are established in Phase 1. Requires Phase 2 (branch + PR) to be complete.
 ---
 
-# Release: Link + Populate (Phase 3)
+# Release: Populate + Comment (Phase 3)
 
-Populates the CAB card's ADF fields, creates Jira issue links, comments on BPT2 stories and the BPT2 CAB, and registers all artifacts in the browser links registry.
+Populates the CAB card's ADF fields, adds deployment comments to BPT2 stories, and registers all artifacts in the browser links registry. Story-to-CAB issue links are already established in Phase 1.
 
 ## Instructions
 
@@ -36,13 +36,7 @@ Call `editJiraIssue` to set all ADF fields in one call:
 - **Component Version(s)** (`customfield_13141`, ADF): Table — Repository / `release/CAB-XXXX` / PR link (omit PR column on first-deploy)
 - **PRs Deploying** (`customfield_14670`, ADF): `"<PR title> - Pull Request #<N> - <org>/<repo>"` with link (omit on first-deploy)
 
-### 3. Link related issues
-
-For each BPT2 story key, call `createIssueLink` with `type="Deploy Location"` (outward: CAB card "deploys" the BPT2 story).
-
-If a BPT2 CAB key exists, also link it with `type="Relates"`.
-
-### 4. Comment on BPT2 stories and BPT2 CAB
+### 3. Comment on BPT2 stories and BPT2 CAB
 
 For each BPT2 story (and the BPT2 CAB if present), call `addCommentToJiraIssue`:
 
@@ -55,7 +49,7 @@ PR: [PR title] — Pull Request #N ([link])
 
 Omit the PR line on first-deploy.
 
-### 5. Register browser links
+### 4. Register browser links
 
 Read `~/.claude/browser-links.json`.
 
@@ -82,7 +76,7 @@ Read `~/.claude/browser-links.json`.
 
 Write back `~/.claude/browser-links.json`. Do not prompt during this step.
 
-### 6. Update session state
+### 5. Update session state
 
 Update `~/.claude/memory/sessions/<slug>/CAB-XXXX.md`:
 - `Phase 3 complete`: yes
