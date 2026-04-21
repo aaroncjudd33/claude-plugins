@@ -119,3 +119,20 @@ updated: [today's date]
 ```
 
 Print the summary to screen.
+
+### 6. Work Log
+
+Append to `~/.claude/memory/worklog/<YYYY-MM-DD>.md` (create the file and `~/.claude/memory/worklog/` directory if they don't exist).
+
+Use today's date for the filename. Use the current local time (HH:MM) for the entry header.
+
+Entry format:
+```markdown
+## <HH:MM> — <name> (<type>)
+
+**Accomplished:** <last worked on — same 1-sentence value just written to the session file>
+
+**Open items:** <open items from session state, or "none">
+```
+
+Multiple entries per day are expected — always append, never overwrite.

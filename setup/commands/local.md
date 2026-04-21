@@ -134,7 +134,30 @@ CALENDAR (N events)
 
 If no events: `CALENDAR — No events today`. If call fails: `CALENDAR — Unavailable`.
 
-### 6. Done
+### 6. Recent Work
+
+Read worklog files from `~/.claude/memory/worklog/` for today and yesterday (if they exist). Silently skip if the directory or files don't exist.
+
+Also silently delete any worklog files in that directory older than 30 days.
+
+If at least one entry is found, parse each `## HH:MM — name (type)` header and its `**Accomplished:**` line. Output:
+
+```
+RECENT WORK
+
+  Today
+    HH:MM — session-name (type): Accomplished sentence.
+    HH:MM — session-name (type): Accomplished sentence.
+
+  Yesterday
+    HH:MM — session-name (type): Accomplished sentence.
+```
+
+Each entry is one line: `HH:MM — <name> (<type>): <Accomplished value>`. No other fields shown.
+
+If no files found or both are empty: skip this section entirely (no output).
+
+### 7. Done
 
 Print:
 ```

@@ -179,7 +179,24 @@ Before writing, ask the user: "What's the first thing to pick up next time?" Use
 
 Print the summary to screen as the final output.
 
-### 10. Deactivate Session
+### 10. Work Log
+
+Append to `~/.claude/memory/worklog/<YYYY-MM-DD>.md` (create the file and `~/.claude/memory/worklog/` directory if they don't exist).
+
+Use today's date for the filename. Use the current local time (HH:MM) for the entry header.
+
+Entry format:
+```markdown
+## <HH:MM> — <name> (<type>)
+
+**Accomplished:** <last worked on — same 1-sentence value just written to the session file>
+
+**Open items:** <open items from session state, or "none">
+```
+
+Multiple entries per day are expected — always append, never overwrite.
+
+### 11. Deactivate Session
 
 Remove the active marker so no future conversation inherits stale state:
 
