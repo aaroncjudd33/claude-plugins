@@ -121,9 +121,13 @@ Call `createIssueLink` with `type="Deploy Location"` for each story. This semant
 
 Call `addCommentToJiraIssue` on each linked story with the CAB key, deploy date, release branch, and PR link. This surfaces deployment context to QA, PM, and app support without them needing to find the CAB card.
 
-### Step 8 — Submit for review (user handles manually)
+### Step 8 — Submit for review
 
-Do NOT call `transitionJiraIssue` for Send For Review or change the assignee — the user handles these steps manually. Stop after all fields are populated, stories are linked, and comments are posted.
+Use `/release:cab-review` to call the Send For Review transition (ID `201`) and assign Sudhakar. The command requires explicit user confirmation before proceeding.
+
+The transition requires these screen fields: `customfield_13174` (QA Approved By), `customfield_13612` (Code Review Approver), `customfield_14671` (Date of Code Review), `customfield_14664` (Clone/Stage Status).
+
+Assignee update (`60aeba90f3fab100683274d9` — Sudhakar) may be rejected by the API once the card is in Change Review — if so, note it for manual action.
 
 ---
 
