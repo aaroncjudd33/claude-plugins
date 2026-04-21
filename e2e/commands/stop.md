@@ -23,10 +23,11 @@ If the file does not exist, report "No browser running" and stop.
 cd /c/dev/vo-playwright-tests && npm run browser:stop
 ```
 
-### 3. Clean up state file
+### 3. Clean up state files
 
 ```bash
 rm /c/dev/vo-playwright-tests/.browser-ws.txt 2>/dev/null
+rm /c/dev/vo-playwright-tests/.browser-owner.txt 2>/dev/null
 ```
 
 ### 4. Report

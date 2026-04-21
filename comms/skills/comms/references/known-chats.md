@@ -13,3 +13,4 @@ Multiple entries can share the same conceptual purpose — set `Active=no` to ar
 | BPT2-6258 — GLB Shopify | 19:3d5700aa0e9b449f98506859ba5a8920@thread.v2 | yes | Heber Iraheta, Aaron Judd, Nivi Umasankar, Chris Gibbons | Shopify GLB architectural discussion |
 | Release - Claude Plugin | 19:d2b26b0fd5d9423aa452a341b91ab620@thread.v2 | yes | Aaron Judd, Heber Iraheta, Nivi Umasankar | Release plugin (formerly CAB) — dev log and updates |
 | Story - Claude Plugin | 19:7e55e1cf6f4e4e56bc94002adbb2a66a@thread.v2 | yes | Aaron Judd, Heber Iraheta, Nivi Umasankar | Story plugin (formerly Jira) — dev log and updates |
+| BPT2-6278 — SG Tax ID Validation | 19:046c96d2c56c4d12abb9d5757908d7d4@thread.v2 | yes | Aaron Judd, Maikol Porras, Fernando Magana, Angela Valdez, Heber Iraheta | SG NRIC validation incident — BPT2-6278 |

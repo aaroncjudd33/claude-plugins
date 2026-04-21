@@ -21,10 +21,11 @@ fi
 ```
 
 - If `alive:<port>` — report "Browser already running on port `<N>`" and stop.
-- If `stale` — the file exists but Chrome is not responding (crashed or killed). Delete the stale file and proceed to Step 2:
+- If `stale` — the file exists but Chrome is not responding (crashed or killed). Delete the stale files and proceed to Step 2:
 
 ```bash
 rm /c/dev/vo-playwright-tests/.browser-ws.txt
+rm /c/dev/vo-playwright-tests/.browser-owner.txt 2>/dev/null
 ```
 
 - If no file — proceed to Step 2.
@@ -57,17 +58,35 @@ done
 
 The file contains the CDP port number (e.g. `9222`). Its presence means the browser is up and VO is loaded. If the loop completes without finding the file, proceed to Step 5 (timeout path).
 
-### 4. Report success
+### 4. Write ownership record
+
+Derive the owner ID and write `.browser-owner.txt` alongside `.browser-ws.txt`:
+
+```bash
+slug=$(basename $(pwd))
+session_name=$(cat ~/.claude/memory/sessions/$slug/_active 2>/dev/null)
+if [ -n "$session_name" ]; then
+  echo "$slug/$session_name" > /c/dev/vo-playwright-tests/.browser-owner.txt
+else
+  echo "$slug" > /c/dev/vo-playwright-tests/.browser-owner.txt
+fi
+```
+
+### 5. Report success
 
 Once ready:
 - Report: "Browser ready on CDP port <N> — VO loaded at env6"
 - Mention: run tasks with `npm run t -- "<query>"` or `npm run t -- story <id>`
 
-### 5. Handle failures
+### 6. Handle failures
 
 - **Port already in use**: the script handles this gracefully — it tries a CDP close first. If it fails, report the error and suggest `npm run browser:stop` first.
 - **Auth failure**: if SSO_PASS is missing or wrong, the script will log an error but keep the browser open for manual login. Report what happened and suggest the user log in manually.
-- **Timeout (60s)**: if `.browser-ws.txt` never appears, check the background task output for errors and report them. Delete any partial `.browser-ws.txt` if it exists (`rm /c/dev/vo-playwright-tests/.browser-ws.txt 2>/dev/null`).
+- **Timeout (60s)**: if `.browser-ws.txt` never appears, check the background task output for errors and report them. Clean up any partial state files:
+  ```bash
+  rm /c/dev/vo-playwright-tests/.browser-ws.txt 2>/dev/null
+  rm /c/dev/vo-playwright-tests/.browser-owner.txt 2>/dev/null
+  ```
 
 ## Output
 
