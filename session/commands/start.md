@@ -66,13 +66,14 @@ If the directory does not exist or is empty, skip this section.
 
 **Resume existing [N]:**
 - Read `~/.claude/memory/sessions/<slug>/<name>.md`
+- Peek at the inbox file (`_inbox_<name>.md` for plugins, `_inbox.md` otherwise): take the description from the first entry (the `## [date] from ...` line's trailing text) for the "Next step" display. If inbox is empty, use "none".
 - Display the full last session block:
   ```
   Resuming <name>
     Branch:          [branch]
     Last work:       [last worked on]
     Open items:      [bullets or "none"]
-    Next step:       [next step]
+    Next step:       [first inbox item description, or "none"]
     Related CAB:     [CAB-XXX]   ← story type only, omit if none
     Related stories: [BPT2-XXXX, ...]   ← cab type only, omit if none
   ```
@@ -101,10 +102,11 @@ Inbox (<N> item(s))
       - <one-line summary>
 ```
 
-If multiple items, offer a bulk shortcut first: **"Handle all: Work on all / Mark all done / Keep all"**. If no shortcut, handle each item individually with: **Work on it / Mark done / Keep**
+If multiple items, offer a bulk shortcut first: **"Handle all: Work on all / Mark all done / Move all to backlog / Keep all"**. If no shortcut, handle each item individually with: **Work on it / Mark done / Move to backlog / Keep**
 
 - **Work on it:** item stays in inbox; add a corresponding line to the session `Open items` prefixed with `[inbox]` (e.g. `- [inbox] Inbox archive system design`) so checkpoint/finish know to prompt for completion later
 - **Mark done:** move the full entry to the archive file (see below) with a `[DONE YYYY-MM-DD]` stamp prepended; remove the entry from the inbox file
+- **Move to backlog:** move the full entry from the inbox file to the backlog file (`_backlog_<name>.md` for plugins, `_backlog.md` for others); remove from inbox. Create the backlog file if it doesn't exist with header `# Backlog — <name> plugin` (plugin) or `# Backlog — <slug>` (others). No archive — backlog items stay until explicitly deleted.
 - **Keep:** leave the entry in inbox; do NOT add to Open items — user will deal with it later
 
 If the file does not exist or contains only the header, skip silently.
@@ -130,7 +132,19 @@ Global inbox (<N> item(s)) — new plugin ideas or undirected notes
     - <item>
 ```
 
-Global inbox items are never auto-cleared — they stay until the user decides to act on them (create a new plugin) or explicitly discards them. The same Work on it / Mark done / Keep options apply, using `_inbox_archive.md` as the global archive.
+Global inbox items are never auto-cleared — they stay until the user decides to act on them (create a new plugin) or explicitly discards them. The same Work on it / Mark done / Move to backlog / Keep options apply, using `_inbox_archive.md` as the global archive.
+
+**Backlog:** After all inbox handling, check `_backlog_<name>.md` (plugin) or `_backlog.md` (others) and count logical items (lines beginning with `[20` or `## `). If count > 0, show:
+
+```
+Backlog: N items — type 'backlog' to review
+```
+
+If the user types 'backlog', display each item numbered with: **Pull into inbox / Delete**
+- **Pull into inbox:** move the entry from the backlog file to the inbox file; it enters the normal Work on it / Mark done / Move to backlog / Keep flow next session.
+- **Delete:** remove from backlog, no archive.
+
+If the backlog file does not exist or is empty, omit this line entirely.
 
 ### 6. Establish Session Identity
 

@@ -192,7 +192,17 @@ updated: [today's date]
 
 **General sessions only:** Also check `~/.claude/memory/sessions/<slug>/<name>/` — if notes, decisions, or outputs were produced today, ensure they are written there before closing.
 
-Before writing, ask the user: "What's the first thing to pick up next time?" Use their answer for the `Next step` field. If they say "same" or similar, carry forward the current value.
+Before writing, ask the user: "What's the first thing to pick up next time? (or 'skip')" Then offer where to route it:
+
+```
+Add to: inbox (pick up next session) / backlog (someday) / skip
+```
+
+- **inbox:** write as an inbox entry to `_inbox_<name>.md` (plugin) or `_inbox.md` (others) using format `## [YYYY-MM-DD] from <slug> / <name> — <description>`. Create the file if needed with header `# Inbox — <name> plugin` (plugin) or `# Inbox — <slug>` (others). Set `Next step` in the session file to the description (convenience echo of the inbox entry).
+- **backlog:** write to `_backlog_<name>.md` (plugin) or `_backlog.md` (others) using the same entry format. Create the file if needed with header `# Backlog — <name> plugin` (plugin) or `# Backlog — <slug>` (others). Set `Next step` to "none".
+- **skip:** set `Next step` to "none".
+
+If the user says "same" or similar, carry forward the current `Next step` value and write it to inbox.
 
 Print the summary to screen as the final output.
 
