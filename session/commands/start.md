@@ -76,6 +76,7 @@ If the directory does not exist or is empty, skip this section.
     Related CAB:     [CAB-XXX]   ← story type only, omit if none
     Related stories: [BPT2-XXXX, ...]   ← cab type only, omit if none
   ```
+- Continue through Steps 5–8 as normal — `_active` must always be written, even on resume.
 
 **New story/plugin/personal/general — session filename:**
 - story → `BPT2-XXXX.md`
