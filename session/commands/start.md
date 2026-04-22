@@ -27,9 +27,9 @@ List all `.md` files in `~/.claude/memory/sessions/<slug>/` (skip `_active` and 
 
 For each file, read it and extract: `Name`, `Branch`, `Last worked on`.
 
-For **plugin sessions**, also check `~/.claude/memory/sessions/<slug>/_inbox_<name>.md` and count lines that contain actual content (skip the header line and blank lines). If count > 0, note it for display.
+For **plugin sessions**, also check `~/.claude/memory/sessions/<slug>/_inbox_<name>.md` and count **logical items** — lines that begin with `[20` or `## ` (entry markers), not raw non-blank lines. Body text under an entry does not count as a separate item. If count > 0, note it for display.
 
-For **non-plugin sessions**, check `~/.claude/memory/sessions/<slug>/_inbox.md` and count content lines the same way.
+For **non-plugin sessions**, check `~/.claude/memory/sessions/<slug>/_inbox.md` and count logical items the same way.
 
 If sessions exist, print a numbered list. Append `📬 N` at the end of any line with inbox items:
 ```
