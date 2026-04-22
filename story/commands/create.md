@@ -20,7 +20,7 @@ If not provided as arguments or inferable from conversation context, ask the use
 - **Work Allocation Type** — one of: Technical Debt, Maintenance, New Development, Production Issues (default: infer from context)
 - **Expenditures** — Opex or Capex (default: Opex)
 - **Assignee** — who to assign (default: Aaron Judd)
-- **Initial status** — Backlog, In Progress, Ready For Work, etc. (default: Backlog)
+- **Initial status** — Backlog, In Progress, Ready For Work, etc. (default: Ready For Work)
 - **Comment** — optional first comment to add (e.g. technical details, queries, etc.)
 
 Infer as much as possible from conversation context. Minimize questions — if the user has been discussing a topic, use that as the description basis.
@@ -46,7 +46,7 @@ Immediately call `editJiraIssue` to set:
 
 ### 4. Transition status (if not Backlog)
 
-If the user wants a status other than Backlog, call `transitionJiraIssue` with the appropriate transition ID from the skill reference.
+Default is **Ready For Work** — always call `transitionJiraIssue` unless the user explicitly requested Backlog. Use the appropriate transition ID from the skill reference.
 
 ### 5. Add comment (if provided)
 
