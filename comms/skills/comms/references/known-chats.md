@@ -15,3 +15,4 @@ Multiple entries can share the same conceptual purpose — set `Active=no` to ar
 | Story - Claude Plugin | 19:7e55e1cf6f4e4e56bc94002adbb2a66a@thread.v2 | yes | Aaron Judd, Heber Iraheta, Nivi Umasankar | Story plugin (formerly Jira) — dev log and updates |
 | BPT2-6278 — SG Tax ID Validation | 19:046c96d2c56c4d12abb9d5757908d7d4@thread.v2 | yes | Aaron Judd, Maikol Porras, Fernando Magana, Angela Valdez, Heber Iraheta | SG NRIC validation incident — BPT2-6278 |
 | BPT2-6333 — GLB Import Inactivity Alarm Fix | 19:e9d1affcfb434d939a353c0b5a3964f3@thread.v2 | yes | Aaron Judd, Maikol Porras, Fernando Magana, Angela Valdez | Import inactivity alarm root cause — fix bundled into BPT2-6258 CAB deploy |
+| BPT2-6138 — CDK Dependency Update | 19:60097e930df144aba0f3367b97b7ed48@thread.v2 | yes | Aaron Judd, Heber Iraheta, Nivi Umasankar | CDK dependency update to resolve Dependabot security alerts |
