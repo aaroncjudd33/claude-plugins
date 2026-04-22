@@ -11,9 +11,24 @@ Show today's calendar events from Microsoft 365.
 
 <!-- SYNC NOTE: These calendar instructions are duplicated in setup/commands/local.md (section 5). If you change them here, update there too. -->
 
-1. Compute today's date range in UTC. The user is in Mountain Time (MDT = UTC-6 from mid-March through early November; MST = UTC-7 otherwise). April–October → MDT.
-   - Start: today at 00:00 local → UTC (e.g. 2026-04-20T06:00:00Z for MDT)
-   - End:   today at 23:59 local → UTC (e.g. 2026-04-21T05:59:00Z for MDT)
+1. Detect the user's local timezone and compute today's date range in UTC.
+
+   **a. Run via Bash:**
+   ```powershell
+   $tz = [System.TimeZoneInfo]::Local; $now = [datetime]::Now; "$([int]$tz.GetUtcOffset($now).TotalHours)|$($tz.Id)|$($tz.IsDaylightSavingTime($now))"
+   ```
+   Parse output as `offset|tzId|isDst` (e.g. `-4|Eastern Standard Time|True`).
+
+   **b. Map timezone ID to abbreviation** (isDst selects which label):
+   - "Eastern Standard Time" → EST (false) / EDT (true)
+   - "Central Standard Time"  → CST / CDT
+   - "Mountain Standard Time" → MST / MDT
+   - "Pacific Standard Time"  → PST / PDT
+   - Anything else → `UTC-N` / `UTC+N` using the offset value
+
+   **c. Compute date range** (UTC = local − offset):
+   - Start: today 00:00 local → subtract offset hours → ISO 8601 UTC
+   - End:   today 23:59 local → subtract offset hours → ISO 8601 UTC
 
 2. Call `mcp__claude_ai_yl-msoffice__list_events` with:
    - `startDateTime`: computed start in ISO 8601 UTC
@@ -32,7 +47,7 @@ Show today's calendar events from Microsoft 365.
 6. Output:
 
 ```
-CALENDAR (N events)
+CALENDAR (N events — EDT)
 
   9:00 AM   Daily Standup                 (30 min)  — Teams
   10:30 AM  Sprint Planning               (1h)
@@ -40,6 +55,7 @@ CALENDAR (N events)
 ```
 
 Format rules:
+- Header shows detected timezone abbreviation (e.g. `— EDT`, `— MST`)
 - Align times with consistent padding so event names start at the same column
 - If no events: `CALENDAR — No events today`
 - If call fails: `CALENDAR — Unavailable`

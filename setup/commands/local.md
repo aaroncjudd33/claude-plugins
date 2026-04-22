@@ -119,7 +119,7 @@ If unavailable: `CONFLUENCE — Unavailable`
 
 <!-- SYNC NOTE: These calendar instructions are duplicated in setup/commands/calendar.md. If you change them here, update there too. -->
 
-Compute today's date range in UTC (MDT = UTC-6, April–October; MST = UTC-7 otherwise). Call `mcp__claude_ai_yl-msoffice__list_events` with `startDateTime` (today 00:00 local → UTC), `endDateTime` (today 23:59 local → UTC), `top: 20`. Filter out declined events. Sort by start time ascending.
+Detect local timezone dynamically via PowerShell: `$tz = [System.TimeZoneInfo]::Local; $now = [datetime]::Now; "$([int]$tz.GetUtcOffset($now).TotalHours)|$($tz.Id)|$($tz.IsDaylightSavingTime($now))"`. Parse `offset|tzId|isDst`. Map tzId to abbreviation (Eastern→EST/EDT, Central→CST/CDT, Mountain→MST/MDT, Pacific→PST/PDT; else `UTC±N`). Compute today 00:00 and 23:59 local → UTC using detected offset. Call `mcp__claude_ai_yl-msoffice__list_events` with `startDateTime`, `endDateTime`, `top: 20`. Filter out declined events. Sort by start time ascending.
 
 For each event: time in 12-hour format, duration (end − start), location hint (`— Teams` if online meeting, else location name if present).
 
