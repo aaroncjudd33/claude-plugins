@@ -95,17 +95,15 @@ For each BPT2 story key, call `getJiraIssue`. Extract summary and status. Warn i
 
 #### 3b. Identify or create the BPT2 tracking story
 
-Check if a BPT2 CAB tracking story already exists (a BPT2 story with summary like `CAB - <description>` that bundles these feature stories). The user may have one, or may want to create one.
-
 Prompt:
 ```
 BPT2 tracking story (e.g. BPT2-6334)?
-Enter key if it already exists, or press Enter to be prompted to create one.
+Enter key if one already exists, or press Enter to create one now.
 ```
 
 If the user provides a key: call `getJiraIssue` to fetch and confirm.
 
-If not provided: tell the user to create one with `/story:create` using summary `"CAB - <description>"`, then re-run `/release:create` with the new key.
+If not provided: prompt for a summary (pre-seed from feature story summaries — e.g. `"CAB - <short description of what's deploying>"`), then call `createJiraIssue` in the BPT2 project to create it. Use the same project/issue-type defaults as the story plugin (Project: BPT2, Issue Type: Story). Open the new story in the browser after creation.
 
 #### 3c. Link feature stories to the tracking story
 
