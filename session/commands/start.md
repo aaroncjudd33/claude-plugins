@@ -31,20 +31,19 @@ For **plugin sessions**, also check `~/.claude/memory/sessions/<slug>/_inbox_<na
 
 For **non-plugin sessions**, check `~/.claude/memory/sessions/<slug>/_inbox.md` and count logical items the same way.
 
-If sessions exist, print a numbered list. For sessions with inbox items, append `inbox N` after the branch name (before the `|` separator):
+If sessions exist, print a numbered list. Always include an `inbox N` column for every row (use `inbox 0` when empty) so columns stay aligned:
 ```
 Sessions in <slug>
-  [1]  <name>  |  <type>  |  <branch>  |  <last worked on — 1 sentence>
-  [2]  <name>  |  <type>  |  <branch>  inbox 3  |  <last worked on — 1 sentence>
+  [1]  <name>  |  <type>  |  <branch>  |  inbox 0  |  <last worked on — 1 sentence>
+  [2]  <name>  |  <type>  |  <branch>  |  inbox 3  |  <last worked on — 1 sentence>
 ```
 
 If the directory does not exist or is empty, skip this section.
 
 ### 3. Present Options
 
-**Plugin project** — read `.claude-plugin/marketplace.json` and list each plugin. For plugins with existing sessions, check the inbox count (already computed in step 2) and show `inbox N` after the plugin name if items exist:
-- **[N] Resume <plugin-name>** — <last worked on>  *(no inbox)*
-- **[N] Resume <plugin-name>  inbox N** — <last worked on>  *(if inbox items exist)*
+**Plugin project** — read `.claude-plugin/marketplace.json` and list each plugin. Always show the inbox count (use `inbox 0` when empty):
+- **[N] Resume <plugin-name>**  inbox N  — <last worked on>
 - **<plugin-name>** — <one-phrase description> *(one line per plugin in marketplace.json not already in sessions list)*
 - New plugin
 - Something else — describe it
