@@ -18,6 +18,7 @@ Read `~/.claude/memory/sessions/<slug>/_active` to get the session name.
 Read `~/.claude/memory/sessions/<slug>/<name>.md` and extract:
 - `type` (plugin / story / cab / personal / general)
 - `name`
+- `title` (story/cab only — may be absent in older session files; treat as empty string if missing)
 - `teams_chat`
 - `branch`
 
@@ -105,6 +106,7 @@ updated: [today's date]
 
 - **Type:** [type]
 - **Name:** [name]
+- **Title:** [Jira summary]   ← story/cab only; omit for other types
 - **Category:** [category]   ← general only, omit for other types
 - **Teams chat:** [teams_chat or "none"]
 - **Project:** [project path]
@@ -126,9 +128,15 @@ Append to `~/.claude/memory/worklog/<YYYY-MM-DD>.md` (create the file and `~/.cl
 
 Use today's date for the filename. Use the current local time (HH:MM) for the entry header.
 
-Entry format:
+Entry format varies by type:
+
+- **story/cab with title:** `## <HH:MM> — <name> — <title> (<type>)`
+- **story/cab without title** (older session files): `## <HH:MM> — <name> (<type>)`
+- **plugin:** `## <HH:MM> — <name>` (no type label — the name is self-identifying)
+- **personal/general:** `## <HH:MM> — <name> (<type>)`
+
 ```markdown
-## <HH:MM> — <name> (<type>)
+## <HH:MM> — <formatted header per above>
 
 **Accomplished:** <last worked on — same 1-sentence value just written to the session file>
 

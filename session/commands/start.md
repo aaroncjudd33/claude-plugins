@@ -155,6 +155,7 @@ updated: [today's date]
 
 - **Type:** [type]
 - **Name:** [name]
+- **Title:** [Jira summary]   ← story/cab only — from getJiraIssue; omit for other types
 - **Category:** [category]   ← general only, omit for other types
 - **Teams chat:** [teams_chat or "none"]
 - **Project:** [project path]
@@ -167,6 +168,8 @@ updated: [today's date]
 - **Related CAB:** [CAB-XXX or "none"]   ← story type only, omit for other types
 - **Related stories:** [BPT2-XXXX, BPT2-YYYY or "none"]   ← cab type only, omit for other types
 ```
+
+For story and cab types, populate **Title** from the `summary` field of `getJiraIssue`. When resuming an existing session, preserve the existing Title if present. If the session file predates this field (no Title line), fetch from Jira during Step 9 routing and add it.
 
 Write `~/.claude/memory/sessions/<slug>/_active` (plain text, just the name — no `.md` extension):
 ```
