@@ -148,7 +148,22 @@ In all cases, the entry format is:
 
 Only proceed to step 9 once all flagged items are resolved (or none were found).
 
-### 9. Session Summary
+### 9. Inbox Completion Check
+
+Read the current `Open items` from the session file. If any items are prefixed with `[inbox]`, handle each one before writing the final session summary:
+
+```
+Inbox item complete?
+  [inbox] <item summary>
+  Yes / Keep open
+```
+
+- **Yes:** locate the corresponding entry in the inbox file (`_inbox_<name>.md` for plugins, `_inbox.md` otherwise); move it to the archive file with `[DONE today]` prepended; remove the `[inbox]` line from Open items; rewrite both files
+- **Keep open:** leave the `[inbox]` item in Open items and the inbox entry as-is — it will be carried forward to the next session
+
+If no `[inbox]` items exist, skip silently.
+
+### 10. Session Summary
 
 Write `~/.claude/memory/sessions/<slug>/<name>.md` with the final state for today:
 
@@ -181,7 +196,7 @@ Before writing, ask the user: "What's the first thing to pick up next time?" Use
 
 Print the summary to screen as the final output.
 
-### 10. Work Log
+### 11. Work Log
 
 Append to `~/.claude/memory/worklog/<YYYY-MM-DD>.md` (create the file and `~/.claude/memory/worklog/` directory if they don't exist).
 
@@ -204,7 +219,7 @@ Entry format varies by type:
 
 Multiple entries per day are expected — always append, never overwrite.
 
-### 11. Deactivate Session
+### 12. Deactivate Session
 
 Remove the active marker so no future conversation inherits stale state:
 

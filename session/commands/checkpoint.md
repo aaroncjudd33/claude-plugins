@@ -122,7 +122,22 @@ updated: [today's date]
 
 Print the summary to screen.
 
-### 6. Work Log
+### 6. Inbox Completion Check
+
+Read the `Open items` from the session state just written. If any items are prefixed with `[inbox]`, handle each one:
+
+```
+Inbox item complete?
+  [inbox] <item summary>
+  Yes / Keep open
+```
+
+- **Yes:** locate the corresponding entry in the inbox file (`_inbox_<name>.md` for plugins, `_inbox.md` otherwise); move it to the archive file with `[DONE today]` prepended; remove the `[inbox]` line from Open items; rewrite both files. The session summary's Open items field (step 5) should be rewritten to reflect the removal.
+- **Keep open:** leave the `[inbox]` item in Open items and the entry in the inbox file as-is
+
+If no `[inbox]` items exist in Open items, skip silently.
+
+### 7. Work Log
 
 Append to `~/.claude/memory/worklog/<YYYY-MM-DD>.md` (create the file and `~/.claude/memory/worklog/` directory if they don't exist).
 

@@ -91,19 +91,36 @@ If the directory does not exist or is empty, skip this section.
 
 **For all other sessions**, check `~/.claude/memory/sessions/<slug>/_inbox.md`.
 
-If the inbox file exists and has content beyond the header line, display it:
+If the inbox file exists and has content beyond the header line, display each item numbered:
 
 ```
 Inbox (<N> item(s))
-  [date] from <source-slug> / <session-name>
-    - <item>
+  [1] [date] from <source-slug> / <session-name>
+      - <one-line summary>
+  [2] [date] from <source-slug> / <session-name>
+      - <one-line summary>
 ```
 
-Ask: "Clear inbox? (Yes / Keep)"
-- **Yes:** overwrite the file with just the header (`# Inbox — <name> plugin` for plugin type, `# Inbox — <slug>` otherwise)
-- **Keep:** leave it; note the inbox items in the `Open items` field of the session state
+If multiple items, offer a bulk shortcut first: **"Handle all: Work on all / Mark all done / Keep all"**. If no shortcut, handle each item individually with: **Work on it / Mark done / Keep**
+
+- **Work on it:** item stays in inbox; add a corresponding line to the session `Open items` prefixed with `[inbox]` (e.g. `- [inbox] Inbox archive system design`) so checkpoint/finish know to prompt for completion later
+- **Mark done:** move the full entry to the archive file (see below) with a `[DONE YYYY-MM-DD]` stamp prepended; remove the entry from the inbox file
+- **Keep:** leave the entry in inbox; do NOT add to Open items — user will deal with it later
 
 If the file does not exist or contains only the header, skip silently.
+
+**Archive files:**
+- Plugin: `~/.claude/memory/sessions/<slug>/_inbox_<name>_archive.md` — header: `# Inbox Archive — <name> plugin`
+- Non-plugin: `~/.claude/memory/sessions/<slug>/_inbox_archive.md` — header: `# Inbox Archive — <slug>`
+
+Create the archive file if it does not exist. Archive entry format (append, blank line between entries):
+```
+[DONE YYYY-MM-DD]
+[original date line]
+  - [original item content]
+```
+
+**Auto-purge archive:** After handling inbox items, if the archive file exists, read it and drop any entries whose `[DONE YYYY-MM-DD]` date is more than 30 days before today. Rewrite the file with only the retained entries (preserving the header line).
 
 **Additionally**, for plugin sessions, check `~/.claude/memory/sessions/<slug>/_inbox.md` for any global items (new plugin ideas or undirected notes). If it has content, show it separately:
 
@@ -113,7 +130,7 @@ Global inbox (<N> item(s)) — new plugin ideas or undirected notes
     - <item>
 ```
 
-Global inbox items are never auto-cleared — they stay until the user decides to act on them (create a new plugin) or explicitly discards them.
+Global inbox items are never auto-cleared — they stay until the user decides to act on them (create a new plugin) or explicitly discards them. The same Work on it / Mark done / Keep options apply, using `_inbox_archive.md` as the global archive.
 
 ### 6. Establish Session Identity
 
