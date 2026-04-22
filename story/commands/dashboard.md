@@ -77,26 +77,46 @@ Write the updated registry back to `~/.claude/jira-stories.json`.
 
 ### 5. Format Output
 
-Print a clean, scannable list grouped by status. Use this format:
+Merge all results from all three queries into a single flat list. Group by status only — do not split by "assigned to me" vs "handed off". Show assignee inline on each row so ownership is still visible.
+
+**Status display order** (top to bottom):
+1. Blocked
+2. Ready For Work
+3. In Progress
+4. Ready For Test
+5. Ready for UAT
+6. Approved for Release
+7. Backlog
+
+Any status not in this list falls after Backlog, alphabetically.
+
+Use this format:
 
 ```
 My Jira Stories
 ===============
 
-ASSIGNED TO ME
-  <STATUS>
-    <KEY> — <Summary>
-      Assignee: <name>  |  Due: <date or "none">  |  Priority: <priority>
+BLOCKED
+  BPT2-XXXX — Summary
+    Assignee: <name>  |  Due: <date or "none">  |  Priority: <priority>
 
-HANDED OFF (was mine)
-  <STATUS>
-    <KEY> — <Summary>
-      Assignee: <name>  |  Due: <date or "none">  |  Priority: <priority>
+READY FOR WORK
+  BPT2-XXXX — Summary
+    Assignee: <name>  |  Due: <date or "none">  |  Priority: <priority>
+
+IN PROGRESS
+  ...
+
+BACKLOG
+  BPT2-XXXX — Summary
+    Assignee: <name>  |  Due: <date or "none">  |  Priority: <priority>
 ```
+
+Omit any status group that has no stories.
 
 ### 6. Changes Section
 
-If any status or assignee changes were detected (comparing registry `lastStatus`/`lastAssignee` to current), print a CHANGES section before the summary line:
+If any status or assignee changes were detected (comparing registry `lastStatus`/`lastAssignee` to current), print a CHANGES section before the story list:
 
 ```
 CHANGES SINCE LAST RUN
@@ -118,7 +138,7 @@ If no changes, omit this section entirely.
 
 At the bottom, print a one-line count:
 ```
-Total: <N> assigned to me, <N> handed off
+Total: <N> stories
 ```
 
 If stories are hidden (and not using `-all`), append: `, <N> hidden (use -all to show)`
