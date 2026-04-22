@@ -54,7 +54,9 @@ Do NOT use bare `<b>Section</b>` — it is inline and renders without natural sp
 
 ## Spacing — Universal Rule
 
-Use `<p>&nbsp;</p>` between every element that needs visual separation — between paragraphs, between a paragraph and a section header, between a section and a list, and before the signature.
+Use `<p>&nbsp;</p>` between every element that needs visual separation — between paragraphs, between a list and the next section header, and before the signature.
+
+**Do NOT put `<p>&nbsp;</p>` between a section header and its own list or paragraph.** The header and its content sit flush — spacers go between sections, not inside them.
 
 **Never use `<hr/>` for spacing.** It renders a visible horizontal line that clutters the message.
 
@@ -67,6 +69,9 @@ Use `<p>&nbsp;</p>` between every element that needs visual separation — betwe
 <ul>
   <li>Item</li>
 </ul>
+<p>&nbsp;</p>
+<p><b>Next Section Header</b></p>
+<p>Content here — no spacer between this header and the content above.</p>
 <p>&nbsp;</p>
 <p><em>Posted by Claude on behalf of Aaron Judd</em></p>
 ```
