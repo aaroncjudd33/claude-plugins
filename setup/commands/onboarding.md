@@ -1,20 +1,22 @@
 ---
 name: onboarding
-description: First-run setup — collect your name, email, Jira account ID, and Teams user ID, then write ~/.claude/plugins/user-config.json. Run this before using any other plugin commands.
+description: First-run setup — auto-detects your name, email, Jira ID, and Teams ID, then writes ~/.claude/plugins/user-config.json. Run this before using any other plugin commands.
 ---
 
 # Setup: Onboarding
 
-Configure your identity for use across all plugins. Writes `~/.claude/plugins/user-config.json` with your personal details so commands no longer rely on hardcoded values.
+Configure your identity for use across all plugins. Auto-detects values where possible — you only need to correct or fill in what couldn't be found.
 
 ## Instructions
 
 ### 1. Check for existing config
 
-Read `~/.claude/plugins/user-config.json`. If it exists and has a non-empty `user.jiraAccountId`, display the current values:
+Read `~/.claude/plugins/user-config.json`.
+
+If it exists and has a non-empty `user.jiraAccountId`, display current values:
 
 ```
-Current config:
+Existing config found:
   Name:          <user.name>
   Email:         <user.email>
   Jira ID:       <user.jiraAccountId>
@@ -25,32 +27,71 @@ Current config:
 
 Ask: "Update this config? (y/n)" — if no, stop.
 
-### 2. Collect identity
+### 2. Auto-detect identity from git config
 
-Ask for each value in sequence. If a current config exists, show the current value as the default — the user can press Enter to keep it.
+Run both commands:
 
-**Name** — full display name (e.g. "Aaron Judd")
+```bash
+git config user.name
+git config user.email
+```
 
-**Email** — work email (e.g. "ajudd@youngliving.com")
+Use whatever is returned. If a command fails or returns empty, that field stays blank and will be asked manually in step 3.
 
-**Jira Account ID** — used in all Jira JQL queries to scope results to this user. Two options:
-- Type "lookup" to search Atlassian by the email provided above. Call `lookupJiraAccountId` with `cloudId: "9de6eb2b-2683-44e6-89ff-c622027e09b4"` and `query: <email>`. Display the name and account ID returned — ask the user to confirm before accepting.
-- Or paste the account ID directly.
+### 3. Auto-lookup Jira and Teams IDs
 
-**Teams User ID** — Microsoft 365 user ID used when creating chats or sending messages. Two options:
-- Type "lookup" to search via `search_actions` with `category: "people"` and the user's email. Extract the user GUID from the result and show it for confirmation.
-- Or paste the user ID directly.
-- Or press Enter to skip — this can be set later.
+If an email was detected in step 2, attempt both lookups in parallel — do not wait for user input first.
 
-### 3. Collect defaults
+**Jira account ID:**
+Call `lookupJiraAccountId` with `cloudId: "9de6eb2b-2683-44e6-89ff-c622027e09b4"` and `query: <email>`.
+- On success: extract `accountId` from the first result. Note it as "(looked up from Atlassian)".
+- On failure or no results: note as "(not found — will ask manually)".
 
-**Jira project key** — the project key for JQL queries (default: `BPT2`). Press Enter to keep.
+**Teams user ID:**
+Call `search_actions` with `category: "people"` and the user's email as the query.
+- On success: extract the user GUID from the result. Note it as "(looked up from Microsoft 365)".
+- On failure or no results: note as "(not found — will ask manually)".
 
-**Default story chat members** — emails of teammates to auto-add when creating new story chats. Enter as comma-separated values, or press Enter for none. Parse into an array, trimming whitespace from each entry.
+### 4. Show confirm/correct screen
 
-### 4. Confirm and write
+Display all detected values — whether auto-found or still blank:
 
-Display a summary of all values before writing:
+```
+Here's what I found:
+
+  Name:     Aaron Judd              (from git config)
+  Email:    ajudd@youngliving.com   (from git config)
+  Jira ID:  620147d91fec260068...   (looked up from Atlassian)
+  Teams ID: 4a1b2c3d-...            (looked up from Microsoft 365)
+
+  Jira Project:  BPT2               (default)
+  Chat members:  (none)             (default)
+```
+
+For any field that is blank or wrong, the user can correct it now.
+
+Ask: "Does everything look right? Enter a field name to change it, or press Enter to continue."
+
+- If they type a field name (e.g. "name", "email", "jira", "teams", "project", "members"): prompt for that field, then re-display the screen.
+- If they press Enter: proceed to step 5.
+
+For blank fields that were not auto-detected, prompt for them explicitly before allowing the user to proceed:
+- **Name**: "Your full display name (e.g. 'Jane Smith'):"
+- **Email**: "Your work email (e.g. 'jsmith@example.com'):"
+- **Jira ID**: "Your Jira account ID — or type 'lookup' to search by email:"
+  - If "lookup": call `lookupJiraAccountId` and show results for selection.
+  - If pasted directly: use as-is.
+- **Teams ID**: "Your Microsoft 365 user ID — or type 'lookup' to search, or Enter to skip:"
+  - If "lookup": call `search_actions` with category "people" and show results.
+  - If skipped: leave as empty string (can be set later).
+
+**Jira project key**: default is `BPT2`. Only ask if the user explicitly wants to change it.
+
+**Default story chat members**: emails of teammates to auto-add to new story chats. Default is none. Only ask if the user explicitly wants to set them.
+
+### 5. Confirm and write
+
+Display a final summary:
 
 ```
 About to write ~/.claude/plugins/user-config.json:
@@ -65,7 +106,7 @@ About to write ~/.claude/plugins/user-config.json:
 
 Ask: "Write this config? (y/n)"
 
-If yes, write the file with this structure:
+If yes, write the file:
 
 ```json
 {
@@ -88,8 +129,15 @@ If yes, write the file with this structure:
 }
 ```
 
-Fill in actual values for all fields. `storyChatMembers` should be an array of email strings (empty array if none provided).
+`storyChatMembers` is an array of email strings (empty array if none provided).
 
-Confirm: "Config written to ~/.claude/plugins/user-config.json. You're ready to use the plugins."
+Confirm: "Config written. You're ready to use the plugins. Run /setup:local to start your day."
 
 If no: "Config not saved." and stop.
+
+## Error Handling
+
+- If `git config` is unavailable (git not installed): skip silently, proceed to manual prompts.
+- If Atlassian MCP is unavailable: skip Jira lookup, prompt manually.
+- If yl-msoffice MCP is unavailable: skip Teams lookup, note Teams ID can be set later.
+- Never block onboarding due to a lookup failure — always offer manual entry as a fallback.
