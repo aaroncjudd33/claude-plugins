@@ -7,7 +7,7 @@ description: Plugin config teardown — removes user identity config and operati
 
 Removes plugin configuration files created by the plugin system — identity config, team registry, browser links, and story settings. After this command, the plugins are deconfigured and ready for a fresh `/setup:onboarding` run or uninstall.
 
-**Memory files are never deleted by this command.** Session state, project context, auto-memory files, and MEMORY.md represent your work history and must be deleted manually if needed.
+**Session and memory files are never deleted — by this command or any other.** This is a hard rule: Claude will not delete `~/.claude/memory/sessions/` or any file under it, under any circumstances, even if explicitly asked. Session state, plugin session files, and worklog entries represent your work history. If you want to delete them, do it yourself from the file system.
 
 This does NOT uninstall the plugins themselves — run `claude plugin uninstall <name>` for each plugin separately after cleaning.
 
@@ -95,8 +95,12 @@ To start fresh (keep plugins installed, just re-configure):
 
 ## What is NOT deleted
 
-- `~/.claude/memory/` — ALL memory files: session state, project context, auto-memory, MEMORY.md. Delete manually if needed.
-- `~/.claude/CLAUDE.md` — your global Claude instructions (hand-authored, not plugin-created)
+**Hard rule — never deleted by Claude under any circumstances:**
+- `~/.claude/memory/sessions/` — ALL session files. Story sessions, plugin sessions, worklogs, inbox files, archive files. Claude will not delete these even with explicit permission. If you want them gone, delete from the file system yourself.
+- `~/.claude/memory/` (all other memory) — auto-memory, MEMORY.md, project context. Same rule applies.
+
+**Not deleted by this command (managed by other tools or hand-authored):**
+- `~/.claude/CLAUDE.md` — your global Claude instructions
 - `~/.claude/settings.json` — Claude Code settings
 - `~/.claude/plugins/installed_plugins.json` — plugin registry (managed by Claude CLI)
 - `~/.claude/plugins/cache/` — installed plugin files (managed by Claude CLI)
