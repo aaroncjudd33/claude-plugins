@@ -119,30 +119,38 @@ For each new member:
 
 1. Ask only: **"Name:"** — first name, full name, or display name is all that's needed.
 
-2. **Immediately look up Jira** — do not ask for anything else first:
+2. **Immediately fire parallel lookups** — do not ask for anything else first:
 
+   **Jira lookup:**
    Call `lookupJiraAccountId` with `cloudId: "9de6eb2b-2683-44e6-89ff-c622027e09b4"` and `query: <name>`.
    - On success: extract `accountId` and `emailAddress` from the first result. Note both as "(looked up from Atlassian)".
    - If multiple results: show a numbered list and ask the user to pick — "Found multiple matches, which one?"
    - On transient error: retry once automatically.
    - On failure after retry or no results: note both as "(not found)".
 
-   **Do NOT attempt a Teams lookup here.** The `search_actions` people category consistently fails with MCP output validation errors when looking up other users. Teams user ID must be entered manually — it is optional and can be filled in later.
+   **Teams lookup — two-step (run in parallel with Jira if email not yet known, or after Jira resolves the email):**
+
+   Step A: Call `search_actions` with action `people.search` and the name as the query. Extract the `email` from the result.
+   Step B: Call `execute_action` with action `user.get` and the email from Step A. Extract the `id` field — this is the Teams user ID.
+   - Note result as "(looked up from Microsoft 365)".
+   - If Step A returns no email, or Step B fails: note Teams ID as "(not found)" — it is optional and can be filled in later.
+
+   **Important:** Do NOT use `search_actions` with `category: "people"` as a single-call lookup — it fails with output validation errors. The correct pattern is always `people.search` → email, then `user.get` → id.
 
 3. **Show confirm/correct screen** with everything resolved:
 
    ```
    Member 1 — found:
-     Name:      Heber Iraheta          (from Jira)
-     Email:     hiraheta@...           (from Jira)
-     Jira ID:   557058:055d4592...     (looked up)
-     Teams ID:  (not set — enter if known, or skip)
+     Name:      Heber Iraheta                          (from Jira)
+     Email:     hiraheta@youngliving.com               (from Jira)
+     Jira ID:   557058:055d4592-8fbf-4b3c-...         (looked up)
+     Teams ID:  61045e43-487a-41db-abf8-862cbd3512d0  (looked up from Microsoft 365)
      GitHub:    (not set)
    ```
 
    Ask: "Correct? Enter a field name to change it (name/email/jira/teams/github), or press Enter to continue."
 
-   - Teams ID and GitHub login are both optional — skip if unknown, fill in via `/setup:onboarding` later.
+   - Teams ID and GitHub login are optional — skip if lookup failed, fill in via `/setup:onboarding` later.
 
 4. **Assign roles** — show numbered list, user enters comma-separated numbers:
 
