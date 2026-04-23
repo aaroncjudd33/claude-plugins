@@ -298,7 +298,36 @@ If yes, **read the existing `~/.claude/plugins/user-config.json` first** (if it 
 }
 ```
 
-Confirm: "Config written. You're ready to use the plugins. Run /setup:local to start your day."
+Confirm with the following message — display it exactly as shown:
+
+```
+Config written. Here's how to get started:
+
+─────────────────────────────────────────────────────────────
+Daily Workflow
+
+  Start of day:    /session:start  →  /setup:local
+  Working a story: /story:dashboard  →  /story:create  →  /session:checkpoint  →  /session:commit
+  Shipping it:     /release:create  →  /release:deploy  →  /session:finish
+  Stay current:    /setup:update  →  restart Claude Code
+
+─────────────────────────────────────────────────────────────
+Key Commands to Know First
+
+  /session:start      Start every working session here — loads your prior context
+  /setup:local        Morning briefing — AWS login, open stories, calendar
+  /story:dashboard    Your open BPT2 stories grouped by status
+  /story:create       Create a new BPT2 story with all required fields
+  /session:finish     End of day — saves state, updates Jira, posts Teams summary
+
+─────────────────────────────────────────────────────────────
+
+For a full reference on any plugin and its commands:
+
+  /setup:guide               → overview of all plugins
+  /setup:guide <plugin-name> → deep dive on a specific plugin
+  Example: /setup:guide story
+```
 
 If no: "Config not saved." and stop.
 
