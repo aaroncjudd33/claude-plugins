@@ -70,10 +70,10 @@ Here's what I found:
 
 For any field that is blank or wrong, the user can correct it now.
 
-Ask: "Does everything look right? Enter a field name to change it, or press Enter to continue."
+Ask: "Does everything look right? Type a field name to change it (name / email / jira / teams / project), or type 'go' to continue."
 
 - If they type a field name (e.g. "name", "email", "jira", "teams", "project"): prompt for that field, then re-display the screen.
-- If they press Enter: proceed to step 5.
+- If they type "go": proceed to step 5.
 
 For blank fields that were not auto-detected, prompt for them explicitly before allowing the user to proceed:
 - **Name**: "Your full display name (e.g. 'Jane Smith'):"
@@ -81,7 +81,7 @@ For blank fields that were not auto-detected, prompt for them explicitly before 
 - **Jira ID**: "Your Jira account ID — or type 'lookup' to search by email:"
   - If "lookup": call `lookupJiraAccountId` and show results for selection.
   - If pasted directly: use as-is.
-- **Teams ID**: "Your Microsoft 365 user ID — or type 'lookup' to retry, or Enter to skip:"
+- **Teams ID**: "Your Microsoft 365 user ID — or type 'lookup' to retry, or type 'skip' to leave blank:"
   - If "lookup": call `get_my_profile` and extract the `id` field.
   - If skipped: leave as empty string (can be set later).
 
@@ -171,7 +171,7 @@ For each new member:
      GitHub:    (not set)
    ```
 
-   Ask: "Correct? Enter a field name to change it (name/email/jira/teams/github), or press Enter to continue."
+   Ask: "Correct? Type a field name to change it (name / email / jira / teams / github), or type 'go' to continue."
 
    - All fields except Name are optional — skip anything unknown and fill in later via `/setup:onboarding`.
 
@@ -230,7 +230,9 @@ Configure the file system paths that plugins use to find your repos, projects, a
 - **personalProjectsDir**: check if `/c/claude` exists; if yes, suggest it (optional)
 - **voPlaywrightTestsDir**: if workReposDir is known and `<workReposDir>/vo-playwright-tests` exists, suggest it (optional)
 
-Display a form. Press Enter to accept the shown value, or type a replacement:
+**Auto-detect marketplace name:** List directories under `~/.claude/plugins/marketplaces/` and use the first one found as the default. This is the name Claude Code assigned when the marketplace was installed — users don't choose it, it comes from the repo's `marketplace.json`. Only falls back to `ajudd-claude-plugins` if detection fails.
+
+Display a form. Type 'go' to accept all shown values, or type a field name to change one (marketplace / work / personal / playwright):
 
 ```
 Workspace paths:
