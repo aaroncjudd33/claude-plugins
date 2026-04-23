@@ -45,12 +45,14 @@ If an email was detected in step 2, attempt both lookups in parallel — do not 
 **Jira account ID:**
 Call `lookupJiraAccountId` with `cloudId: "9de6eb2b-2683-44e6-89ff-c622027e09b4"` and `query: <email>`.
 - On success: extract `accountId` from the first result. Note it as "(looked up from Atlassian)".
-- On failure or no results: note as "(not found — will ask manually)".
+- On transient error (proxy/network): retry once automatically before giving up.
+- On failure after retry or no results: note as "(not found — will ask manually)".
 
 **Teams user ID:**
-Call `search_actions` with `category: "people"` and the user's email as the query.
-- On success: extract the user GUID from the result. Note it as "(looked up from Microsoft 365)".
-- On failure or no results: note as "(not found — will ask manually)".
+Call `get_my_profile` — this returns the current authenticated user's Microsoft 365 profile directly.
+- On success: extract the user `id` field. Note it as "(looked up from Microsoft 365)".
+- On failure: note as "(not found — will ask manually)".
+- Do NOT use `search_actions` for this — it is unreliable for user ID lookup.
 
 ### 4. Show confirm/correct screen
 
@@ -81,8 +83,8 @@ For blank fields that were not auto-detected, prompt for them explicitly before 
 - **Jira ID**: "Your Jira account ID — or type 'lookup' to search by email:"
   - If "lookup": call `lookupJiraAccountId` and show results for selection.
   - If pasted directly: use as-is.
-- **Teams ID**: "Your Microsoft 365 user ID — or type 'lookup' to search, or Enter to skip:"
-  - If "lookup": call `search_actions` with category "people" and show results.
+- **Teams ID**: "Your Microsoft 365 user ID — or type 'lookup' to retry, or Enter to skip:"
+  - If "lookup": call `get_my_profile` and extract the `id` field.
   - If skipped: leave as empty string (can be set later).
 
 **Jira project key**: default is `BPT2`. Only ask if the user explicitly wants to change it.
