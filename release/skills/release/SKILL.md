@@ -1,6 +1,6 @@
 ---
 name: release
-description: Use this skill when the user needs to create, update, submit, or execute a production release at Young Living. Trigger phrases include "create a CAB card", "I need to deploy to prod", "set up a CAB for this release", "update the CAB card", "submit for review", "execute the deploy", or any mention of a CAB number (e.g. CAB-456).
+description: "Background skill — do not run directly. Use /release:create to start a CAB release. Auto-loads when: creating a CAB card, deploying to prod, or any CAB number is mentioned."
 ---
 
 # CAB Card Skill

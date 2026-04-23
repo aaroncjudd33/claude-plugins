@@ -1,6 +1,6 @@
 ---
 name: links
-description: This skill should be used when the user wants to open a URL, navigate to a named link, open or manage a workspace in Edge, close a workspace window, search for a saved link, add a new link or workspace, or when any plugin needs to open something in the browser. Trigger phrases include "open", "go to", "launch", "show me", "open workspace", "close workspace", "close window", "close the [name] window", "search links", "add link", "register link", "open BPT2-XXXX", "open CAB-XXX", "open the Jira workspace", "open Github workspace".
+description: "Background skill — do not run directly. Use /links:open, /links:search, or /links:link. Auto-loads when: opening a URL, navigating to a named link, or managing browser workspaces."
 ---
 
 # Links Skill

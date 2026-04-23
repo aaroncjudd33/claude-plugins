@@ -1,6 +1,6 @@
 ---
 name: e2e
-description: This skill should be used when the user wants to launch, start, or manage the persistent Playwright test browser for VO E2E testing. Trigger phrases include "start the browser", "launch playwright", "browser isn't running", "start e2e", "run VO tasks", or any request to run automated tests against the Virtual Office environment.
+description: "Background skill — do not run directly. Use /e2e:start to launch the test browser. Auto-loads when: launching Playwright, starting E2E tests, or managing the persistent browser."
 ---
 
 # E2E / Playwright Skill
@@ -50,6 +50,12 @@ After a successful login, `auth.json` is saved. The session lasts ~20 minutes. `
 - Default port: 9222. If held, use `CDP_PORT=9333 npm run browser:start`
 - IPv6 on Windows — Chrome binds to `[::1]` not `127.0.0.1`. The runner handles both.
 - `.browser-ws.txt` contains the CDP port number — written when the browser is ready
+
+## Reference Files
+
+- `references/playwright-patterns.md` — Cross-project patterns: persistent browser setup, task system, CDP on Windows, port conflicts
+
+---
 
 ## Never Force-Kill
 

@@ -1,11 +1,6 @@
 ---
 name: docs
-description: >
-  Provides implementation context for the /docs:init,
-  /docs:update, /docs:archive, and
-  /docs:propose commands.
-  Load only when one of those commands is actively running — not in
-  response to general requests to document, write up, or describe anything.
+description: "Background skill — do not run directly. Use /docs:init, /docs:update, /docs:archive, or /docs:propose. Auto-loads when: those commands are actively running — not for general documentation requests."
 ---
 
 # Docs Skill
@@ -183,3 +178,4 @@ Must include:
 
 - `references/doc-structure.md` — Full markdown templates for each page type, section by section. Use as a checklist when drafting pages — every placeholder must be filled with real content.
 - `references/confluence-patterns.md` — Atlassian MCP tool usage: createConfluencePage, updateConfluencePage, parentId structure, content format, version messages
+- `references/post-creation-steps.md` — Steps to perform after any Confluence page is created: register link + open in browser

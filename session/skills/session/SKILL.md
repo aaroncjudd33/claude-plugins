@@ -1,11 +1,17 @@
 ---
 name: session
-description: Use this skill when the user invokes any session command — start, checkpoint, commit, or finish. Trigger phrases include "start a session", "checkpoint", "session finish", "wrap up", "end of day", "save session state", or any /session: command.
+description: "Background skill — do not run directly. Use /session:start, /session:checkpoint, or /session:finish. Auto-loads when: any session command is invoked or session state is relevant."
 ---
 
 # Session Skill
 
 Governs session lifecycle across all project types (plugin, story, cab, personal, general).
+
+---
+
+## Reference Files
+
+- `references/inbox-convention.md` — How to write cross-session/cross-project change instructions to plugin inbox files
 
 ---
 

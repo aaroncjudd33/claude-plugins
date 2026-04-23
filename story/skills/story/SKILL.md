@@ -1,6 +1,6 @@
 ---
 name: story
-description: Use this skill when the user wants to create a Jira story, log a ticket, track a feature or bug, check their open stories, look up what's assigned to them, or manage work items in the BPT2 project. Trigger phrases include "create a story", "log a Jira ticket", "add a ticket for this", "what stories do I have open", "show my Jira work", "check my stories", or any mention of a BPT2 issue key (e.g. BPT2-6190).
+description: "Background skill — do not run directly. Use /story:create, /story:dashboard, or /story:update. Auto-loads when: creating Jira stories, checking open tickets, or any BPT2 key is mentioned."
 ---
 
 # Jira Stories Skill — BPT2
@@ -189,6 +189,13 @@ Step 3 (optional): transitionJiraIssue
 Step 4 (optional): addCommentToJiraIssue
   - commentBody: "Additional details with **markdown** and ```code blocks```"
 ```
+
+---
+
+## Reference Files
+
+- `references/jira-workflow.md` — Jira transition rules: when to clear assignee, status conventions
+- `references/story-chats.md` — How to find a story's Teams chat by story number
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: comms
-description: This skill should be used when the user wants to send a Teams chat message, post an update to a Teams chat, compose or send an email, run an inbox sweep, schedule a meeting, or perform any Microsoft 365 communication via the yl-msoffice MCP. Trigger phrases include: "send a Teams message", "message the team", "post to the chat", "send an email to", "draft an email", "email sweep", "clean the inbox", "schedule a meeting", "create a meeting invite", "notify Heber", "let the team know via Teams".
+description: "Background skill — do not run directly. Use /comms:message, /comms:sweep, or /comms:triage. Auto-loads when: sending Teams messages, managing email, or any Microsoft 365 communication."
 ---
 
 # Comms Skill
@@ -68,7 +68,7 @@ Only use for genuinely tabular data with 2–3 columns. See `references/teams-ht
 
 Use the `yl-msoffice` MCP tools in this order:
 
-1. **Find the chat ID** — look up the chat name in `~/.claude/plugins/~/.claude/plugins/known-chats.md` (filter to `Active=yes`). If not found there, call `list_chats` to check whether it already exists in Teams before creating a new one. If it truly does not exist, use `teams.create_chat`, then add the new chat ID to `~/.claude/plugins/known-chats.md`.
+1. **Find the chat ID** — look up the chat name in `references/known-chats.md` (filter to `Active=yes`). If not found there, call `list_chats` to check whether it already exists in Teams before creating a new one. If it truly does not exist, use `teams.create_chat`, then add the new chat ID to `~/.claude/plugins/known-chats.md`.
 2. **Compose the message** using the template above.
 3. **Show the full preview** to the user in plain readable text (not raw HTML).
 4. **Wait for explicit approval** — the user must say yes (or request edits) before proceeding. This approval authorizes calling `send_chat_message` in the next step.
@@ -79,7 +79,7 @@ Use the `yl-msoffice` MCP tools in this order:
 
 When creating a new group chat:
 1. Use `teams.create_chat` with member emails and a topic. Do not include your own email — the authenticated user is added automatically.
-2. Save the returned chat ID to `~/.claude/plugins/~/.claude/plugins/known-chats.md` with `Active=yes`.
+2. Save the returned chat ID to `references/known-chats.md` with `Active=yes`.
 3. Confirm the chat was created before sending the first message.
 
 ---
@@ -108,5 +108,5 @@ The email commands (`fetch`, `triage`, `sweep`) work as a pipeline. Key behavior
 
 ## Reference Files
 
-- `~/.claude/plugins/~/.claude/plugins/known-chats.md` — maps friendly chat names to Teams chat IDs (supports Active=yes/no toggle)
+- `references/known-chats.md` — maps friendly chat names to Teams chat IDs (supports Active=yes/no toggle)
 - `references/teams-html-guide.md` — full HTML formatting rules for Teams messages

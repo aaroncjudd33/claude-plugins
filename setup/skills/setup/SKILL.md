@@ -1,6 +1,6 @@
 ---
 name: setup
-description: Use this skill when the user wants to start their day, run morning setup, log into AWS, refresh CodeArtifact credentials, check open Jira tickets, check Confluence activity, or see today's calendar. Trigger phrases include "start my day", "morning setup", "setup:local", "log into AWS", "refresh credentials", "check my Jira tickets", "what do I have today", or "show my open tickets".
+description: "Background skill — do not run directly. Use /setup:local to start your day. Auto-loads when: 'start my day', 'morning setup', 'log into AWS', 'check my tickets', or any /setup: command."
 ---
 
 # Setup Skill
