@@ -7,58 +7,60 @@ description: "Background skill — do not run directly. Use /e2e:start to launch
 
 ## Purpose
 
-Manage the persistent Playwright test browser used for VO E2E task validation. The browser stays open between task runs — tasks connect via CDP, run, and disconnect without closing it.
+Manage a persistent Playwright test browser for automated task validation. The browser stays open between task runs — tasks connect via CDP, run, and disconnect without closing it. Works for any web project, not just VO.
 
 ## Project Location
 
-Read `paths.voPlaywrightTestsDir` from `~/.claude/plugins/user-config.json`. If not set, prompt once and write it before proceeding. The value is the full path to the `vo-playwright-tests` repo on this machine (e.g. `/c/dev/vo-playwright-tests`).
+The Playwright test directory (`E2E_DIR`) is stored per-session in the active session file as `E2E tests dir:`. On first use for a project, `/e2e:start` either prompts for an existing path or scaffolds a fresh test directory from the runner template bundled in this plugin.
+
+Convention: `<workReposDir>/<project-abbreviation>-playwright-tests/` as a sibling to the project repo.
+- Example: `vo-playwright-tests/` next to `virtual-office-vp/`
+- Example: `glb-playwright-tests/` next to `gen-leadership-bonus/`
+
+## Runner Scaffold
+
+The plugin ships a generic runner at `~/.claude/plugins/marketplaces/<pluginMarketplaceName>/e2e/runner/`. When a test directory is scaffolded, this template is copied to the target location and `npm install` is run automatically. The scaffold includes:
+
+- `scripts/browser-start.ts` — launches Chrome via CDP, loads tabs from `.e2e.json`
+- `scripts/browser-stop.ts` — closes browser gracefully
+- `helpers/runner.ts` — task/story registration and run framework
+- `scripts/run-checks.ts` — task runner entry point (add your task imports here)
+- `package.json`, `tsconfig.json`, `playwright.config.ts`, `.env.example`, `.gitignore`
 
 ## Key Commands
 
-Run from the resolved `voPlaywrightTestsDir`:
+Run from `E2E_DIR`:
 
 ```
-npm run browser:start     ← launch Chrome, auto-login via SSO, write CDP port to .browser-ws.txt
+npm run browser:start     ← launch Chrome, write CDP port to .browser-ws.txt
 npm run browser:stop      ← close browser gracefully
 npm run t -- "<query>"    ← run tasks matching name or tag
 npm run t -- story <id>   ← run all tasks for a story
 npm run t -- --list       ← list all tasks
 ```
 
-## SSO_PASS
+## Tab Configuration
 
-`SSO_PASS` is stored in the project's `.env` file. `browser:start` reads it automatically via dotenv. No need to pass it manually.
+`browser:start` reads `.e2e.json` in the test directory for which URLs to open:
+```json
+{ "tabs": [{ "url": "http://localhost:3000", "bringToFront": true }] }
+```
+If no `.e2e.json` exists, falls back to `BASE_URL` from `.env`.
 
-## Start Sequence
+## Environment Variables (.env)
 
-When starting the browser:
-
-1. Run `npm run browser:start` in the background from the resolved `voPlaywrightTestsDir`
-2. Poll for `.browser-ws.txt` to appear (signals browser is ready and on VO)
-3. Once ready, confirm the CDP port and report success
-
-Use `run_in_background: true` on the Bash tool. Poll with a short sleep + cat `.browser-ws.txt`.
-
-## Auth Details
-
-Two auth layers on YL dev environments:
-1. **HTTP Basic Auth** — credentials in `.env` as `HTTP_AUTH_USER` / `HTTP_AUTH_PASS`
-2. **Microsoft SSO** — `SSO_EMAIL` + `SSO_PASS` in `.env`. `browser:start` handles the full login flow automatically.
-
-After a successful login, `auth.json` is saved. The session lasts ~20 minutes. `browser:start` will re-authenticate if the session has expired.
+- `SSO_EMAIL` / `SSO_PASS` — Microsoft SSO auto-login (leave blank if not needed)
+- `TARGET_DOMAIN` — domain used to identify the target page in the browser
+- `BASE_URL` — base URL for Playwright tests
+- `CDP_PORT` — default 9222; change if port is in use
+- `HTTP_AUTH_USER` / `HTTP_AUTH_PASS` — HTTP Basic Auth if required
 
 ## CDP Connection Details
 
-- Default port: 9222. If held, use `CDP_PORT=9333 npm run browser:start`
+- Default port: 9222. If held, set `CDP_PORT=9333` in `.env`
 - IPv6 on Windows — Chrome binds to `[::1]` not `127.0.0.1`. The runner handles both.
 - `.browser-ws.txt` contains the CDP port number — written when the browser is ready
 
-## Reference Files
-
-- `references/playwright-patterns.md` — Cross-project patterns: persistent browser setup, task system, CDP on Windows, port conflicts
-
----
-
 ## Never Force-Kill
 
-Never use `taskkill /F` or `kill -9` to close Chrome. Use `npm run browser:stop` or the graceful CDP close. Force-killing triggers endpoint security alerts.
+Never use `taskkill /F` or `kill -9` to close Chrome. Use `npm run browser:stop`. Force-killing triggers endpoint security alerts.

@@ -1,0 +1,8 @@
+node_modules/
+auth.json
+.env
+.browser-ws.txt
+.browser-owner.txt
+test-results/
+playwright-report/
+dist/

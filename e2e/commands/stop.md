@@ -11,16 +11,18 @@ Stop the persistent Playwright test browser.
 
 ### 0. Resolve e2e directory
 
-Read `~/.claude/plugins/user-config.json` and extract `paths.voPlaywrightTestsDir`.
+Read the active session file to find `E2E tests dir`:
 
-If the field is missing or empty:
+```bash
+slug=$(basename $(pwd))
+session_name=$(cat ~/.claude/memory/sessions/$slug/_active 2>/dev/null)
 ```
-Where is your vo-playwright-tests directory?
-(e.g. /c/dev/vo-playwright-tests)
-```
-Write the answer to `paths.voPlaywrightTestsDir` in `~/.claude/plugins/user-config.json` before continuing.
 
-Use the resolved path as **E2E_DIR** throughout all steps below.
+If `session_name` is set, read `~/.claude/memory/sessions/<slug>/<session_name>.md` and extract the `- **E2E tests dir:**` line.
+
+If not found in the session file, ask: "Where is your Playwright test directory? (e.g. /c/dev/vo-playwright-tests)"
+
+Use the resolved path as **E2E_DIR**.
 
 ### 1. Check if browser is running
 

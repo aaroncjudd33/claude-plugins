@@ -5,26 +5,89 @@ allowed-tools: [Bash]
 
 # E2E Start
 
-Launch the persistent Playwright test browser for VO E2E task validation.
+Launch the persistent Playwright test browser for automated task validation.
 
 ## Instructions
 
 ### 0. Resolve e2e directory
 
-Read `~/.claude/plugins/user-config.json` and extract `paths.voPlaywrightTestsDir`.
+Read `~/.claude/plugins/user-config.json` and extract:
+- `paths.pluginMarketplaceName` (default: `ajudd-claude-plugins`)
+- `paths.workReposDir`
 
-If the field is missing or empty:
-```
-Where is your vo-playwright-tests directory?
-(e.g. /c/dev/vo-playwright-tests)
-```
-Write the answer to `paths.voPlaywrightTestsDir` in `~/.claude/plugins/user-config.json` before continuing.
+Read the active session file to check for an existing `e2eTestsDir` field:
 
-Use the resolved path as **E2E_DIR** throughout all steps below.
+```bash
+slug=$(basename $(pwd))
+session_name=$(cat ~/.claude/memory/sessions/$slug/_active 2>/dev/null)
+```
+
+If `session_name` is set, read `~/.claude/memory/sessions/<slug>/<session_name>.md` and look for:
+```
+- **E2E tests dir:** /path/to/tests
+```
+
+**If found and the directory exists:** use it as **E2E_DIR** and skip to Step 1.
+
+**If not found or directory does not exist:**
+
+Ask:
+```
+Where are the Playwright tests for this project?
+  Type a path to an existing directory, or type 'new' to create one now.
+```
+
+- **Path provided:** verify the directory exists, then save `e2eTestsDir` to the session file (see below) and use as E2E_DIR. Skip scaffolding.
+- **'new':** proceed to scaffold a fresh test directory.
+
+**Scaffold flow:**
+
+1. Determine target path: `<workReposDir>/<slug>-playwright-tests`
+   - If `workReposDir` is empty, ask: "Where should the new test directory be created? (parent folder)"
+   - Append `/<slug>-playwright-tests` to the chosen parent.
+
+2. Copy the runner scaffold:
+   ```bash
+   RUNNER=~/.claude/plugins/marketplaces/<pluginMarketplaceName>/e2e/runner
+   cp -r "$RUNNER" "<target-path>"
+   ```
+
+3. Ask: "What URL should open when the browser starts? (e.g. http://localhost:3000)"
+   Write `.e2e.json` in the new directory:
+   ```json
+   { "tabs": [{ "url": "<url>", "bringToFront": true }] }
+   ```
+
+4. Copy `.env.example` to `.env`:
+   ```bash
+   cp "<target-path>/.env.example" "<target-path>/.env"
+   ```
+   Tell the user: "Edit `<target-path>/.env` to set `SSO_EMAIL` and `SSO_PASS` if your app uses Microsoft SSO. Leave blank if not needed."
+
+5. Install dependencies:
+   ```bash
+   cd "<target-path>" && npm install
+   ```
+   Run with `run_in_background: false` — wait for completion.
+
+6. Install Playwright browsers if needed:
+   ```bash
+   cd "<target-path>" && npx playwright install chromium
+   ```
+
+7. Report: "Test directory created at `<target-path>`. Ready to launch."
+
+**Save e2eTestsDir to session file:**
+
+After resolving the path (either provided or scaffolded), write it to the active session file.
+Find the `- **E2E tests dir:**` line and update it, or append it after the `Next step:` line if absent:
+```
+- **E2E tests dir:** <resolved-path>
+```
+
+Use **E2E_DIR** = the resolved path for all steps below.
 
 ### 1. Check if browser is already running
-
-Read `$E2E_DIR/.browser-ws.txt` and do a live CDP probe:
 
 ```bash
 port=$(cat "$E2E_DIR/.browser-ws.txt" 2>/dev/null)
@@ -33,32 +96,23 @@ if [ -n "$port" ]; then
 fi
 ```
 
-- If `alive:<port>` — report "Browser already running on port `<N>`" and stop.
-- If `stale` — the file exists but Chrome is not responding (crashed or killed). Delete the stale files and proceed to Step 2:
+- **`alive:<port>`** — report "Browser already running on port `<N>`" and stop.
+- **`stale`** — delete stale files and proceed to Step 2:
+  ```bash
+  rm "$E2E_DIR/.browser-ws.txt"
+  rm "$E2E_DIR/.browser-owner.txt" 2>/dev/null
+  ```
+- **No file** — proceed to Step 2.
 
-```bash
-rm "$E2E_DIR/.browser-ws.txt"
-rm "$E2E_DIR/.browser-owner.txt" 2>/dev/null
-```
-
-- If no file — proceed to Step 2.
-
-### 2. Start the browser in the background
+### 2. Start the browser
 
 ```bash
 cd "$E2E_DIR" && npm run browser:start
 ```
 
-Run with `run_in_background: true`. The script:
-- Reads `SSO_PASS` from `.env` automatically
-- Launches headed Chrome with CDP enabled
-- Navigates to VO via SSO spoof URL
-- Handles Microsoft SSO login automatically
-- Writes the CDP port to `.browser-ws.txt` when ready
+Run with `run_in_background: true`.
 
 ### 3. Poll for ready signal
-
-Poll `$E2E_DIR/.browser-ws.txt` every 5 seconds for up to 60 seconds:
 
 ```bash
 for i in $(seq 1 12); do
@@ -69,11 +123,7 @@ for i in $(seq 1 12); do
 done
 ```
 
-The file contains the CDP port number (e.g. `9222`). Its presence means the browser is up and VO is loaded. If the loop completes without finding the file, proceed to Step 5 (timeout path).
-
 ### 4. Write ownership record
-
-Derive the owner ID and write `.browser-owner.txt` alongside `.browser-ws.txt`:
 
 ```bash
 slug=$(basename $(pwd))
@@ -87,23 +137,15 @@ fi
 
 ### 5. Report success
 
-Once ready:
-- Report: "Browser ready on CDP port <N> — VO loaded at env6"
-- Mention: run tasks with `npm run t -- "<query>"` or `npm run t -- story <id>`
+- "Browser ready on CDP port <N>"
+- "Run tasks with: `npm run t -- \"<query>\"`  or  `npm run t -- --list`"
 
 ### 6. Handle failures
 
-- **Port already in use**: the script handles this gracefully — it tries a CDP close first. If it fails, report the error and suggest `npm run browser:stop` first.
-- **Auth failure**: if SSO_PASS is missing or wrong, the script will log an error but keep the browser open for manual login. Report what happened and suggest the user log in manually.
-- **Timeout (60s)**: if `.browser-ws.txt` never appears, check the background task output for errors and report them. Clean up any partial state files:
+- **Port in use:** the start script handles graceful close. If it fails, suggest `npm run browser:stop` first.
+- **Auth failure:** SSO_PASS missing or wrong — browser stays open for manual login. Report and suggest manual login.
+- **Timeout (60s):** check background output, clean up stale files:
   ```bash
   rm "$E2E_DIR/.browser-ws.txt" 2>/dev/null
   rm "$E2E_DIR/.browser-owner.txt" 2>/dev/null
   ```
-
-## Output
-
-Report one of:
-- "Browser already running on port <N>"
-- "Browser ready on port <N> — VO loaded. Run tasks with: npm run t -- \"<query>\""
-- Error with specific diagnosis

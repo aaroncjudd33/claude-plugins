@@ -228,11 +228,9 @@ Configure the file system paths that plugins use to find your repos, projects, a
 - **pluginMarketplaceName**: default to `ajudd-claude-plugins`
 - **workReposDir**: check if `/c/dev` exists; if yes, suggest it
 - **personalProjectsDir**: check if `/c/claude` exists; if yes, suggest it (optional)
-- **voPlaywrightTestsDir**: if workReposDir is known and `<workReposDir>/vo-playwright-tests` exists, suggest it (optional)
-
 **Auto-detect marketplace name:** List directories under `~/.claude/plugins/marketplaces/` and use the first one found as the default. This is the name Claude Code assigned when the marketplace was installed — users don't choose it, it comes from the repo's `marketplace.json`. Only falls back to `ajudd-claude-plugins` if detection fails.
 
-Display a form. Type 'go' to accept all shown values, or type a field name to change one (marketplace / work / personal / playwright):
+Display a form. Type 'go' to accept all shown values, or type a field name to change one (marketplace / work / personal):
 
 ```
 Workspace paths:
@@ -248,14 +246,11 @@ Workspace paths:
   Personal projects dir:    <current value or detected or "(not set)">    [optional]
     (parent folder for your own personal and experimental projects outside of work
      — e.g. side projects, experiments, anything not tied to an employer)
-
-  Playwright tests dir:     <current value or detected or "(not set)">   [optional]
-    (full path to your Playwright test project — used by /e2e:start to launch a
-     persistent browser session for automated testing of web app user interactions;
-     auto-suggested from work repos dir)
 ```
 
 For any field left blank or skipped: write an empty string. The relevant plugin will prompt once and write the value when it first needs it.
+
+Note: Playwright test directories are configured per-project when you first run `/e2e:start` — not stored here.
 
 After the user confirms all values, proceed to Step 7.
 
@@ -274,7 +269,6 @@ About to write ~/.claude/plugins/user-config.json:
   pluginMarketplaceName:   <value>
   workReposDir:            <value or "(not set)">
   personalProjectsDir:     <value or "(not set)">
-  voPlaywrightTestsDir:    <value or "(not set)">
 ```
 
 Ask: "Write this config? (y/n)"
@@ -299,8 +293,7 @@ If yes, **read the existing `~/.claude/plugins/user-config.json` first** (if it 
     "memoryRoot": "~/.claude",
     "pluginMarketplaceName": "<collected or preserved>",
     "workReposDir": "<collected or preserved or empty string>",
-    "personalProjectsDir": "<collected or preserved or empty string>",
-    "voPlaywrightTestsDir": "<collected or preserved or empty string>"
+    "personalProjectsDir": "<collected or preserved or empty string>"
   }
 }
 ```

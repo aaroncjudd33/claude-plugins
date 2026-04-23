@@ -1,7 +1,7 @@
 {
   "name": "e2e",
-  "version": "1.5.0",
-  "description": "Launch and manage the persistent Playwright test browser for VO E2E tasks. Handles auth, session startup, and task execution.",
+  "version": "2.0.0",
+  "description": "Launch and manage a persistent Playwright test browser for any project. Auto-scaffolds a test directory on first use — just install the plugin and run /e2e:start.",
   "author": {
     "name": "Aaron Judd",
     "email": "aaroncjudd@gmail.com"
