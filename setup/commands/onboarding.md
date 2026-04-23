@@ -236,7 +236,8 @@ Display a form. Press Enter to accept the shown value, or type a replacement:
 Workspace paths:
 
   Plugin marketplace name:  <current value or "ajudd-claude-plugins">
-    (the name of the marketplace where your Claude Code plugins live and are developed)
+    (the name of your personal Claude Code plugin collection — matches what you used
+     when running `claude plugin marketplace add <url>`)
     → plugins stored at: ~/.claude/plugins/marketplaces/<name>/
 
   Work repos directory:     <current value or detected or "(not set)">
@@ -246,9 +247,10 @@ Workspace paths:
     (parent folder for your own personal and experimental projects outside of work
      — e.g. side projects, experiments, anything not tied to an employer)
 
-  VO Playwright tests dir:  <current value or detected or "(not set)">   [optional]
-    (full path to the vo-playwright-tests repo — used by /e2e:start for automated
-     browser testing of the Virtual Office site; auto-suggested from work repos dir)
+  Playwright tests dir:     <current value or detected or "(not set)">   [optional]
+    (full path to your Playwright test project — used by /e2e:start to launch a
+     persistent browser session for automated testing of web app user interactions;
+     auto-suggested from work repos dir)
 ```
 
 For any field left blank or skipped: write an empty string. The relevant plugin will prompt once and write the value when it first needs it.
