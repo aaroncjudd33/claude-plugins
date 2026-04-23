@@ -1,11 +1,13 @@
 ---
 name: clean
-description: Full teardown — removes ALL local state created by the plugin system. Use before uninstalling plugins or handing off a machine. This cannot be undone.
+description: Plugin config teardown — removes user identity config and operational plugin files. Use before uninstalling plugins or handing off a machine. Memory files are never touched.
 ---
 
 # Setup: Clean
 
-Removes all local files created by the plugin system — identity config, team registry, session memory, browser links, story settings, and the auto-memory system. After this command, the machine is as if the plugins were never configured.
+Removes plugin configuration files created by the plugin system — identity config, team registry, browser links, and story settings. After this command, the plugins are deconfigured and ready for a fresh `/setup:onboarding` run or uninstall.
+
+**Memory files are never deleted by this command.** Session state, project context, auto-memory files, and MEMORY.md represent your work history and must be deleted manually if needed.
 
 This does NOT uninstall the plugins themselves — run `claude plugin uninstall <name>` for each plugin separately after cleaning.
 
@@ -21,40 +23,37 @@ Check each of the following and note which are present:
 | `~/.claude/plugins/team.json` | Team registry — colleague roles and IDs |
 | `~/.claude/browser-links.json` | Saved browser links and workspaces |
 | `~/.claude/jira-stories.json` | Story visibility and hide settings |
-| `~/.claude/memory/sessions/` | All session state files for every project |
-| `~/.claude/memory/*.md` | Auto-memory files (user profile, feedback, project notes) |
-| `~/.claude/memory/MEMORY.md` | Memory index |
 
-If none of these exist, report: "Nothing to clean — no plugin-created files found." and stop.
+If none of these exist, report: "Nothing to clean — no plugin config files found." and stop.
 
 ### 2. Display what will be deleted
 
 Show a summary of everything found:
 
 ```
-⚠  The following will be permanently deleted:
+⚠  The following plugin config files will be permanently deleted:
 
   ~/.claude/plugins/user-config.json       (your identity config)
   ~/.claude/plugins/team.json              (team registry)
   ~/.claude/browser-links.json             (browser workspaces and links)
   ~/.claude/jira-stories.json              (story visibility settings)
-  ~/.claude/memory/sessions/               (ALL session state — X files)
-  ~/.claude/memory/*.md                    (auto-memory files — X files)
-  ~/.claude/memory/MEMORY.md              (memory index)
 
-This cannot be undone. Installed plugins and plugin code are not affected.
+Memory files (~/.claude/memory/) are NOT touched — your project history and
+session state are preserved. Delete those manually if you need to remove them.
+
+Installed plugins and plugin code are not affected.
 To also remove the plugins, run: claude plugin uninstall <name> for each one.
 ```
 
-Only list items that were found — skip anything already absent. For directories, include the file count if easily determinable.
+Only list items that were found — skip anything already absent.
 
 ### 3. Confirm — two-step
 
-First ask: "Are you sure you want to delete all of this? (yes/no)"
+First ask: "Are you sure you want to delete these plugin config files? (yes/no)"
 
 Do NOT proceed on "y" alone — requires full "yes".
 
-If yes, ask a second time: "This will delete session memory and auto-memory that cannot be recovered. Type YES (all caps) to confirm."
+If yes, ask a second time: "Type YES (all caps) to confirm."
 
 Only proceed if the user types "YES" in all caps. Anything else: "Clean cancelled. Nothing was deleted."
 
@@ -66,21 +65,19 @@ Delete each item that exists, in this order:
 2. `~/.claude/plugins/team.json`
 3. `~/.claude/browser-links.json`
 4. `~/.claude/jira-stories.json`
-5. All files under `~/.claude/memory/sessions/` (and the directory itself if empty after)
-6. All `*.md` files directly under `~/.claude/memory/` (including MEMORY.md)
 
 Report each deletion:
 - "Deleted ~/.claude/plugins/user-config.json"
 - "Deleted ~/.claude/plugins/team.json"
 - "Deleted ~/.claude/browser-links.json"
 - "Deleted ~/.claude/jira-stories.json"
-- "Deleted ~/.claude/memory/sessions/ (X files)"
-- "Deleted ~/.claude/memory/ memory files (X files)"
 
 ### 5. Final report and next steps
 
 ```
-Clean complete. All plugin-created local state has been removed.
+Clean complete. Plugin configuration files have been removed.
+
+Memory files were preserved — your project history and session state are intact.
 
 To also remove the installed plugins:
   claude plugin uninstall setup@ajudd-claude-plugins
@@ -98,6 +95,7 @@ To start fresh (keep plugins installed, just re-configure):
 
 ## What is NOT deleted
 
+- `~/.claude/memory/` — ALL memory files: session state, project context, auto-memory, MEMORY.md. Delete manually if needed.
 - `~/.claude/CLAUDE.md` — your global Claude instructions (hand-authored, not plugin-created)
 - `~/.claude/settings.json` — Claude Code settings
 - `~/.claude/plugins/installed_plugins.json` — plugin registry (managed by Claude CLI)
