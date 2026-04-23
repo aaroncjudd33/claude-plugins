@@ -9,10 +9,16 @@ Show recently modified Confluence pages you're watching or mentioned in.
 
 ## Instructions
 
+### Read User Config
+
+Read `~/.claude/plugins/user-config.json` and extract `user.jiraAccountId` — this is `{ACCOUNT_ID}` used in the CQL queries below.
+
+If the file does not exist or `jiraAccountId` is empty, stop and say: "Your identity is not configured. Run `/setup:onboarding` first."
+
 Run two CQL searches in parallel using `searchConfluenceUsingCql`:
 
-1. `watcher = "620147d91fec260068c1097d" AND lastmodified > now("-7d") ORDER BY lastmodified DESC`
-2. `mention = "620147d91fec260068c1097d" AND lastmodified > now("-7d") ORDER BY lastmodified DESC`
+1. `watcher = "{ACCOUNT_ID}" AND lastmodified > now("-7d") ORDER BY lastmodified DESC`
+2. `mention = "{ACCOUNT_ID}" AND lastmodified > now("-7d") ORDER BY lastmodified DESC`
 
 Deduplicate by page ID. Show max 10 results, most recent first.
 

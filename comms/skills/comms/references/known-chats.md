@@ -16,3 +16,4 @@ Multiple entries can share the same conceptual purpose — set `Active=no` to ar
 | BPT2-6278 — SG Tax ID Validation | 19:046c96d2c56c4d12abb9d5757908d7d4@thread.v2 | yes | Aaron Judd, Maikol Porras, Fernando Magana, Angela Valdez, Heber Iraheta | SG NRIC validation incident — BPT2-6278 |
 | BPT2-6333 — GLB Import Inactivity Alarm Fix | 19:e9d1affcfb434d939a353c0b5a3964f3@thread.v2 | yes | Aaron Judd, Maikol Porras, Fernando Magana, Angela Valdez | Import inactivity alarm root cause — fix bundled into BPT2-6258 CAB deploy |
 | BPT2-6138 — CDK Dependency Update | 19:60097e930df144aba0f3367b97b7ed48@thread.v2 | yes | Aaron Judd, Heber Iraheta, Nivi Umasankar | CDK dependency update to resolve Dependabot security alerts |
+| BPT2-6337 — yl-cdk v7 Upgrade | 19:d6edb1e2af9046089985a34307e2d28d@thread.v2 | yes | Aaron Judd, Heber Iraheta, Nivi Umasankar, Chris Gibbons | Downline Reports yl-cdk v7 upgrade — drop brand-partner-cdk |

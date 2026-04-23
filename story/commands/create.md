@@ -19,7 +19,7 @@ If not provided as arguments or inferable from conversation context, ask the use
 - **Description** — what the story is about (can come from conversation context)
 - **Work Allocation Type** — one of: Technical Debt, Maintenance, New Development, Production Issues (default: infer from context)
 - **Expenditures** — Opex or Capex (default: Opex)
-- **Assignee** — who to assign (default: Aaron Judd)
+- **Assignee** — who to assign (default: current user — read from `~/.claude/plugins/user-config.json` > `user.jiraAccountId`)
 - **Initial status** — Backlog, In Progress, Ready For Work, etc. (default: Ready For Work)
 - **Comment** — optional first comment to add (e.g. technical details, queries, etc.)
 
@@ -42,7 +42,7 @@ Call `createJiraIssue` with:
 
 Immediately call `editJiraIssue` to set:
 - **description** — using proper markdown (headings, bullets, bold, code blocks). The edit tool converts markdown to ADF correctly.
-- **assignee** — if specified (default: Aaron Judd `620147d91fec260068c1097d`)
+- **assignee** — if specified (default: `user.jiraAccountId` from `~/.claude/plugins/user-config.json`)
 
 ### 4. Transition status (if not Backlog)
 
@@ -58,7 +58,7 @@ If the user mentions related Jira issues, link them using the `createIssueLink` 
 
 ### 7. Register links workspace
 
-Read `C:\Users\ajudd\.claude\browser-links.json`.
+Read `~/.claude/browser-links.json`.
 
 Always:
 - Add `story:BPT2-XXXX` to the `links` section (if not already present):
@@ -87,7 +87,7 @@ For any other links explicitly referenced or created during this invocation:
 - **Any URL the user explicitly provides** (PR, design doc, external reference, etc.): register it as `<prefix>:<story-key>-<short-label>` in the `links` section and append it to the workspace.
 - Deduplicate — never add the same key twice to a workspace's `links` array.
 
-Write back `C:\Users\ajudd\.claude\browser-links.json`. Do not prompt the user during this step.
+Write back `~/.claude/browser-links.json`. Do not prompt the user during this step.
 
 ### 8. Write session file
 

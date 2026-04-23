@@ -31,10 +31,12 @@ Wait 2 seconds after the first URL (window creation), 1 second between subsequen
 
 ### 3. Query in-progress stories
 
+Read `~/.claude/plugins/user-config.json` and extract `user.jiraAccountId` as `{ACCOUNT_ID}`.
+
 Use `searchJiraIssuesUsingJql` on cloud ID `9de6eb2b-2683-44e6-89ff-c622027e09b4`:
 
 ```jql
-assignee = "620147d91fec260068c1097d" AND status = "In Progress" ORDER BY duedate ASC
+assignee = "{ACCOUNT_ID}" AND status = "In Progress" ORDER BY duedate ASC
 ```
 
 Fields: `summary, status, assignee, duedate, priority`

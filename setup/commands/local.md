@@ -9,6 +9,12 @@ Full morning setup. Gets your environment ready and shows what you have to work 
 
 ## Instructions
 
+### 0. Read User Config
+
+Read `~/.claude/plugins/user-config.json` and extract `user.jiraAccountId` — this is `{ACCOUNT_ID}` used in all JQL and CQL queries below.
+
+If the file does not exist or `jiraAccountId` is empty, stop and say: "Your identity is not configured. Run `/setup:onboarding` first."
+
 ### 1. Date Header
 
 Print:
@@ -57,17 +63,17 @@ Run three JQL queries in parallel (searchJiraIssuesUsingJql). Request fields: `s
 
 **Query 1 — My tickets:**
 ```jql
-assignee = "620147d91fec260068c1097d" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, duedate ASC
+assignee = "{ACCOUNT_ID}" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, duedate ASC
 ```
 
 **Query 2 — Handed off (reassigned):**
 ```jql
-project = BPT2 AND assignee WAS "620147d91fec260068c1097d" AND assignee != "620147d91fec260068c1097d" AND assignee is not EMPTY AND updated >= -30d AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, updated DESC
+project = BPT2 AND assignee WAS "{ACCOUNT_ID}" AND assignee != "{ACCOUNT_ID}" AND assignee is not EMPTY AND updated >= -30d AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, updated DESC
 ```
 
 **Query 3 — Handed off (unassigned):**
 ```jql
-project = BPT2 AND assignee WAS "620147d91fec260068c1097d" AND assignee is EMPTY AND updated >= -30d AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, updated DESC
+project = BPT2 AND assignee WAS "{ACCOUNT_ID}" AND assignee is EMPTY AND updated >= -30d AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, updated DESC
 ```
 
 Merge Q2 + Q3 into a single "Handed Off" section. For Q1, group by status (In Progress → Ready For Test/In Review/In QA → Open/To Do/Backlog → other), sort by due date within each group (nulls last).
@@ -99,8 +105,8 @@ If Atlassian MCP unavailable: `JIRA — Unavailable`
 
 <!-- SYNC NOTE: These CQL queries are duplicated in setup/commands/confluence.md. If you change them here, update there too. -->
 Run two CQL searches in parallel (searchConfluenceUsingCql):
-1. `watcher = "620147d91fec260068c1097d" AND lastmodified > now("-7d") ORDER BY lastmodified DESC`
-2. `mention = "620147d91fec260068c1097d" AND lastmodified > now("-7d") ORDER BY lastmodified DESC`
+1. `watcher = "{ACCOUNT_ID}" AND lastmodified > now("-7d") ORDER BY lastmodified DESC`
+2. `mention = "{ACCOUNT_ID}" AND lastmodified > now("-7d") ORDER BY lastmodified DESC`
 
 Deduplicate by page ID. Max 10 results. Use relative dates ("today", "yesterday", "2 days ago", or the date if older).
 

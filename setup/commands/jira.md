@@ -9,6 +9,12 @@ Fetch and display open Jira tickets assigned to you, plus recently handed-off wo
 
 ## Instructions
 
+### Read User Config
+
+Read `~/.claude/plugins/user-config.json` and extract `user.jiraAccountId` — this is `{ACCOUNT_ID}` used in all JQL queries below.
+
+If the file does not exist or `jiraAccountId` is empty, stop and say: "Your identity is not configured. Run `/setup:onboarding` first."
+
 <!-- SYNC NOTE: These 3 JQL queries are duplicated in story/commands/my-stories.md (section 1), setup/commands/local.md (section 3), and setup/skills/setup/SKILL.md.
      If you change them here, update all three. -->
 
@@ -16,17 +22,17 @@ Run three JQL queries in parallel using `searchJiraIssuesUsingJql`. Request fiel
 
 **Query 1 — My tickets:**
 ```jql
-assignee = "620147d91fec260068c1097d" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, duedate ASC
+assignee = "{ACCOUNT_ID}" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, duedate ASC
 ```
 
 **Query 2 — Handed off (reassigned):**
 ```jql
-project = BPT2 AND assignee WAS "620147d91fec260068c1097d" AND assignee != "620147d91fec260068c1097d" AND assignee is not EMPTY AND updated >= -30d AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, updated DESC
+project = BPT2 AND assignee WAS "{ACCOUNT_ID}" AND assignee != "{ACCOUNT_ID}" AND assignee is not EMPTY AND updated >= -30d AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, updated DESC
 ```
 
 **Query 3 — Handed off (unassigned):**
 ```jql
-project = BPT2 AND assignee WAS "620147d91fec260068c1097d" AND assignee is EMPTY AND updated >= -30d AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, updated DESC
+project = BPT2 AND assignee WAS "{ACCOUNT_ID}" AND assignee is EMPTY AND updated >= -30d AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, updated DESC
 ```
 
 Merge Q2 + Q3 into a single "Handed Off" section.

@@ -56,7 +56,7 @@ These fields are required when creating a BPT2 story:
 | Field | API Key | Type | Notes |
 |-------|---------|------|-------|
 | Description | `description` | markdown (via edit) | **Must be set via `editJiraIssue`, not at creation.** See MCP quirks below. |
-| Assignee | `assignee` | user (accountId) | Aaron Judd: `620147d91fec260068c1097d` |
+| Assignee | `assignee` | user (accountId) | Current user — read from `~/.claude/plugins/user-config.json` > `user.jiraAccountId` |
 | Epic Link | `customfield_10001` | string | Epic key, e.g. `BPT2-1234` |
 | Sprint | `customfield_10005` | sprint ID | Set via board if needed |
 | Labels | `labels` | array of strings | e.g. `["decommission", "virtual-office"]` |
@@ -67,7 +67,7 @@ These fields are required when creating a BPT2 story:
 
 | Person | Role | Account ID |
 |--------|------|-----------|
-| Aaron Judd | Default assignee / reporter | `620147d91fec260068c1097d` |
+| Current user | Default assignee / reporter | read from `~/.claude/plugins/user-config.json` > `user.jiraAccountId` |
 | Maikol Porras | Dev team member | (look up if needed) |
 | Fernando Magana | Dev team member | (look up if needed) |
 | Angela Valdez | Dev team member | (look up if needed) |
@@ -137,21 +137,22 @@ Do not add extra fields without updating this schema.
 
 ## Canonical JQL Queries
 
-<!-- CANONICAL SOURCE — update here first, then sync to: story/commands/my-stories.md, setup/commands/jira.md, setup/commands/local.md, setup/skills/setup/SKILL.md -->
+<!-- CANONICAL SOURCE — update here first, then sync to: story/commands/dashboard.md, setup/commands/jira.md, setup/commands/local.md, setup/skills/setup/SKILL.md -->
+<!-- {ACCOUNT_ID} = value from ~/.claude/plugins/user-config.json > user.jiraAccountId -->
 
 **Currently assigned to me:**
 ```jql
-assignee = "620147d91fec260068c1097d" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, duedate ASC
+assignee = "{ACCOUNT_ID}" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, duedate ASC
 ```
 
 **Previously assigned (reassigned to someone else, last 30 days):**
 ```jql
-project = BPT2 AND assignee WAS "620147d91fec260068c1097d" AND assignee != "620147d91fec260068c1097d" AND assignee is not EMPTY AND updated >= -30d AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, updated DESC
+project = BPT2 AND assignee WAS "{ACCOUNT_ID}" AND assignee != "{ACCOUNT_ID}" AND assignee is not EMPTY AND updated >= -30d AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, updated DESC
 ```
 
 **Previously assigned (now unassigned, last 30 days):**
 ```jql
-project = BPT2 AND assignee WAS "620147d91fec260068c1097d" AND assignee is EMPTY AND updated >= -30d AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, updated DESC
+project = BPT2 AND assignee WAS "{ACCOUNT_ID}" AND assignee is EMPTY AND updated >= -30d AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, updated DESC
 ```
 
 ---
@@ -180,7 +181,7 @@ Step 1: createJiraIssue
 
 Step 2: editJiraIssue
   - description: "### Heading\n- Bullet 1\n- Bullet 2"
-  - assignee: { accountId: "620147d91fec260068c1097d" }
+  - assignee: { accountId: "{ACCOUNT_ID}" }  # read from ~/.claude/plugins/user-config.json
 
 Step 3 (optional): transitionJiraIssue
   - transition: { id: "421" }    # Move to In Progress
@@ -196,7 +197,7 @@ Step 4 (optional): addCommentToJiraIssue
 Whenever any step in this plugin posts a Teams message, apply these rules without exception:
 
 1. **Always end with the Claude signature** — no exceptions:
-   `<p><em>Posted by Claude on behalf of Aaron Judd</em></p>`
+   `<p><em>Posted by Claude on behalf of {USER_NAME}</em></p>` (use `user.name` from `~/.claude/plugins/user-config.json`)
 2. **Always preview before sending.** Show the full message content and wait for explicit approval before calling `send_chat_message`.
 3. **Always use HTML formatting.** `send_chat_message` body supports and renders HTML.
 4. **Always open with an intro paragraph** (`<p>`) before the first section.
@@ -214,5 +215,5 @@ Standard message template:
   <li><b>Item</b> — detail</li>
 </ul>
 <p>&nbsp;</p>
-<p><em>Posted by Claude on behalf of Aaron Judd</em></p>
+<p><em>Posted by Claude on behalf of {USER_NAME}</em></p>
 ```

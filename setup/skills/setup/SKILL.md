@@ -14,7 +14,7 @@ Reference data and formatting rules for the morning setup routine.
 - Instance: `https://younglivingeo.atlassian.net`
 - Cloud ID: `9de6eb2b-2683-44e6-89ff-c622027e09b4`
 - Auth: Handled by the `claude.ai` Atlassian MCP
-- Aaron Judd Account ID: `620147d91fec260068c1097d`
+- User Account ID: read from `~/.claude/plugins/user-config.json` > `user.jiraAccountId` — used as `{ACCOUNT_ID}` in all queries
 
 ---
 
@@ -26,19 +26,19 @@ Reference data and formatting rules for the morning setup routine.
 ### Query 1 — Currently assigned to me
 
 ```jql
-assignee = "620147d91fec260068c1097d" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, duedate ASC
+assignee = "{ACCOUNT_ID}" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, duedate ASC
 ```
 
 ### Query 2 — Previously assigned to me (reassigned to someone else)
 
 ```jql
-project = BPT2 AND assignee WAS "620147d91fec260068c1097d" AND assignee != "620147d91fec260068c1097d" AND assignee is not EMPTY AND updated >= -30d AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, updated DESC
+project = BPT2 AND assignee WAS "{ACCOUNT_ID}" AND assignee != "{ACCOUNT_ID}" AND assignee is not EMPTY AND updated >= -30d AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, updated DESC
 ```
 
 ### Query 3 — Previously assigned to me (now unassigned)
 
 ```jql
-project = BPT2 AND assignee WAS "620147d91fec260068c1097d" AND assignee is EMPTY AND updated >= -30d AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, updated DESC
+project = BPT2 AND assignee WAS "{ACCOUNT_ID}" AND assignee is EMPTY AND updated >= -30d AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, updated DESC
 ```
 
 ### Status Grouping Order
@@ -62,11 +62,11 @@ Display in this order (skip groups with zero tickets):
 ### Recently Modified Pages Queries
 
 ```cql
-watcher = "620147d91fec260068c1097d" AND lastmodified > now("-7d") ORDER BY lastmodified DESC
+watcher = "{ACCOUNT_ID}" AND lastmodified > now("-7d") ORDER BY lastmodified DESC
 ```
 
 ```cql
-mention = "620147d91fec260068c1097d" AND lastmodified > now("-7d") ORDER BY lastmodified DESC
+mention = "{ACCOUNT_ID}" AND lastmodified > now("-7d") ORDER BY lastmodified DESC
 ```
 
 Deduplicate results by page ID. Show max 10 pages. Use relative dates: "today", "yesterday", "2 days ago", or the date if older.
