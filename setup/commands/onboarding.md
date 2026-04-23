@@ -137,17 +137,28 @@ For each new member:
 
    **Important:** Do NOT use `search_actions` with `category: "people"` as a single-call lookup — it fails with output validation errors. The correct pattern is always `people.search` → email, then `user.get` → id.
 
-3. **Prompt for GitHub login explicitly** — do not rely on auto-lookup:
+3. **GitHub lookup — derive from email prefix** (run in parallel with Teams lookup):
 
-   GitHub logins cannot be reliably auto-looked up for YL users. Work emails are private
-   on GitHub, and contractor accounts use prefixes (`v-mporras`) that don't match display
-   names. Do NOT attempt `gh api search/users` — it always fails for internal YL accounts.
+   GitHub name/email search is unreliable for YL users because work emails are private
+   and contractor accounts use a `v-` prefix that doesn't appear in display names.
+   Use the email from the Jira result to derive and verify the login instead.
 
-   After the Jira/Teams lookups complete, ask directly:
+   Step A: Extract the email prefix from the Jira result (part before `@`).
+   Example: `hiraheta@youngliving.com` → prefix = `hiraheta`
+
+   Step B: Try `v-{prefix}` first (contractor pattern — covers `v-mporras`, `v-hiraheta`, etc.):
+   ```bash
+   gh api "users/v-hiraheta"
    ```
-   GitHub login (optional — e.g. v-mporras, press Enter to skip):
+   - If the API returns a user object: use `v-{prefix}` as the GitHub login. Note "(verified via GitHub API)".
+
+   Step C: If `v-{prefix}` returns 404, try `{prefix}` without the `v-` prefix:
+   ```bash
+   gh api "users/hiraheta"
    ```
-   Use whatever the user types. If they press Enter, store as empty string.
+   - If found: use `{prefix}` as the GitHub login. Note "(verified via GitHub API)".
+
+   Step D: If both return 404 or error: note GitHub as "(not found)" — prompt manually on the confirm screen.
 
 4. **Show confirm/correct screen** with everything resolved:
 
