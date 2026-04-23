@@ -15,10 +15,15 @@ Run `pwd` and extract the **last path component** as the repo slug:
 - `/c/Users/ajudd/.claude/plugins/marketplaces/ajudd-claude-plugins` → `ajudd-claude-plugins`
 - `/c/dev/gen-leadership-bonus` → `gen-leadership-bonus`
 
-Detect session type from the path:
-- **plugin** — path contains `ajudd-claude-plugins`
-- **story / cab** — path contains `/dev/`
-- **personal** — path contains `/c/claude/`
+Read `~/.claude/plugins/user-config.json` and extract:
+- `paths.pluginMarketplaceName` — default to `ajudd-claude-plugins` if absent
+- `paths.workReposDir` — e.g. `/c/dev` (may be empty)
+- `paths.personalProjectsDir` — e.g. `/c/claude` (may be empty)
+
+Detect session type from the current path:
+- **plugin** — path contains the value of `pluginMarketplaceName`
+- **story / cab** — `workReposDir` is set and path begins with it; fallback: path contains `/dev/`
+- **personal** — `personalProjectsDir` is set and path begins with it; fallback: path contains `/c/claude/`
 - **general** — anything else
 
 ### 2. Load Repo Sessions
@@ -193,7 +198,7 @@ updated: [today's date]
 - **Category:** [category]   ← general only, omit for other types
 - **Teams chat:** [teams_chat or "none"]
 - **Project:** [project path]
-- **Scope:** [scope path]   ← story/cab/personal: pwd; plugin: ~/.claude/plugins/marketplaces/ajudd-claude-plugins/<name>; omit for general
+- **Scope:** [scope path]   ← story/cab/personal: pwd; plugin: ~/.claude/plugins/marketplaces/<pluginMarketplaceName>/<name> (read pluginMarketplaceName from user-config); omit for general
 - **Branch:** [branch or "n/a"]
 - **Last worked on:** [will be updated at checkpoint]
 - **Open items:** [carried from previous session, or "none"]

@@ -218,18 +218,54 @@ If the file already existed, merge new members in — do not overwrite existing 
 
 Confirm: "Team registry written to ~/.claude/plugins/team.json."
 
-### 6. Confirm and write user config
+### 6. Workspace paths
+
+Configure the file system paths that plugins use to find your repos, projects, and tools. Paths marked "(optional)" can be skipped now — a plugin will prompt for them on demand the first time it needs them.
+
+**Auto-detect where possible** before displaying the form:
+- **pluginMarketplaceName**: default to `ajudd-claude-plugins` (the name of this marketplace)
+- **workReposDir**: check if `/c/dev` exists; if yes, suggest it
+- **personalProjectsDir**: check if `/c/claude` exists; if yes, suggest it (optional)
+- **voPlaywrightTestsDir**: if workReposDir was detected and `<workReposDir>/vo-playwright-tests` exists, suggest it (optional)
+
+Display a form. Press Enter to accept a suggested value, or type a replacement:
+
+```
+Workspace paths:
+
+  Plugin marketplace name:  ajudd-claude-plugins
+    (name used when installing this marketplace — drives plugin scope paths)
+
+  Work repos directory:     /c/dev     [or "(not detected)"]
+    (parent folder where your work repos are cloned)
+
+  Personal projects dir:    /c/claude  [or "(not detected)"]    [optional]
+    (parent folder for personal side projects — skip if not applicable)
+
+  VO Playwright tests dir:  /c/dev/vo-playwright-tests  [or "(not set)"]   [optional]
+    (full path to vo-playwright-tests repo — only needed for /e2e:start)
+```
+
+For any field left blank or skipped: write an empty string to config. The relevant plugin will prompt once and write the value when it first needs it.
+
+After the user confirms all values, proceed to Step 7.
+
+### 7. Confirm and write user config
 
 Display a final summary:
 
 ```
 About to write ~/.claude/plugins/user-config.json:
 
-  name:          <value>
-  email:         <value>
-  jiraAccountId: <value>
-  teamsUserId:   <value or "(not set)">
-  jiraProject:   <value>
+  name:                    <value>
+  email:                   <value>
+  jiraAccountId:           <value>
+  teamsUserId:             <value or "(not set)">
+  jiraProject:             <value>
+  pluginMarketplaceName:   <value>
+  workReposDir:            <value or "(not set)">
+  personalProjectsDir:     <value or "(not set)">
+  voPlaywrightTestsDir:    <value or "(not set)">
 ```
 
 Ask: "Write this config? (y/n)"
@@ -251,7 +287,11 @@ If yes, write the file:
   },
   "paths": {
     "browserLinksFile": "~/.claude/browser-links.json",
-    "memoryRoot": "~/.claude"
+    "memoryRoot": "~/.claude",
+    "pluginMarketplaceName": "<pluginMarketplaceName>",
+    "workReposDir": "<workReposDir or empty string>",
+    "personalProjectsDir": "<personalProjectsDir or empty string>",
+    "voPlaywrightTestsDir": "<voPlaywrightTestsDir or empty string>"
   }
 }
 ```

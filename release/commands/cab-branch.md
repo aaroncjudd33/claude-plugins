@@ -75,7 +75,7 @@ Store the PR number and URL.
 
 Open the PR in the browser (skip on first-deploy):
 ```bash
-powershell -ExecutionPolicy Bypass -File "C:\Users\ajudd\.claude\scripts\Open-EdgeUrl.ps1" -Url "<PR-URL>" -WindowName "GitHub"
+powershell -ExecutionPolicy Bypass -File "~\.claude\scripts\Open-EdgeUrl.ps1" -Url "<PR-URL>" -WindowName "GitHub"
 ```
 
 ### 5. Update session state

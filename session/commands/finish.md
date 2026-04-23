@@ -95,15 +95,17 @@ Skip if no Confluence page is set up for this session's context.
 
 ### 7. Browser
 
-**story only:** Check if `/c/dev/vo-playwright-tests/.browser-ws.txt` exists.
+**story only:** Read `paths.voPlaywrightTestsDir` from `~/.claude/plugins/user-config.json`. If the field is empty or absent, skip this step entirely (e2e plugin is not configured for this machine).
+
+Check if `<voPlaywrightTestsDir>/.browser-ws.txt` exists.
 
 - If it does not exist → skip.
 - If it exists, check ownership before prompting:
-  1. Read `/c/dev/vo-playwright-tests/.browser-owner.txt` if present
+  1. Read `<voPlaywrightTestsDir>/.browser-owner.txt` if present
   2. Compute current owner: `<slug>/<session-name>` (slug = last component of `pwd`; session name = contents of `~/.claude/memory/sessions/<slug>/_active`)
   3. If owner file exists AND does not match current session → log "Browser running (owned by `<owner>`) — skipping close" and skip
   4. If owner matches OR no owner file exists → prompt: "Browser still running on port [N] — stop it? (or run `/e2e:stop`)"
-     - If yes: run `npm run browser:stop` from `/c/dev/vo-playwright-tests`, then delete `.browser-ws.txt` and `.browser-owner.txt`
+     - If yes: run `npm run browser:stop` from `<voPlaywrightTestsDir>`, then delete `.browser-ws.txt` and `.browser-owner.txt`
 
 **All other types:** Skip.
 

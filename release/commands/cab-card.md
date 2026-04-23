@@ -101,7 +101,7 @@ Store the returned CAB card key (e.g. `CAB-8994`).
 
 Open the CAB card in the browser:
 ```bash
-powershell -ExecutionPolicy Bypass -File "C:\Users\ajudd\.claude\scripts\Open-EdgeUrl.ps1" -Url "https://younglivingeo.atlassian.net/browse/<CAB-KEY>" -WindowName "Jira"
+powershell -ExecutionPolicy Bypass -File "~\.claude\scripts\Open-EdgeUrl.ps1" -Url "https://younglivingeo.atlassian.net/browse/<CAB-KEY>" -WindowName "Jira"
 ```
 
 ### 7. Assign and transition the BPT2 CAB story

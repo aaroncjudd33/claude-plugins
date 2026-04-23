@@ -11,9 +11,11 @@ Manage the persistent Playwright test browser used for VO E2E task validation. T
 
 ## Project Location
 
-`C:\dev\vo-playwright-tests\` (standalone, sibling to `C:\dev\virtual-office\`)
+Read `paths.voPlaywrightTestsDir` from `~/.claude/plugins/user-config.json`. If not set, prompt once and write it before proceeding. The value is the full path to the `vo-playwright-tests` repo on this machine (e.g. `/c/dev/vo-playwright-tests`).
 
 ## Key Commands
+
+Run from the resolved `voPlaywrightTestsDir`:
 
 ```
 npm run browser:start     ← launch Chrome, auto-login via SSO, write CDP port to .browser-ws.txt
@@ -31,7 +33,7 @@ npm run t -- --list       ← list all tasks
 
 When starting the browser:
 
-1. Run `npm run browser:start` in the background from `C:\dev\vo-playwright-tests\`
+1. Run `npm run browser:start` in the background from the resolved `voPlaywrightTestsDir`
 2. Poll for `.browser-ws.txt` to appear (signals browser is ready and on VO)
 3. Once ready, confirm the CDP port and report success
 
