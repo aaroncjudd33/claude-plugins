@@ -115,51 +115,58 @@ add to story chats, who reviews PRs).
 
 **Add member loop:**
 
-For each new member, collect in sequence:
+For each new member:
 
-1. "Name:" — full display name
-2. "Work email:" — used for Jira lookup and Teams chat display
+1. Ask only: **"Name:"** — first name, full name, or display name is all that's needed.
 
-3. **Auto-lookup Jira account ID:**
-   Call `lookupJiraAccountId` with `cloudId: "9de6eb2b-2683-44e6-89ff-c622027e09b4"` and `query: <email>`.
-   - On success: extract `accountId` from first result, note "(looked up)"
-   - On transient error: retry once automatically
-   - On failure: note "(not found)" — user can enter manually or skip
+2. **Immediately fire parallel lookups** — do not ask for anything else first:
 
-4. **Teams user ID:** prompt manually — "(optional, for story chat invitations — Enter to skip)"
+   **Jira lookup:**
+   Call `lookupJiraAccountId` with `cloudId: "9de6eb2b-2683-44e6-89ff-c622027e09b4"` and `query: <name>`.
+   - On success: extract `accountId` and `emailAddress` from the first result. Note both as "(looked up from Atlassian)".
+   - If multiple results: show a numbered list and ask the user to pick — "Found multiple matches, which one?"
+   - On transient error: retry once automatically.
+   - On failure after retry or no results: note both as "(not found)".
 
-5. **GitHub login:** "(optional, for PR review mentions — Enter to skip)"
+   **Teams lookup:**
+   Call `search_actions` with `category: "people"` and the name as the query.
+   - On success: extract the user `id` field. Note as "(looked up from Microsoft 365)".
+   - If multiple results: show a numbered list and ask the user to pick.
+   - On failure or no results: note as "(not found)".
 
-6. **Show confirm/correct screen:**
+3. **Show confirm/correct screen** with everything that was resolved:
 
    ```
-   New team member:
-     Name:      <name>               (entered)
-     Email:     <email>              (entered)
-     Jira ID:   <accountId or not set>
-     Teams ID:  <teamsUserId or not set>
-     GitHub:    <login or not set>
+   Member 1 — found:
+     Name:      Heber Iraheta          (from Jira)
+     Email:     hiraheta@...           (from Jira)
+     Jira ID:   557058:055d4592...     (looked up)
+     Teams ID:  a1b2c3d4-...           (looked up)
+     GitHub:    (not set)
    ```
 
-   Ask: "Correct? Enter field name to change, or press Enter to continue."
+   Ask: "Correct? Enter a field name to change it (name/email/jira/teams/github), or press Enter to continue."
 
-7. **Assign roles** — show numbered list, user enters comma-separated numbers:
+   - If a field is missing and critical (e.g. Jira ID not found): the user can paste it directly.
+   - GitHub login is always optional — if not provided here it can be set later.
+
+4. **Assign roles** — show numbered list, user enters comma-separated numbers:
 
    ```
    Assign roles (comma-separated, e.g. "1,3"):
 
-     1. story-chat          — added to new story Teams chats by default
-     2. qa-approver         — QA sign-off on CAB cards
+     1. story-chat           — added to new story Teams chats by default
+     2. qa-approver          — QA sign-off on CAB cards
      3. code-review-approver — code review sign-off on CAB cards
-     4. cab-assignee        — assigned after CAB Send For Review
-     5. pr-reviewer         — pinged when prod GitHub environment gate needs approval
+     4. cab-assignee         — assigned after CAB Send For Review
+     5. pr-reviewer          — pinged when prod GitHub environment gate needs approval
 
    Roles: _
    ```
 
-8. Add to registry. Display: "Added <name> with roles: <role list>"
+5. Add to registry. Display: "Added <name> with roles: <role list>"
 
-9. Ask: "Add another team member? (y/n)"
+6. Ask: "Add another team member? (y/n)"
    - If yes: repeat from step 1
    - If no: proceed to write
 
