@@ -137,7 +137,19 @@ For each new member:
 
    **Important:** Do NOT use `search_actions` with `category: "people"` as a single-call lookup — it fails with output validation errors. The correct pattern is always `people.search` → email, then `user.get` → id.
 
-3. **Show confirm/correct screen** with everything resolved:
+3. **Prompt for GitHub login explicitly** — do not rely on auto-lookup:
+
+   GitHub logins cannot be reliably auto-looked up for YL users. Work emails are private
+   on GitHub, and contractor accounts use prefixes (`v-mporras`) that don't match display
+   names. Do NOT attempt `gh api search/users` — it always fails for internal YL accounts.
+
+   After the Jira/Teams lookups complete, ask directly:
+   ```
+   GitHub login (optional — e.g. v-mporras, press Enter to skip):
+   ```
+   Use whatever the user types. If they press Enter, store as empty string.
+
+4. **Show confirm/correct screen** with everything resolved:
 
    ```
    Member 1 — found:
@@ -150,9 +162,9 @@ For each new member:
 
    Ask: "Correct? Enter a field name to change it (name/email/jira/teams/github), or press Enter to continue."
 
-   - Teams ID and GitHub login are optional — skip if lookup failed, fill in via `/setup:onboarding` later.
+   - All fields except Name are optional — skip anything unknown and fill in later via `/setup:onboarding`.
 
-4. **Assign roles** — show numbered list, user enters comma-separated numbers:
+5. **Assign roles** — show numbered list, user enters comma-separated numbers:
 
    ```
    Assign roles (comma-separated, e.g. "1,3"):
@@ -166,9 +178,9 @@ For each new member:
    Roles: _
    ```
 
-5. Add to registry. Display: "Added <name> with roles: <role list>"
+6. Add to registry. Display: "Added <name> with roles: <role list>"
 
-6. Ask: "Add another team member? (y/n)"
+7. Ask: "Add another team member? (y/n)"
    - If yes: repeat from step 1
    - If no: proceed to write
 
