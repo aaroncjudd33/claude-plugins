@@ -12,19 +12,19 @@ Open the Jira workspace with the board, calendar, and any in-progress stories as
 ### 1. Close existing Jira window
 
 ```bash
-powershell -ExecutionPolicy Bypass -File "C:\Users\ajudd\.claude\scripts\Close-EdgeWindow.ps1" -WindowName "Jira"
+powershell -ExecutionPolicy Bypass -File "~/.claude/scripts\Close-EdgeWindow.ps1" -WindowName "Jira"
 ```
 
 Wait 2 seconds for it to fully close.
 
 ### 2. Open the Jira workspace
 
-Read `C:\Users\ajudd\.claude\browser-links.json`. Get the `links` array from `workspaces["Jira"]`. Look up each key in the `links` section to get its URL.
+Read `~/.claude/browser-links.json`. Get the `links` array from `workspaces["Jira"]`. Look up each key in the `links` section to get its URL.
 
 Open each in the Jira window using the Open-EdgeUrl script. Open `jira:calendar` first, then `jira:board`, then any others.
 
 ```bash
-powershell -ExecutionPolicy Bypass -File "C:\Users\ajudd\.claude\scripts\Open-EdgeUrl.ps1" -Url "<url>" -WindowName "Jira"
+powershell -ExecutionPolicy Bypass -File "~/.claude/scripts\Open-EdgeUrl.ps1" -Url "<url>" -WindowName "Jira"
 ```
 
 Wait 2 seconds after the first URL (window creation), 1 second between subsequent ones.
@@ -53,7 +53,7 @@ For each story returned:
 
 2. Open the story URL in the Jira window:
    ```bash
-   powershell -ExecutionPolicy Bypass -File "C:\Users\ajudd\.claude\scripts\Open-EdgeUrl.ps1" -Url "https://younglivingeo.atlassian.net/browse/<KEY>" -WindowName "Jira"
+   powershell -ExecutionPolicy Bypass -File "~/.claude/scripts\Open-EdgeUrl.ps1" -Url "https://younglivingeo.atlassian.net/browse/<KEY>" -WindowName "Jira"
    ```
 
 ### 5. Report

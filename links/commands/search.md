@@ -16,7 +16,7 @@ Search links and workspaces. Case-insensitive partial match across keys, descrip
 
 ## Steps
 
-1. Read `C:\Users\ajudd\.claude\browser-links.json`
+1. Read `~/.claude/browser-links.json`
 
 2. Parse any flag from the argument (`-w`, `-l`, `-a`). Default scope is all.
 

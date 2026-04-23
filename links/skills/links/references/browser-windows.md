@@ -28,7 +28,7 @@ Each workspace in `browser-links.json` maps 1:1 to a named Edge browser window. 
 
 ## Script Reference
 
-Scripts are at `C:\Users\ajudd\.claude\scripts\`:
+Scripts are at `~/.claude/scripts\`:
 
 - `Open-EdgeUrl.ps1 -Url <url> -WindowName <name>` — opens URL in named Edge window. Uses Win32 `EnumWindows` + `SetForegroundWindow` to reliably target the correct window. Creates the window if it doesn't exist.
 - `Close-EdgeWindow.ps1 -WindowName <name>` — closes a named Edge window by posting `WM_CLOSE`.

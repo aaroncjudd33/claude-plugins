@@ -12,7 +12,7 @@ Prefix defaults determine which Edge window a link opens in when no explicit `wi
 
 ## Steps
 
-1. Read `C:\Users\ajudd\.claude\browser-links.json`
+1. Read `~/.claude/browser-links.json`
 
 2. **If no arguments provided:**
    - Ask: "What would you like to do? add / edit / view all"

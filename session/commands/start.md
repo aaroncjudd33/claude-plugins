@@ -162,7 +162,7 @@ For **personal**, no category prompt — and Teams chat is always `none` (no loo
 
 ### 7. Teams Chat Setup
 
-Look in `C:\Users\ajudd\.claude\plugins\marketplaces\ajudd-claude-plugins\office\skills\office\references\known-chats.md` for a chat whose Name or Topic matches the expected `teams_chat` value and has `Active=yes`.
+Look in `~/.claude/plugins/known-chats.md` for a chat whose Name or Topic matches the expected `teams_chat` value and has `Active=yes`. If the file does not exist, treat it as empty and proceed to the Not found branch.
 
 Match on the Name column (exact, case-insensitive) first; fall back to substring match on Topic if no Name match.
 

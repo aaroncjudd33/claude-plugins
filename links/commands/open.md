@@ -16,7 +16,7 @@ Open a named link by key or all links in a workspace in Edge.
 
 ## Steps
 
-1. Read `C:\Users\ajudd\.claude\browser-links.json`
+1. Read `~/.claude/browser-links.json`
 
 2. Parse any flag from the argument (`-w`, `-l`, `-a`). Default scope is all.
 
@@ -43,7 +43,7 @@ Open a named link by key or all links in a workspace in Edge.
      4. No match → open without named window
    - Run:
      ```bash
-     powershell -ExecutionPolicy Bypass -File "C:\Users\ajudd\.claude\scripts\Open-EdgeUrl.ps1" -Url "<url>" -WindowName "<window>"
+     powershell -ExecutionPolicy Bypass -File "~/.claude/scripts\Open-EdgeUrl.ps1" -Url "<url>" -WindowName "<window>"
      ```
    - Print: `Opened [key] → [window] window`
 

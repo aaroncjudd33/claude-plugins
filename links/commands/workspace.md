@@ -10,7 +10,7 @@ Create a new workspace or edit an existing one in `browser-links.json`.
 
 ## Steps
 
-1. Read `C:\Users\ajudd\.claude\browser-links.json`
+1. Read `~/.claude/browser-links.json`
 
 2. Parse `name` from argument. If missing, ask for it.
 

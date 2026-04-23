@@ -11,7 +11,7 @@ Central browser and link management. All URL opens go through this skill — nam
 
 ## Data File
 
-`C:\Users\ajudd\.claude\browser-links.json`
+`~/.claude/browser-links.json`
 
 Read before any link operation. Write back after any mutation.
 
@@ -72,14 +72,14 @@ Read before any link operation. Write back after any mutation.
 
 ## Scripts
 
-Location: `C:\Users\ajudd\.claude\scripts\`
+Location: `~/.claude/scripts\`
 
 ```bash
 # Open URL in named Edge window (creates window if not found)
-powershell -ExecutionPolicy Bypass -File "C:\Users\ajudd\.claude\scripts\Open-EdgeUrl.ps1" -Url "<url>" -WindowName "<window>"
+powershell -ExecutionPolicy Bypass -File "~/.claude/scripts\Open-EdgeUrl.ps1" -Url "<url>" -WindowName "<window>"
 
 # Close a named Edge window
-powershell -ExecutionPolicy Bypass -File "C:\Users\ajudd\.claude\scripts\Close-EdgeWindow.ps1" -WindowName "<window>"
+powershell -ExecutionPolicy Bypass -File "~/.claude/scripts\Close-EdgeWindow.ps1" -WindowName "<window>"
 ```
 
 **IMPORTANT:** Never use `start <url>` or `Start-Process msedge` directly — Edge's `--window-name` flag is silently ignored when Edge is already running. Always use `Open-EdgeUrl.ps1`.

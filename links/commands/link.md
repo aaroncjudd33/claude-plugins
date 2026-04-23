@@ -10,7 +10,7 @@ Add a new link or edit an existing one in `browser-links.json`.
 
 ## Steps
 
-1. Read `C:\Users\ajudd\.claude\browser-links.json`
+1. Read `~/.claude/browser-links.json`
 
 2. Parse `key` and optional `url` from arguments. If key is missing, ask for it.
 

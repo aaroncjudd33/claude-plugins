@@ -10,7 +10,7 @@ Delete a link, workspace, or prefix from `browser-links.json`.
 
 ## Steps
 
-1. Read `C:\Users\ajudd\.claude\browser-links.json`
+1. Read `~/.claude/browser-links.json`
 
 2. If no argument provided, ask: "What would you like to delete? (link key, workspace name, or prefix)"
 
