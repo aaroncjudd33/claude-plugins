@@ -2,6 +2,8 @@
 
 Friendly name → Teams chat ID mapping. Add new chats here after creating them.
 
+> **Note:** Chat IDs in this file are personal to the user who set them up — they are not shared across users. Each user needs to discover their own chat IDs via `list_chats` or by creating new chats with `/session:start`.
+
 Multiple entries can share the same conceptual purpose — set `Active=no` to archive, `Active=yes` to use. The session plugin (and other lookups) filter to `Active=yes` when resolving by name.
 
 | Name | Chat ID | Active | Members | Topic |

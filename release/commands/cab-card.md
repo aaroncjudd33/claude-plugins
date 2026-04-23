@@ -80,7 +80,7 @@ What's deploying:  [seeded from story summaries — confirm or refine]
 11. QA Approved By:             Heber Iraheta
 12. Date of Code Review:        [today]
 13. Date Tested in Clone/Stage: [today]
-14. Change Conductor:           Aaron Judd
+14. Change Conductor:           {USER_NAME} (read from ~/.claude/plugins/user-config.json)
 15. Dev Team:                   BP2
 16. Prioritization:             P3
 ```
@@ -100,7 +100,7 @@ powershell -ExecutionPolicy Bypass -File "C:\Users\ajudd\.claude\scripts\Open-Ed
 
 If a BPT2 CAB key was identified in step 2, ensure it is properly set up as the tracking story:
 
-1. Call `editJiraIssue` to assign it to Aaron Judd (`620147d91fec260068c1097d`)
+1. Call `editJiraIssue` to assign it to the current user (read `user.jiraAccountId` from `~/.claude/plugins/user-config.json`)
 2. Call `transitionJiraIssue` with transition ID `181` to move it to **Ready For Work**
 
 Always use Ready For Work here — whether the story was just created or already existed. Do NOT move to In Progress unless the user explicitly asks.

@@ -14,7 +14,7 @@ Governs session lifecycle across all project types (plugin, story, cab, personal
 Whenever any session command posts a Teams message, apply these rules without exception:
 
 1. **Always end with the Claude signature** — no exceptions:
-   `<p><em>Posted by Claude on behalf of Aaron Judd</em></p>`
+   `<p><em>Posted by Claude on behalf of {USER_NAME}</em></p>`
 2. **Always preview before sending.** Show the full message content and wait for explicit approval before calling `send_chat_message`.
 3. **Always use HTML formatting.** `send_chat_message` body supports and renders HTML.
 4. **Always open with an intro paragraph** (`<p>`) before the first section.
@@ -32,5 +32,5 @@ Standard message template:
   <li><b>Item</b> — detail</li>
 </ul>
 <p>&nbsp;</p>
-<p><em>Posted by Claude on behalf of Aaron Judd</em></p>
+<p><em>Posted by Claude on behalf of {USER_NAME}</em></p>
 ```

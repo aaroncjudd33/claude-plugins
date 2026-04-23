@@ -54,7 +54,7 @@ All fields that must be populated. ADF fields use `{ "type": "doc", "version": 1
 | Requested Deployment Date/Time | `customfield_13137` | datetime string | ISO 8601 UTC. MST = UTC-7, MDT = UTC-6. e.g. `2026-03-10T19:30:00.000+0000` |
 | Requires Outage Window | `customfield_11624` | option ID | **No: `11754`**, Yes: `11755` |
 | Can it be rolled back? | `customfield_12001` | option ID | **Yes: `12005`**, No: `12006` |
-| Change Conductor | `customfield_13109` | user (accountId) | **Aaron Judd: `620147d91fec260068c1097d`** — always set |
+| Change Conductor | `customfield_13109` | user (accountId) | **Current user** — read `user.jiraAccountId` from `~/.claude/plugins/user-config.json` |
 | Platform Component(s) | `customfield_13076` | array of option IDs | Multi-select. AWS: `14916`, Virtual Office: `13243`, MainSite: `13232`, Legacy DB: `13231`, Brand Partner ACL: `18163` |
 | Component Version(s) | `customfield_13141` | ADF | Table: Repository / Branch / Pull Request |
 | Config/Settings Changes | `customfield_13176` | ADF | SSM params, env vars, feature flags, etc. Use "None" if not applicable. |
@@ -83,7 +83,7 @@ All fields that must be populated. ADF fields use `{ "type": "doc", "version": 1
 
 | Person | Role | Account ID |
 |--------|------|-----------|
-| Aaron Judd | Change Conductor / QA Approved By (default) | `620147d91fec260068c1097d` |
+| Current user | Change Conductor | read from `~/.claude/plugins/user-config.json` > `user.jiraAccountId` |
 | Heber Iraheta | QA Approved By | `557058:055d4592-8fbf-4b3c-8115-0dc48da8a1b4` |
 | Sudhakar Seerapu | Post-submit Assignee | `60aeba90f3fab100683274d9` |
 
@@ -221,7 +221,7 @@ During `release:deploy`, also register the Actions run:
 Whenever any step in this plugin posts a Teams message, apply these rules without exception:
 
 1. **Always end with the Claude signature** — no exceptions:
-   `<p><em>Posted by Claude on behalf of Aaron Judd</em></p>`
+   `<p><em>Posted by Claude on behalf of {USER_NAME}</em></p>`
 2. **Always preview before sending.** Show the full message content and wait for explicit approval before calling `send_chat_message`.
 3. **Always use HTML formatting.** `send_chat_message` body supports and renders HTML.
 4. **Always open with an intro paragraph** (`<p>`) before the first section.
@@ -239,5 +239,5 @@ Standard message template:
   <li><b>Item</b> — detail</li>
 </ul>
 <p>&nbsp;</p>
-<p><em>Posted by Claude on behalf of Aaron Judd</em></p>
+<p><em>Posted by Claude on behalf of {USER_NAME}</em></p>
 ```

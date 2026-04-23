@@ -21,7 +21,7 @@ Send a formatted Teams message based on the current conversation context.
    - `<ul>`/`<li>` for bullets, nested `<ul>` for hierarchy
 
 4. **Enforce signature** — before showing any preview, verify the composed HTML ends with:
-   `<p><em>Posted by Claude on behalf of Aaron Judd</em></p>`
+   `<p><em>Posted by Claude on behalf of {USER_NAME}</em></p>`
    If it is missing or malformed, add it now. Do not proceed to preview until it is present.
 
 5. **Show a preview** of the full message in readable form. Ask the user: "Ready to send, or would you like any changes?"
