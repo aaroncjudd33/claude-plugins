@@ -222,31 +222,33 @@ Confirm: "Team registry written to ~/.claude/plugins/team.json."
 
 Configure the file system paths that plugins use to find your repos, projects, and tools. Paths marked "(optional)" can be skipped now — a plugin will prompt for them on demand the first time it needs them.
 
-**Auto-detect where possible** before displaying the form:
-- **pluginMarketplaceName**: default to `ajudd-claude-plugins` (the name of this marketplace)
+**Read existing values first.** If `~/.claude/plugins/user-config.json` already has a `paths` section, use those values as the defaults in the form below — this preserves what was already set on a re-run.
+
+**Auto-detect where possible** for any field not already set:
+- **pluginMarketplaceName**: default to `ajudd-claude-plugins`
 - **workReposDir**: check if `/c/dev` exists; if yes, suggest it
 - **personalProjectsDir**: check if `/c/claude` exists; if yes, suggest it (optional)
-- **voPlaywrightTestsDir**: if workReposDir was detected and `<workReposDir>/vo-playwright-tests` exists, suggest it (optional)
+- **voPlaywrightTestsDir**: if workReposDir is known and `<workReposDir>/vo-playwright-tests` exists, suggest it (optional)
 
-Display a form. Press Enter to accept a suggested value, or type a replacement:
+Display a form. Press Enter to accept the shown value, or type a replacement:
 
 ```
 Workspace paths:
 
-  Plugin marketplace name:  ajudd-claude-plugins
+  Plugin marketplace name:  <current value or "ajudd-claude-plugins">
     (name used when installing this marketplace — drives plugin scope paths)
 
-  Work repos directory:     /c/dev     [or "(not detected)"]
+  Work repos directory:     <current value or detected or "(not set)">
     (parent folder where your work repos are cloned)
 
-  Personal projects dir:    /c/claude  [or "(not detected)"]    [optional]
+  Personal projects dir:    <current value or detected or "(not set)">    [optional]
     (parent folder for personal side projects — skip if not applicable)
 
-  VO Playwright tests dir:  /c/dev/vo-playwright-tests  [or "(not set)"]   [optional]
+  VO Playwright tests dir:  <current value or detected or "(not set)">   [optional]
     (full path to vo-playwright-tests repo — only needed for /e2e:start)
 ```
 
-For any field left blank or skipped: write an empty string to config. The relevant plugin will prompt once and write the value when it first needs it.
+For any field left blank or skipped: write an empty string. The relevant plugin will prompt once and write the value when it first needs it.
 
 After the user confirms all values, proceed to Step 7.
 
@@ -270,28 +272,28 @@ About to write ~/.claude/plugins/user-config.json:
 
 Ask: "Write this config? (y/n)"
 
-If yes, write the file:
+If yes, **read the existing `~/.claude/plugins/user-config.json` first** (if it exists), then merge in the updated values — do not blindly overwrite. Any section the user skipped (e.g. identity was "n" in Step 1) keeps its existing values from the file. Write the merged result:
 
 ```json
 {
   "user": {
-    "name": "<name>",
-    "email": "<email>",
-    "jiraAccountId": "<jiraAccountId>",
-    "teamsUserId": "<teamsUserId or empty string>"
+    "name": "<collected or preserved>",
+    "email": "<collected or preserved>",
+    "jiraAccountId": "<collected or preserved>",
+    "teamsUserId": "<collected or preserved or empty string>"
   },
   "defaults": {
-    "jiraProject": "<jiraProject>",
+    "jiraProject": "<collected or preserved>",
     "atlassianCloudId": "9de6eb2b-2683-44e6-89ff-c622027e09b4",
     "jiraProjectId": "12844"
   },
   "paths": {
     "browserLinksFile": "~/.claude/browser-links.json",
     "memoryRoot": "~/.claude",
-    "pluginMarketplaceName": "<pluginMarketplaceName>",
-    "workReposDir": "<workReposDir or empty string>",
-    "personalProjectsDir": "<personalProjectsDir or empty string>",
-    "voPlaywrightTestsDir": "<voPlaywrightTestsDir or empty string>"
+    "pluginMarketplaceName": "<collected or preserved>",
+    "workReposDir": "<collected or preserved or empty string>",
+    "personalProjectsDir": "<collected or preserved or empty string>",
+    "voPlaywrightTestsDir": "<collected or preserved or empty string>"
   }
 }
 ```
