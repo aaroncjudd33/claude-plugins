@@ -130,6 +130,14 @@ The transition requires these screen fields: `customfield_13174` (QA Approved By
 
 Assignee update (read `cab-assignee` from `~/.claude/plugins/team.json`) may be rejected by the API once the card is in Change Review — if so, note it for manual action.
 
+### Step 9 — Post-deployment check acknowledgment (during deploy)
+
+During `/release:deploy`, before closing the CAB card, surface any `Post-deployment checks:` defined in each related story's session file. Prompt to acknowledge each unchecked item. This is **informational** — does not block the CAB from closing.
+
+- `- [ ]` items are surfaced and user is prompted: "Acknowledge? (Yes / Skip)"
+- Acknowledged items are written back as `- [x]` in the story session file
+- If any checks reveal the expected outcome was not met, note that a follow-up story should be created — the CAB still closes
+
 ---
 
 ## Link Registration

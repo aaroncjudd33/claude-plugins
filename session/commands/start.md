@@ -75,8 +75,10 @@ If the directory does not exist or is empty, skip this section.
     Open items:      [bullets or "none"]
     Next step:       [first inbox item description, or "none"]
     Related CAB:     [CAB-XXX]   ← story type only, omit if none
+    Post-deploy:     N pending / all acknowledged / none   ← story type only, omit if none
     Related stories: [BPT2-XXXX, ...]   ← cab type only, omit if none
   ```
+- For the `Post-deploy` line: count `- [ ]` items (pending) vs `- [x]` items (acknowledged) from the `Post-deployment checks:` field. Show "N pending" if any unchecked, "all acknowledged" if all checked, "none" if field is absent or empty.
 - Continue through Steps 5–8 as normal — `_active` must always be written, even on resume.
 
 **New story/plugin/personal/general — session filename:**
@@ -198,6 +200,8 @@ updated: [today's date]
 - **Next step:** [will be updated at checkpoint]
 - **Plugin reviewed:** [yes / no]   ← plugin type only, omit for other types
 - **Related CAB:** [CAB-XXX or "none"]   ← story type only, omit for other types
+- **Post-deployment checks:**   ← story type only, omit for other types; omit entire field if none defined
+  - [ ] <check description>
 - **Related stories:** [BPT2-XXXX, BPT2-YYYY or "none"]   ← cab type only, omit for other types
 ```
 

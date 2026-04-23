@@ -178,6 +178,44 @@ Read `~/.claude/browser-links.json`.
 
 Write back `~/.claude/browser-links.json`. Do not prompt the user during this step.
 
+### Acknowledge post-deployment checks
+
+Read `~/.claude/memory/sessions/<slug>/CAB-XXX.md` for the `Related stories` field.
+
+For each related story key (e.g., `BPT2-6337`):
+1. Read `~/.claude/memory/sessions/<slug>/<story-key>.md`
+2. Extract the `Post-deployment checks:` field
+3. Collect all `- [ ]` (unchecked) and `- [x]` (already acknowledged) items
+
+If no related stories have a `Post-deployment checks:` field, skip this section silently.
+
+If any checks exist, display them grouped by story:
+
+```
+Post-Deployment Checks
+
+  BPT2-6337 — <story title>
+    [ ] Monitor 2+ hours — confirm no AWS alert emails on 2-hour cycle
+    [ ] Check CloudWatch alarm state returns to OK
+
+  BPT2-6200 — <story title>
+    [x] Verify enrollment flow end-to-end in prod (already acknowledged)
+```
+
+For each **unchecked** item, prompt: "Acknowledge? (Yes / Skip)"
+
+- **Yes:** mark the item as `[x]` in the story's session file; rewrite the file
+- **Skip:** leave unchecked — note that a follow-up story may be needed if the expected outcome is not met
+
+After all prompts, print a summary:
+```
+Post-deploy checks: N acknowledged, N pending
+```
+
+If any were skipped, add a note: "Pending checks may indicate a follow-up story is needed — revisit when you've had time to verify the expected outcome."
+
+**This step is informational — the CAB closes regardless of check status.**
+
 ### Close the CAB card
 
 Before closing, verify the clone deploy (step 7b) has been completed. If it was deferred, do not close the CAB — remind the user it must be done first.

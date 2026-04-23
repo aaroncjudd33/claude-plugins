@@ -198,6 +198,28 @@ Step 4 (optional): addCommentToJiraIssue
 
 ---
 
+## Post-Deployment Checks
+
+Story session files support an optional `Post-deployment checks:` field — a markdown checkbox list of things to verify after the story ships in production. These are surfaced and acknowledged at CAB close (via `/release:deploy`) but **do not block the CAB from closing**.
+
+**Format in session file:**
+```
+- **Post-deployment checks:**
+  - [ ] Monitor 2+ hours — confirm no AWS alert emails on 2-hour cycle
+  - [x] Check CloudWatch alarm state returns to OK within first cycle
+```
+
+- `- [ ]` — not yet acknowledged (will appear at CAB close)
+- `- [x]` — acknowledged (someone noted whether the expected outcome was met)
+
+**What "acknowledged" means:** The person deploying has noted the expected outcome and committed to following up. The check may have passed, failed, or not yet been verifiable. If the expected outcome was **not met**, the correct response is to write a follow-up story — not to hold up the CAB.
+
+**When to add checks:**
+- At `/session:finish` for the story — prompted automatically if none exist
+- Any time during development when a specific post-deploy outcome must be verified
+
+---
+
 ## Teams Messaging
 
 **Story chat members:** When creating a new Teams chat for a story, add all members found

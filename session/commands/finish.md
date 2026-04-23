@@ -198,10 +198,28 @@ updated: [today's date]
 - **Next step:** [concrete first action when resuming tomorrow]
 - **Plugin reviewed:** [yes / no]   ← plugin type only, omit for other types
 - **Related CAB:** [CAB-XXX or "none"]   ← story type only, omit for other types
+- **Post-deployment checks:**   ← story type only, omit for other types; omit entire field if none defined
+  - [ ] <check description>
+  - [x] <acknowledged check description>
 - **Related stories:** [BPT2-XXXX, BPT2-YYYY or "none"]   ← cab type only, omit for other types
 ```
 
 **General sessions only:** Also check `~/.claude/memory/sessions/<slug>/<name>/` — if notes, decisions, or outputs were produced today, ensure they are written there before closing.
+
+**Story type only — post-deployment checks:**
+
+Before writing, check the current `Post-deployment checks:` field (if present) and prompt:
+
+```
+Post-deployment checks — anything to add or update? (enter new checks, or 'skip')
+```
+
+- If the user enters checks, append them as `- [ ] <check>` items under `Post-deployment checks:`
+- If the field does not exist yet and the user enters checks, create it
+- If the user skips and the field is already set, preserve it as-is
+- These checks will be surfaced and acknowledged when the related CAB closes via `/release:deploy`
+
+**Ask next step:**
 
 Before writing, ask the user: "What's the first thing to pick up next time? (or 'skip')" Then offer where to route it:
 

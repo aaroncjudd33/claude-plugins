@@ -128,6 +128,9 @@ updated: [today's date]
 - **Next step:** [concrete next action]
 - **Plugin reviewed:** [yes / no]   ← plugin type only, omit for other types
 - **Related CAB:** [CAB-XXX or "none"]   ← story type only, omit for other types
+- **Post-deployment checks:**   ← story type only; preserve existing value exactly as-is; omit if field not present
+  - [ ] <check description>
+  - [x] <acknowledged check description>
 - **Related stories:** [BPT2-XXXX, BPT2-YYYY or "none"]   ← cab type only, omit for other types
 ```
 
