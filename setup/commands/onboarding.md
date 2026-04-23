@@ -119,36 +119,30 @@ For each new member:
 
 1. Ask only: **"Name:"** — first name, full name, or display name is all that's needed.
 
-2. **Immediately fire parallel lookups** — do not ask for anything else first:
+2. **Immediately look up Jira** — do not ask for anything else first:
 
-   **Jira lookup:**
    Call `lookupJiraAccountId` with `cloudId: "9de6eb2b-2683-44e6-89ff-c622027e09b4"` and `query: <name>`.
    - On success: extract `accountId` and `emailAddress` from the first result. Note both as "(looked up from Atlassian)".
    - If multiple results: show a numbered list and ask the user to pick — "Found multiple matches, which one?"
    - On transient error: retry once automatically.
    - On failure after retry or no results: note both as "(not found)".
 
-   **Teams lookup:**
-   Call `search_actions` with `category: "people"` and the name as the query.
-   - On success: extract the user `id` field. Note as "(looked up from Microsoft 365)".
-   - If multiple results: show a numbered list and ask the user to pick.
-   - On failure or no results: note as "(not found)".
+   **Do NOT attempt a Teams lookup here.** The `search_actions` people category consistently fails with MCP output validation errors when looking up other users. Teams user ID must be entered manually — it is optional and can be filled in later.
 
-3. **Show confirm/correct screen** with everything that was resolved:
+3. **Show confirm/correct screen** with everything resolved:
 
    ```
    Member 1 — found:
      Name:      Heber Iraheta          (from Jira)
      Email:     hiraheta@...           (from Jira)
      Jira ID:   557058:055d4592...     (looked up)
-     Teams ID:  a1b2c3d4-...           (looked up)
+     Teams ID:  (not set — enter if known, or skip)
      GitHub:    (not set)
    ```
 
    Ask: "Correct? Enter a field name to change it (name/email/jira/teams/github), or press Enter to continue."
 
-   - If a field is missing and critical (e.g. Jira ID not found): the user can paste it directly.
-   - GitHub login is always optional — if not provided here it can be set later.
+   - Teams ID and GitHub login are both optional — skip if unknown, fill in via `/setup:onboarding` later.
 
 4. **Assign roles** — show numbered list, user enters comma-separated numbers:
 
