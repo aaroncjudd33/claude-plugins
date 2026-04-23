@@ -22,10 +22,9 @@ Existing config found:
   Jira ID:       <user.jiraAccountId>
   Teams ID:      <user.teamsUserId or "(not set)">
   Jira Project:  <defaults.jiraProject>
-  Chat members:  <defaults.storyChatMembers joined by ", " or "(none)">
 ```
 
-Ask: "Update this config? (y/n)" — if no, stop.
+Ask: "Update this config? (y/n)" — if no, skip to step 5 to check team registry.
 
 ### 2. Auto-detect identity from git config
 
@@ -67,14 +66,13 @@ Here's what I found:
   Teams ID: 4a1b2c3d-...            (looked up from Microsoft 365)
 
   Jira Project:  BPT2               (default)
-  Chat members:  (none)             (default)
 ```
 
 For any field that is blank or wrong, the user can correct it now.
 
 Ask: "Does everything look right? Enter a field name to change it, or press Enter to continue."
 
-- If they type a field name (e.g. "name", "email", "jira", "teams", "project", "members"): prompt for that field, then re-display the screen.
+- If they type a field name (e.g. "name", "email", "jira", "teams", "project"): prompt for that field, then re-display the screen.
 - If they press Enter: proceed to step 5.
 
 For blank fields that were not auto-detected, prompt for them explicitly before allowing the user to proceed:
@@ -89,21 +87,117 @@ For blank fields that were not auto-detected, prompt for them explicitly before 
 
 **Jira project key**: default is `BPT2`. Only ask if the user explicitly wants to change it.
 
-**Default story chat members**: emails of teammates to auto-add to new story chats. Default is none. Only ask if the user explicitly wants to set them.
+### 5. Team registry
 
-### 5. Confirm and write
+After confirming the user's own identity, offer to populate `~/.claude/plugins/team.json` with teammates. This replaces the old `storyChatMembers` defaults — all team-based lookups (story chats, CAB approvals, PR reviewers) now read from this file.
+
+**Check for existing registry:**
+
+If `~/.claude/plugins/team.json` already exists, read it and display current members:
+
+```
+Team registry (~/.claude/plugins/team.json):
+
+  1. Heber Iraheta — story-chat, qa-approver, code-review-approver
+  2. Nivi Umasankar — story-chat
+  ...
+```
+
+Ask: "Update team registry? (y/n)" — if no, skip to step 6.
+
+**If yes (or no existing registry), explain briefly:**
+
+```
+The team registry stores colleagues by role so plugins can look up
+the right person automatically (e.g. who approves CAB cards, who to
+add to story chats, who reviews PRs).
+```
+
+**Add member loop:**
+
+For each new member, collect in sequence:
+
+1. "Name:" — full display name
+2. "Work email:" — used for Jira lookup and Teams chat display
+
+3. **Auto-lookup Jira account ID:**
+   Call `lookupJiraAccountId` with `cloudId: "9de6eb2b-2683-44e6-89ff-c622027e09b4"` and `query: <email>`.
+   - On success: extract `accountId` from first result, note "(looked up)"
+   - On transient error: retry once automatically
+   - On failure: note "(not found)" — user can enter manually or skip
+
+4. **Teams user ID:** prompt manually — "(optional, for story chat invitations — Enter to skip)"
+
+5. **GitHub login:** "(optional, for PR review mentions — Enter to skip)"
+
+6. **Show confirm/correct screen:**
+
+   ```
+   New team member:
+     Name:      <name>               (entered)
+     Email:     <email>              (entered)
+     Jira ID:   <accountId or not set>
+     Teams ID:  <teamsUserId or not set>
+     GitHub:    <login or not set>
+   ```
+
+   Ask: "Correct? Enter field name to change, or press Enter to continue."
+
+7. **Assign roles** — show numbered list, user enters comma-separated numbers:
+
+   ```
+   Assign roles (comma-separated, e.g. "1,3"):
+
+     1. story-chat          — added to new story Teams chats by default
+     2. qa-approver         — QA sign-off on CAB cards
+     3. code-review-approver — code review sign-off on CAB cards
+     4. cab-assignee        — assigned after CAB Send For Review
+     5. pr-reviewer         — pinged when prod GitHub environment gate needs approval
+
+   Roles: _
+   ```
+
+8. Add to registry. Display: "Added <name> with roles: <role list>"
+
+9. Ask: "Add another team member? (y/n)"
+   - If yes: repeat from step 1
+   - If no: proceed to write
+
+**Write team.json:**
+
+Write `~/.claude/plugins/team.json`:
+
+```json
+{
+  "members": [
+    {
+      "name": "<name>",
+      "email": "<email>",
+      "jiraAccountId": "<accountId or empty string>",
+      "teamsUserId": "<teamsUserId or empty string>",
+      "githubLogin": "<login or empty string>",
+      "roles": ["<role1>", "<role2>"]
+    }
+  ]
+}
+```
+
+If the file already existed, merge new members in — do not overwrite existing entries unless the user corrected a field.
+
+Confirm: "Team registry written to ~/.claude/plugins/team.json."
+
+### 6. Confirm and write user config
 
 Display a final summary:
 
 ```
 About to write ~/.claude/plugins/user-config.json:
 
-  name:             <value>
-  email:            <value>
-  jiraAccountId:    <value>
-  teamsUserId:      <value or "(not set)">
-  jiraProject:      <value>
-  storyChatMembers: [<list or empty>]
+  name:          <value>
+  email:         <value>
+  jiraAccountId: <value>
+  teamsUserId:   <value or "(not set)">
+  jiraProject:   <value>
 ```
 
 Ask: "Write this config? (y/n)"
@@ -119,7 +213,6 @@ If yes, write the file:
     "teamsUserId": "<teamsUserId or empty string>"
   },
   "defaults": {
-    "storyChatMembers": [],
     "jiraProject": "<jiraProject>",
     "atlassianCloudId": "9de6eb2b-2683-44e6-89ff-c622027e09b4",
     "jiraProjectId": "12844"
@@ -130,8 +223,6 @@ If yes, write the file:
   }
 }
 ```
-
-`storyChatMembers` is an array of email strings (empty array if none provided).
 
 Confirm: "Config written. You're ready to use the plugins. Run /setup:local to start your day."
 

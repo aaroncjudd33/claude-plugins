@@ -64,6 +64,10 @@ What's deploying:  [seeded from story summaries — confirm or refine]
 
 ### 5. Prompt configurable defaults
 
+Before displaying, read `~/.claude/plugins/team.json` to populate items 10 and 11:
+- Item 10: first member with role `code-review-approver` → use `name` field
+- Item 11: first member with role `qa-approver` → use `name` field
+
 ```
 === Defaults (Enter to accept all, or type numbers to change) ===
 
@@ -76,14 +80,18 @@ What's deploying:  [seeded from story summaries — confirm or refine]
  7. Platform Component(s):      [inferred from stories/project — VO or CDK]
  8. Clone/Stage Status:         Part of This Deployment
  9. Config/Settings Changes:    None
-10. Code Review Approver:       Heber Iraheta
-11. QA Approved By:             Heber Iraheta
+10. Code Review Approver:       [from team.json → code-review-approver]
+11. QA Approved By:             [from team.json → qa-approver]
 12. Date of Code Review:        [today]
 13. Date Tested in Clone/Stage: [today]
 14. Change Conductor:           {USER_NAME} (read from ~/.claude/plugins/user-config.json)
 15. Dev Team:                   BP2
 16. Prioritization:             P3
 ```
+
+When building the `createJiraIssue` call, use the `jiraAccountId` from team.json for
+items 10 and 11 — not the display name. If team.json is missing or the role has no
+member, prompt the user to enter the account ID manually.
 
 ### 6. Create the CAB card
 

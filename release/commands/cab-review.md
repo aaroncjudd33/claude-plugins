@@ -34,16 +34,24 @@ Do not proceed without explicit "Yes."
 
 ### 3. Send For Review
 
+Before calling the transition, read `~/.claude/plugins/team.json` to resolve the approver account IDs:
+- QA Approved By: first member with role `qa-approver` → `jiraAccountId`
+- Code Review Approver: first member with role `code-review-approver` → `jiraAccountId`
+
+If team.json is missing or a role has no member, prompt the user to enter the Jira account ID manually.
+
 Call `transitionJiraIssue` with transition ID `201` and the following transition screen fields:
 
-- `customfield_13174` (QA Approved By): `557058:055d4592-8fbf-4b3c-8115-0dc48da8a1b4` (Heber Iraheta)
-- `customfield_13612` (Code Review Approver): `557058:055d4592-8fbf-4b3c-8115-0dc48da8a1b4` (Heber Iraheta)
+- `customfield_13174` (QA Approved By): `jiraAccountId` of `qa-approver` member (from team.json)
+- `customfield_13612` (Code Review Approver): `jiraAccountId` of `code-review-approver` member (from team.json)
 - `customfield_14671` (Date of Code Review): today's date (e.g. `2026-03-17`)
 - `customfield_14664` (Clone/Stage Status): `16378` (Part of This Deployment) — or the value configured in Phase 1 if different
 
-### 4. Assign Sudhakar
+### 4. Assign post-review manager
 
-Call `editJiraIssue` to set the assignee to Sudhakar Seerapu: `60aeba90f3fab100683274d9`.
+Read `~/.claude/plugins/team.json` → first member with role `cab-assignee` → use their `jiraAccountId`.
+
+Call `editJiraIssue` to set the assignee to that account ID.
 
 If the API rejects the edit (the card may be locked once in Change Review), report: "Assignee could not be set via API — assign Sudhakar Seerapu manually in Jira."
 

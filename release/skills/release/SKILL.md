@@ -64,8 +64,8 @@ All fields that must be populated. ADF fields use `{ "type": "doc", "version": 1
 | Rollback Plan | `customfield_13101` | ADF | Step-by-step rollback instructions (see project-specific templates below) |
 | Pre-Deployment Tests | `customfield_13099` | ADF | What to verify before deploy |
 | Post-Deployment Tests | `customfield_13100` | ADF | What to verify after deploy |
-| Code Review Approver | `customfield_13612` | user (accountId) | **Heber Iraheta: `557058:055d4592-8fbf-4b3c-8115-0dc48da8a1b4`** |
-| QA Approved By | `customfield_13174` | user (accountId) | **Heber Iraheta: `557058:055d4592-8fbf-4b3c-8115-0dc48da8a1b4`** — required for Send For Review transition |
+| Code Review Approver | `customfield_13612` | user (accountId) | Read `~/.claude/plugins/team.json` → `code-review-approver` → `jiraAccountId` |
+| QA Approved By | `customfield_13174` | user (accountId) | Read `~/.claude/plugins/team.json` → `qa-approver` → `jiraAccountId` — required for Send For Review |
 | Date of Code Review | `customfield_14671` | date string | e.g. `2026-03-18` |
 | Clone/Stage Status | `customfield_14664` | option ID | Not Required: `16376`, Previously Deployed: `16377`, **Part of This Deployment: `16378`** |
 | Date Tested in Clone/Stage | `customfield_14665` | date string | e.g. `2026-03-18` |
@@ -81,11 +81,12 @@ All fields that must be populated. ADF fields use `{ "type": "doc", "version": 1
 
 ## People
 
-| Person | Role | Account ID |
-|--------|------|-----------|
-| Current user | Change Conductor | read from `~/.claude/plugins/user-config.json` > `user.jiraAccountId` |
-| Heber Iraheta | QA Approved By | `557058:055d4592-8fbf-4b3c-8115-0dc48da8a1b4` |
-| Sudhakar Seerapu | Post-submit Assignee | `60aeba90f3fab100683274d9` |
+| Role | How to Look Up |
+|------|---------------|
+| Change Conductor (current user) | `user.jiraAccountId` from `~/.claude/plugins/user-config.json` |
+| QA Approved By | Read `~/.claude/plugins/team.json` → member with role `qa-approver` → use `jiraAccountId` |
+| Code Review Approver | Read `~/.claude/plugins/team.json` → member with role `code-review-approver` → use `jiraAccountId` |
+| Post-submit Assignee | Read `~/.claude/plugins/team.json` → member with role `cab-assignee` → use `jiraAccountId` |
 
 ---
 
@@ -127,7 +128,7 @@ Use `/release:cab-review` to call the Send For Review transition (ID `201`) and 
 
 The transition requires these screen fields: `customfield_13174` (QA Approved By), `customfield_13612` (Code Review Approver), `customfield_14671` (Date of Code Review), `customfield_14664` (Clone/Stage Status).
 
-Assignee update (`60aeba90f3fab100683274d9` — Sudhakar) may be rejected by the API once the card is in Change Review — if so, note it for manual action.
+Assignee update (read `cab-assignee` from `~/.claude/plugins/team.json`) may be rejected by the API once the card is in Change Review — if so, note it for manual action.
 
 ---
 

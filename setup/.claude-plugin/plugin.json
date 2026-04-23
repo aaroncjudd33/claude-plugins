@@ -1,6 +1,6 @@
 {
   "name": "setup",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "Morning setup — AWS login, Jira briefing, Confluence activity, calendar. Run /setup:local to start your day.",
   "author": {
     "name": "Aaron Judd",

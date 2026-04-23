@@ -82,7 +82,7 @@ If tests fail, report the failure details and stop. Do not proceed to deploy.
 When the build/test job passes, the prod environment gate activates. At this point:
 - Notify the user that a reviewer needs to approve in GitHub
 - The required reviewers are set on the `prod` environment in GitHub repo settings
-- The user needs to ping a team member (Maikol, Fernando, or Angela) to approve
+- Read `~/.claude/plugins/team.json` → list all members with role `pr-reviewer` → display their names so the user knows who to ping
 
 Wait for approval before continuing.
 

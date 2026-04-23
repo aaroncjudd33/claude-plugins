@@ -65,12 +65,11 @@ These fields are required when creating a BPT2 story:
 
 ## People
 
-| Person | Role | Account ID |
-|--------|------|-----------|
-| Current user | Default assignee / reporter | read from `~/.claude/plugins/user-config.json` > `user.jiraAccountId` |
-| Maikol Porras | Dev team member | (look up if needed) |
-| Fernando Magana | Dev team member | (look up if needed) |
-| Angela Valdez | Dev team member | (look up if needed) |
+| Person | Role | How to Look Up |
+|--------|------|---------------|
+| Current user | Default assignee / reporter | `user.jiraAccountId` from `~/.claude/plugins/user-config.json` |
+| PR reviewers (Maikol, Fernando, Angela) | Dev team | Read `~/.claude/plugins/team.json` → members with role `pr-reviewer` |
+| Story chat members (Heber, Nivi, …) | Default Teams chat | Read `~/.claude/plugins/team.json` → members with role `story-chat` → use `teamsUserId` |
 
 ---
 
@@ -200,6 +199,10 @@ Step 4 (optional): addCommentToJiraIssue
 ---
 
 ## Teams Messaging
+
+**Story chat members:** When creating a new Teams chat for a story, add all members found
+in `~/.claude/plugins/team.json` with role `story-chat` using their `teamsUserId`. If a
+member's `teamsUserId` is blank, skip them silently — they can be added manually later.
 
 Whenever any step in this plugin posts a Teams message, apply these rules without exception:
 
