@@ -1,11 +1,13 @@
 ---
-name: reset
+name: reboard
 description: Wipe plugin configuration files (user-config.json and team.json) and start fresh. Run if onboarding went wrong, you're handing off a machine, or you just want a clean slate.
 ---
 
-# Setup: Reset
+# Setup: Reboard
 
 Deletes the locally-created plugin configuration files and returns the system to a pre-onboarding state. Does NOT touch session memory files, browser-links.json, or MEMORY.md — only the files that `/setup:onboarding` creates.
+
+For a full wipe of all plugin-created state, use `/setup:clean`.
 
 ## Instructions
 
@@ -16,7 +18,7 @@ Check for these files:
 - `~/.claude/plugins/user-config.json`
 - `~/.claude/plugins/team.json`
 
-For each file found, note its existence. If neither file exists, report: "Nothing to reset — plugin config files do not exist. Run /setup:onboarding to get started." and stop.
+For each file found, note its existence. If neither file exists, report: "Nothing to reboard — plugin config files do not exist. Run /setup:onboarding to get started." and stop.
 
 ### 2. Display what will be deleted
 
@@ -31,14 +33,14 @@ The following plugin configuration files will be permanently deleted:
 These files were created by /setup:onboarding and contain no code — only your
 personal configuration. Nothing else will be touched.
 
-After reset, run /setup:onboarding to configure fresh.
+After reboarding, run /setup:onboarding to configure fresh.
 ```
 
 Only list files that actually exist — skip any that are already absent.
 
 ### 3. Confirm
 
-Ask: "Delete these files and reset? (yes/no)"
+Ask: "Delete these files and reboard? (yes/no)"
 
 Do NOT proceed unless the user types "yes" (full word). "y" alone is not sufficient — this is a destructive action.
 
@@ -53,12 +55,12 @@ Report each deletion as it happens:
 ### 5. Confirm and next step
 
 ```
-Reset complete. Plugin configuration has been cleared.
+Reboard complete. Plugin configuration has been cleared.
 
 Run /setup:onboarding to set up fresh.
 ```
 
-## What is NOT reset
+## What is NOT reboarded
 
 To be explicit — these are NOT touched by this command:
 
@@ -68,4 +70,4 @@ To be explicit — these are NOT touched by this command:
 - Any session files under `~/.claude/memory/sessions/`
 - Any files in the plugin marketplace or install cache
 
-These contain broader personal state that outlives any single config. Use your OS file manager or shell to remove those manually if needed.
+For a full wipe of all plugin-created state, use `/setup:clean`.
