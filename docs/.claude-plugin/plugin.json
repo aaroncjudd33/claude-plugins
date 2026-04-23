@@ -1,6 +1,6 @@
 {
   "name": "docs",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Generate, update, and archive structured project documentation in Confluence. Performs deep codebase discovery to produce a standard set of pages: project overview, architecture & data flow, local dev runbook, API reference, known issues & tech debt, test coverage analysis, and a proposed work section for upcoming features.",
   "author": {
     "name": "Aaron Judd",

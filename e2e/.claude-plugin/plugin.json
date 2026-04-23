@@ -1,6 +1,6 @@
 {
   "name": "e2e",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Launch and manage the persistent Playwright test browser for VO E2E tasks. Handles auth, session startup, and task execution.",
   "author": {
     "name": "Aaron Judd",
