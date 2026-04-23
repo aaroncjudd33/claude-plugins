@@ -1,22 +1,17 @@
 ---
 name: switch
-description: Switch to a different plugin session without the full session:start overhead. Use mid-day to pivot between plugins.
+description: Switch to a different session without the full session:start overhead. Use mid-day to pivot between sessions.
 ---
 
 # Session Switch
 
-Lightweight context swap for mid-day pivots between plugin sessions. Skips permission mode, teams chat setup, and routing branches — just loads the target session and goes.
-
-For non-plugin projects (story, cab, personal), use `/session:start` instead — those need branch checks and Jira state verification.
+Lightweight context swap for mid-day pivots between sessions. Skips permission mode, teams chat setup, and routing branches — just loads the target session and goes.
 
 ## Instructions
 
-### 1. Derive Repo Slug and Verify Plugin Context
+### 1. Derive Repo Slug
 
 Run `pwd` and extract the last path component as the repo slug.
-
-If the path does not contain `ajudd-claude-plugins`, stop:
-> "Session switch is for plugin sessions only. Use `/session:start` for story/cab/personal projects."
 
 ### 2. Load Session List
 
@@ -24,7 +19,8 @@ List all `.md` files in `~/.claude/memory/sessions/<slug>/` (skip `_active` and 
 
 For each file, read and extract: Name, Branch, Last worked on.
 
-Check `_inbox_<name>.md` for each and count logical items (lines beginning with `[20` or `## `).
+For plugin sessions (path contains `ajudd-claude-plugins`): count logical items in `_inbox_<name>.md` for each session (lines beginning with `[20` or `## `).
+For all other sessions: count logical items in `_inbox.md`.
 
 If an argument was passed to the command (e.g. `/session:switch release`), skip the list and jump directly to step 3 with that name.
 
@@ -49,9 +45,12 @@ Switching to <name>
 
 ### 4. Check Inbox
 
-Check `~/.claude/memory/sessions/<slug>/_inbox_<name>.md`. If it has content beyond the header, display and handle each item with **Work on it / Mark done / Keep** — same logic as session:start Step 5, including archive file handling and auto-purge.
+For plugin sessions (path contains `ajudd-claude-plugins`): check `~/.claude/memory/sessions/<slug>/_inbox_<name>.md`.
+For all other sessions: check `~/.claude/memory/sessions/<slug>/_inbox.md`.
 
-Also check `~/.claude/memory/sessions/<slug>/_inbox.md` for global items. Display only — never auto-cleared.
+If the inbox file has content beyond the header, display and handle each item with **Work on it / Mark done / Keep** — same logic as session:start Step 5, including archive file handling and auto-purge.
+
+For plugin sessions, also check `~/.claude/memory/sessions/<slug>/_inbox.md` for global items. Display only — never auto-cleared.
 
 ### 5. Write _active and Update Session File
 

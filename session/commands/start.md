@@ -168,7 +168,7 @@ Match on the Name column (exact, case-insensitive) first; fall back to substring
 
 - **Found:** "Using Teams chat: [name]" — proceed, or offer to repoint if the user wants a different one
 - **Not found:** "No chat found for `[teams_chat]`. Create it? (Yes / Skip / Use a different chat)"
-  - **Yes:** create the chat via yl-msoffice MCP, add the entry to `known-chats.md`
+  - **Yes:** create the chat via yl-msoffice MCP, add the entry to `known-chats.md`. Do **not** include `ajudd@youngliving.com` in the members array — the Graph API automatically adds the authenticated user; passing them explicitly causes a "Duplicate chat members" error.
   - **Skip:** set `teams_chat` to `none` — Teams steps in checkpoint will be skipped
   - **Different:** ask which existing chat to use, store that name instead
 

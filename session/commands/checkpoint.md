@@ -95,6 +95,17 @@ Continue with the checkpoint for in-scope work only.
 
 ### 5. Session Summary
 
+Before writing, read the existing `Open items` from the session file. If there are any **non-`[inbox]`** items, display them and ask:
+
+```
+Open items — any complete?
+  [1] <item>
+  [2] <item>
+  Mark done (enter numbers), or 'skip'
+```
+
+Remove confirmed-complete items from the Open items list before writing.
+
 Write `~/.claude/memory/sessions/<slug>/<name>.md` with the current state:
 
 ```
