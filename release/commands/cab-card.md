@@ -101,9 +101,9 @@ powershell -ExecutionPolicy Bypass -File "C:\Users\ajudd\.claude\scripts\Open-Ed
 If a BPT2 CAB key was identified in step 2, ensure it is properly set up as the tracking story:
 
 1. Call `editJiraIssue` to assign it to Aaron Judd (`620147d91fec260068c1097d`)
-2. Call `transitionJiraIssue` with transition ID `181` to move it to **Ready For Work**
+2. Call `transitionJiraIssue` with transition ID `421` to move it to **In Progress**
 
-Do this before the deploy starts — not In Progress yet (that's when you're actively executing the CAB phases), just queued and owned.
+Running this skill = actively working on CAB prep, so In Progress is correct. Ready For Work is only appropriate if the story was sitting unworked and you're queuing it up but not starting yet.
 
 ### 8. Link stories to the CAB card
 
