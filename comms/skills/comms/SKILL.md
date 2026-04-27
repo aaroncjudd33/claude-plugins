@@ -84,6 +84,47 @@ When creating a new group chat:
 
 ---
 
+## Reading Chat Messages — Image and Video Processing
+
+Whenever `list_chat_messages` runs, automatically scan each message body for media content and process it inline. Do not wait to be asked.
+
+### Images
+
+Parse `<img src="...">` tags from the HTML message body. For each one found:
+
+1. **Check for duplicates.** If there is an active session file, read its `## Teams Images Processed` section. If the message ID is already listed, skip it silently.
+2. **Download.** Use PowerShell `Invoke-WebRequest` to save the file to `C:\temp\claude-uploads\`:
+   ```
+   {sender-slug}_{message-id}_{alt-text-slug}.{ext}
+   ```
+   Derive `sender-slug` from the `from` field (lowercase, spaces to hyphens). Derive `alt-text-slug` from the `<img alt="...">` value (first 3–4 words, lowercase, hyphens). Use the URL file extension (`.gif`, `.jpg`, `.png`).
+3. **Display.** Read the downloaded file immediately so the image renders inline in the response.
+4. **Archive.** Move the file to the archive folder using the existing screenshot archiving strategy — derive the project folder from the current working directory or active session context.
+5. **Record in session file.** If an active session file exists, append to a `## Teams Images Processed` section:
+   ```
+   - {message_id}: {filename} — {YYYY-MM-DD}
+   ```
+   Create the section if it does not exist. This prevents re-processing the same image in the same session.
+
+If there is no active session, skip deduplication — process all images found, download, display, and archive.
+
+### Videos
+
+When a message contains a video indicator — a `.mp4` URL in an `<img>` tag, an `<attachment>` tag whose referenced content is a video file, or any media clearly labeled as video — call it out inline:
+
+```
+{sender} shared a video at {HH:MM} — not processed.
+```
+
+Do not attempt to download or display video content.
+
+### Inline images vs. file uploads
+
+- **`<img src="...">` with a public URL** (Giphy, CDN links): download directly, no auth needed.
+- **`<attachment id="...">` references**: these are either quoted messages or uploaded files. Quoted message attachments can be ignored. Uploaded file attachments (images someone photographed and shared) require Graph API hosted content access — skip with a note: "{sender} shared an uploaded image at {HH:MM} — hosted content, not processed."
+
+---
+
 ## Email Triage
 
 The email commands (`fetch`, `triage`, `sweep`) work as a pipeline. Key behavioral rules:
