@@ -28,9 +28,11 @@ Detect session type from the current path:
 
 ### 2. Load Repo Sessions
 
-List all `.md` files in `~/.claude/memory/sessions/<slug>/` (skip `_active` and `_inbox*` files).
+List all `.md` files in `~/.claude/memory/sessions/<slug>/` (skip `_active`, `_inbox*`, `_history*`, and `_backlog*` files).
 
-For each file, read it and extract: `Name`, `Branch`, `Last worked on`.
+For each file, read it and extract: `Name`, `Branch`, `Type`.
+
+For **last worked on**: read `~/.claude/memory/sessions/<slug>/_history.md` and find the most recent entry whose session name matches. If `_history.md` does not exist or has no matching entry, fall back to the `Last worked on` field in the session file.
 
 For **plugin sessions**, also check `~/.claude/memory/sessions/<slug>/_inbox_<name>.md` and count **logical items** — lines that begin with `[20` or `## ` (entry markers), not raw non-blank lines. Body text under an entry does not count as a separate item. If count > 0, note it for display.
 
@@ -39,8 +41,8 @@ For **non-plugin sessions**, check `~/.claude/memory/sessions/<slug>/_inbox.md` 
 If sessions exist, print a numbered list. Always include an `inbox N` column for every row (use `inbox 0` when empty) so columns stay aligned:
 ```
 Sessions in <slug>
-  [1]  <name>  |  <type>  |  <branch>  |  inbox 0  |  <last worked on — 1 sentence>
-  [2]  <name>  |  <type>  |  <branch>  |  inbox 3  |  <last worked on — 1 sentence>
+  [1]  <name>  |  <type>  |  <branch>  |  inbox 0  |  <last worked on — from history>
+  [2]  <name>  |  <type>  |  <branch>  |  inbox 3  |  <last worked on — from history>
 ```
 
 If the directory does not exist or is empty, skip this section.
@@ -71,19 +73,24 @@ If the directory does not exist or is empty, skip this section.
 
 **Resume existing [N]:**
 - Read `~/.claude/memory/sessions/<slug>/<name>.md`
+- Read `~/.claude/memory/sessions/<slug>/_history.md` — extract last 5 entries (or all if fewer).
 - Peek at the inbox file (`_inbox_<name>.md` for plugins, `_inbox.md` otherwise): take the description from the first entry (the `## [date] from ...` line's trailing text) for the "Next step" display. If inbox is empty, use "none".
 - Display the full last session block:
   ```
   Resuming <name>
     Branch:          [branch]
-    Last work:       [last worked on]
     Open items:      [bullets or "none"]
     Next step:       [first inbox item description, or "none"]
     Related CAB:     [CAB-XXX]   ← story type only, omit if none
     Post-deploy:     N pending / all acknowledged / none   ← story type only, omit if none
     Related stories: [BPT2-XXXX, ...]   ← cab type only, omit if none
+
+  Recent history (<slug>):
+    [YYYY-MM-DD] <session-name> — <entry>   ← most recent first, up to 5
+    ...
   ```
 - For the `Post-deploy` line: count `- [ ]` items (pending) vs `- [x]` items (acknowledged) from the `Post-deployment checks:` field. Show "N pending" if any unchecked, "all acknowledged" if all checked, "none" if field is absent or empty.
+- If `_history.md` does not exist, omit the "Recent history" block entirely.
 - Continue through Steps 5–8 as normal — `_active` must always be written, even on resume.
 
 **New story/plugin/personal/general — session filename:**

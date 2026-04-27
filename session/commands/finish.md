@@ -165,7 +165,19 @@ Inbox item complete?
 
 If no `[inbox]` items exist, skip silently.
 
-### 10. Session Summary
+### 10. History Entry
+
+Compose a 1-sentence description of the work accomplished this session. Write it as a complete thought that stands alone without conversation context.
+
+Append to `~/.claude/memory/sessions/<slug>/_history.md` (create the file if it does not exist, with header `# History — <slug>`):
+
+```
+[YYYY-MM-DD] <session-name> — <accomplished sentence>
+```
+
+This entry becomes the value for `Last worked on` in the session file.
+
+### 11. Session Summary
 
 Before writing, read the existing `Open items` from the session file. If there are any **non-`[inbox]`** items, display them and ask:
 
@@ -195,7 +207,7 @@ updated: [today's date]
 - **Project:** [project path]
 - **Scope:** [scope path]   ← story/cab/personal: pwd; plugin: ~/.claude/plugins/marketplaces/ajudd-claude-plugins/<name>; omit for general
 - **Branch:** [branch or "n/a"]
-- **Last worked on:** [1 sentence — what was accomplished today]
+- **Last worked on:** [most recent entry from _history.md — do not synthesize, read from file]
 - **Open items:** [bullet list, or "none"]
 - **Next step:** [concrete first action when resuming tomorrow]
 - **Plugin reviewed:** [yes / no]   ← plugin type only, omit for other types
@@ -237,7 +249,7 @@ If the user says "same" or similar, carry forward the current `Next step` value 
 
 Print the summary to screen as the final output.
 
-### 11. Work Log
+### 12. Work Log
 
 Append to `~/.claude/memory/worklog/<YYYY-MM-DD>.md` (create the file and `~/.claude/memory/worklog/` directory if they don't exist).
 
@@ -253,14 +265,14 @@ Entry format varies by type:
 ```markdown
 ## <HH:MM> — <formatted header per above>
 
-**Accomplished:** <last worked on — same 1-sentence value just written to the session file>
+**Accomplished:** <most recent entry from _history.md>
 
 **Open items:** <open items from session state, or "none">
 ```
 
 Multiple entries per day are expected — always append, never overwrite.
 
-### 12. Deactivate Session
+### 13. Deactivate Session
 
 Remove the active marker so no future conversation inherits stale state:
 

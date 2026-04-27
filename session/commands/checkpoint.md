@@ -93,7 +93,19 @@ Create the file if it does not exist, starting with `# Inbox — <target-slug>` 
 
 Continue with the checkpoint for in-scope work only.
 
-### 5. Session Summary
+### 5. History Entry
+
+Compose a 1-sentence description of the work accomplished since the last checkpoint. This is the canonical record — write it as a complete thought that stands alone without conversation context (e.g. "Fixed NoteForm missing Tags/Collections and wired ExpeditionPicker into NoteDetail" not "finished the bugs").
+
+Append to `~/.claude/memory/sessions/<slug>/_history.md` (create the file if it does not exist, with header `# History — <slug>`):
+
+```
+[YYYY-MM-DD] <session-name> — <accomplished sentence>
+```
+
+This entry becomes the value for `Last worked on` in the session file.
+
+### 6. Session Summary
 
 Before writing, read the existing `Open items` from the session file. If there are any **non-`[inbox]`** items, display them and ask:
 
@@ -123,7 +135,7 @@ updated: [today's date]
 - **Project:** [project path]
 - **Scope:** [scope path]   ← story/cab/personal: pwd; plugin: ~/.claude/plugins/marketplaces/ajudd-claude-plugins/<name>; omit for general
 - **Branch:** [branch or "n/a"]
-- **Last worked on:** [1 sentence — what is happening right now]
+- **Last worked on:** [most recent entry from _history.md — do not synthesize, read from file]
 - **Open items:** [bullet list, or "none"]
 - **Next step:** [concrete next action]
 - **Plugin reviewed:** [yes / no]   ← plugin type only, omit for other types
@@ -134,9 +146,16 @@ updated: [today's date]
 - **Related stories:** [BPT2-XXXX, BPT2-YYYY or "none"]   ← cab type only, omit for other types
 ```
 
-Print the summary to screen.
+Print the summary to screen. After the summary block, display the last 5 entries from `_history.md` (all entries if fewer than 5):
 
-### 6. Inbox Completion Check
+```
+Recent history (<slug>):
+  <line 1 — most recent>
+  <line 2>
+  ...
+```
+
+### 7. Inbox Completion Check
 
 Read the `Open items` from the session state just written. If any items are prefixed with `[inbox]`, handle each one:
 
@@ -151,7 +170,7 @@ Inbox item complete?
 
 If no `[inbox]` items exist in Open items, skip silently.
 
-### 7. Work Log
+### 8. Work Log
 
 Append to `~/.claude/memory/worklog/<YYYY-MM-DD>.md` (create the file and `~/.claude/memory/worklog/` directory if they don't exist).
 
@@ -167,7 +186,7 @@ Entry format varies by type:
 ```markdown
 ## <HH:MM> — <formatted header per above>
 
-**Accomplished:** <last worked on — same 1-sentence value just written to the session file>
+**Accomplished:** <most recent entry from _history.md>
 
 **Open items:** <open items from session state, or "none">
 ```
