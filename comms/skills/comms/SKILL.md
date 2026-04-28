@@ -17,10 +17,11 @@ These apply to every Teams message, no exceptions:
 
 1. **ALWAYS end every message with the Claude signature.** No exceptions — single-line messages, tables, reference docs, all of it:
    `<p><em>Posted by Claude on behalf of {USER_NAME}</em></p>`
-2. **Always preview before sending.** Show the full message content to the user and wait for explicit approval before calling `send_chat_message`. Never auto-confirm.
+2. **Always preview before sending.** Show the full draft in BOTH formats and wait for explicit approval before calling `send_chat_message`. Never auto-confirm.
 3. **Always use HTML formatting.** The `yl-msoffice` `send_chat_message` body supports HTML and renders it properly.
-4. **Always open with an intro paragraph.** Before the first section, include a `<p>` that sets context — who this is for and why you're sending it.
+4. **Always open with an intro paragraph.** Before the first section, include a `<p>` that sets context — what this message is about and why you're sending it. Do NOT open with a greeting or self-introduction (see voice guide).
 5. **Follow the HTML guide.** See `references/teams-html-guide.md` for what renders well vs. poorly. The short version: no `<pre>`, no `<code>`, no `<h1>`, no `<h3>`, no `<th>`. Use `<h2>` for section headers, `<b>` for labels, `<ul>` for structure, nested `<ul>` for hierarchical content.
+6. **Apply Aaron's voice.** Read `references/aaron-voice.md` before drafting. Key rules: no greeting, paragraphs for conversational messages, brief on mistakes, "we/us" not "I", passive availability.
 
 ### Standard Message Template
 
@@ -69,8 +70,10 @@ Only use for genuinely tabular data with 2–3 columns. See `references/teams-ht
 Use the `yl-msoffice` MCP tools in this order:
 
 1. **Find the chat ID** — look up the chat name in `references/known-chats.md` (filter to `Active=yes`). If not found there, call `list_chats` to check whether it already exists in Teams before creating a new one. If it truly does not exist, use `teams.create_chat`, then add the new chat ID to `~/.claude/plugins/known-chats.md`.
-2. **Compose the message** using the template above.
-3. **Show the full preview** to the user in plain readable text (not raw HTML).
+2. **Compose the message** using the template above. Read `references/aaron-voice.md` first.
+3. **Show the full preview in both formats:**
+   - **Plain text** — readable prose version so the user can verify content and tone
+   - **HTML** — the exact markup that will be sent, so layout issues are visible before send
 4. **Wait for explicit approval** — the user must say yes (or request edits) before proceeding. This approval authorizes calling `send_chat_message` in the next step.
 5. **Call `send_chat_message`** — this queues the message and returns a pending `actionId`. The message has NOT been sent yet.
 6. **Call `confirm_action`** with the returned `actionId`. This is a required API execution step — it is not a second human approval prompt. Do not skip it.
@@ -161,3 +164,4 @@ The email commands (`fetch`, `triage`, `sweep`) work as a pipeline. Key behavior
 
 - `references/known-chats.md` — maps friendly chat names to Teams chat IDs (supports Active=yes/no toggle)
 - `references/teams-html-guide.md` — full HTML formatting rules for Teams messages
+- `references/aaron-voice.md` — Aaron's communication voice and tone — read before drafting any message

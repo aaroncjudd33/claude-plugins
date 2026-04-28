@@ -1,6 +1,6 @@
 {
   "name": "comms",
-  "version": "1.9.0",
+  "version": "2.0.0",
   "description": "Microsoft 365 communications — Teams messaging, email triage, and inbox sweep via the yl-msoffice MCP.",
   "author": {
     "name": "Aaron Judd",
