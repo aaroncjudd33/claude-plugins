@@ -110,18 +110,28 @@ If there is no active session, skip deduplication — process all images found, 
 
 ### Videos
 
-When a message contains a video indicator — a `.mp4` URL in an `<img>` tag, an `<attachment>` tag whose referenced content is a video file, or any media clearly labeled as video — call it out inline:
+Videos cannot be processed — Claude cannot analyze video content or extract meaningful information from video files. When a message contains a video indicator — a `.mp4` URL, an `<attachment>` tag referencing a video file, or any media clearly labeled as video — note it inline and skip:
 
 ```
 {sender} shared a video at {HH:MM} — not processed.
 ```
 
-Do not attempt to download or display video content.
+Do not attempt to download or display video content. This is a permanent limitation, not a future enhancement.
 
 ### Inline images vs. file uploads
 
 - **`<img src="...">` with a public URL** (Giphy, CDN links): download directly, no auth needed.
 - **`<attachment id="...">` references**: these are either quoted messages or uploaded files. Quoted message attachments can be ignored. Uploaded file attachments (images someone photographed and shared) require Graph API hosted content access — skip with a note: "{sender} shared an uploaded image at {HH:MM} — hosted content, not processed."
+
+### Context relevance in high-volume group chats
+
+In active group chats with multiple people and banter (story chats, cross-team discussions), images are often unrelated to the work at hand — fun GIFs, reaction memes, off-topic content. **Always download and archive every image found** — the goal is complete capture. However, apply judgment when surfacing images in context:
+
+- If an image is clearly a reaction GIF or meme (Giphy alt text, animated GIF from a fun exchange), note it briefly: "Heber shared a meme at {HH:MM} — archived."
+- If an image appears to contain work-relevant content (a screenshot, a diagram, a log dump, an error message), display it prominently and call out what it shows.
+- If you are genuinely unsure whether an image is work-related, ask before drawing conclusions from it: "This image from {sender} at {HH:MM} — is this relevant to what we're looking at?"
+
+The rule: capture everything, but don't let non-work images crowd out or be mistaken for work context.
 
 ---
 
