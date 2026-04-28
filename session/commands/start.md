@@ -224,6 +224,8 @@ Write `~/.claude/memory/sessions/<slug>/_active` (plain text, just the name — 
 BPT2-1234
 ```
 
+`_active` is a convenience hint for `session:start` resume suggestions only — it is not read by `session:checkpoint` or `session:finish` to determine session identity.
+
 ### 9. Route Based on Choice
 
 **Plugin — existing plugin:**

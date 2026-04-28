@@ -13,7 +13,10 @@ Full end-of-day close. Runs the complete checklist to ensure nothing is left beh
 
 Run `pwd` and extract the repo slug (last path component).
 
-Read `~/.claude/memory/sessions/<slug>/_active` to get the session name.
+Determine the session name from conversation context:
+1. Look back at the current conversation for the most recent `session:start` output — find the "Resuming `<name>`" line. Use that name.
+2. If no `session:start` output is found in this conversation, fall back to reading `~/.claude/memory/sessions/<slug>/_active` as a hint.
+3. If neither is available, ask the user: "Which session are you finishing?"
 
 Read `~/.claude/memory/sessions/<slug>/<name>.md` and extract:
 - `type` (plugin / story / cab / personal / general)
@@ -22,9 +25,9 @@ Read `~/.claude/memory/sessions/<slug>/<name>.md` and extract:
 - `teams_chat`
 - `branch`
 
-If `_active` does not exist, treat as `type: general` with `teams_chat: none`.
+If no session name can be determined and `_active` does not exist, treat as `type: general` with `teams_chat: none`.
 
-If `_active` exists but `<name>.md` does not, warn the user: "Session file for `<name>` not found — run `/session:start` to re-establish." and stop.
+If the session name is determined but `<name>.md` does not exist, warn the user: "Session file for `<name>` not found — run `/session:start` to re-establish." and stop.
 
 ### 1. Header
 
