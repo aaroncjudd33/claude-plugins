@@ -16,7 +16,7 @@ Governs all Microsoft 365 communication via the `yl-msoffice` MCP — Teams mess
 These apply to every Teams message, no exceptions:
 
 1. **ALWAYS end every message with the Claude signature.** No exceptions — single-line messages, tables, reference docs, all of it:
-   `<p><em>Posted by Claude on behalf of {USER_NAME}</em></p>`
+   `<p><em>Posted by Claude Code on behalf of {USER_NAME}</em></p>`
 2. **Always preview before sending.** Show the full draft in BOTH formats and wait for explicit approval before calling `send_chat_message`. Never auto-confirm.
 3. **Always use HTML formatting.** The `yl-msoffice` `send_chat_message` body supports HTML and renders it properly.
 4. **Always open with an intro paragraph.** Before the first section, include a `<p>` that sets context — what this message is about and why you're sending it. Do NOT open with a greeting or self-introduction (see voice guide).
@@ -45,7 +45,7 @@ These apply to every Teams message, no exceptions:
   </li>
 </ul>
 <p>&nbsp;</p>
-<p><em>Posted by Claude on behalf of {USER_NAME}</em></p>
+<p><em>Posted by Claude Code on behalf of {USER_NAME}</em></p>
 ```
 
 ### Tables
@@ -145,7 +145,7 @@ The email commands (`fetch`, `triage`, `sweep`) work as a pipeline. Key behavior
 - **Cache contract.** All email commands read from / write to `C:\temp\email-cache.json`. This file must be fresh before running triage. If it is absent or stale, instruct the user to run `/comms:fetch` first.
 - **Always show the plan before executing.** Phase 1 of `triage` produces a move/mark-read plan. Display it and wait for confirmation before launching the Haiku sub-agent for batch execution.
 - **Delegate batch moves to Haiku.** `mail.move` and `mail.mark_read` responses return full message objects (5K–15K tokens each). Batch these calls in a Haiku sub-agent to keep the main context clean.
-- **No signature in emails.** The "Posted by Claude on behalf of {USER_NAME}" signature is for Teams messages only — do not append it to email bodies.
+- **No signature in emails.** The "Posted by Claude Code on behalf of {USER_NAME}" signature is for Teams messages only — do not append it to email bodies.
 - **`mail.move` to `deleteditems` for deletes.** There is no `mail.delete` action — use `mail.move` with `folder=deleteditems` for all delete operations.
 
 ---
