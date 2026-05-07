@@ -124,6 +124,19 @@ Append to `~/.claude/memory/sessions/<slug>/_history.md` (create the file if it 
 
 This entry becomes the value for `Last worked on` in the session file.
 
+### 5a. Jira Progress Comment *(story/cab only)*
+
+Post a 1–2 sentence progress comment to the Jira story.
+
+- **story:** story key = session name (e.g. `BPT2-6258`)
+- **cab:** post to each story in `Related stories`
+
+Content: current status + what was just accomplished + what's next. Business-readable — no file paths, class names, or token names. Example: *"Extended filter validation: all three input types now show required errors immediately on Add/Apply click. Committed and deploying to env6 for QA review."*
+
+Before posting, check if the most recent Jira comment is from today and already covers this milestone — if so, skip.
+
+**plugin / personal / general:** Skip.
+
 ### 6. Session Summary
 
 Before writing, read the existing `Open items` from the session file. If there are any **non-`[inbox]`** items, display them and ask:
@@ -153,6 +166,7 @@ updated: [today's date]
 - **Teams chat:** [teams_chat or "none"]
 - **Project:** [project path]
 - **Scope:** [scope path]   ← story/cab/personal: pwd; plugin: ~/.claude/plugins/marketplaces/ajudd-claude-plugins/<name>; omit for general
+- **Status:** in-progress   ← always reset to in-progress at checkpoint
 - **Branch:** [branch or "n/a"]
 - **Last worked on:** [most recent entry from _history.md — do not synthesize, read from file]
 - **Open items:** [bullet list, or "none"]

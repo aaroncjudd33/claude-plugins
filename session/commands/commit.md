@@ -13,14 +13,15 @@ Commit in-progress work, update memory, and save session state. Use this mid-ses
 
 Run `pwd` and extract the repo slug (last path component).
 
-Read `~/.claude/memory/sessions/<slug>/_active` to get the session name.
+Determine the session name from conversation context:
+1. Look for the most recent `session:start` output — find the "Resuming `<name>`" line.
+2. Fall back to reading `~/.claude/memory/sessions/<slug>/_active` if not in context.
+3. If neither is available, treat as `type: general`.
 
 Read `~/.claude/memory/sessions/<slug>/<name>.md` and extract:
 - `type` (plugin / story / cab / general)
 - `name`
 - `branch`
-
-If `_active` does not exist, treat as `type: general`.
 
 ### 1. Git Scan
 
@@ -69,6 +70,19 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 EOF
 )"
 ```
+
+### 2a. Jira Commit Comment *(story/cab only)*
+
+Post a 1-line Jira comment summarizing what was just committed.
+
+- **story:** story key = session name
+- **cab:** post to each story in `Related stories`
+
+Translate the commit message to business-readable language — status + milestone, no file paths, class names, or token names. Example: *"Committed touchToken fix for all 3 filter input types — testing in progress."*
+
+Before posting, check if the most recent Jira comment already covers this commit — if so, skip.
+
+**plugin / personal / general:** Skip.
 
 ### 3. Memory
 

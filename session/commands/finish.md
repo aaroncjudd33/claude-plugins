@@ -84,11 +84,12 @@ yl-cdk check:
 
 **story:**
 - Is the story status current? Transition if needed.
-- Does it need a progress comment before closing?
+- Post a closing Jira comment: what was accomplished this session, what's next (testing, CAB, deployment). Business-readable — no file paths or class names. Check the most recent existing comment first; only post if it doesn't already cover this session's work.
 
 **cab:**
 - Are the CAB card fields up to date?
 - Is the release branch reflected correctly?
+- Post a closing comment to each story in `Related stories` (same format as story above).
 
 **plugin / personal / general:** Skip (including the yl-cdk check above).
 
@@ -107,6 +108,25 @@ Plugin, personal, and general: only prompt if the user asks or something signifi
 "Does anything from this session need to go to Confluence?"
 
 Skip if no Confluence page is set up for this session's context.
+
+### 6a. Story Doc *(story type only)*
+
+Read `paths.jiraStoriesDir` from `~/.claude/plugins/user-config.json`. If the field is absent or empty, skip this step entirely.
+
+Derive the doc path: `<jiraStoriesDir>/<jiraProject>/<session-name>-<slug>.md` where `<jiraProject>` is the Jira project key (e.g. `BPT2`) and `<slug>` is a short kebab-case description of the story (derive from the session Title field, or use the session name alone if Title is absent).
+
+Check if the file exists:
+
+- **Exists:** prompt "Story doc exists — update it with today's changes? (Yes / Skip)"
+- **Does not exist:** prompt "No story doc found — create one? (Yes / Skip)"
+
+If **Yes:** write or update the file with:
+- Root cause / problem being solved
+- Implementation approach and key decisions
+- Testing notes and known edge cases
+- Any gotchas discovered
+
+Keep it technical and concise — this is a personal reference, not team documentation. Do not block session:finish if the user skips.
 
 ### 7. Browser
 
@@ -221,6 +241,7 @@ updated: [today's date]
 - **Teams chat:** [teams_chat or "none"]
 - **Project:** [project path]
 - **Scope:** [scope path]   ← story/cab/personal: pwd; plugin: ~/.claude/plugins/marketplaces/ajudd-claude-plugins/<name>; omit for general
+- **Status:** completed
 - **Branch:** [branch or "n/a"]
 - **Last worked on:** [most recent entry from _history.md — do not synthesize, read from file]
 - **Open items:** [bullet list, or "none"]
