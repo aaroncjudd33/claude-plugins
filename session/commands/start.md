@@ -238,6 +238,7 @@ updated: [today's date]
 - **Teams chat:** [teams_chat or "none"]
 - **Project:** [project path]
 - **Scope:** [scope path]   ← story/cab/personal: pwd; plugin: ~/.claude/plugins/marketplaces/<pluginMarketplaceName>/<name> (read pluginMarketplaceName from user-config); omit for general
+- **Status:** in-progress
 - **Branch:** [branch or "n/a"]
 - **Last worked on:** [will be updated at checkpoint]
 - **Open items:** [carried from previous session, or "none"]
