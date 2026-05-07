@@ -68,6 +68,22 @@ Review the conversation for anything worth saving:
 
 Save what's missing. Report: "Saved: [list]" or "Memory: nothing new to save."
 
+### 3a. yl-cdk Pattern Check *(story/cab only)*
+
+If a commit was just made or is about to be made, prompt:
+
+```
+yl-cdk check:
+  Were the yl-cdk-migration and yl-cdk-monitoring skills used to verify DynamoDB/CDK design patterns?
+  Yes / Not applicable / Remind me
+```
+
+- **Yes / Not applicable:** proceed silently.
+- **Remind me:** surface this note and continue — do not block:
+  > "Run `/yl-cdk-migration` and `/yl-cdk-monitoring` before calling this story done. Install from `youngliving/claude-plugins` if not available."
+
+Skip entirely for plugin, personal, and general session types.
+
 ### 4. Scope Check
 
 Read the `Scope:` field from the session file. If the field is missing or the session type is `general`, skip this step.
@@ -147,6 +163,7 @@ updated: [today's date]
   - [ ] <check description>
   - [x] <acknowledged check description>
 - **Related stories:** [BPT2-XXXX, BPT2-YYYY or "none"]   ← cab type only, omit for other types
+- **linked_sessions:** [<session-name>, ...]   ← preserve as-is; omit if not present
 ```
 
 Print the summary to screen. After the summary block, display the last 5 entries from `_history.md` (all entries if fewer than 5):
@@ -168,8 +185,8 @@ Inbox item complete?
   Yes / Keep open
 ```
 
-- **Yes:** locate the corresponding entry in the inbox file (`_inbox_<name>.md` for plugins, `_inbox.md` otherwise); move it to the archive file with `[DONE today]` prepended; remove the `[inbox]` line from Open items; rewrite both files. The session summary's Open items field (step 5) should be rewritten to reflect the removal.
-- **Keep open:** leave the `[inbox]` item in Open items and the entry in the inbox file as-is
+- **Yes:** remove the `[inbox]` line from Open items. The inbox entry was already archived when the session picked it up — no file move needed. Rewrite the session summary's Open items field to reflect the removal.
+- **Keep open:** leave the `[inbox]` item in Open items as-is.
 
 If no `[inbox]` items exist in Open items, skip silently.
 

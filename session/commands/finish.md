@@ -70,6 +70,18 @@ Save what's missing. Report: "Saved: [list]" or "Memory: nothing new to save."
 
 ### 4. Jira Update
 
+**story/cab only — yl-cdk pattern check before updating Jira:**
+
+```
+yl-cdk check:
+  Were the yl-cdk-migration and yl-cdk-monitoring skills used to verify DynamoDB/CDK design patterns?
+  Yes / Not applicable / Remind me
+```
+
+- **Yes / Not applicable:** proceed silently.
+- **Remind me:** surface this note before continuing — do not block:
+  > "Run `/yl-cdk-migration` and `/yl-cdk-monitoring` before closing this story. Install from `youngliving/claude-plugins` if not available."
+
 **story:**
 - Is the story status current? Transition if needed.
 - Does it need a progress comment before closing?
@@ -78,7 +90,7 @@ Save what's missing. Report: "Saved: [list]" or "Memory: nothing new to save."
 - Are the CAB card fields up to date?
 - Is the release branch reflected correctly?
 
-**plugin / personal / general:** Skip.
+**plugin / personal / general:** Skip (including the yl-cdk check above).
 
 ### 5. Teams Update
 
@@ -163,8 +175,8 @@ Inbox item complete?
   Yes / Keep open
 ```
 
-- **Yes:** locate the corresponding entry in the inbox file (`_inbox_<name>.md` for plugins, `_inbox.md` otherwise); move it to the archive file with `[DONE today]` prepended; remove the `[inbox]` line from Open items; rewrite both files
-- **Keep open:** leave the `[inbox]` item in Open items and the inbox entry as-is — it will be carried forward to the next session
+- **Yes:** remove the `[inbox]` line from Open items. The inbox entry was already archived when the session picked it up — no file move needed.
+- **Keep open:** leave the `[inbox]` item in Open items — it will be carried forward to the next session.
 
 If no `[inbox]` items exist, skip silently.
 
@@ -241,8 +253,10 @@ Post-deployment checks — anything to add or update? (enter new checks, or 'ski
 Before writing, ask the user: "What's the first thing to pick up next time? (or 'skip')" Then offer where to route it:
 
 ```
-Add to: inbox (pick up next session) / backlog (someday) / skip
+Add to: inbox (ready — pick up next session) / backlog (defer — not working on it soon) / skip
 ```
+
+For **personal and general** session types, lead with inbox as the expected choice — work that surfaces at session close is usually planned and ready, not deferred.
 
 - **inbox:** write as an inbox entry to `_inbox_<name>.md` (plugin) or `_inbox.md` (others) using format `## [YYYY-MM-DD] from <slug> / <name> — <description>`. Create the file if needed with header `# Inbox — <name> plugin` (plugin) or `# Inbox — <slug>` (others). Set `Next step` in the session file to the description (convenience echo of the inbox entry).
 - **backlog:** write to `_backlog_<name>.md` (plugin) or `_backlog.md` (others) using the same entry format. Create the file if needed with header `# Backlog — <name> plugin` (plugin) or `# Backlog — <slug>` (others). Set `Next step` to "none".

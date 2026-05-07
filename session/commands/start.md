@@ -36,7 +36,7 @@ For **last worked on**: read `~/.claude/memory/sessions/<slug>/_history.md` and 
 
 For **plugin sessions**, also check `~/.claude/memory/sessions/<slug>/_inbox_<name>.md` and count **logical items** — lines that begin with `[20` or `## ` (entry markers), not raw non-blank lines. Body text under an entry does not count as a separate item. If count > 0, note it for display.
 
-For **non-plugin sessions**, check `~/.claude/memory/sessions/<slug>/_inbox.md` and count logical items the same way.
+For **non-plugin sessions**, check `~/.claude/memory/sessions/<slug>/_inbox.md` and count logical items the same way. Note this count — it will be surfaced in Step 3 before the options are presented.
 
 If sessions exist, print a numbered list. Always include an `inbox N` column for every row (use `inbox 0` when empty) so columns stay aligned:
 ```
@@ -56,16 +56,32 @@ If the directory does not exist or is empty, skip this section.
 - Something else — describe it
 
 **Work project:**
+
+If `_inbox.md` has logical items, show them compactly after the sessions table and before the options. Flag `[spawn]` entries with ★ — they are ready-to-start handoffs, not just notes:
+```
+Global inbox (N items):
+  ★ [spawn] <label> — from <source>/<session>, ready to start as <type>
+  [date] from <source-slug>/<session-name> — <one-line description>
+  ...
+```
+Full handling (Work on it / Mark done / Move to backlog / Keep) happens at Step 5.
+
 - **[N] Resume <BPT2-XXXX>** — <last worked on> *(one line per existing session)*
 - Pick up a story (Jira URL or key)
 - Start a CAB
 - Something else — describe it
 
 **Personal project** (path under `/c/claude/`):
+
+Same global inbox compact display as above if `_inbox.md` has items.
+
 - **[N] Resume <name>** — <last worked on> *(one line per existing session)*
 - Start something new — give it a name
 
 **General / unknown project:**
+
+Same global inbox compact display as above if `_inbox.md` has items.
+
 - **[N] Resume <name>** — <last worked on> *(one line per existing session)*
 - Start something new — give it a name and category
 
@@ -91,6 +107,17 @@ If the directory does not exist or is empty, skip this section.
   ```
 - For the `Post-deploy` line: count `- [ ]` items (pending) vs `- [x]` items (acknowledged) from the `Post-deployment checks:` field. Show "N pending" if any unchecked, "all acknowledged" if all checked, "none" if field is absent or empty.
 - If `_history.md` does not exist, omit the "Recent history" block entirely.
+- **If the session file has a `linked_sessions` field**, load each linked session and append a context block immediately after "Recent history":
+  ```
+  Linked session context:
+    <linked-session-name> (<type>) — <last worked on>
+      Open items:  [bullets or "none"]
+      Next step:   [next step]
+      History (last 5):
+        [YYYY-MM-DD] <entry>
+        ...
+  ```
+  Read each linked session's `.md` file from `~/.claude/memory/sessions/<slug>/` and its last 5 entries from `_history.md`. If the linked session file does not exist, note "session file not found" and continue. This block is read-only context — it does not affect the current session's state.
 - Continue through Steps 5–8 as normal — `_active` must always be written, even on resume.
 
 **New story/plugin/personal/general — session filename:**
@@ -118,7 +145,7 @@ Inbox (<N> item(s))
 
 If multiple items, offer a bulk shortcut first: **"Handle all: Work on all / Mark all done / Move all to backlog / Keep all"**. If no shortcut, handle each item individually with: **Work on it / Mark done / Move to backlog / Keep**
 
-- **Work on it:** item stays in inbox; add a corresponding line to the session `Open items` prefixed with `[inbox]` (e.g. `- [inbox] Inbox archive system design`) so checkpoint/finish know to prompt for completion later
+- **Work on it:** move the full entry to the archive file immediately with a `[PICKED UP YYYY-MM-DD — <session-name>]` stamp (the inbox item is handled — its job was routing the work to a session; the stamp creates a bidirectional link back to the session that owns it); add a corresponding line to the session `Open items` prefixed with `[inbox]` (e.g. `- [inbox] Inbox archive system design`) so checkpoint/finish know to prompt for completion later
 - **Mark done:** move the full entry to the archive file (see below) with a `[DONE YYYY-MM-DD]` stamp prepended; remove the entry from the inbox file
 - **Move to backlog:** move the full entry from the inbox file to the backlog file (`_backlog_<name>.md` for plugins, `_backlog.md` for others); remove from inbox. Create the backlog file if it doesn't exist with header `# Backlog — <name> plugin` (plugin) or `# Backlog — <slug>` (others). No archive — backlog items stay until explicitly deleted.
 - **Keep:** leave the entry in inbox; do NOT add to Open items — user will deal with it later
@@ -131,22 +158,27 @@ If the file does not exist or contains only the header, skip silently.
 
 Create the archive file if it does not exist. Archive entry format (append, blank line between entries):
 ```
-[DONE YYYY-MM-DD]
+[DONE YYYY-MM-DD]                          ← for "Mark done" (fully resolved, no session needed)
+[PICKED UP YYYY-MM-DD — <session-name>]    ← for "Work on it" (in progress; links back to the session)
 [original date line]
   - [original item content]
 ```
 
 **Auto-purge archive:** After handling inbox items, if the archive file exists, read it and drop any entries whose `[DONE YYYY-MM-DD]` date is more than 30 days before today. Rewrite the file with only the retained entries (preserving the header line).
 
-**Additionally**, for plugin sessions, check `~/.claude/memory/sessions/<slug>/_inbox.md` for any global items (new plugin ideas or undirected notes). If it has content, show it separately:
+**Additionally**, for plugin sessions, check `~/.claude/memory/sessions/<slug>/_inbox.md` for any global items (new plugin ideas, undirected notes, or spawned sessions). If it has content, show it separately. Flag `[spawn]` entries prominently — they are pre-loaded handoffs ready to start as a new session:
 
 ```
-Global inbox (<N> item(s)) — new plugin ideas or undirected notes
-  [date] from <source-slug> / <session-name>
-    - <item>
+Global inbox (<N> item(s)):
+  ★ [spawn] <label> — from <source-slug>/<session-name>, ready to start as <type>
+      Next step: <next step from spawn entry>
+  [date] from <source-slug>/<session-name> — <regular item description>
 ```
 
-Global inbox items are never auto-cleared — they stay until the user decides to act on them (create a new plugin) or explicitly discards them. The same Work on it / Mark done / Move to backlog / Keep options apply, using `_inbox_archive.md` as the global archive.
+- **`[spawn]` entries:** Picking one up ("Work on it") runs the full new-session kickoff (Jira story, branch, etc.) with the spawn's linked context pre-loaded. Archive immediately at pickup with `[PICKED UP YYYY-MM-DD — <new-session-name>]` stamp.
+- **Regular entries:** Work on it / Mark done / Move to backlog / Keep — same flow as always.
+
+Global inbox items are never auto-cleared. The same handling options apply, using `_inbox_archive.md` as the archive.
 
 **Backlog:** After all inbox handling, check `_backlog_<name>.md` (plugin) or `_backlog.md` (others) and count logical items (lines beginning with `[20` or `## `). If count > 0, show:
 
@@ -215,6 +247,7 @@ updated: [today's date]
 - **Post-deployment checks:**   ← story type only, omit for other types; omit entire field if none defined
   - [ ] <check description>
 - **Related stories:** [BPT2-XXXX, BPT2-YYYY or "none"]   ← cab type only, omit for other types
+- **linked_sessions:** [<session-name>, ...]   ← omit if empty; set by /session:spawn; preserve as-is on resume
 ```
 
 For story and cab types, populate **Title** from the `summary` field of `getJiraIssue`. When resuming an existing session, preserve the existing Title if present. If the session file predates this field (no Title line), fetch from Jira during Step 9 routing and add it.

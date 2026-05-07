@@ -9,6 +9,16 @@ Governs session lifecycle across all project types (plugin, story, cab, personal
 
 ---
 
+## Context Recovery After /clear
+
+If the user runs `/clear` or mentions that context was lost, **immediately suggest running `/session:start`**:
+
+> "Context cleared — run `/session:start` to restore your session state (branch, open items, next step) without re-explaining anything."
+
+This is the primary recovery path. `/session:start` reads `_active` to identify the current session, then loads the session file and surfaces everything needed to resume. New developers especially should be nudged here — the workflow is not obvious without it.
+
+---
+
 ## Reference Files
 
 - `references/inbox-convention.md` — How to write cross-session/cross-project change instructions to plugin inbox files
