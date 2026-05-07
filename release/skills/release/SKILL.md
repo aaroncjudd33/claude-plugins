@@ -1,6 +1,6 @@
 ---
 name: release
-description: "Background skill — do not run directly. Use /release:create to start a CAB release. Auto-loads when: creating a CAB card, deploying to prod, or any CAB number is mentioned."
+description: "Background skill — do not run directly. Use /release:create to start a release. Auto-loads when the user mentions: creating a CAB card, production release, deploying to production, ready to ship, bundle stories for release, submit for CAB review, change advisory board, or a CAB card number (e.g. CAB-8994). Covers the full lifecycle: bundle BPT2 stories, CAB card, release branch, PR, ADF fields, Send For Review, and deploy execution."
 ---
 
 # CAB Card Skill
@@ -92,13 +92,15 @@ All fields that must be populated. ADF fields use `{ "type": "doc", "version": 1
 
 ## Workflow
 
+The intended entry point is `/release:create`, which auto-detects phase state and orchestrates these steps. Individual `/release:cab-*` commands may also be called directly to run a specific phase standalone.
+
 ### Step 1 — Fetch linked stories
 
 Call `getJiraIssue` for each story. Extract summaries (→ Release Notes), descriptions (→ CAB Description seed), and validate status. Warn if any story is not in a deployable state.
 
 ### Step 2 — Create the Jira issue (minimal — to get the CAB key)
 
-Call `createJiraIssue` with summary and all non-ADF fields (option IDs, user IDs, datetime) to get the CAB key immediately. ADF fields are set in step 5 after the PR is known.
+Call `createJiraIssue` with summary and all non-ADF fields (option IDs, user IDs, datetime) to get the CAB key immediately. ADF fields that require the PR (Component Version(s), PRs Deploying) are set in Phase 3. Other ADF fields (Description, Release Notes, deployment plans) may also be set in Phase 3 for simplicity.
 
 ### Step 3 — Create the release branch
 
@@ -116,7 +118,7 @@ Set description, Release Notes (auto-built from story summaries), deployment pla
 
 ### Step 6 — Link related Jira stories
 
-Call `createIssueLink` with `type="Deploy Location"` for each story. This semantically means "this CAB deploys this story".
+Call `createIssueLink` with `type="Deploy Location"` for each BPT2 feature story (outward: CAB "deploys" the story). If a BPT2 CAB story is also linked, call a second `createIssueLink` with `type="Relates"` between the CAB card and the BPT2 CAB story.
 
 ### Step 7 — Comment back on each story
 
@@ -163,7 +165,7 @@ During `release:deploy`, also register the Actions run:
 | Send For Review | `201` | Requires `customfield_13174` (QA Approved By) | user manually |
 | Cancel Change | `111` | | user manually |
 | Mark Implementation | (auto after approval) | Card moves to Implementation after CAB approval | automatic |
-| Mark Success | Look up at time of use | Set after successful prod deploy | `deploy` |
+| Mark Success | (varies — call `getTransitionsForJiraIssue` at runtime) | Not a fixed ID; look up dynamically at deploy time | `deploy` |
 
 ---
 
@@ -227,26 +229,4 @@ During `release:deploy`, also register the Actions run:
 
 ## Teams Messaging
 
-Whenever any step in this plugin posts a Teams message, apply these rules without exception:
-
-1. **Always end with the Claude signature** — no exceptions:
-   `<p><em>Posted by Claude Code on behalf of {USER_NAME}</em></p>`
-2. **Always preview before sending.** Show the full message content and wait for explicit approval before calling `send_chat_message`.
-3. **Always use HTML formatting.** `send_chat_message` body supports and renders HTML.
-4. **Always open with an intro paragraph** (`<p>`) before the first section.
-5. **Follow the HTML guide.** Read `~/.claude/plugins/marketplaces/ajudd-claude-plugins/comms/skills/comms/references/teams-html-guide.md` before drafting any message.
-
-Standard message template:
-
-```html
-<h2>Message Title</h2>
-<p>&nbsp;</p>
-<p>Intro — context, who this is for, why you're sending it.</p>
-<p>&nbsp;</p>
-<h2>Section One</h2>
-<ul>
-  <li><b>Item</b> — detail</li>
-</ul>
-<p>&nbsp;</p>
-<p><em>Posted by Claude Code on behalf of {USER_NAME}</em></p>
-```
+No current release command posts to Teams. If a Teams step is added in the future, read the HTML formatting guide from the comms plugin (`comms/skills/comms/references/teams-html-guide.md`) before drafting — note this requires the `comms` plugin to be installed.
