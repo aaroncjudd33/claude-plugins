@@ -28,7 +28,7 @@ Classify each email into one of three buckets:
 1. **`to_move`** — rule matches any folder (including Archive) → move silently; mark read unless Action folder (`markRead: false` for Action, `markRead: true` for all others)
 2. **`unmatched`** — no rule match → interactive triage
 
-Check `to_accept` first (before sender-only rules). For each match, find the calendar event using `list_events` filtered by subject, call `calendar.respond_to_event` with `response=accept, sendResponse=false` (or `calendar.delete_event` for remove), then delete the email via `mail.move` with `folder=deleteditems`. Note: there is no `mail.delete` action.
+Check `to_accept` first (before sender-only rules). For each match, find the calendar event using `list_events` filtered by subject, call `calendar.respond_to_event` with `response=accept, sendResponse=false` (or `calendar.delete_event` for remove), then **mark the email as read** via `mail.mark_read`, then move it to deleted items via `mail.move` with `folder=deleteditems`. Note: there is no `mail.delete` action.
 
 Build the arrays:
 - `to_move`: `[{ id, folderId, folderName, isRead, markRead }]`
