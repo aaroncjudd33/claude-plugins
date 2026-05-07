@@ -234,6 +234,32 @@ For each story key listed, prompt: "Transition BPT2-XXXX to Done?"
 - If yes: call `getTransitionsForJiraIssue` to find the Done transition ID, then `transitionJiraIssue`
 - After transitioning, update that story's session file (`BPT2-XXXX.md`) to set `Related CAB` to `none`
 
+### Archive Proposed Work pages
+
+For each related BPT2 story, check whether a "Proposed Work" Confluence planning page exists. If found, archive it now that the story has shipped.
+
+For each related story key:
+
+1. Check `MEMORY.md` in the current project root for any entry containing both "Proposed Work" and the story key. If found, note the page ID or URL.
+
+2. If not in MEMORY.md, search Confluence:
+   ```
+   searchConfluenceUsingCql:
+     cql: 'title ~ "Proposed Work" AND text ~ "<BPT2-XXXX>"'
+   ```
+
+3. If a Proposed Work page is found, prompt:
+   ```
+   Found Proposed Work page for BPT2-XXXX: "<page title>"
+   Archive it now that this story has shipped? (Yes / Skip)
+   ```
+
+4. **If Yes:** follow the `/docs:archive` command instructions to move the page to the Archive section under the project parent page.
+
+5. **If no page found or Skip:** continue to the next story silently.
+
+Skip this step entirely if no related stories have a Proposed Work page.
+
 ### Update memory
 
 Update the CAB session file to mark the deploy complete. Clear `Related stories` only after all story transitions are resolved (or explicitly skipped).
