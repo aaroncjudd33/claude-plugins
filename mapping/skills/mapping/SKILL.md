@@ -9,7 +9,7 @@ Background skill — do not run directly.
 
 ## Purpose
 
-When the user's message is not a slash command and the intended command is unclear, consult the phrase registry before asking for clarification or guessing. This registry maps natural-language phrases to specific plugin commands.
+When the user's message is not a slash command and the intended command is unclear, consult the phrase registry before asking for clarification or guessing. The registry maps natural-language phrases to specific plugin commands.
 
 ## When to trigger this lookup
 
@@ -18,57 +18,50 @@ Trigger condition: user sends a message that looks like an intent to run a comma
 Examples that should trigger a lookup:
 - "show me what's going on with my tickets"
 - "kick off a release"
-- "check my jira"
+- "start my day"
+- "what did I work on yesterday"
 
 Do NOT trigger when:
 - The user typed a slash command explicitly
 - The request is clearly a question, coding task, or explanation — not a command intent
 - The intent is already obvious from context
 
-## Registry file locations
+## Registry files
 
-Plugin-shipped defaults (versioned with each plugin):
-```
-~/.claude/plugins/marketplaces/<pluginMarketplaceName>/<plugin>/.claude-plugin/phrases.json
-```
+Two files, read in order (user file takes precedence on conflict):
 
-User-local additions (personal, not in the repo):
-```
-~/.claude/plugins/phrases/<plugin>.json
-```
+1. **Shipped defaults** (empty for new installs, may be populated in future plugin updates):
+   `~/.claude/plugins/marketplaces/<pluginMarketplaceName>/mapping/.claude-plugin/phrases.json`
+
+2. **User registry** (all real data lives here — fills in through use):
+   `~/.claude/plugins/phrases.json`
 
 Read `pluginMarketplaceName` from `~/.claude/plugins/user-config.json` → `paths.pluginMarketplaceName`. Default: `ajudd-claude-plugins`.
 
 ## Lookup procedure
 
-1. Read `~/.claude/plugins/user-config.json` → get `paths.pluginMarketplaceName`
-2. Read `~/.claude/plugins/marketplaces/<name>/.claude-plugin/marketplace.json` → list all plugin names
-3. For each plugin, read (if the file exists):
-   - `~/.claude/plugins/marketplaces/<name>/<plugin>/.claude-plugin/phrases.json` — shipped defaults
-   - `~/.claude/plugins/phrases/<plugin>.json` — user additions (take precedence on conflict)
-4. Flatten into a single map: phrase → command
-5. Match the user's input (semantic/fuzzy — use LLM judgment, not exact string match)
-6. Act on the result:
+1. Read both files (skip if not found)
+2. Merge into one map: phrase → command (user file wins on conflict)
+3. Match the user's input semantically against all phrases — use LLM judgment, not exact string match
+4. Act on the result:
 
 | Result | Action |
 |--------|--------|
-| One clear match | Run the command. Brief note: "Running /x:y — say something if that's wrong." |
+| One clear match | Run the command. Say: "Running /x:y — let me know if that's wrong." |
 | Multiple plausible matches | Ask: "Did you mean /x:y or /a:b?" |
-| No match found | Ask what command they wanted, then offer to add the phrase (see below) |
+| No match found | Ask what they wanted, then offer to add the phrase |
 
 ## Auto-add flow (no match found)
 
-When no match is found:
-1. Ask: "I don't have a mapping for that. Which command did you want? (e.g., /story:dashboard)"
-2. Once the user confirms: call `/mapping:add` with the phrase and command
+1. Ask: "I don't have a mapping for that. Which command did you want?"
+2. Once confirmed: append the phrase to `~/.claude/plugins/phrases.json` under the correct command key
 3. Confirm: "Added — I'll recognize that next time."
 
 ## Inline shortcut
 
-When the user says something like:
+When the user says:
 - "that should have been /story:dashboard"
 - "add that phrase to dashboard"
 - "remember that for /release:create"
-- "that phrase should trigger X"
 
-...treat it as an immediate add: use the most recent ambiguous phrase as the phrase to register, the named command as the target. No confirmation needed — just add and confirm.
+...immediately add using the most recent ambiguous phrase as the phrase and the named command as the target. No confirmation prompt — just add and confirm.

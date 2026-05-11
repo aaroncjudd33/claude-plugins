@@ -21,6 +21,7 @@ Check each of the following and note which are present:
 |-----------------|-----------------|
 | `~/.claude/plugins/user-config.json` | Your identity — name, email, Jira ID, Teams ID |
 | `~/.claude/plugins/team.json` | Team registry — colleague roles and IDs |
+| `~/.claude/plugins/phrases.json` | Phrase registry — natural language → command mappings |
 | `~/.claude/browser-links.json` | Saved browser links and workspaces |
 | `~/.claude/jira-stories.json` | Story visibility and hide settings |
 
@@ -35,6 +36,7 @@ Show a summary of everything found:
 
   ~/.claude/plugins/user-config.json       (your identity config)
   ~/.claude/plugins/team.json              (team registry)
+  ~/.claude/plugins/phrases.json           (phrase → command registry)
   ~/.claude/browser-links.json             (browser workspaces and links)
   ~/.claude/jira-stories.json              (story visibility settings)
 
@@ -63,12 +65,14 @@ Delete each item that exists, in this order:
 
 1. `~/.claude/plugins/user-config.json`
 2. `~/.claude/plugins/team.json`
-3. `~/.claude/browser-links.json`
-4. `~/.claude/jira-stories.json`
+3. `~/.claude/plugins/phrases.json`
+4. `~/.claude/browser-links.json`
+5. `~/.claude/jira-stories.json`
 
 Report each deletion:
 - "Deleted ~/.claude/plugins/user-config.json"
 - "Deleted ~/.claude/plugins/team.json"
+- "Deleted ~/.claude/plugins/phrases.json"
 - "Deleted ~/.claude/browser-links.json"
 - "Deleted ~/.claude/jira-stories.json"
 
@@ -88,6 +92,7 @@ To also remove the installed plugins:
   claude plugin uninstall docs@ajudd-claude-plugins
   claude plugin uninstall e2e@ajudd-claude-plugins
   claude plugin uninstall links@ajudd-claude-plugins
+  claude plugin uninstall mapping@ajudd-claude-plugins
 
 To start fresh (keep plugins installed, just re-configure):
   /setup:onboarding
