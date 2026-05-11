@@ -48,7 +48,7 @@ Use `searchJiraIssuesUsingJql` on cloud ID `9de6eb2b-2683-44e6-89ff-c622027e09b4
 
 **Query 1 — Currently assigned to me:**
 ```jql
-assignee = "{ACCOUNT_ID}" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, duedate ASC
+project = BPT2 AND assignee = "{ACCOUNT_ID}" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, duedate ASC
 ```
 
 **Query 2 — Previously assigned to me (reassigned to someone else):**
@@ -92,9 +92,8 @@ Merge all results from all three queries into a single flat list. Group by statu
 4. Ready For Test
 5. QA In-Progress
 6. Ready for UAT
-7. Implementation
-8. Approved for Release
-9. Backlog
+7. Approved for Release
+8. Backlog
 
 Any status not in this list falls after Backlog, alphabetically.
 

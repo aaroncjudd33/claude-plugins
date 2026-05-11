@@ -26,7 +26,7 @@ Reference data and formatting rules for the morning setup routine.
 ### Query 1 — Currently assigned to me
 
 ```jql
-assignee = "{ACCOUNT_ID}" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, duedate ASC
+project = BPT2 AND assignee = "{ACCOUNT_ID}" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, duedate ASC
 ```
 
 ### Query 2 — Previously assigned to me (reassigned to someone else)

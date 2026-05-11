@@ -141,7 +141,7 @@ Do not add extra fields without updating this schema.
 
 **Currently assigned to me:**
 ```jql
-assignee = "{ACCOUNT_ID}" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, duedate ASC
+project = BPT2 AND assignee = "{ACCOUNT_ID}" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, duedate ASC
 ```
 
 **Previously assigned (reassigned to someone else, last 30 days):**

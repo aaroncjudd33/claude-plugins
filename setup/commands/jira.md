@@ -22,7 +22,7 @@ Run three JQL queries in parallel using `searchJiraIssuesUsingJql`. Request fiel
 
 **Query 1 — My tickets:**
 ```jql
-assignee = "{ACCOUNT_ID}" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, duedate ASC
+project = BPT2 AND assignee = "{ACCOUNT_ID}" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, duedate ASC
 ```
 
 **Query 2 — Handed off (reassigned):**
