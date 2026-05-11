@@ -44,6 +44,8 @@ Read `~/.claude/jira-stories.json`. If it doesn't exist, start with an empty obj
 
 <!-- CANONICAL SOURCE: story/skills/story/SKILL.md — update queries there first, then sync here and in setup/commands/jira.md, setup/commands/local.md, setup/skills/setup/SKILL.md. -->
 
+**Always run all four queries live.** Never reuse Jira results from earlier in the session — the user opens the dashboard when something has changed and expects current data.
+
 Use `searchJiraIssuesUsingJql` on cloud ID `9de6eb2b-2683-44e6-89ff-c622027e09b4`. Run all four queries in parallel.
 
 **Query 1 — Currently assigned to me (BPT2):**
