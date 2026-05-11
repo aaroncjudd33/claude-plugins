@@ -90,9 +90,11 @@ Merge all results from all three queries into a single flat list. Group by statu
 2. Ready For Work
 3. In Progress
 4. Ready For Test
-5. Ready for UAT
-6. Approved for Release
-7. Backlog
+5. QA In-Progress
+6. Ready for UAT
+7. Implementation
+8. Approved for Release
+9. Backlog
 
 Any status not in this list falls after Backlog, alphabetically.
 
