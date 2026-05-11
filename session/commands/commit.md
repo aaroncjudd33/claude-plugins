@@ -30,6 +30,7 @@ Read `~/.claude/memory/sessions/<slug>/<name>.md` and extract:
 | plugin | `~/.claude/plugins/marketplaces/ajudd-claude-plugins` |
 | story | current working directory (work repo) |
 | cab | current working directory |
+| personal | current working directory |
 | general | current working directory |
 
 Run from the appropriate directory:
@@ -84,7 +85,19 @@ Before posting, check if the most recent Jira comment already covers this commit
 
 **plugin / personal / general:** Skip.
 
-### 3. Memory
+### 3. History Entry
+
+Compose a 1-sentence description of what was accomplished in this commit. Write it as a complete thought that stands alone without conversation context.
+
+Append to `~/.claude/memory/sessions/<slug>/_history.md` (create the file if it does not exist, with header `# History — <slug>`):
+
+```
+[YYYY-MM-DD] <session-name> — <accomplished sentence>
+```
+
+This entry becomes the value for `Last worked on` in the session file.
+
+### 4. Memory
 
 Review the conversation since the last checkpoint/commit for anything worth saving:
 - Feedback, corrections, or rules established
@@ -93,7 +106,7 @@ Review the conversation since the last checkpoint/commit for anything worth savi
 
 Save what's missing. Report: "Saved: [list]" or "Memory: nothing new to save."
 
-### 4. Scope Check
+### 5. Scope Check
 
 Read the `Scope:` field from the session file. If the field is missing or the session type is `general`, skip this step.
 
@@ -119,7 +132,7 @@ If Yes: append to `~/.claude/memory/sessions/<target-slug>/_inbox.md`:
 
 Create the file if it does not exist, starting with `# Inbox — <target-slug>` as the first line.
 
-### 5. Session State
+### 6. Session State
 
 Write `~/.claude/memory/sessions/<slug>/<name>.md` with current state:
 
@@ -131,17 +144,47 @@ updated: [today's date]
 # Session State — <name>
 
 - **Type:** [type]
+- **Mode:** [planning / coding / both]   ← preserve from session file; omit if not present (backward compat)
 - **Name:** [name]
+- **Title:** [Jira summary]   ← story/cab only; omit for other types
 - **Teams chat:** [teams_chat or "none"]
 - **Project:** [project path]
-- **Scope:** [scope path]   ← story/cab: pwd; plugin: plugin subfolder path; omit for general
+- **Scope:** [scope path]   ← story/cab/personal: pwd; plugin: ~/.claude/plugins/marketplaces/ajudd-claude-plugins/<name>; omit for general
+- **Status:** in-progress
 - **Branch:** [branch or "n/a"]
-- **Last worked on:** [1 sentence — what was just committed]
+- **Last worked on:** [most recent entry from _history.md — do not synthesize, read from file]
 - **Open items:** [bullet list, or "none"]
 - **Next step:** [concrete next action]
 - **Plugin reviewed:** [yes / no]   ← plugin type only, omit for other types
 - **Related CAB:** [CAB-XXX or "none"]   ← story type only, omit for other types
+- **Post-deployment checks:**   ← story type only; preserve existing value exactly as-is; omit if field not present
+  - [ ] <check description>
+  - [x] <acknowledged check description>
 - **Related stories:** [BPT2-XXXX, BPT2-YYYY or "none"]   ← cab type only, omit for other types
+- **linked_sessions:** [<session-name>, ...]   ← preserve as-is; omit if not present
 ```
 
 Print the summary to screen.
+
+### 7. Work Log
+
+Append to `~/.claude/memory/worklog/<YYYY-MM-DD>.md` (create the file and `~/.claude/memory/worklog/` directory if they don't exist).
+
+Use today's date for the filename. Use the current local time (HH:MM) for the entry header.
+
+Entry format varies by type:
+
+- **story/cab with title:** `## <HH:MM> — <name> — <title> (<type>)`
+- **story/cab without title** (older session files): `## <HH:MM> — <name> (<type>)`
+- **plugin:** `## <HH:MM> — <name>` (no type label — the name is self-identifying)
+- **personal/general:** `## <HH:MM> — <name> (<type>)`
+
+```markdown
+## <HH:MM> — <formatted header per above>
+
+**Accomplished:** <most recent entry from _history.md>
+
+**Open items:** <open items from session state, or "none">
+```
+
+Multiple entries per day are expected — always append, never overwrite.
