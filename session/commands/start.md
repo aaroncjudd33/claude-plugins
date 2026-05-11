@@ -95,6 +95,7 @@ Same global inbox compact display as above if `_inbox.md` has items.
   ```
   Resuming <name>
     Branch:          [branch]
+    Mode:            [planning / coding / both]
     Open items:      [bullets or "none"]
     Next step:       [first inbox item description, or "none"]
     Related CAB:     [CAB-XXX]   ← story type only, omit if none
@@ -206,6 +207,18 @@ For **general**, also ask for a category if not obvious: Research / Prototype / 
 
 For **personal**, no category prompt — and Teams chat is always `none` (no lookup or creation).
 
+### 6a. Session Mode
+
+Ask: **"Mode? coding / planning / both"**
+
+- **coding** — full access; implement freely *(default — use if not sure)*
+- **planning** — read-only; design, analyze, write to inbox — no code edits or file writes
+- **both** — full access; planning and coding in the same session
+
+For **resume**: read `Mode` from the existing session file and show it in the resume block. Offer to change it: "Mode is [current] — change? (yes / keep)". Prompt for the new mode only if the user says yes.
+
+Store the result as `mode` for use in Step 8.
+
 ### 7. Teams Chat Setup
 
 Look in `~/.claude/plugins/known-chats.md` for a chat whose Name or Topic matches the expected `teams_chat` value and has `Active=yes`. If the file does not exist, treat it as empty and proceed to the Not found branch.
@@ -232,6 +245,7 @@ updated: [today's date]
 # Session State — <name>
 
 - **Type:** [type]
+- **Mode:** [planning / coding / both]
 - **Name:** [name]
 - **Title:** [Jira summary]   ← story/cab only — from getJiraIssue; omit for other types
 - **Category:** [category]   ← general only, omit for other types
@@ -261,6 +275,12 @@ BPT2-1234
 `_active` is a convenience hint for `session:start` resume suggestions only — it is not read by `session:checkpoint` or `session:finish` to determine session identity.
 
 ### 9. Route Based on Choice
+
+**If Mode is `planning`**, print before routing:
+```
+PLANNING MODE — No code edits this session.
+Any implementation work should be routed to this session's inbox for a coding session to pick up.
+```
 
 **Plugin — existing plugin:**
 1. Read `plugin.json`, all command `.md` files, and `SKILL.md` if present

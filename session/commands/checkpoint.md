@@ -160,6 +160,7 @@ updated: [today's date]
 # Session State — <name>
 
 - **Type:** [type]
+- **Mode:** [planning / coding / both]   ← preserve from session file; omit if not present (backward compat)
 - **Name:** [name]
 - **Title:** [Jira summary]   ← story/cab only; omit for other types
 - **Category:** [category]   ← general only, omit for other types
