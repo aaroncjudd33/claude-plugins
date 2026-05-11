@@ -1,0 +1,65 @@
+{
+  "/story:dashboard": {
+    "description": "Show open Jira stories with current status",
+    "phrases": [
+      "show my stories",
+      "story dashboard",
+      "what's the status of my stories",
+      "what's going on with my tickets",
+      "check my tickets",
+      "what changed in jira",
+      "story status",
+      "how are my stories doing",
+      "jira update",
+      "show open stories"
+    ]
+  },
+  "/story:create": {
+    "description": "Create a new Jira story in BPT2",
+    "phrases": [
+      "create a story",
+      "new story",
+      "file a ticket",
+      "add a story",
+      "create a ticket",
+      "write up a story"
+    ]
+  },
+  "/story:update": {
+    "description": "Update a Jira story — status, fields, or transition",
+    "phrases": [
+      "update the story",
+      "update my ticket",
+      "transition the story",
+      "change story status",
+      "move story to",
+      "update story fields"
+    ]
+  },
+  "/story:comment": {
+    "description": "Add a comment to a Jira story",
+    "phrases": [
+      "comment on the story",
+      "add a comment to jira",
+      "post a jira comment",
+      "leave a comment on the ticket"
+    ]
+  },
+  "/story:workspace": {
+    "description": "Open story workspace in browser",
+    "phrases": [
+      "open story workspace",
+      "open the story links",
+      "story workspace"
+    ]
+  },
+  "/story:ready": {
+    "description": "Show BPT2 stories in Ready For Work status",
+    "phrases": [
+      "what's ready to pick up",
+      "ready for work stories",
+      "available stories",
+      "what can I work on next"
+    ]
+  }
+}
