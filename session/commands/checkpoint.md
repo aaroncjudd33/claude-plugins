@@ -205,6 +205,28 @@ Inbox item complete?
 
 If no `[inbox]` items exist in Open items, skip silently.
 
+### 7a. Inbox Sweep
+
+For **plugin sessions**: read `~/.claude/memory/sessions/<slug>/_inbox_<name>.md`.
+For **all other sessions**: read `~/.claude/memory/sessions/<slug>/_inbox.md`.
+
+If the file has content beyond the header, display each item and ask which were addressed since the last checkpoint:
+
+```
+Inbox — did you address any of these this session?
+  [1] [date] from <source> — <description>
+  [2] [date] from <source> — <description>
+  Mark done (numbers, 'all', or 'skip')
+```
+
+For each item marked done:
+- Append to the archive file with `[DONE YYYY-MM-DD]` stamp. Plugin: `_inbox_<name>_archive.md`; others: `_inbox_archive.md`. Create the archive file with the appropriate header if it does not exist.
+- Remove the entry from the inbox file.
+
+Rewrite the inbox file after all removals, preserving the header line.
+
+If the inbox is empty or header-only, skip silently.
+
 ### 8. Work Log
 
 Append to `~/.claude/memory/worklog/<YYYY-MM-DD>.md` (create the file and `~/.claude/memory/worklog/` directory if they don't exist).
