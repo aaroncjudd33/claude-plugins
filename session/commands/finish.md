@@ -1,6 +1,6 @@
 ---
 name: finish
-description: End-of-day close — full checklist including Jira, Teams, Confluence, browser, and session summary.
+description: End-of-day close — full checklist; Jira, Teams, Confluence, and browser steps run conditionally by session type.
 ---
 
 # Session Finish
@@ -100,14 +100,14 @@ yl-cdk check:
 - If yes: read `~/.claude/plugins/marketplaces/ajudd-claude-plugins/comms/skills/comms/references/teams-html-guide.md`, draft using the Standard Message Template, preview, wait for confirmation before sending
 
 Story and cab: prompt automatically.
-Plugin, personal, and general: only prompt if the user asks or something significant was resolved.
+Plugin, personal, and general: skip unless the user explicitly asks.
 
 ### 6. Confluence
 
-**All types:** If this session's context has a linked Confluence page, prompt:
+**story/cab only:** If this session's context has a linked Confluence page, prompt:
 "Does anything from this session need to go to Confluence?"
 
-Skip if no Confluence page is set up for this session's context.
+**Plugin, personal, and general:** Skip unless the user explicitly asks.
 
 ### 6a. Story Doc *(story type only)*
 
