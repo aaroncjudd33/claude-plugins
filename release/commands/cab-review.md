@@ -55,7 +55,26 @@ Call `editJiraIssue` to set the assignee to that account ID.
 
 If the API rejects the edit (the card may be locked once in Change Review), report: "Assignee could not be set via API — assign Sudhakar Seerapu manually in Jira."
 
-### 5. Update session state
+### 5. Post Teams notification
+
+Read `~/.claude/memory/sessions/<slug>/CAB-XXXX.md` for the `Teams chat` field. Look up the chat ID in `~/.claude/plugins/known-chats.md`.
+
+If `Teams chat` is `none` or not found in known-chats, skip this step.
+
+Read `~/.claude/plugins/marketplaces/ajudd-claude-plugins/comms/skills/comms/references/teams-html-guide.md` before drafting.
+
+Draft a message with:
+- CAB key + Jira link
+- Deploy date/time in both ET and MT (read `customfield_13137` from the CAB card; convert to both timezones)
+- BPT2 stories bundled: key + summary for each
+- PR link (if present)
+- Signature: `<p><em>Posted by Claude Code on behalf of {USER_NAME}</em></p>`
+
+**Preview the full message and wait for explicit "yes" before sending.**
+
+Send via yl-msoffice `send_chat_message` → `confirm_action`.
+
+### 6. Update session state
 
 Update `~/.claude/memory/sessions/<slug>/CAB-XXXX.md`:
 - `Phase 4 complete`: yes
@@ -65,4 +84,5 @@ Update `~/.claude/memory/sessions/<slug>/CAB-XXXX.md`:
 Report:
 - CAB card transitioned to Change Review
 - Assignee set to Sudhakar (or manual action required)
+- Teams notification sent (or skipped)
 - Next: wait for approval (Implementation status), then run `/release:deploy`

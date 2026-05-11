@@ -73,9 +73,9 @@ gh pr create --base master --head release/CAB-XXXX
 
 Store the PR number and URL.
 
-Open the PR in the browser (skip on first-deploy):
+Open the PR in the browser (skip on first-deploy). Read `~/.claude/browser-links.json` and look up `prefixDefaults["pr"]` to resolve the window name (default: `"GitHub"` if not found):
 ```bash
-powershell -ExecutionPolicy Bypass -File "~\.claude\scripts\Open-EdgeUrl.ps1" -Url "<PR-URL>" -WindowName "GitHub"
+powershell -ExecutionPolicy Bypass -File "~\.claude\scripts\Open-EdgeUrl.ps1" -Url "<PR-URL>" -WindowName "<resolved-window-name>"
 ```
 
 ### 5. Update session state

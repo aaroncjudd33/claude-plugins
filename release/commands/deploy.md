@@ -39,6 +39,21 @@ Check the CAB card status using `getJiraIssue`. If not in Implementation, stop a
 
 Confirm with the user before proceeding past this point.
 
+### 2a. Create deploy calendar invite
+
+Read `~/.claude/plugins/team.json`. Collect all members with role `cab-invite` — these are the **only** attendees. Do not use story chat members, dev team members, or any other source.
+
+Get the deploy date/time from `customfield_13137` on the CAB card (already fetched in Step 2).
+
+Create a calendar event via yl-msoffice `create_event`:
+- **Title:** `[Deploy] <CAB card summary>`
+- **Start:** deploy date/time from `customfield_13137`
+- **Duration:** 1 hour
+- **Body:** `Production deployment for <CAB-KEY>. Stories: <BPT2-XXXX, ...>. PR: <PR URL>.`
+- **Attendees:** `email` of each `cab-invite` member from team.json
+
+Call `confirm_action` to send the invite (required when attendees are specified).
+
 ---
 
 ## CDK Service Flow

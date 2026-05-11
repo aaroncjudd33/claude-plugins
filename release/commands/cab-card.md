@@ -99,9 +99,9 @@ Call `createJiraIssue` with summary and all non-ADF fields (option IDs, user IDs
 
 Store the returned CAB card key (e.g. `CAB-8994`).
 
-Open the CAB card in the browser:
+Open the CAB card in the browser. First read `~/.claude/browser-links.json` and look up `prefixDefaults["cab"]` to resolve the window name (default: `"Cab"` if not found):
 ```bash
-powershell -ExecutionPolicy Bypass -File "~\.claude\scripts\Open-EdgeUrl.ps1" -Url "https://younglivingeo.atlassian.net/browse/<CAB-KEY>" -WindowName "Jira"
+powershell -ExecutionPolicy Bypass -File "~\.claude\scripts\Open-EdgeUrl.ps1" -Url "https://younglivingeo.atlassian.net/browse/<CAB-KEY>" -WindowName "<resolved-window-name>"
 ```
 
 ### 7. Assign and transition the BPT2 CAB story
