@@ -44,9 +44,9 @@ Read `~/.claude/jira-stories.json`. If it doesn't exist, start with an empty obj
 
 <!-- CANONICAL SOURCE: story/skills/story/SKILL.md — update queries there first, then sync here and in setup/commands/jira.md, setup/commands/local.md, setup/skills/setup/SKILL.md. -->
 
-Use `searchJiraIssuesUsingJql` on cloud ID `9de6eb2b-2683-44e6-89ff-c622027e09b4`. Run all three queries in parallel.
+Use `searchJiraIssuesUsingJql` on cloud ID `9de6eb2b-2683-44e6-89ff-c622027e09b4`. Run all four queries in parallel.
 
-**Query 1 — Currently assigned to me:**
+**Query 1 — Currently assigned to me (BPT2):**
 ```jql
 project = BPT2 AND assignee = "{ACCOUNT_ID}" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, duedate ASC
 ```
@@ -61,9 +61,14 @@ project = BPT2 AND assignee WAS "{ACCOUNT_ID}" AND assignee != "{ACCOUNT_ID}" AN
 project = BPT2 AND assignee WAS "{ACCOUNT_ID}" AND assignee is EMPTY AND updated >= -30d AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated) ORDER BY status ASC, updated DESC
 ```
 
+**Query 4 — CAB cards assigned to me:**
+```jql
+project = CAB AND assignee = "{ACCOUNT_ID}" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated, Implemented) ORDER BY status ASC, updated DESC
+```
+
 Request fields: `summary, status, assignee, duedate, priority`
 
-Merge Query 2 and Query 3 results into a single "HANDED OFF" group for display.
+Queries 1–3 feed the **Stories** section. Query 4 feeds the **CAB Cards** section. Apply the same registry tracking (auto-populate, change detection, lastSeen updates) to CAB results as to BPT2 results.
 
 ### 3. Update Registry & Detect Changes
 
@@ -83,7 +88,9 @@ Write the updated registry back to `~/.claude/jira-stories.json`.
 
 ### 5. Format Output
 
-Merge all results from all three queries into a single flat list. Group by status only — do not split by "assigned to me" vs "handed off". Show assignee inline on each row so ownership is still visible.
+Render two separate sections. Stories first, CAB cards second.
+
+**Stories section** — merge Queries 1–3 into a flat list, group by status. Show assignee inline so ownership is visible.
 
 **Status display order** (top to bottom):
 1. Blocked
@@ -97,11 +104,13 @@ Merge all results from all three queries into a single flat list. Group by statu
 
 Any status not in this list falls after Backlog, alphabetically.
 
+**CAB cards section** — Query 4 results, grouped by status using the same ordering rules.
+
 Use this format:
 
 ```
-My Jira Stories
-===============
+My Stories
+==========
 
 BLOCKED
   BPT2-XXXX — Summary
@@ -114,12 +123,16 @@ READY FOR WORK
 IN PROGRESS
   ...
 
-BACKLOG
-  BPT2-XXXX — Summary
-    Assignee: <name>  |  Due: <date or "none">  |  Priority: <priority>
+
+CAB Cards
+=========
+
+<STATUS>
+  CAB-XXXX — Summary
+    Status: <status>  |  Assignee: <name>  |  Priority: <priority>
 ```
 
-Omit any status group that has no stories.
+Omit any status group that has no items. If there are no CAB cards, omit the CAB Cards section entirely.
 
 ### 6. Changes Section
 
@@ -145,7 +158,7 @@ If no changes, omit this section entirely.
 
 At the bottom, print a one-line count:
 ```
-Total: <N> stories
+Total: <N> stories, <N> CAB cards
 ```
 
-If stories are hidden (and not using `-all`), append: `, <N> hidden (use -all to show)`
+Omit the CAB cards count if zero. If stories are hidden (and not using `-all`), append: `, <N> hidden (use -all to show)`
