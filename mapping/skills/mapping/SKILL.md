@@ -1,78 +1,93 @@
 ---
 name: mapping
-description: Background skill — do not run directly. Use /mapping:add, /mapping:list, /mapping:remove for manual phrase management. Loaded automatically to resolve ambiguous user input to the correct command.
+description: Central routing and recording layer — maps natural language input to plugin commands. Fires whenever Claude routes a user message to a command without an explicit slash command being typed.
 ---
 
 # Mapping Skill
 
-Background skill — do not run directly.
-
 ## Purpose
 
-When the user's message is not a slash command and the intended command is unclear, consult the phrase registry before asking for clarification or guessing. The registry maps natural-language phrases to specific plugin commands.
+Central routing and recording layer for plugin commands. Fires whenever Claude determines a user's natural language message maps to a plugin command — not just for ambiguous input, but for any NL → command routing. Records every successful mapping so the registry grows automatically through use.
 
-## When to trigger this lookup
+## When to fire
 
-Trigger condition: user sends a message that looks like an intent to run a command, but does not use `/plugin:command` syntax, and you are not already confident about what they want.
+**Fire when:** the user's message expresses intent to run a command and they did NOT type a slash command explicitly.
 
-Examples that should trigger a lookup:
-- "show me what's going on with my tickets"
-- "kick off a release"
-- "start my day"
-- "what did I work on yesterday"
-
-Do NOT trigger when:
-- The user typed a slash command explicitly
-- The request is clearly a question, coding task, or explanation — not a command intent
-- The intent is already obvious from context
+**Do NOT fire when:**
+- User typed a slash command explicitly (`/story:dashboard`)
+- Request is clearly a question, coding task, explanation, or normal conversation — not command intent
+- Claude is already mid-execution of a command
 
 ## Registry files
 
-Two files, read in order (user file takes precedence on conflict):
+Two files, read in order:
 
-1. **Shipped defaults** (empty for new installs, may be populated in future plugin updates):
+1. **Shipped defaults** (read-only — starter phrases, no timestamps):
    `~/.claude/plugins/marketplaces/<pluginMarketplaceName>/mapping/.claude-plugin/phrases.json`
 
-2. **User registry** (all real data lives here — fills in through use):
+2. **User registry** (all tracked data lives here — grows through use):
    `~/.claude/plugins/phrases.json`
 
 Read `pluginMarketplaceName` from `~/.claude/plugins/user-config.json` → `paths.pluginMarketplaceName`. Default: `ajudd-claude-plugins`.
 
-## Lookup procedure
+Read both files (skip if missing). Use merged phrase pool for routing. Record only to user registry.
 
-1. Read both files (skip if not found)
-2. Merge into one map: phrase text → command (user file wins on conflict). Each entry in `phrases` is an object — read its `text` field for matching.
-3. Match the user's input semantically against all phrase texts — use LLM judgment, not exact string match
-4. Act on the result:
+## Step 1 — Determine command and confidence
 
-| Result | Action |
-|--------|--------|
-| One clear match | Run the command. Say: "Running /x:y — let me know if that's wrong." |
-| Multiple plausible matches | Ask: "Did you mean /x:y or /a:b?" |
-| No match found | Ask what they wanted, then offer to add the phrase |
+From the user's message, determine the best target command and your confidence:
 
-## Timestamp — after a successful match
+| Level | Meaning |
+|-------|---------|
+| **High** | One clear match — no reasonable alternative |
+| **Plausible** | Best guess, but another command could fit |
+| **Ambiguous** | Two or more commands are equally plausible |
 
-When a phrase matches one clear command and you run it, update `~/.claude/plugins/phrases.json`:
-1. Read the file
-2. Find the matched command key (e.g. `/story:dashboard`)
-3. Within that key's `phrases` array, find the object whose `text` matched
-4. Set that phrase object's `last_used` to today's date in `YYYY-MM-DD` format
-5. Write the file back
+## Step 2 — Act on confidence
 
-Skip silently if the key or phrase object doesn't exist or the file isn't writable.
+| Confidence | Action |
+|-----------|--------|
+| High | Run command silently → record (Step 3) |
+| Plausible | Run command, append "— let me know if that's wrong" → record (Step 3) |
+| Ambiguous | Ask: "Did you mean /x:y or /a:b?" → record only after user confirms |
 
-## Auto-add flow (no match found)
+## Step 3 — Record the mapping
 
-1. Ask: "I don't have a mapping for that. Which command did you want?"
-2. Once confirmed: append `{"text": "...", "added_date": "YYYY-MM-DD"}` to the command's `phrases` array in `~/.claude/plugins/phrases.json` (no `last_used` yet — set on first match)
-3. Confirm: "Added — I'll recognize that next time."
+After routing is decided, record to `~/.claude/plugins/phrases.json`:
+
+**3a. Extract the phrase** — normalize the user's input:
+- Short input (≤8 words): use verbatim
+- Long input: extract the intent-bearing core (e.g. "show me what's going on with my stories and flag overdue ones" → "show me what's going on with my stories")
+
+**3b. Check user registry for this command's phrases:**
+
+- **Semantic match found** — the normalized phrase is similar to an existing phrase for this command → update that phrase object's `last_used` to today. Done.
+- **No semantic match** — add a new phrase object (no `last_used` yet — set on next match):
+  ```json
+  { "text": "normalized phrase", "added_date": "YYYY-MM-DD" }
+  ```
+- **Phrase matches a DIFFERENT command** — surface conflict before proceeding:
+  `"[phrase]" is mapped to /other:command. Route to /intended:command instead?`
+  - Yes: remove from old command, add to new command, run intended command
+  - No: run intended command this time, leave registry unchanged
+
+**3c. Write** the updated user registry. Skip silently if write fails.
+
+## Correction flow
+
+When the user signals the wrong command fired ("no", "stop", "that should have been /x:y", "wrong command", "halt"):
+
+1. Stop current action if still in progress
+2. Identify the intended command (ask if not stated)
+3. Find the phrase just recorded under the wrong command in `~/.claude/plugins/phrases.json`
+4. Remove it from the wrong command's `phrases` array
+5. Add it to the correct command's `phrases` array with `added_date: today`
+6. Run the correct command
+7. Confirm: `Moved "[phrase]" → /correct:command`
 
 ## Inline shortcut
 
-When the user says:
-- "that should have been /story:dashboard"
-- "add that phrase to dashboard"
-- "remember that for /release:create"
+When the user explicitly names the right command ("that should have been /story:dashboard", "add that to release", "remember that for /setup:local"):
 
-...immediately add using the most recent ambiguous phrase as the phrase and the named command as the target. No confirmation prompt — just add and confirm.
+- Use the most recently routed phrase as the phrase text
+- Execute correction flow steps 3–7 above
+- No confirmation prompt needed

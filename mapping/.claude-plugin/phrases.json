@@ -1,1 +1,154 @@
-{}
+{
+  "/story:dashboard": {
+    "description": "Show open Jira stories with current status",
+    "phrases": [
+      { "text": "show my stories", "added_date": "2026-05-12" },
+      { "text": "what's on my plate", "added_date": "2026-05-12" },
+      { "text": "story status", "added_date": "2026-05-12" }
+    ]
+  },
+  "/story:create": {
+    "description": "Create a new Jira story in BPT2",
+    "phrases": [
+      { "text": "create a story", "added_date": "2026-05-12" },
+      { "text": "file a ticket", "added_date": "2026-05-12" }
+    ]
+  },
+  "/story:update": {
+    "description": "Update a Jira story — status, fields, or transition",
+    "phrases": [
+      { "text": "update the story", "added_date": "2026-05-12" },
+      { "text": "move story to", "added_date": "2026-05-12" }
+    ]
+  },
+  "/story:comment": {
+    "description": "Add a comment to a Jira story",
+    "phrases": [
+      { "text": "comment on the story", "added_date": "2026-05-12" }
+    ]
+  },
+  "/story:workspace": {
+    "description": "Open story workspace in browser",
+    "phrases": [
+      { "text": "story workspace", "added_date": "2026-05-12" }
+    ]
+  },
+  "/story:ready": {
+    "description": "Show BPT2 stories in Ready For Work status",
+    "phrases": [
+      { "text": "what's ready to pick up", "added_date": "2026-05-12" },
+      { "text": "what can I work on next", "added_date": "2026-05-12" }
+    ]
+  },
+  "/session:start": {
+    "description": "Start a working session",
+    "phrases": [
+      { "text": "start my session", "added_date": "2026-05-12" },
+      { "text": "start a session", "added_date": "2026-05-12" }
+    ]
+  },
+  "/session:checkpoint": {
+    "description": "Save session state mid-session",
+    "phrases": [
+      { "text": "checkpoint", "added_date": "2026-05-12" },
+      { "text": "save my session", "added_date": "2026-05-12" }
+    ]
+  },
+  "/session:finish": {
+    "description": "End the working session",
+    "phrases": [
+      { "text": "end the session", "added_date": "2026-05-12" },
+      { "text": "wrap up", "added_date": "2026-05-12" }
+    ]
+  },
+  "/session:worklog": {
+    "description": "Show work log entries for a given day",
+    "phrases": [
+      { "text": "what did I work on", "added_date": "2026-05-12" },
+      { "text": "what did I do today", "added_date": "2026-05-12" }
+    ]
+  },
+  "/release:create": {
+    "description": "Start a new production release — creates CAB card",
+    "phrases": [
+      { "text": "create a release", "added_date": "2026-05-12" },
+      { "text": "kick off a release", "added_date": "2026-05-12" }
+    ]
+  },
+  "/release:deploy": {
+    "description": "Execute a production deployment",
+    "phrases": [
+      { "text": "deploy to prod", "added_date": "2026-05-12" },
+      { "text": "run the deployment", "added_date": "2026-05-12" }
+    ]
+  },
+  "/release:cab-review": {
+    "description": "Submit the CAB card for review",
+    "phrases": [
+      { "text": "submit the cab", "added_date": "2026-05-12" },
+      { "text": "send cab for review", "added_date": "2026-05-12" }
+    ]
+  },
+  "/setup:local": {
+    "description": "Morning setup dashboard — AWS login, Jira briefing, calendar",
+    "phrases": [
+      { "text": "start my day", "added_date": "2026-05-12" },
+      { "text": "morning setup", "added_date": "2026-05-12" }
+    ]
+  },
+  "/setup:aws": {
+    "description": "AWS SSO login",
+    "phrases": [
+      { "text": "log into aws", "added_date": "2026-05-12" },
+      { "text": "aws login", "added_date": "2026-05-12" }
+    ]
+  },
+  "/comms:message": {
+    "description": "Send a Teams message",
+    "phrases": [
+      { "text": "send a teams message", "added_date": "2026-05-12" },
+      { "text": "message the team", "added_date": "2026-05-12" }
+    ]
+  },
+  "/comms:sweep": {
+    "description": "Clean the inbox — route and triage emails",
+    "phrases": [
+      { "text": "sweep my inbox", "added_date": "2026-05-12" },
+      { "text": "triage my email", "added_date": "2026-05-12" }
+    ]
+  },
+  "/links:open": {
+    "description": "Open a named link or workspace in Edge",
+    "phrases": [
+      { "text": "open the link", "added_date": "2026-05-12" },
+      { "text": "open my workspace", "added_date": "2026-05-12" }
+    ]
+  },
+  "/mapping:add": {
+    "description": "Register a phrase to a command",
+    "phrases": [
+      { "text": "add a phrase", "added_date": "2026-05-12" },
+      { "text": "register a phrase", "added_date": "2026-05-12" }
+    ]
+  },
+  "/mapping:list": {
+    "description": "Show registered phrases",
+    "phrases": [
+      { "text": "show my phrases", "added_date": "2026-05-12" },
+      { "text": "list phrases", "added_date": "2026-05-12" }
+    ]
+  },
+  "/mapping:remove": {
+    "description": "Remove a user phrase from the registry",
+    "phrases": [
+      { "text": "remove a phrase", "added_date": "2026-05-12" }
+    ]
+  },
+  "/mapping:cleanup": {
+    "description": "Review and remove stale phrases",
+    "phrases": [
+      { "text": "clean up phrases", "added_date": "2026-05-12" },
+      { "text": "cleanup mapping", "added_date": "2026-05-12" }
+    ]
+  }
+}
