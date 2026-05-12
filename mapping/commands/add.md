@@ -24,11 +24,12 @@ Register a phrase so Claude recognizes it as a specific command next time.
 
 5. **Add the phrase:**
    - If the command key already exists, append to its `phrases` array
-   - If the command key doesn't exist, create it:
+   - If the command key doesn't exist, create it with `added_date` set to today (no `last_used` yet — that's set on first match):
      ```json
      {
        "/story:dashboard": {
          "description": "Show open Jira stories with current status",
+         "added_date": "2026-05-12",
          "phrases": ["new phrase here"]
        }
      }

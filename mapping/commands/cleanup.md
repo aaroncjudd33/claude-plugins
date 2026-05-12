@@ -5,15 +5,20 @@ description: Review and remove phrases unused longer than your configured thresh
 
 Remove stale command entries — ones you haven't triggered via natural language in a while.
 
+Supports an `--auto` flag for unattended/scheduled runs (no prompts, silent removal).
+
 ## Steps
 
-1. **Read registry** — read `~/.claude/plugins/phrases.json`. If it doesn't exist or is empty, say: "Nothing to clean up." and stop.
+1. **Check for `--auto` flag** in args. If present, run in auto mode (see [Auto mode](#auto-mode) below) instead of the interactive flow.
 
-2. **Get threshold** — read `_config.cleanup_threshold_days` (default: 14). Today's date is known from context.
+2. **Read registry** — read `~/.claude/plugins/phrases.json`. If it doesn't exist or is empty, say: "Nothing to clean up." and stop.
 
-3. **Find stale entries** — for each command key (skip `_config`):
-   - No `last_used` field → stale (never fired via natural language)
-   - Days since `last_used` > threshold → stale
+3. **Get threshold** — read `_config.cleanup_threshold_days` (default: 14). Today's date is known from context.
+
+4. **Find stale entries** — for each command key (skip `_config`):
+   - Entry has `last_used` older than threshold → stale
+   - Entry has no `last_used` AND `added_date` is older than threshold → stale (never fired, grace period expired)
+   - Entry has no `last_used` AND `added_date` is within threshold (or absent) → **skip** (newly added, still in grace period)
 
 4. **If none stale** — say: "All entries used within the last [threshold] days. Nothing to clean up." and stop.
 
@@ -54,6 +59,17 @@ Cleanup complete.
   Kept:    Y entries
   Run /mapping:list to see your updated registry.
 ```
+
+## Auto mode
+
+When called with `--auto` (e.g. from a scheduled agent):
+
+1. Read registry and threshold (same as steps 2–4 above)
+2. Silently remove all stale entries — no prompts
+3. Write the updated file
+4. Print a one-line summary: `Mapping cleanup: removed X stale entries, Y kept.`
+
+Auto mode never removes entries still within their grace period (`added_date` within threshold).
 
 ## Notes
 
