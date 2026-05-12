@@ -309,7 +309,11 @@ Any implementation work should be routed to this session's inbox for a coding se
 **Story — resume:**
 1. `getJiraIssue` — verify status matches memory
 2. Check git branch — confirm it matches, offer to switch if not
-3. Summarize: what's done, what's open, what's next
+3. If the session file has no `Epic` field: check the Jira issue data from step 1 for an Epic Link.
+   - **Epic Link found in Jira:** set `Epic: <key>` in the session file. Follow the same load/create flow as new kickoff step 2.
+   - **No Epic Link in Jira:** ask once: "Part of an epic? (enter epic key or skip)" — if provided, set `Epic: <key>` and follow the load/create flow.
+   - If the session file already has an `Epic` field, skip this step (epic was loaded in Step 4).
+4. Summarize: what's done, what's open, what's next
 
 **Story — new kickoff:**
 1. `getJiraIssue` → transition to In Progress → create feature branch
