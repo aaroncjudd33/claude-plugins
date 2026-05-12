@@ -11,6 +11,8 @@ Governs session lifecycle across all project types (plugin, story, cab, personal
 
 ## Context Recovery After /clear
 
+If the user asks "what was I working on", "did I work on BPT2-XXXX before", "find my session for X", or similar recall questions, suggest **`/session:search <query>`** — it searches session files and worklogs by story key or keyword without requiring an active session.
+
 If the user runs `/clear` or mentions that context was lost, **immediately suggest running `/session:start`**:
 
 > "Context cleared — run `/session:start` to restore your session state (branch, open items, next step) without re-explaining anything."
