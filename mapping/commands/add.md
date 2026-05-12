@@ -13,24 +13,26 @@ Register a phrase so Claude recognizes it as a specific command next time.
 
 3. **Load the registry** — read `~/.claude/plugins/phrases.json`. If it doesn't exist, start with `{}`.
 
-4. **Duplicate / conflict check** — before writing, scan all phrases across all commands (skip the `_config` key):
+4. **Duplicate / conflict check** — scan all `phrase.text` values across all commands (skip `_config`):
 
-   - **Exact match, same command:** phrase already registered here — skip silently, confirm `"[phrase]" is already mapped to [command]`.
+   - **Exact match, same command:** already registered — skip silently, confirm `"[phrase]" is already mapped to [command]`.
    - **Exact match, different command:** block. Say: `"[phrase]" is already mapped to [other-command]. Remove it there first with /mapping:remove, or pick a different phrase.`
-   - **Semantic near-match, different command:** warn and ask. Say: `"[phrase]" is similar to "[existing phrase]" which maps to [other-command]. Add anyway?` Proceed on yes, abort on no.
-   - **Semantic near-match, same command:** no warning needed — close variants on the same command are fine.
+   - **Semantic near-match, different command:** warn and ask. Say: `"[phrase]" is similar to "[existing phrase.text]" which maps to [other-command]. Add anyway?` Proceed on yes, abort on no.
+   - **Semantic near-match, same command:** no warning needed.
 
    Semantic similarity judgment: use LLM judgment — phrases are "near-matches" if a user saying one could reasonably mean the other (e.g. "log me in" vs "login to aws"). Err toward warning rather than silently adding.
 
-5. **Add the phrase:**
-   - If the command key already exists, append to its `phrases` array
-   - If the command key doesn't exist, create it with `added_date` set to today (no `last_used` yet — that's set on first match):
+5. **Add the phrase** as an object with `added_date` set to today (no `last_used` yet — set on first match):
+   - If the command key already exists, append to its `phrases` array:
+     ```json
+     { "text": "new phrase here", "added_date": "2026-05-12" }
+     ```
+   - If the command key doesn't exist, create it:
      ```json
      {
        "/story:dashboard": {
          "description": "Show open Jira stories with current status",
-         "added_date": "2026-05-12",
-         "phrases": ["new phrase here"]
+         "phrases": [{ "text": "new phrase here", "added_date": "2026-05-12" }]
        }
      }
      ```

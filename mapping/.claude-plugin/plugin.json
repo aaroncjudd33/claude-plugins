@@ -1,6 +1,6 @@
 {
   "name": "mapping",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Natural language phrase registry — maps phrases to commands. Consulted automatically when Claude can't identify a command from ambiguous input.",
   "author": {
     "name": "Aaron Judd",

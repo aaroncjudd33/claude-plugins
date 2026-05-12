@@ -19,24 +19,23 @@ Show the phrase registry — shipped defaults and your personal additions.
 
 4. **Get cleanup threshold** — read `_config.cleanup_threshold_days` from `~/.claude/plugins/phrases.json`. Default: 14.
 
-5. **Display** (group by command, skip commands with no phrases). For each command show its `last_used` date and flag stale entries:
-   - **Stale:** no `last_used` field, OR days since `last_used` > threshold — append `⚠ never used` or `⚠ unused 30d`
-   - **Recent:** used within threshold — append `(last used: YYYY-MM-DD)`
+5. **Display** (group by command, skip commands with no phrases). For each phrase object show its timestamp inline:
+   - **Stale phrase:** no `last_used`, OR days since `last_used` > threshold — show `⚠ never used` or `⚠ unused Xd`
+   - **Recent phrase:** used within threshold — show `(last used: YYYY-MM-DD)`
+   - Mark user-added phrases with `[user]` (anything in the user registry file)
 
 ```
-/story:dashboard — Show open Jira stories with current status  (last used: 2026-05-10)
-  - show my stories  [user]
-  - story dashboard  [user]
+/story:dashboard — Show open Jira stories with current status
+  - show my stories        (last used: 2026-05-11)  [user]
+  - story dashboard        ⚠ unused 14d  [user]
+  - what changed in jira   ⚠ never used  [user]
 
-/release:deploy — Execute a production deployment  ⚠ never used
-  - deploy to prod  [user]
-  - deploy it  [user]
-
-/session:start — Start a working session  (last used: 2026-05-12)
-  - start my day  [user]
+/release:deploy — Execute a production deployment
+  - deploy to prod         ⚠ never used  [user]
+  - deploy it              (last used: 2026-05-10)  [user]
 ```
 
-   If any entries are stale, append at the end:
-   `X entries unused for 14+ days — run /mapping:cleanup to review them.`
+   If any phrases are stale, append at the end:
+   `X phrases unused for [threshold]+ days across Y commands — run /mapping:cleanup to review.`
 
 6. **If nothing registered** — "No phrases yet. They fill in automatically as you use commands, or add one with `/mapping:add`."

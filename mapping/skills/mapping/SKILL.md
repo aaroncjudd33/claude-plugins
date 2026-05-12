@@ -41,8 +41,8 @@ Read `pluginMarketplaceName` from `~/.claude/plugins/user-config.json` → `path
 ## Lookup procedure
 
 1. Read both files (skip if not found)
-2. Merge into one map: phrase → command (user file wins on conflict)
-3. Match the user's input semantically against all phrases — use LLM judgment, not exact string match
+2. Merge into one map: phrase text → command (user file wins on conflict). Each entry in `phrases` is an object — read its `text` field for matching.
+3. Match the user's input semantically against all phrase texts — use LLM judgment, not exact string match
 4. Act on the result:
 
 | Result | Action |
@@ -56,15 +56,16 @@ Read `pluginMarketplaceName` from `~/.claude/plugins/user-config.json` → `path
 When a phrase matches one clear command and you run it, update `~/.claude/plugins/phrases.json`:
 1. Read the file
 2. Find the matched command key (e.g. `/story:dashboard`)
-3. Set `last_used` to today's date in `YYYY-MM-DD` format
-4. Write the file back
+3. Within that key's `phrases` array, find the object whose `text` matched
+4. Set that phrase object's `last_used` to today's date in `YYYY-MM-DD` format
+5. Write the file back
 
-Skip silently if the key doesn't exist or the file isn't writable. This keeps timestamps accurate for cleanup without blocking the user.
+Skip silently if the key or phrase object doesn't exist or the file isn't writable.
 
 ## Auto-add flow (no match found)
 
 1. Ask: "I don't have a mapping for that. Which command did you want?"
-2. Once confirmed: append the phrase to `~/.claude/plugins/phrases.json` under the correct command key
+2. Once confirmed: append `{"text": "...", "added_date": "YYYY-MM-DD"}` to the command's `phrases` array in `~/.claude/plugins/phrases.json` (no `last_used` yet — set on first match)
 3. Confirm: "Added — I'll recognize that next time."
 
 ## Inline shortcut

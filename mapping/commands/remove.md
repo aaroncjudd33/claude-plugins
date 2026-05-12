@@ -9,16 +9,16 @@ Remove a phrase from `~/.claude/plugins/phrases.json`. Shipped defaults cannot b
 
 1. **Get the phrase** — from args or prompt: "Which phrase do you want to remove?"
 
-2. **Search** `~/.claude/plugins/phrases.json` for a matching phrase across all command entries.
+2. **Search** `~/.claude/plugins/phrases.json` for a matching `phrase.text` across all command entries (skip `_config`).
 
 3. **If not found** — "That phrase isn't in your registry. Shipped defaults (the empty set that ships with the plugin) can't be removed anyway. Use `/mapping:list` to see what you have."
 
-4. **If found** — confirm: `Remove "[phrase]" → [command]? (yes/no)`
+4. **If found** — confirm: `Remove "[phrase.text]" → [command]? (yes/no)`
 
 5. **On yes:**
-   - Remove the phrase from the array
+   - Remove the phrase object from the `phrases` array
    - If the `phrases` array is now empty, remove that command key
-   - If the whole file is now `{}`, delete it
+   - If the whole file is now `{}` (or only `_config` remains), delete it
    - Otherwise write the updated file
 
 6. **Confirm:** `Removed "[phrase]"`

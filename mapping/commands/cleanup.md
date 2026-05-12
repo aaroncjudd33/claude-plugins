@@ -15,48 +15,51 @@ Supports an `--auto` flag for unattended/scheduled runs (no prompts, silent remo
 
 3. **Get threshold** — read `_config.cleanup_threshold_days` (default: 14). Today's date is known from context.
 
-4. **Find stale entries** — for each command key (skip `_config`):
-   - Entry has `last_used` older than threshold → stale
-   - Entry has no `last_used` AND `added_date` is older than threshold → stale (never fired, grace period expired)
-   - Entry has no `last_used` AND `added_date` is within threshold (or absent) → **skip** (newly added, still in grace period)
+4. **Find stale phrases** — for each command key (skip `_config`), scan each phrase object:
+   - `last_used` older than threshold → stale
+   - No `last_used` AND `added_date` older than threshold → stale (never fired, grace period expired)
+   - No `last_used` AND `added_date` within threshold (or absent) → **skip** (newly added, grace period still active)
 
-4. **If none stale** — say: "All entries used within the last [threshold] days. Nothing to clean up." and stop.
+5. **If none stale** — say: "All phrases used within the last [threshold] days. Nothing to clean up." and stop.
 
-5. **Display candidates** — list each stale entry with phrase count and last-used status:
-
-```
-Stale entries (unused 14+ days):
-
-  /release:deploy — Execute a production deployment  ⚠ never used  (5 phrases)
-  /comms:sweep — Clean the inbox  ⚠ unused 18d  (4 phrases)
-  /links:open — Open a named link  ⚠ never used  (4 phrases)
-  ...
-
-X entries total. Review each one:
-```
-
-6. **Review loop** — for each stale entry, prompt:
+6. **Display candidates** — group stale phrases by command:
 
 ```
-/release:deploy (never used)
-  - deploy to prod
-  - run the deployment
-  - execute the deploy
-  - deploy it
-Remove? [Yes / Keep / Skip all remaining]
+Stale phrases (unused 14+ days):
+
+  /release:deploy — Execute a production deployment
+    - deploy to prod       ⚠ never used
+    - run the deployment   ⚠ never used
+    - execute the deploy   ⚠ never used
+    - deploy it            ⚠ never used
+
+  /comms:sweep — Clean the inbox
+    - triage my email      ⚠ unused 18d
+    - process my inbox     ⚠ never used
+
+X phrases across Y commands. Review each command:
 ```
 
-   - **Yes** — remove the command key from the JSON object
-   - **Keep** — leave it; set `last_used` to today so it won't surface again for another threshold period
-   - **Skip all remaining** — stop the loop, write what's been decided so far
+7. **Review loop** — for each command with stale phrases, show stale phrases and prompt:
 
-7. **Write** the updated `~/.claude/plugins/phrases.json`
+```
+/release:deploy — 4 stale phrases:
+  - deploy to prod, run the deployment, execute the deploy, deploy it
+Remove all / Keep all / Review one by one?
+```
 
-8. **Summary:**
+   - **Remove all** — delete all stale phrase objects for this command; if `phrases` array is now empty, remove the command key
+   - **Keep all** — set `last_used` to today on all stale phrases (resets their clock)
+   - **Review one by one** — prompt `Remove "[text]"? (yes/no)` for each stale phrase
+   - **Skip remaining commands** — stop the loop, write what's been decided so far
+
+8. **Write** the updated `~/.claude/plugins/phrases.json`
+
+9. **Summary:**
 ```
 Cleanup complete.
-  Removed: X entries
-  Kept:    Y entries
+  Removed: X phrases across Y commands
+  Kept:    Z phrases
   Run /mapping:list to see your updated registry.
 ```
 
@@ -65,11 +68,12 @@ Cleanup complete.
 When called with `--auto` (e.g. from a scheduled agent):
 
 1. Read registry and threshold (same as steps 2–4 above)
-2. Silently remove all stale entries — no prompts
-3. Write the updated file
-4. Print a one-line summary: `Mapping cleanup: removed X stale entries, Y kept.`
+2. Silently remove all stale phrase objects — no prompts
+3. Drop any command key whose `phrases` array is now empty
+4. Write the updated file
+5. Print a one-line summary: `Mapping cleanup: removed X stale phrases across Y commands.`
 
-Auto mode never removes entries still within their grace period (`added_date` within threshold).
+Auto mode never removes phrases still within their grace period (`added_date` within threshold).
 
 ## Notes
 
