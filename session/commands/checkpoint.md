@@ -137,6 +137,21 @@ Before posting, check if the most recent Jira comment is from today and already 
 
 **plugin / personal / general:** Skip.
 
+### 5b. Epic Update *(story/cab only)*
+
+If the session file has an `Epic` field, read `~/.claude/memory/epics/<key>.md` and prompt:
+
+```
+Epic update (<key>):
+  Any cross-story decisions, resolved questions, or blockers to record?
+  Yes — describe / No
+```
+
+- **Yes:** append to the epic file. For new decisions, add under `## Architecture Decisions` as `### [DECIDED] <title>` with a description and `- Source: <session-name> <date>`. For resolved Open Questions, move the row from the Open Questions table to `## Resolved` with the answer and `[YYYY-MM-DD <session-name>]` note.
+- **No:** skip silently.
+
+**plugin / personal / general:** Skip entirely.
+
 ### 6. Session Summary
 
 Before writing, read the existing `Open items` from the session file. If there are any **non-`[inbox]`** items, display them and ask:

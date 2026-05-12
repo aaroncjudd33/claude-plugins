@@ -100,6 +100,7 @@ Same global inbox compact display as above if `_inbox.md` has items.
     Next step:       [first inbox item description, or "none"]
     Related CAB:     [CAB-XXX]   ← story type only, omit if none
     Post-deploy:     N pending / all acknowledged / none   ← story type only, omit if none
+    Epic:            [BPT2-XXXX]   ← story type only, omit if none
     Related stories: [BPT2-XXXX, ...]   ← cab type only, omit if none
 
   Recent history (<slug>):
@@ -119,6 +120,15 @@ Same global inbox compact display as above if `_inbox.md` has items.
         ...
   ```
   Read each linked session's `.md` file from `~/.claude/memory/sessions/<slug>/` and its last 5 entries from `_history.md`. If the linked session file does not exist, note "session file not found" and continue. This block is read-only context — it does not affect the current session's state.
+- **If the session file has an `Epic` field**, load `~/.claude/memory/epics/<key>.md` and append a compact context block:
+  ```
+  Epic context: <key> — <title>
+    Open questions: N open
+    Blockers:       N active (🔴 N critical / 🟡 N watch)
+    Last decision:  [most recent decision title]
+  ```
+  If the epic file does not exist, note: "Epic file for <key> not found."
+  Load the full epic file into context so architectural decisions and blockers are available during the session.
 - Continue through Steps 5–8 as normal — `_active` must always be written, even on resume.
 
 **New story/plugin/personal/general — session filename:**
@@ -259,6 +269,7 @@ updated: [today's date]
 - **Next step:** [will be updated at checkpoint]
 - **Plugin reviewed:** [yes / no]   ← plugin type only, omit for other types
 - **Related CAB:** [CAB-XXX or "none"]   ← story type only, omit for other types
+- **Epic:** [BPT2-XXXX]   ← story type only; omit if no Jira epic link; set from Jira Epic Link during new story kickoff
 - **Post-deployment checks:**   ← story type only, omit for other types; omit entire field if none defined
   - [ ] <check description>
 - **Related stories:** [BPT2-XXXX, BPT2-YYYY or "none"]   ← cab type only, omit for other types
@@ -302,7 +313,13 @@ Any implementation work should be routed to this session's inbox for a coding se
 
 **Story — new kickoff:**
 1. `getJiraIssue` → transition to In Progress → create feature branch
-2. Investigate codebase, confirm Teams chat exists, check Confluence page
+2. Check for Epic Link in the Jira issue. If an epic key is present:
+   - Check whether `~/.claude/memory/epics/<epic-key>.md` exists
+   - **Not found:** "No epic memory for <key> — create one? (Yes / Skip)"
+     - **Yes:** create `~/.claude/memory/epics/<key>.md` with pre-populated structure: epic title from Jira, story map row for the current story. Use `~/.claude/memory/epics/BPT2-5557.md` as the structural reference.
+   - **Found:** note "Epic memory loaded for <key>" — file is already in context
+   - Set `Epic: <key>` in the session file
+3. Investigate codebase, confirm Teams chat exists, check Confluence page
 
 **CAB — new:**
 - Route to `/release:create-cab`
