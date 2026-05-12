@@ -13,7 +13,7 @@ Register a phrase so Claude recognizes it as a specific command next time.
 
 3. **Load the registry** — read `~/.claude/plugins/phrases.json`. If it doesn't exist, start with `{}`.
 
-4. **Duplicate / conflict check** — before writing, scan all phrases across all commands:
+4. **Duplicate / conflict check** — before writing, scan all phrases across all commands (skip the `_config` key):
 
    - **Exact match, same command:** phrase already registered here — skip silently, confirm `"[phrase]" is already mapped to [command]`.
    - **Exact match, different command:** block. Say: `"[phrase]" is already mapped to [other-command]. Remove it there first with /mapping:remove, or pick a different phrase.`

@@ -51,6 +51,16 @@ Read `pluginMarketplaceName` from `~/.claude/plugins/user-config.json` → `path
 | Multiple plausible matches | Ask: "Did you mean /x:y or /a:b?" |
 | No match found | Ask what they wanted, then offer to add the phrase |
 
+## Timestamp — after a successful match
+
+When a phrase matches one clear command and you run it, update `~/.claude/plugins/phrases.json`:
+1. Read the file
+2. Find the matched command key (e.g. `/story:dashboard`)
+3. Set `last_used` to today's date in `YYYY-MM-DD` format
+4. Write the file back
+
+Skip silently if the key doesn't exist or the file isn't writable. This keeps timestamps accurate for cleanup without blocking the user.
+
 ## Auto-add flow (no match found)
 
 1. Ask: "I don't have a mapping for that. Which command did you want?"
