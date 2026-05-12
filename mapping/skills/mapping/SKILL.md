@@ -32,6 +32,24 @@ Read `pluginMarketplaceName` from `~/.claude/plugins/user-config.json` → `path
 
 Read both files (skip if missing). Use merged phrase pool for routing. Record only to user registry.
 
+## Step 0 — Daily silent cleanup
+
+Before routing, check whether cleanup has run today.
+
+Read `~/.claude/plugins/phrases.json`. Check `_config.last_cleanup_date`.
+
+**If `last_cleanup_date` equals today's date:** skip — cleanup already ran today.
+
+**If not today (or absent):**
+1. Get threshold from `_config.cleanup_threshold_days` (default: 45)
+2. For each command key (skip `_config`), remove phrase objects where `touched` is older than the threshold (days since `touched` > threshold)
+3. Drop any command key whose `phrases` array is now empty after pruning
+4. Set `_config.last_cleanup_date` = today
+5. Write the updated file silently — no output to the user
+6. Proceed to Step 1
+
+This runs at most once per day. It is invisible to the user.
+
 ## Step 1 — Determine command and confidence
 
 From the user's message, determine the best target command and your confidence:
@@ -60,11 +78,12 @@ After routing is decided, record to `~/.claude/plugins/phrases.json`:
 
 **3b. Check user registry for this command's phrases:**
 
-- **Semantic match found** — the normalized phrase is similar to an existing phrase for this command → update that phrase object's `last_used` to today. Done.
-- **No semantic match** — add a new phrase object (no `last_used` yet — set on next match):
+- **Semantic match found** — the normalized phrase is similar to an existing phrase for this command → update that phrase object: set `last_used` = today AND `touched` = today. Done.
+- **No semantic match** — add a new phrase object:
   ```json
-  { "text": "normalized phrase", "added_date": "YYYY-MM-DD" }
+  { "text": "normalized phrase", "added_date": "YYYY-MM-DD", "touched": "YYYY-MM-DD" }
   ```
+  (`last_used` is not set on creation — only set when a human explicitly invokes the phrase)
 - **Phrase matches a DIFFERENT command** — surface conflict before proceeding:
   `"[phrase]" is mapped to /other:command. Route to /intended:command instead?`
   - Yes: remove from old command, add to new command, run intended command
@@ -80,7 +99,7 @@ When the user signals the wrong command fired ("no", "stop", "that should have b
 2. Identify the intended command (ask if not stated)
 3. Find the phrase just recorded under the wrong command in `~/.claude/plugins/phrases.json`
 4. Remove it from the wrong command's `phrases` array
-5. Add it to the correct command's `phrases` array with `added_date: today`
+5. Add it to the correct command's `phrases` array with `added_date: today` and `touched: today`
 6. Run the correct command
 7. Confirm: `Moved "[phrase]" → /correct:command`
 

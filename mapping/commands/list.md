@@ -17,25 +17,26 @@ Show the phrase registry — shipped defaults and your personal additions.
    - Merge them. Mark user-added phrases with `[user]`.
    - Skip the `_config` key — it's not a command entry.
 
-4. **Get cleanup threshold** — read `_config.cleanup_threshold_days` from `~/.claude/plugins/phrases.json`. Default: 14.
+4. **Get cleanup threshold** — read `_config.cleanup_threshold_days` from `~/.claude/plugins/phrases.json`. Default: 45.
 
-5. **Display** (group by command, skip commands with no phrases). For each phrase object show its timestamp inline:
-   - **Stale phrase:** no `last_used`, OR days since `last_used` > threshold — show `⚠ never used` or `⚠ unused Xd`
-   - **Recent phrase:** used within threshold — show `(last used: YYYY-MM-DD)`
+5. **Display** (group by command, skip commands with no phrases). For each phrase object show its status inline based on `touched`:
+   - **Stale phrase:** `touched` is absent or days since `touched` > threshold — show `⚠ stale (Xd)` or `⚠ never tracked`
+   - **Recent phrase:** `touched` within threshold — show `(touched: YYYY-MM-DD)`
+   - Show `last_used` separately when present: `last used: YYYY-MM-DD`
    - Mark user-added phrases with `[user]` (anything in the user registry file)
 
 ```
 /story:dashboard — Show open Jira stories with current status
-  - show my stories        (last used: 2026-05-11)  [user]
-  - story dashboard        ⚠ unused 14d  [user]
-  - what changed in jira   ⚠ never used  [user]
+  - show my stories        (touched: 2026-05-11, last used: 2026-05-11)  [user]
+  - story dashboard        (touched: 2026-05-11)  [user]
+  - what changed in jira   ⚠ never tracked  [user]
 
 /release:deploy — Execute a production deployment
-  - deploy to prod         ⚠ never used  [user]
-  - deploy it              (last used: 2026-05-10)  [user]
+  - deploy to prod         ⚠ stale (47d)  [user]
+  - deploy it              (touched: 2026-05-10, last used: 2026-05-10)  [user]
 ```
 
    If any phrases are stale, append at the end:
-   `X phrases unused for [threshold]+ days across Y commands — run /mapping:cleanup to review.`
+   `X phrases stale (untouched [threshold]+ days) across Y commands — run /mapping:cleanup to review.`
 
 6. **If nothing registered** — "No phrases yet. They fill in automatically as you use commands, or add one with `/mapping:add`."

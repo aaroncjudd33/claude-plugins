@@ -22,17 +22,17 @@ Register a phrase so Claude recognizes it as a specific command next time.
 
    Semantic similarity judgment: use LLM judgment — phrases are "near-matches" if a user saying one could reasonably mean the other (e.g. "log me in" vs "login to aws"). Err toward warning rather than silently adding.
 
-5. **Add the phrase** as an object with `added_date` set to today (no `last_used` yet — set on first match):
+5. **Add the phrase** as an object with `added_date` and `touched` both set to today:
    - If the command key already exists, append to its `phrases` array:
      ```json
-     { "text": "new phrase here", "added_date": "2026-05-12" }
+     { "text": "new phrase here", "added_date": "2026-05-12", "touched": "2026-05-12" }
      ```
    - If the command key doesn't exist, create it:
      ```json
      {
        "/story:dashboard": {
          "description": "Show open Jira stories with current status",
-         "phrases": [{ "text": "new phrase here", "added_date": "2026-05-12" }]
+         "phrases": [{ "text": "new phrase here", "added_date": "2026-05-12", "touched": "2026-05-12" }]
        }
      }
      ```
