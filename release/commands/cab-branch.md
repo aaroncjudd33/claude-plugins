@@ -82,6 +82,12 @@ powershell -ExecutionPolicy Bypass -File "~\.claude\scripts\Open-EdgeUrl.ps1" -U
 
 After the PR is created, send a casual message to the **BPT2 Group Chat** (`19:68b75b2e430c4563af874a71c71b9dcc@thread.v2`) requesting approval. Keep it friendly and brief — just the PR link, what it's for, and the deploy date.
 
+**Before confirming the send**, always show the user:
+- **Sending to:** BPT2 Group Chat
+- **Message:** (full message text)
+
+Wait for the user to confirm, then call `confirm_action`.
+
 Example:
 ```
 Hey team! Can someone approve PR #NNN for [short description]? Targeting [day + time MDT] deploy. Thanks!
