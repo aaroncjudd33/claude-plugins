@@ -80,17 +80,11 @@ powershell -ExecutionPolicy Bypass -File "~\.claude\scripts\Open-EdgeUrl.ps1" -U
 
 ### 5. Request PR approval (Virtual Office only)
 
-After the PR is created, send a message to the CAB Teams chat requesting approval. Look up the chat ID from `~/.claude/plugins/known-chats.md` using the CAB key.
+After the PR is created, send a casual message to the **BPT2 Group Chat** (`19:68b75b2e430c4563af874a71c71b9dcc@thread.v2`) requesting approval. Keep it friendly and brief — just the PR link, what it's for, and the deploy date.
 
-Message format:
+Example:
 ```
-<h2 style="color:#464775;">CAB-XXXX — PR Approval Needed</h2>
-Release branch is ready. Please approve PR #NNN before [deploy date/time]:
-
-PR: [title + link]
-Story: BPT2-XXXX — [summary]
-Deploy: [date and time MDT]
-Branch: release/CAB-XXXX → master
+Hey team! Can someone approve PR #NNN for [short description]? Targeting [day + time MDT] deploy. Thanks!
 
 Posted by Claude Code on behalf of Aaron Judd
 ```
