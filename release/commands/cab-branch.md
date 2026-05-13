@@ -78,7 +78,26 @@ Open the PR in the browser (skip on first-deploy). Read `~/.claude/browser-links
 powershell -ExecutionPolicy Bypass -File "~\.claude\scripts\Open-EdgeUrl.ps1" -Url "<PR-URL>" -WindowName "<resolved-window-name>"
 ```
 
-### 5. Update session state
+### 5. Request PR approval (Virtual Office only)
+
+After the PR is created, send a message to the CAB Teams chat requesting approval. Look up the chat ID from `~/.claude/plugins/known-chats.md` using the CAB key.
+
+Message format:
+```
+<h2 style="color:#464775;">CAB-XXXX — PR Approval Needed</h2>
+Release branch is ready. Please approve PR #NNN before [deploy date/time]:
+
+PR: [title + link]
+Story: BPT2-XXXX — [summary]
+Deploy: [date and time MDT]
+Branch: release/CAB-XXXX → master
+
+Posted by Claude Code on behalf of Aaron Judd
+```
+
+Skip this step for CDK/non-VO repos — they do not require a separate PR approval request.
+
+### 6. Update session state
 
 Update `~/.claude/memory/sessions/<slug>/CAB-XXXX.md`:
 - `Branch`: `release/CAB-XXXX`
