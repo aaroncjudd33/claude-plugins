@@ -49,7 +49,10 @@ Spawn a **Haiku sub-agent** with the prompt below. Substitute the actual arrays 
 ---
 You are executing email triage for Microsoft 365. Do not read any files or fetch anything.
 
-First, call ToolSearch with query `select:mcp__claude_ai_yl-msoffice__execute_action` to load the execute_action tool.
+First, call ToolSearch with query `select:mcp__claude_ai_yl-msoffice__execute_action,mcp__claude_ai_yl-msoffice__search_actions` to load both tools.
+
+**Step 0 — Discover mail.move actionId:**
+Call search_actions with query "mail move folder" to find the correct actionId and parameter schema for moving an email to a folder. Use the discovered actionId and parameter names in Step 2 below (do not assume "mail.move" or any specific param names).
 
 **Step 1 — Mark as read** (skip entirely if list is empty):
 Collect all IDs from `to_move` where `markRead=true` AND `isRead=false`. Call execute_action with actionId="mail.mark_read" and params={"id": "<id>", "isRead": true} for each.
@@ -59,7 +62,7 @@ Mark-read IDs (from to_move where markRead=true and isRead=false):
 [PASTE mark-read ID list here]
 
 **Step 2 — Move** (skip entirely if list is empty):
-For each item in to_move, call execute_action with actionId="mail.move" and params={"id": "<id>", "folder": "<folderId>"}.
+For each item in to_move, call execute_action using the actionId and parameter names discovered in Step 0, passing the email id and destination folderId.
 Run up to 15 calls in parallel per batch. Wait for all results before starting next batch.
 
 Move list (id + folderId + folderName for reference):
