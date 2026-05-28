@@ -231,9 +231,14 @@ Store the result as `mode` for use in Step 8.
 
 ### 7. Teams Chat Setup
 
-Look in `~/.claude/plugins/known-chats.md` for a chat whose Name or Topic matches the expected `teams_chat` value and has `Active=yes`. If the file does not exist, treat it as empty and proceed to the Not found branch.
+Look in `~/.claude/plugins/known-chats.md` for a chat whose Name, Aliases, or Topic matches the expected `teams_chat` value and has `Active=yes`. If the file does not exist, treat it as empty and proceed to the Not found branch.
 
-Match on the Name column (exact, case-insensitive) first; fall back to substring match on Topic if no Name match.
+Match priority (case-insensitive):
+1. Exact match on Name
+2. Match on any entry in the Aliases column (comma-separated; match each alias individually)
+3. Substring match on Topic
+
+When the user refers to a chat informally ("my team chat", "the group chat", "cab chat"), check Aliases before Topic. If matched via alias, confirm before proceeding: "Matched '[phrase]' → [Name]. Using that — ok?"
 
 - **Found:** "Using Teams chat: [name]" — proceed, or offer to repoint if the user wants a different one
 - **Not found:** "No chat found for `[teams_chat]`. Create it? (Yes / Skip / Use a different chat)"

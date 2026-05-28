@@ -22,6 +22,7 @@ These apply to every Teams message, no exceptions:
 4. **Always open with an intro paragraph.** Before the first section, include a `<p>` that sets context — what this message is about and why you're sending it. Do NOT open with a greeting or self-introduction (see voice guide).
 5. **Follow the HTML guide.** See `references/teams-html-guide.md` for what renders well vs. poorly. The short version: no `<pre>`, no `<code>`, no `<h1>`, no `<h3>`, no `<th>`. Use `<h2>` for section headers, `<b>` for labels, `<ul>` for structure, nested `<ul>` for hierarchical content.
 6. **Apply Aaron's voice.** Read `references/aaron-voice.md` before drafting. Key rules: no greeting, paragraphs for conversational messages, brief on mistakes, "we/us" not "I", passive availability.
+7. **Self-correct on wrong-chat mismatches.** When the user reports that a message went to the wrong chat (e.g. "I meant the CAB chat, not the story chat" or "that's the wrong chat"), immediately: (a) identify what phrase was used and what Name it incorrectly resolved to, (b) add the phrase as an alias on the correct chat's row in `~/.claude/plugins/known-chats.md`, (c) if the phrase is ambiguous (matches multiple chats), also note it in a comment on the wrong chat's row so future sessions avoid the conflict, (d) save a feedback memory documenting the correction. Do not ask permission — do it immediately as part of acknowledging the correction.
 
 ### Standard Message Template
 
@@ -69,7 +70,7 @@ Only use for genuinely tabular data with 2–3 columns. See `references/teams-ht
 
 Use the `yl-msoffice` MCP tools in this order:
 
-1. **Find the chat ID** — look up the chat name in `references/known-chats.md` (filter to `Active=yes`). If not found there, call `list_chats` to check whether it already exists in Teams before creating a new one. If it truly does not exist, use `teams.create_chat`, then add the new chat ID to `~/.claude/plugins/known-chats.md`.
+1. **Find the chat ID** — look up the chat name or phrase in `references/known-chats.md` (filter to `Active=yes`). Match priority: (1) exact Name match, (2) any Aliases entry (comma-separated, match each individually), (3) substring Topic match. When the user says something informal ("my team chat", "the group chat", "cab chat"), check Aliases before Topic. If matched via alias, confirm before sending: "Matched '[phrase]' → [Name]. Using that — ok?" If not found, call `list_chats` to check whether it already exists in Teams before creating a new one. If it truly does not exist, use `teams.create_chat`, then add the new chat ID to both `references/known-chats.md` and `~/.claude/plugins/known-chats.md`.
 2. **Compose the message** using the template above. Read `references/aaron-voice.md` first.
 3. **Show the full preview in both formats:**
    - **Plain text** — readable prose version so the user can verify content and tone
