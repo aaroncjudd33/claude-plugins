@@ -205,42 +205,49 @@ Recent history (<slug>):
   ...
 ```
 
-### 7. Inbox Completion Check
-
-Read the `Open items` from the session state just written. If any items are prefixed with `[inbox]`, handle each one:
-
-```
-Inbox item complete?
-  [inbox] <item summary>
-  Yes / Keep open
-```
-
-- **Yes:** remove the `[inbox]` line from Open items. The inbox entry was already archived when the session picked it up — no file move needed. Rewrite the session summary's Open items field to reflect the removal.
-- **Keep open:** leave the `[inbox]` item in Open items as-is.
-
-If no `[inbox]` items exist in Open items, skip silently.
-
-### 7a. Inbox Sweep
+### 7. In-Progress Inbox Check
 
 For **plugin sessions**: read `~/.claude/memory/sessions/<slug>/_inbox_<name>.md`.
 For **all other sessions**: read `~/.claude/memory/sessions/<slug>/_inbox.md`.
 
-If the file has content beyond the header, display each item and ask which were addressed since the last checkpoint:
+**Step A — In-progress items:** Scan the inbox file for entries with an `[in-progress — ...]` line.
+
+**Step B — Legacy [inbox] items:** Read session `Open items`. Any `[inbox]` tag that has no corresponding in-progress entry in the inbox file was picked up under the previous system and already archived — include it as a legacy item.
+
+If either category has items, display them together and ask:
 
 ```
-Inbox — did you address any of these this session?
-  [1] [date] from <source> — <description>
-  [2] [date] from <source> — <description>
+In-progress inbox items — mark any done?
+  [1] [in-progress since YYYY-MM-DD] <description from ## header>
+  [2] [inbox legacy] <item text from Open items>
   Mark done (numbers, 'all', or 'skip')
 ```
 
-For each item marked done:
-- Append to the archive file with `[DONE YYYY-MM-DD]` stamp. Plugin: `_inbox_<name>_archive.md`; others: `_inbox_archive.md`. Create the archive file with the appropriate header if it does not exist.
-- Remove the entry from the inbox file.
+For each **inbox-file item** (Step A) marked done:
+1. Strip the `[in-progress — ...]` line from the entry.
+2. Archive the full entry with `[DONE YYYY-MM-DD]` stamp prepended. Plugin: `_inbox_<name>_archive.md`; others: `_inbox_archive.md`. Create archive with appropriate header if it does not exist. Preserve any `Work file:` reference in the archive entry.
+3. Remove the entry from the inbox file. Rewrite inbox preserving header and remaining entries.
+4. Remove the matching `[inbox] <item>` line from session `Open items`. Rewrite the session file.
 
-Rewrite the inbox file after all removals, preserving the header line.
+For each **legacy item** (Step B) marked done:
+- Remove the `[inbox] <item>` line from session `Open items`. No archive file changes needed.
 
-If the inbox is empty or header-only, skip silently.
+If no in-progress or legacy items exist, skip silently.
+
+### 7a. Pending Inbox Sweep
+
+After handling in-progress items, check if any remaining pending items in the inbox were addressed this session without being formally picked up:
+
+```
+Inbox — any pending items addressed this session (outside in-progress tracking)?
+  [1] [date] from <source> — <description>
+  Numbers, 'none', or 'skip'
+```
+
+- **Marked done:** archive with `[DONE YYYY-MM-DD]` stamp, remove from inbox. Rewrite inbox.
+- **Marked as picked up mid-session:** insert `[in-progress — <session-name>, YYYY-MM-DD]` in the inbox entry after the `## [date]...` header, add `[inbox] <item>` to Open items — will be handled at next checkpoint or finish.
+
+If no pending items remain, skip silently.
 
 ### 8. Work Log
 

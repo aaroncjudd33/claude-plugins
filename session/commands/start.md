@@ -144,22 +144,35 @@ Same global inbox compact display as above if `_inbox.md` has items.
 
 **For all other sessions**, check `~/.claude/memory/sessions/<slug>/_inbox.md`.
 
-If the inbox file exists and has content beyond the header line, display each item numbered:
+If the inbox file exists and has content beyond the header line, scan for two categories of items based on whether an `[in-progress — ...]` line appears immediately after the `## [date]...` entry header:
+
+**In-progress items** (already picked up by this or a prior unfinished session) — show first:
 
 ```
-Inbox (<N> item(s))
+Resuming in-progress (<N> item(s)):
+  [1] [in-progress since YYYY-MM-DD] <description from entry header>
+  Mark done (numbers, 'all') / Keep working / skip
+```
+
+- **Mark done:** strip the `[in-progress — ...]` line, archive with `[DONE YYYY-MM-DD]` stamp (see Archive files below), remove entry from inbox, remove matching `[inbox] <item>` from session Open items.
+- **Keep working:** no change — stays in inbox as in-progress, stays in Open items.
+
+**Pending items** (no in-progress marker) — show after:
+
+```
+Inbox (<N> item(s)):
   [1] [date] from <source-slug> / <session-name>
       - <one-line summary>
   [2] [date] from <source-slug> / <session-name>
       - <one-line summary>
 ```
 
-If multiple items, offer a bulk shortcut first: **"Handle all: Work on all / Mark all done / Move all to backlog / Keep all"**. If no shortcut, handle each item individually with: **Work on it / Mark done / Move to backlog / Keep**
+If multiple pending items, offer a bulk shortcut first: **"Handle all: Work on all / Mark all done / Move all to backlog / Keep all"**. Handle each item individually with: **Work on it / Mark done / Move to backlog / Keep**
 
-- **Work on it:** move the full entry to the archive file immediately with a `[PICKED UP YYYY-MM-DD — <session-name>]` stamp (the inbox item is handled — its job was routing the work to a session; the stamp creates a bidirectional link back to the session that owns it); add a corresponding line to the session `Open items` prefixed with `[inbox]` (e.g. `- [inbox] Inbox archive system design`) so checkpoint/finish know to prompt for completion later
-- **Mark done:** move the full entry to the archive file (see below) with a `[DONE YYYY-MM-DD]` stamp prepended; remove the entry from the inbox file
-- **Move to backlog:** move the full entry from the inbox file to the backlog file (`_backlog_<name>.md` for plugins, `_backlog.md` for others); remove from inbox. Create the backlog file if it doesn't exist with header `# Backlog — <name> plugin` (plugin) or `# Backlog — <slug>` (others). No archive — backlog items stay until explicitly deleted.
-- **Keep:** leave the entry in inbox; do NOT add to Open items — user will deal with it later
+- **Work on it:** insert `[in-progress — <session-name>, YYYY-MM-DD]` on the line immediately after the `## [date]...` header in the inbox file. Do NOT archive yet — the item stays in the inbox until work is complete. Add `[inbox] <short description>` to session `Open items`. For items with significant depth, offer: "Create a work file for decisions/notes? (yes / skip)" — if yes, create `~/.claude/memory/sessions/<slug>/_work_<name>_YYYY-MM-DD-<short-slug>.md` with the original problem and a `## Notes` section; add `Work file: _work_<name>_YYYY-MM-DD-<short-slug>.md` to the inbox entry on a new line after the in-progress marker.
+- **Mark done:** archive with `[DONE YYYY-MM-DD]` stamp (see Archive files), remove from inbox.
+- **Move to backlog:** move to backlog file (`_backlog_<name>.md` for plugins, `_backlog.md` for others), remove from inbox. Create the backlog file if it doesn't exist with header `# Backlog — <name> plugin` (plugin) or `# Backlog — <slug>` (others). No archive — backlog items stay until explicitly deleted.
+- **Keep:** leave as-is. Do NOT add to Open items.
 
 If the file does not exist or contains only the header, skip silently.
 
@@ -169,11 +182,13 @@ If the file does not exist or contains only the header, skip silently.
 
 Create the archive file if it does not exist. Archive entry format (append, blank line between entries):
 ```
-[DONE YYYY-MM-DD]                          ← for "Mark done" (fully resolved, no session needed)
-[PICKED UP YYYY-MM-DD — <session-name>]    ← for "Work on it" (in progress; links back to the session)
-[original date line]
+[DONE YYYY-MM-DD]
+[original ## date line]
   - [original item content]
+  [Work file: _work_<name>_YYYY-MM-DD-<slug>.md]   ← only if a work file was created
 ```
+
+All archived entries use `[DONE YYYY-MM-DD]`. The `[in-progress — ...]` marker is stripped before archiving — it is only meaningful while the work is active.
 
 **Auto-purge archive:** After handling inbox items, if the archive file exists, read it and drop any entries whose `[DONE YYYY-MM-DD]` date is more than 30 days before today. Rewrite the file with only the retained entries (preserving the header line).
 
