@@ -233,13 +233,33 @@ For **personal**, no category prompt — and Teams chat is always `none` (no loo
 
 ### 6a. Session Mode
 
-Ask: **"Mode? coding / planning / both"**
+Use **AskUserQuestion** with a single-select question:
 
-- **coding** — full access; implement freely *(default — use if not sure)*
-- **planning** — read-only; design, analyze, write to inbox — no code edits or file writes
-- **both** — full access; planning and coding in the same session
+```
+question: "What mode?"
+header: "Mode"
+options:
+  - label: "coding"
+    description: "Full access — implement freely (default)"
+  - label: "planning"
+    description: "Read-only — design, analyze, write to inbox; no code edits or file writes"
+  - label: "both"
+    description: "Full access — planning and coding in the same session"
+```
 
-For **resume**: read `Mode` from the existing session file and show it in the resume block. Offer to change it: "Mode is [current] — change? (yes / keep)". Prompt for the new mode only if the user says yes.
+For **resume**: the current mode is already shown in the resume block. Use AskUserQuestion with two options:
+
+```
+question: "Mode is [current] — keep it or change?"
+header: "Mode"
+options:
+  - label: "Keep [current]"
+    description: "Continue with the existing mode"
+  - label: "Change"
+    description: "Pick a different mode"
+```
+
+If the user selects "Change", present the three-option AskUserQuestion above.
 
 Store the result as `mode` for use in Step 8.
 
