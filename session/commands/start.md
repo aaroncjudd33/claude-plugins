@@ -9,6 +9,31 @@ Begin a working session. Establishes session identity, Teams chat, and routes in
 
 ## Instructions
 
+### 0. Fast-Path Argument Check
+
+If arguments were passed to `/session:start`, attempt to resolve them before running the full discovery flow.
+
+**Detect arg type** (checked in order):
+
+| Pattern | Example | Resolves to |
+|---------|---------|-------------|
+| `BPT2-XXXX` (Jira story key) | `/session:start BPT2-6429` | story session |
+| `CAB-XXXX` (CAB key) | `/session:start CAB-9260` | cab session |
+| `cab BPT2-XXXX [...]` | `/session:start cab BPT2-6429 BPT2-6430` | new CAB for those stories |
+| Plugin name in marketplace | `/session:start release` | plugin session |
+
+**Fast-path flow:**
+1. Run `pwd`, extract slug, read `~/.claude/plugins/user-config.json` (same as Step 1).
+2. Derive session type and target name from the arg (story key → type=story, name=BPT2-XXXX; plugin name → type=plugin, name=<plugin>; etc.).
+3. Check whether `~/.claude/memory/sessions/<slug>/<name>.md` exists:
+   - **Exists** → go directly to Step 4 (Resume existing) with that session.
+   - **Does not exist** → go directly to Step 6 (Establish Session Identity) as a new session of that type, then Step 9 routing.
+4. Skip Steps 2, 3 entirely — no session listing, no inbox counts, no menu.
+
+**No argument or unrecognized argument:** fall through to Step 1 — run the full discovery flow as normal.
+
+---
+
 ### 1. Derive Repo Slug and Session Type
 
 Run `pwd` and extract the **last path component** as the repo slug:
