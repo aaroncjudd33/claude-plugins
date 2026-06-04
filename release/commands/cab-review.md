@@ -55,11 +55,15 @@ Call `editJiraIssue` to set the assignee to that account ID.
 
 If the API rejects the edit (the card may be locked once in Change Review), report: "Assignee could not be set via API — assign Sudhakar Seerapu manually in Jira."
 
-### 5. Post Teams notification
+### 5. Post Teams notification to CAB chat
 
 Read `~/.claude/memory/sessions/<slug>/CAB-XXXX.md` for the `Teams chat` field. Look up the chat ID in `~/.claude/plugins/known-chats.md`.
 
-If `Teams chat` is `none` or not found in known-chats, skip this step.
+If not found in known-chats, the CAB chat was not created in Phase 1 — create it now before proceeding:
+- Read `~/.claude/plugins/team.json`, filter `story-chat` role, collect `teamsUserId` fields (do not include the authenticated user's email)
+- Create the chat with topic `CAB-XXXX — [CAB summary]`
+- Add to `~/.claude/plugins/known-chats.md`
+- Update the session file `Teams chat` field with the new chat name
 
 Read `~/.claude/plugins/marketplaces/ajudd-claude-plugins/comms/skills/comms/references/teams-html-guide.md` before drafting.
 
@@ -74,27 +78,26 @@ Draft a message with:
 
 Send via yl-msoffice `send_chat_message` → `confirm_action`.
 
-### 6. Post status update to primary story's Teams chat
+### 6. Post status update to all related story chats
 
-Take the first story key from the session file's `Related stories` field as the primary story.
+For **each** story key in the session file's `Related stories` field:
 
-Read `~/.claude/memory/sessions/<slug>/<BPT2-XXXX>.md` for the primary story's `Teams chat` field. Look up the chat ID in `~/.claude/plugins/known-chats.md`. If not found or `none`, skip this step.
-
-Call `getJiraIssue` on the primary story to get its current Jira status.
+1. Read `~/.claude/memory/sessions/<slug>/<BPT2-XXXX>.md` for the story's `Teams chat` field. Look up the chat ID in `~/.claude/plugins/known-chats.md`. If not found or `none`, skip that story.
+2. Call `getJiraIssue` on the story to get its current Jira status.
 
 Read `~/.claude/plugins/marketplaces/ajudd-claude-plugins/comms/skills/comms/references/teams-html-guide.md` before drafting.
 
-Draft a message including:
+Draft a message for each story chat including:
 - CAB card link + status (now In Change Review)
 - Story link + current Jira status
 - PR link (if present)
 - Deploy date/time in both MDT and UTC
-- Post-deployment checks from the story session file's `Post-deployment checks` field (list them unchecked)
+- Post-deployment checks from that story's session file `Post-deployment checks` field (list them unchecked)
 - Signature: `<p><em>Posted by Claude Code on behalf of {USER_NAME}</em></p>`
 
-**Preview the full message and wait for explicit "yes" before sending.**
+**Preview all messages together and wait for explicit "yes" before sending any.**
 
-Send via yl-msoffice `send_chat_message` → `confirm_action`.
+Send each via yl-msoffice `send_chat_message` → `confirm_action`.
 
 ### 7. Send calendar invite for deploy window
 
@@ -129,6 +132,6 @@ Report:
 - CAB card transitioned to Change Review
 - Assignee set to Sudhakar (or manual action required)
 - Teams notification sent (or skipped)
-- Story chat status update sent (or skipped)
+- Story chat status updates sent to all related story chats (or skipped where chat not found)
 - Calendar invite sent (or skipped)
 - Next: wait for approval (Implementation status), then run `/release:deploy`

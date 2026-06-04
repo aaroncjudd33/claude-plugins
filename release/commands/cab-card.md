@@ -125,7 +125,19 @@ If a BPT2 CAB key was identified in step 2, call `createIssueLink`:
 - Type: `Relates` (CAB card relates to BPT2 CAB)
 - Inward issue: CAB-XXXX, Outward issue: BPT2-ZZZZ
 
-### 9. Write session state
+### 9. Create the CAB Teams chat
+
+Read `~/.claude/plugins/team.json`. Filter members with the `story-chat` role and collect their `teamsUserId` fields. Do **not** include `ajudd@youngliving.com` — the authenticated user is added automatically.
+
+Create the chat via yl-msoffice with:
+- **Topic:** `CAB-XXXX — [CAB card summary]`
+- **Members:** `story-chat` role user IDs from team.json
+
+If creation fails, stop: "CAB Teams chat could not be created. Resolve this before continuing — the chat is required for release communications."
+
+Add the new chat to `~/.claude/plugins/known-chats.md` (Name, Chat ID, Active=yes, Members list, Topic).
+
+### 10. Write session state
 
 Write `~/.claude/memory/sessions/<slug>/CAB-XXXX.md`:
 
@@ -157,4 +169,5 @@ Report:
 - BPT2 stories collected
 - BPT2 CAB back-linked (if present)
 - Any story status warnings
+- Teams chat created and registered
 - Next: Phase 2 (release branch + PR) — run when feature PRs are merged to develop
