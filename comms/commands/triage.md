@@ -32,13 +32,22 @@ Check `to_accept` first (before sender-only rules). For each match, find the cal
 
 Build the arrays:
 - `to_move`: `[{ id, folderId, folderName, isRead, markRead }]`
-- `unmatched`: `[{ id, subject, fromName, fromAddress, receivedAt, isRead }]`
+- `unmatched`: `[{ id, subject, fromName, fromAddress, receivedAt, isRead, priority }]`
+
+### Priority Flagging
+
+After building `unmatched`, scan each email's `subject` and `fromName` for priority signals (case-insensitive):
+- **Name match**: contains "Aaron" or "ajudd"
+- **Story key**: subject matches `BPT2-\d+`
+- **Urgency**: subject contains any of: "urgent", "blocked", "asap", "critical", "action required", "deadline", "today"
+
+Set `priority: true` on any match. Sort flagged emails to the top of the `unmatched` array.
 
 Print the plan:
 ```
 Plan:   2 → accept (BPT2 Daily Standup, BPT2 Refinement)
        12 → silent moves (GitHub: 7, Bamboo: 3, Braze: 2)
-       14 → interactive triage
+       14 → interactive triage (3 flagged)
 Executing silent phase...
 ```
 
@@ -91,11 +100,13 @@ Wait for the user to choose 1 or 2, then follow the section below.
 
 ### Mode 1 — All at Once
 
-Display the numbered list, columns aligned:
+Display the numbered list, columns aligned. Show `[!]` for priority-flagged emails (they are already sorted to the top):
 ```
-  #   From                                           Subject                          Date
-  1   GitHub <notifications@github.com>              PR #123 merged                   Apr 14
-  2   Workday <wd@myworkday.com>                     Action Required: Time Sheet       Apr 13
+  #    From                                           Subject                          Date
+  1 [!] Aaron Judd <ajudd@...>                       Re: BPT2-6404 question           Apr 14
+  2 [!] Maikol Porras <v-mporras@...>                Urgent: blocked on deploy        Apr 14
+  3    GitHub <notifications@github.com>              PR #123 merged                   Apr 13
+  4    Workday <wd@myworkday.com>                     Action Required: Time Sheet      Apr 13
   ...
 ```
 
@@ -130,8 +141,11 @@ For each `read` item, call `mcp__claude_ai_yl-msoffice__get_email` directly in t
 
 ### Mode 2 — One at a Time
 
-For each email in sequence, show:
+For each email in sequence, show. Prefix `[!]` on priority-flagged emails:
 ```
+[1/14] [!]  Maikol Porras  <v-mporras@...>  —  Urgent: blocked on deploy  —  Apr 14
+Action?  skip / action / move/<folder> / rule/<folder> / read / delete
+
 [2/14]  GitHub  <notifications@github.com>  —  PR #123 merged  —  Apr 14
 Action?  skip / action / move/<folder> / rule/<folder> / read / delete
 ```
