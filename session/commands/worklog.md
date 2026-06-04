@@ -1,68 +1,122 @@
 ---
 name: worklog
-description: Show work log entries for a given day. Accepts natural language dates — today, yesterday, last Tuesday, April 15, a specific date, etc.
+description: Show work log entries. Accepts a date, rolling window (3d, 5d, last week), or story key (BPT2-XXXX) to filter across all dates.
 ---
 
 # Session: Work Log
 
-Show what was accomplished during sessions on a given day.
+Show what was accomplished during sessions. Supports single dates, rolling windows, and cross-date story filtering.
 
 ## Instructions
 
-### 1. Resolve the Date and Flags
+### 1. Parse Arguments and Mode
 
-Parse the arguments:
-- Extract `--brief` if present and set `brief_mode = true`; remove it from the date portion
-- Resolve the remaining date string in any natural language form:
-  - `today` / `(no argument)` → today's date
-  - `yesterday` → yesterday's date
-  - `last Tuesday`, `last Monday`, etc. → the most recent occurrence of that weekday
-  - `April 15`, `Apr 15`, `4/15` → that date in the current year (or prior year if it would be in the future)
-  - `2026-04-10`, `April 10 2026`, etc. → that exact date
+Extract `--brief` if present → `brief_mode = true`. Remove it from the remaining args.
 
-Resolve to a `YYYY-MM-DD` string. If the date is ambiguous or unparseable, ask the user to clarify.
+Detect mode from the remaining argument:
 
-### 2. Read the Worklog File
+**Story filter mode** — arg matches a session/story key pattern (e.g. `BPT2-6258`, `session`, `release`, any known session name):
+- Set `mode = story_filter`, `filter_key = <arg>`
 
-Read `~/.claude/memory/worklog/<YYYY-MM-DD>.md`.
+**Rolling window mode** — arg matches a duration pattern:
+- `3d`, `5d`, `7d`, `Nd` → last N calendar days (including today)
+- `1w`, `2w` → last 7 or 14 days
+- `last N days` / `last N weeks` / `last week` → same
+- Set `mode = window`, compute `start_date` and `end_date` (today)
+- Cap at 14 days — if the user requests more, show the last 14 and note the cap
 
-- If the file does not exist: output `No worklog entries for <friendly date>.` and stop.
-- If the file is empty or has no entries: same message.
+**Single date mode** (default):
+- `today` / `(no argument)` → today
+- `yesterday` → yesterday
+- `last Tuesday` etc. → most recent occurrence of that weekday
+- `April 15`, `Apr 15`, `4/15`, `2026-04-10` → that date
+- Set `mode = single`, `target_date = <YYYY-MM-DD>`
+
+If the argument is ambiguous or unparseable, ask the user to clarify.
+
+### 2. Collect Entries
+
+**Single date:** Read `~/.claude/memory/worklog/<target_date>.md`. If missing or empty: `No worklog entries for <friendly date>.` and stop.
+
+**Rolling window:** Enumerate all `YYYY-MM-DD.md` files in `~/.claude/memory/worklog/` whose date falls within `[start_date, end_date]`. Read each. Skip missing dates silently. If no files found: `No worklog entries for the last N days.` and stop.
+
+**Story filter:** Enumerate all `YYYY-MM-DD.md` files in `~/.claude/memory/worklog/` within the last 30 days. Read each. Extract only `## HH:MM` entries whose session name contains `filter_key` (case-insensitive). Collect matching entries tagged with their source date. If no matches: `No worklog entries found for "<filter_key>" in the last 30 days.` and stop.
 
 ### 3. Output
 
-Print a header:
+#### Single date
+
 ```
 Work Log — <DayOfWeek>, <Month> <Day>, <Year>
 ================================================================
-```
 
-Then synthesize a **Day Summary** from all entries and print it immediately after the header:
-
-```
 Summary
   - <theme 1>
   - <theme 2>
   - <theme 3 if warranted>
 ```
 
-2–3 bullets max. Synthesize themes from the entry content — do not copy accomplishment text verbatim. Each bullet names a domain or initiative (e.g. "Session plugin hardening — inbox count fix and worklog enhancements", "GLB E2E verified against sandbox, blocked on SSM params in prod"). Aim for a scan-friendly read of the day.
+2–3 bullets. Synthesize themes from entries — do not copy text verbatim. Each bullet names a domain or initiative (e.g. "Session plugin inbox redesign — in-progress state model shipped", "GLB sandbox verified against env6").
 
-If `brief_mode = true`, stop here — do not print the per-entry detail.
+If `brief_mode`, stop after summary.
 
-Otherwise, print a blank line then each `## HH:MM — name (type)` entry:
-
+Otherwise print each entry:
 ```
 HH:MM — session-name (type)
 
   Accomplished: <value>
-  Open items:   <value, or "none">
+  Open items:   <value or "none">
 ```
 
-Separate entries with a blank line. Preserve the order they appear in the file (chronological).
+Chronological order, blank line between entries.
 
-If only one entry exists, still use the same format — no special-casing.
+#### Rolling window
+
+```
+Work Log — Last N days  (<start friendly> – <end friendly>)
+================================================================
+
+Summary
+  - <theme 1>
+  - <theme 2>
+  - <theme 3>
+  - <theme 4 if warranted>
+```
+
+3–4 bullets max synthesized across all entries in the window. Name themes broadly enough to span multiple days (e.g. "Release plugin comms gap work across 3 sessions", "Story dashboard deploy-date visibility").
+
+If `brief_mode`, stop after summary.
+
+Otherwise print entries day-by-day, oldest first:
+```
+<DayOfWeek>, <Month> <Day>
+---
+HH:MM — session-name (type)
+
+  Accomplished: <value>
+  Open items:   <value or "none">
+```
+
+Separate days with a blank line. Within each day, entries are chronological.
+
+#### Story filter
+
+```
+Work Log — <filter_key>  (last 30 days)
+================================================================
+```
+
+No theme synthesis — entries are already scoped to one story/session. Group by date, newest first:
+
+```
+<DayOfWeek>, <Month> <Day>
+  HH:MM — <session-name> (<type>)
+    Accomplished: <value>
+    Open items:   <value or "none">
+```
+
+`--brief` has no effect in story filter mode — entries are already compact.
 
 ### 4. Cleanup (silent)
 
-After displaying results, silently delete any files in `~/.claude/memory/worklog/` that are older than 30 days. No output for this step.
+After displaying results, silently delete any files in `~/.claude/memory/worklog/` older than 30 days. No output for this step.
