@@ -74,7 +74,51 @@ Draft a message with:
 
 Send via yl-msoffice `send_chat_message` → `confirm_action`.
 
-### 6. Update session state
+### 6. Post status update to primary story's Teams chat
+
+Take the first story key from the session file's `Related stories` field as the primary story.
+
+Read `~/.claude/memory/sessions/<slug>/<BPT2-XXXX>.md` for the primary story's `Teams chat` field. Look up the chat ID in `~/.claude/plugins/known-chats.md`. If not found or `none`, skip this step.
+
+Call `getJiraIssue` on the primary story to get its current Jira status.
+
+Read `~/.claude/plugins/marketplaces/ajudd-claude-plugins/comms/skills/comms/references/teams-html-guide.md` before drafting.
+
+Draft a message including:
+- CAB card link + status (now In Change Review)
+- Story link + current Jira status
+- PR link (if present)
+- Deploy date/time in both MDT and UTC
+- Post-deployment checks from the story session file's `Post-deployment checks` field (list them unchecked)
+- Signature: `<p><em>Posted by Claude Code on behalf of {USER_NAME}</em></p>`
+
+**Preview the full message and wait for explicit "yes" before sending.**
+
+Send via yl-msoffice `send_chat_message` → `confirm_action`.
+
+### 7. Send calendar invite for deploy window
+
+Read `~/.claude/plugins/team.json`. Filter members with the `cab-invite` role and collect their `email` fields.
+
+Read the deploy date/time from the CAB session file (or `customfield_13137` from the CAB card — ISO 8601 UTC). Convert to local time (MDT/MST as appropriate).
+
+Build a 1-hour calendar event:
+- **Subject:** `[CAB-XXXX] [one-liner on what's deploying]`
+- **Start:** deploy date/time
+- **End:** deploy date/time + 1 hour
+- **Attendees:** `cab-invite` role members
+- **Body:** CAB Jira link, primary story link, PR link, brief description of what's deploying
+
+**Preview before sending:**
+```
+Subject:   [CAB-XXXX] ...
+Time:      [day, date, time MDT / UTC]
+Attendees: [name1, name2, ...]
+```
+
+Wait for explicit approval, then call `create_event` → `confirm_action`.
+
+### 8. Update session state
 
 Update `~/.claude/memory/sessions/<slug>/CAB-XXXX.md`:
 - `Phase 4 complete`: yes
@@ -85,4 +129,6 @@ Report:
 - CAB card transitioned to Change Review
 - Assignee set to Sudhakar (or manual action required)
 - Teams notification sent (or skipped)
+- Story chat status update sent (or skipped)
+- Calendar invite sent (or skipped)
 - Next: wait for approval (Implementation status), then run `/release:deploy`

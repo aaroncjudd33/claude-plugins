@@ -86,7 +86,7 @@ gh pr edit <PR-number> --repo <org>/<repo> --add-reviewer <login1>,<login2>,...
 ```
 If the command fails with a 422 (unprocessable entity), one or more logins are not collaborators on this repo — warn the user which logins were rejected and continue. Do not fail the phase.
 
-### 5. Request PR approval (Virtual Office only)
+### 5. Request PR approval
 
 After the PR is created, send a casual message to the **BPT2 Group Chat** (`19:68b75b2e430c4563af874a71c71b9dcc@thread.v2`) requesting approval. Keep it friendly and brief — just the PR link, what it's for, and the deploy date.
 
@@ -102,8 +102,6 @@ Hey team! Can someone approve PR #NNN for [short description]? Targeting [day + 
 
 Posted by Claude Code on behalf of Aaron Judd
 ```
-
-Skip this step for CDK/non-VO repos — they do not require a separate PR approval request.
 
 ### 6. Update session state
 
