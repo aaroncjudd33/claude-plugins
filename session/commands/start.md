@@ -89,26 +89,25 @@ Same global inbox compact display as above if `_inbox.md` has items.
 
 **Resume existing [N]:**
 - Read `~/.claude/memory/sessions/<slug>/<name>.md`
-- Read `~/.claude/memory/sessions/<slug>/_history.md` — extract last 5 entries (or all if fewer).
-- Peek at the inbox file (`_inbox_<name>.md` for plugins, `_inbox.md` otherwise): take the description from the first entry (the `## [date] from ...` line's trailing text) for the "Next step" display. If inbox is empty, use "none".
-- Display the full last session block:
+- Read `~/.claude/memory/sessions/<slug>/_history.md` — count total entries and extract the most recent one for display.
+- Read the inbox file (`_inbox_<name>.md` for plugins, `_inbox.md` otherwise) and collect all items (both in-progress and pending) for display.
+- Display the resume block:
   ```
   Resuming <name>
-    Branch:          [branch]
-    Mode:            [planning / coding / both]
-    Open items:      [bullets or "none"]
-    Next step:       [first inbox item description, or "none"]
-    Related CAB:     [CAB-XXX]   ← story type only, omit if none
-    Post-deploy:     N pending / all acknowledged / none   ← story type only, omit if none
-    Epic:            [BPT2-XXXX]   ← story type only, omit if none
-    Related stories: [BPT2-XXXX, ...]   ← cab type only, omit if none
-
-  Recent history (<slug>):
-    [YYYY-MM-DD] <session-name> — <entry>   ← most recent first, up to 5
-    ...
+    Branch:      [branch]
+    Mode:        [planning / coding / both]
+    Open items:  [bullets or "none"]
+    Inbox (N):
+      [1] [date] <description> — in-progress
+      [2] [date] <description> — pending
+    Related CAB: [CAB-XXX]   ← story type only, omit if none
+    Post-deploy: N pending / all acknowledged / none   ← story type only, omit if none
+    Epic:        [BPT2-XXXX]   ← story type only, omit if none
+    Related:     [BPT2-XXXX, ...]   ← cab type only, omit if none
+    History:     N entries — last: [condensed one-liner of most recent _history.md entry]
   ```
+  If inbox is empty: `Inbox: none`. If `_history.md` does not exist: `History: none`.
 - For the `Post-deploy` line: count `- [ ]` items (pending) vs `- [x]` items (acknowledged) from the `Post-deployment checks:` field. Show "N pending" if any unchecked, "all acknowledged" if all checked, "none" if field is absent or empty.
-- If `_history.md` does not exist, omit the "Recent history" block entirely.
 - **If the session file has a `linked_sessions` field**, load each linked session and append a context block immediately after "Recent history":
   ```
   Linked session context:
@@ -201,7 +200,7 @@ Global inbox (<N> item(s)):
   [date] from <source-slug>/<session-name> — <regular item description>
 ```
 
-- **`[spawn]` entries:** Picking one up ("Work on it") runs the full new-session kickoff (Jira story, branch, etc.) with the spawn's linked context pre-loaded. Archive immediately at pickup with `[PICKED UP YYYY-MM-DD — <new-session-name>]` stamp.
+- **`[spawn]` entries:** Picking one up ("Work on it") runs the full new-session kickoff (Jira story, branch, etc.) with the spawn's linked context pre-loaded. Archive immediately at pickup with `[PICKED UP YYYY-MM-DD — <new-session-name>]` stamp. Note: spawns are the only inbox entries that archive at pickup — the spawn's job is done once it routes into a new session. All other items use the in-progress marker and archive only when work is complete.
 - **Regular entries:** Work on it / Mark done / Move to backlog / Keep — same flow as always.
 
 Global inbox items are never auto-cleared. The same handling options apply, using `_inbox_archive.md` as the archive.

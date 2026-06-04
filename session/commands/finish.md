@@ -14,8 +14,8 @@ Full end-of-day close. Runs the complete checklist to ensure nothing is left beh
 Run `pwd` and extract the repo slug (last path component).
 
 Determine the session name from conversation context:
-1. Look back at the current conversation for the most recent `session:start` output — find the "Resuming `<name>`" line. Use that name.
-2. If no `session:start` output is found in this conversation, fall back to reading `~/.claude/memory/sessions/<slug>/_active` as a hint.
+1. Look back at the current conversation for the most recent "Resuming `<name>`" line (from session:start) OR "Switching to `<name>`" line (from session:switch). Use whichever is most recent.
+2. If neither is found in this conversation, fall back to reading `~/.claude/memory/sessions/<slug>/_active` as a hint.
 3. If neither is available, ask the user: "Which session are you finishing?"
 
 Read `~/.claude/memory/sessions/<slug>/<name>.md` and extract:

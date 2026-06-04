@@ -14,7 +14,7 @@ Commit in-progress work, update memory, and save session state. Use this mid-ses
 Run `pwd` and extract the repo slug (last path component).
 
 Determine the session name from conversation context:
-1. Look for the most recent `session:start` output — find the "Resuming `<name>`" line.
+1. Look for the most recent "Resuming `<name>`" line (from session:start) OR "Switching to `<name>`" line (from session:switch). Use whichever is most recent.
 2. Fall back to reading `~/.claude/memory/sessions/<slug>/_active` if not in context.
 3. If neither is available, treat as `type: general`.
 

@@ -1,17 +1,17 @@
 # Project Inbox Convention
 
-How to leave cross-session or cross-project change instructions for a repo you're not currently working in.
+How to leave cross-session or cross-project work items for a plugin or session you're not currently working in.
 
 ## Location
 
 `~/.claude/memory/sessions/<repo-slug>/_inbox_<target>.md`
 
-The `<target>` segment identifies exactly what receives the change:
+The `<target>` segment identifies exactly what receives the item:
 
-- **Multi-plugin repos** (e.g. `ajudd-claude-plugins`): one file per plugin name — `_inbox_e2e.md`, `_inbox_comms.md`, `_inbox_session.md`, etc. Direct 1:1 mapping between inbox files and plugins.
+- **Multi-plugin repos** (e.g. `ajudd-claude-plugins`): one file per plugin — `_inbox_session.md`, `_inbox_release.md`, etc.
 - **Single-purpose repos**: use `_inbox.md` (no suffix needed).
 
-For `ajudd-claude-plugins`, the full set of inbox files is:
+For `ajudd-claude-plugins`, the full set of inbox files:
 
 ```
 _inbox_comms.md
@@ -24,29 +24,54 @@ _inbox_setup.md
 _inbox_story.md
 ```
 
-**Never write to a combined or global inbox for a multi-plugin repo.** If a change touches two plugins (e.g. e2e + session), split it into two entries — one per plugin file — and add a cross-reference note to each.
+If a change touches two plugins, split it into two entries and cross-reference each.
 
-## Format
-
-Each inbox entry is a dated H2 section:
+## Entry Format
 
 ```markdown
-## YYYY-MM-DD from <source-project> session — <short title>
+## [YYYY-MM-DD] from <source-slug> / <session-name> — <short title>
 
-**Action required — <type of change>.**  (or "No action needed — state update only.")
-
-<context: what's broken and why>
-
-### Proposed Fix
-<specific steps, file names, line numbers if known>
+<Context: what the item is, why it matters, what needs to happen.>
 ```
 
-## When to Use
+Keep it self-contained — the receiving session may pick this up weeks later with no memory of the source conversation.
 
-- You're in Project A and notice Project B needs a code or config change
-- You're doing setup/analysis and identify a plugin bug
-- A session produces a side-effect change in another plugin the owner should know about
+## Item Lifecycle
 
-## When Working in a Repo
+Items move through three states, all tracked inline in the inbox file:
 
-At session start, check only `_inbox_<plugin>.md` for the current plugin — the mapping is 1:1. Mark completed items done with the date resolved.
+**Pending** — item has arrived, not yet picked up:
+```markdown
+## [2026-05-13] from virtual-office / BPT2-6258 — Add /comms:pto command
+
+Add a `/comms:pto` command...
+```
+
+**In-progress** — session picked it up, work is underway. A marker is inserted after the `## [date]` header:
+```markdown
+## [2026-05-13] from virtual-office / BPT2-6258 — Add /comms:pto command
+[in-progress — session, 2026-06-04]
+[Work file: _work_session_2026-06-04-comms-pto.md]   ← optional, for deep items
+
+Add a `/comms:pto` command...
+```
+
+The item stays in the inbox file until work is complete. A matching `[inbox] Add /comms:pto command` line is added to the session's Open items.
+
+**Done** — work complete. Item is removed from inbox and appended to the archive file (`_inbox_<name>_archive.md` or `_inbox_archive.md`) with a `[DONE]` stamp:
+```markdown
+[DONE 2026-06-05]
+## [2026-05-13] from virtual-office / BPT2-6258 — Add /comms:pto command
+[Work file: _work_session_2026-06-05-comms-pto.md]   ← preserved if one was created
+```
+
+## Triage Options (at session:start / checkpoint / finish)
+
+- **Work on it** — inserts `[in-progress — <session>, <date>]` in the inbox entry, adds `[inbox] <item>` to session Open items. Does NOT archive yet.
+- **Mark done** — archives with `[DONE]` stamp, removes from inbox.
+- **Move to backlog** — moves to `_backlog_<name>.md` (plugin) or `_backlog.md` (others). No archive — stays until explicitly deleted.
+- **Keep** — leaves as-is in inbox. Does not add to Open items.
+
+## Auto-Purge
+
+At session:start, archive entries with `[DONE YYYY-MM-DD]` older than 30 days are dropped automatically. `[in-progress]` markers and backlog entries are never auto-purged.
