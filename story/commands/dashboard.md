@@ -68,7 +68,7 @@ project = BPT2 AND assignee WAS "{ACCOUNT_ID}" AND assignee is EMPTY AND updated
 project = CAB AND assignee = "{ACCOUNT_ID}" AND status not in (Done, Closed, Cancelled, Resolved, Released, Success, Remediated, Implemented) ORDER BY status ASC, updated DESC
 ```
 
-Request fields: `summary, status, assignee, duedate, priority`
+Request fields: `summary, status, assignee, duedate, priority, customfield_13137`
 
 Queries 1–3 feed the **Stories** section. Query 4 feeds the **CAB Cards** section. Apply the same registry tracking (auto-populate, change detection, lastSeen updates) to CAB results as to BPT2 results.
 
@@ -108,6 +108,13 @@ Any status not in this list falls after Backlog, alphabetically.
 
 **CAB cards section** — Query 4 results, grouped by status using the same ordering rules.
 
+For each CAB card, parse `customfield_13137` (Requested Deployment Date/Time) as the deploy date. Convert from UTC to local time for display. Compute days until deploy from today:
+- ≤ 2 days: `⚠ SOON`
+- ≤ 5 days: `in N days`
+- > 5 days: show date only
+- Past: `OVERDUE`
+- Absent: `no deploy date set`
+
 Use this format:
 
 ```
@@ -131,7 +138,9 @@ CAB Cards
 
 <STATUS>
   CAB-XXXX — Summary
-    Status: <status>  |  Assignee: <name>  |  Priority: <priority>
+    Deploy: Thu Jun 5, 2:00 PM MDT  ⚠ SOON  |  Assignee: <name>
+  CAB-XXXX — Summary
+    Deploy: Mon Jun 9, 9:00 AM MDT  in 5 days  |  Assignee: <name>
 ```
 
 Omit any status group that has no items. If there are no CAB cards, omit the CAB Cards section entirely.
