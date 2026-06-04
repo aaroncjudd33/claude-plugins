@@ -85,11 +85,21 @@ yl-cdk check:
 **story:**
 - Is the story status current? Transition if needed.
 - Post a closing Jira comment: what was accomplished this session, what's next (testing, CAB, deployment). Business-readable — no file paths or class names. Check the most recent existing comment first; only post if it doesn't already cover this session's work.
+- **Epic memory update:** if the session file has an `Epic` field AND the story was just transitioned to Ready For Test, Approved for Release, or Done this session, prompt:
+  ```
+  Epic update — <key>
+    Mark this story complete in the Story Map and record final implementation notes?
+    Yes / Skip
+  ```
+  - **Yes:** read `~/.claude/memory/epics/<key>.md`. Update the Story Map row for this story (set status to Done/RFT with today's date). Append any final decisions or gotchas under the appropriate section. Save the file. Then: "Push epic update to linked Confluence architecture page? (Yes / Skip)" — only if the epic file contains a Confluence page link.
+  - **Skip:** no changes to the epic file.
+  - If the story did not move to a completion status this session, or the session has no `Epic` field, skip silently — no prompt.
 
 **cab:**
 - Are the CAB card fields up to date?
 - Is the release branch reflected correctly?
 - Post a closing comment to each story in `Related stories` (same format as story above).
+- **Epic validation:** for each story in `Related stories`, check if that story's session file has an `Epic` field and whether the epic's Story Map still shows the story as incomplete. If any are stale, prompt: "Epic memory for <key> may be out of date for <story> — update now? (Yes / Skip)"
 
 **plugin / personal / general:** Skip (including the yl-cdk check above).
 
@@ -104,8 +114,17 @@ Plugin, personal, and general: skip unless the user explicitly asks.
 
 ### 6. Confluence
 
-**story/cab only:** If this session's context has a linked Confluence page, prompt:
-"Does anything from this session need to go to Confluence?"
+**story/cab only:** If a Confluence page was explicitly created and linked for this story, prompt: "Update the Confluence page? (Yes / Skip)"
+
+If yes, update it as a clean implementation record:
+- What was built and how it works
+- Key decisions made and why
+- Gotchas and edge cases discovered
+- What a developer picking this up cold would need to know
+
+Strip planning debris — remove content about options evaluated but not chosen, design alternatives that didn't ship, or in-progress thinking. The page should read as a finished reference, not a transcript.
+
+**Note:** The epic's Confluence architecture page is handled in Step 4 as part of the epic update — do not duplicate it here.
 
 **Plugin, personal, and general:** Skip unless the user explicitly asks.
 

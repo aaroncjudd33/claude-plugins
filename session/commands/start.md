@@ -331,7 +331,7 @@ Any implementation work should be routed to this session's inbox for a coding se
 2. Check git branch — confirm it matches, offer to switch if not
 3. If the session file has no `Epic` field: check the Jira issue data from step 1 for an Epic Link.
    - **Epic Link found in Jira:** set `Epic: <key>` in the session file. Follow the same load/create flow as new kickoff step 2.
-   - **No Epic Link in Jira:** ask once: "Part of an epic? (enter epic key or skip)" — if provided, set `Epic: <key>` and follow the load/create flow.
+   - **No Epic Link in Jira:** skip silently — epic links are managed in Jira by the team lead; the session plugin reacts to them, it does not create them.
    - If the session file already has an `Epic` field, skip this step (epic was loaded in Step 4).
 4. Summarize: what's done, what's open, what's next
 
