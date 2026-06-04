@@ -10,21 +10,24 @@ Send a formatted Teams message based on the current conversation context.
 
 ## Steps
 
-1. **Identify the target chat** from the argument (e.g. `notes-migration`). Look up the chat ID in `~/.claude/plugins/known-chats.md`. If the name is not found, ask the user which chat to send to.
+1. **Identify the target chat** from the argument (e.g. `notes-migration`). Look up the chat ID in `~/.claude/plugins/known-chats.md` (filter to `Active=yes`). Match priority: (1) exact Name, (2) any Aliases entry, (3) substring Topic match. If not found, ask the user which chat to send to.
 
 2. **Determine the message content** from the current conversation context — what was just discussed, decided, or summarized. If the user gave explicit instructions about what to include, follow them. Otherwise use your judgment about what is relevant to share.
 
 3. **Compose the message** following all rules in `references/teams-html-guide.md`:
    - Intro `<p>` paragraph
-   - `<hr/>` between every section
-   - `<p><b>Section Title</b></p>` for section labels — never bare `<b>` or `<h3>`
+   - `<h2>` for section headers; `<p>&nbsp;</p>` between every section — never `<hr/>`
+   - `<p><b>Label</b></p>` for minor labels within a section — never bare `<b>` or `<h3>`
    - `<ul>`/`<li>` for bullets, nested `<ul>` for hierarchy
 
 4. **Enforce signature** — before showing any preview, verify the composed HTML ends with:
    `<p><em>Posted by Claude Code on behalf of {USER_NAME}</em></p>`
    If it is missing or malformed, add it now. Do not proceed to preview until it is present.
 
-5. **Show a preview** of the full message in readable form. Ask the user: "Ready to send, or would you like any changes?"
+5. **Show a preview in both formats:**
+   - **Plain text** — readable prose so the user can verify content and tone
+   - **HTML** — the exact markup that will be sent, so layout issues are visible before send
+   Ask the user: "Ready to send, or would you like any changes?"
 
 6. **Wait for explicit approval** before calling `send_chat_message`.
 

@@ -1,6 +1,6 @@
 ---
 name: comms
-description: "Background skill — do not run directly. Use /comms:message, /comms:sweep, or /comms:triage. Auto-loads when: sending Teams messages, managing email, or any Microsoft 365 communication."
+description: "Governs all Microsoft 365 communication via the yl-msoffice MCP. Auto-loads when: sending Teams messages, reading a chat, triaging or fetching email, sweeping the inbox, scheduling a calendar event, or running any /comms command (/comms:message, /comms:fetch, /comms:triage, /comms:sweep)."
 ---
 
 # Comms Skill
@@ -70,7 +70,7 @@ Only use for genuinely tabular data with 2–3 columns. See `references/teams-ht
 
 Use the `yl-msoffice` MCP tools in this order:
 
-1. **Find the chat ID** — look up the chat name or phrase in `references/known-chats.md` (filter to `Active=yes`). Match priority: (1) exact Name match, (2) any Aliases entry (comma-separated, match each individually), (3) substring Topic match. When the user says something informal ("my team chat", "the group chat", "cab chat"), check Aliases before Topic. If matched via alias, confirm before sending: "Matched '[phrase]' → [Name]. Using that — ok?" If not found, call `list_chats` to check whether it already exists in Teams before creating a new one. If it truly does not exist, use `teams.create_chat`, then add the new chat ID to both `references/known-chats.md` and `~/.claude/plugins/known-chats.md`.
+1. **Find the chat ID** — look up the chat name or phrase in `~/.claude/plugins/known-chats.md` (filter to `Active=yes`). Match priority: (1) exact Name match, (2) any Aliases entry (comma-separated, match each individually), (3) substring Topic match. When the user says something informal ("my team chat", "the group chat", "cab chat"), check Aliases before Topic. If matched via alias, confirm before sending: "Matched '[phrase]' → [Name]. Using that — ok?" If not found, call `list_chats` to check whether it already exists in Teams before creating a new one. If it truly does not exist, use `teams.create_chat`, then add the new chat ID to `~/.claude/plugins/known-chats.md`.
 2. **Compose the message** using the template above. Read `references/aaron-voice.md` first.
 3. **Show the full preview in both formats:**
    - **Plain text** — readable prose version so the user can verify content and tone
@@ -83,7 +83,7 @@ Use the `yl-msoffice` MCP tools in this order:
 
 When creating a new group chat:
 1. Use `teams.create_chat` with member emails and a topic. Do not include your own email — the authenticated user is added automatically.
-2. Save the returned chat ID to `references/known-chats.md` with `Active=yes`.
+2. Save the returned chat ID to `~/.claude/plugins/known-chats.md` with `Active=yes`.
 3. Confirm the chat was created before sending the first message.
 
 ---
@@ -141,11 +141,16 @@ The rule: capture everything, but don't let non-work images crowd out or be mist
 
 ## Email Triage
 
-The email commands (`fetch`, `triage`, `sweep`) work as a pipeline. Key behavioral rules:
+The email commands (`fetch`, `triage`, `sweep`) work as a pipeline.
 
-- **Cache contract.** All email commands read from / write to `C:\temp\email-cache.json`. This file must be fresh before running triage. If it is absent or stale, instruct the user to run `/comms:fetch` first.
-- **Always show the plan before executing.** Phase 1 of `triage` produces a move/mark-read plan. Display it and wait for confirmation before launching the Haiku sub-agent for batch execution.
-- **Delegate batch moves to Haiku.** `mail.move` and `mail.mark_read` responses return full message objects (5K–15K tokens each). Batch these calls in a Haiku sub-agent to keep the main context clean.
+**Three-phase structure (`/comms:triage`):**
+1. **Classify** — read cache and sender rules from `project_inbox_triage.md`, build `to_accept` (meeting invites matching accept rules), `to_move` (rule-matched senders), and `unmatched` arrays. No API calls. Show the plan and wait for confirmation.
+2. **Silent execute** — Haiku sub-agent processes `to_accept` (accept invite + delete email) and `to_move` (move + mark read). `mail.move` and `mail.mark_read` return full message objects (5K–15K tokens each) — always delegate to Haiku to keep main context clean.
+3. **Interactive triage** — for `unmatched` emails, offer Mode 1 (all at once, annotate by number) or Mode 2 (one at a time). Actions: skip / archive / action / move/X / rule/X / read / accept / remove / delete.
+
+**Key behavioral rules:**
+- **Cache contract.** All email commands read from / write to `C:\temp\email-cache.json`. If absent or stale, instruct the user to run `/comms:fetch` first.
+- **Rule-saving.** When the user creates a `rule/X` during interactive triage, immediately update the `## Sender Rules` table in `project_inbox_triage.md` and auto-resolve any remaining emails from that sender in the current loop.
 - **No signature in emails.** The "Posted by Claude Code on behalf of {USER_NAME}" signature is for Teams messages only — do not append it to email bodies.
 - **`mail.move` to `deleteditems` for deletes.** There is no `mail.delete` action — use `mail.move` with `folder=deleteditems` for all delete operations.
 
@@ -163,6 +168,6 @@ The email commands (`fetch`, `triage`, `sweep`) work as a pipeline. Key behavior
 
 ## Reference Files
 
-- `references/known-chats.md` — maps friendly chat names to Teams chat IDs (supports Active=yes/no toggle)
+- `~/.claude/plugins/known-chats.md` — maps friendly chat names to Teams chat IDs (global file, Active=yes/no toggle, alias lookup)
 - `references/teams-html-guide.md` — full HTML formatting rules for Teams messages
 - `references/aaron-voice.md` — Aaron's communication voice and tone — read before drafting any message
