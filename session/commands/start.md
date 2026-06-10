@@ -379,8 +379,10 @@ Any implementation work should be routed to this session's inbox for a coding se
 **Plugin — existing plugin:**
 1. Read `plugin.json`, all command `.md` files, `SKILL.md` if present, and all files under the skill's `references/` directory if it exists
 2. Check the session file for `plugin_reviewed: yes`. If missing or `no`, show:
-   > "⚠ This plugin has not been reviewed with plugin-dev tools yet. Run the code-reviewer agent against it when you get a chance."
-   Continue regardless — this is a reminder, not a blocker.
+   > "⚠ This plugin has not been reviewed with plugin-dev tools yet."
+   Follow immediately with: "Mark as reviewed? (Yes — I've already run it / No — remind me later)"
+   - **Yes:** update `plugin_reviewed: yes` in the session file immediately. No further action needed.
+   - **No:** continue. Will show again at next session start.
 3. Ask what needs to change if not already stated
 4. Confirm approach before making changes
 

@@ -162,6 +162,13 @@ Epic update (<key>):
 
 ### 6. Session Summary
 
+**Plugin type only — if `plugin_reviewed: no`:** before writing, prompt:
+```
+Plugin reviewed this session? (Yes — I ran the code-reviewer / No)
+```
+- **Yes:** set `plugin_reviewed: yes` in the session file.
+- **No:** leave as-is — reminder will fire again at next session start.
+
 Before writing, read the existing `Open items` from the session file. If there are any **non-`[inbox]`** items, display them and ask:
 
 ```
