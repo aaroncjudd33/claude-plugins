@@ -249,6 +249,17 @@ For each story key listed, prompt: "Transition BPT2-XXXX to Done?"
 - If yes: call `getTransitionsForJiraIssue` to find the Done transition ID, then `transitionJiraIssue`
 - After transitioning, update that story's session file (`BPT2-XXXX.md`) to set `Related CAB` to `none`
 
+### Transition BPT2 CAB tracking story
+
+Read `~/.claude/memory/sessions/<slug>/CAB-XXX.md` and check `Related BPT2 CAB`.
+
+If the field is absent or set to `none`, skip this section silently.
+
+If set (e.g., `BPT2-6478`):
+1. Call `getTransitionsForJiraIssue` on that BPT2 story key to find the Released transition — typically ID `231`
+2. Call `transitionJiraIssue` automatically — no user prompt
+3. Report inline: "Transitioned BPT2-XXXX to Released."
+
 ### Archive Proposed Work pages
 
 For each related BPT2 story, check whether a "Proposed Work" Confluence planning page exists. If found, archive it now that the story has shipped.
