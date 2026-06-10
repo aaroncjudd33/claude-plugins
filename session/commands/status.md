@@ -17,7 +17,7 @@ Check for a `mine` argument — if present, set `filter_mine = true`.
 
 List all `.md` files in `session_root` — skip `_active`, `_inbox*`, `_history*`, `_backlog*`, and `_context*` files.
 
-For each session file, read and extract:
+**Read all session files in parallel** (one read call per file), then extract:
 - `Name`
 - `Status` (default to `in-progress` if field absent)
 - `Branch`

@@ -1,4 +1,4 @@
----
+﻿---
 name: start
 description: Start a working session. Loads last session context and routes into the right workflow.
 ---
@@ -29,7 +29,7 @@ If arguments were passed to `/session:start`, attempt to resolve them before run
 3. Derive session type and target name from the arg (story key → type=story, name=BPT2-XXXX; plugin name → type=plugin, name=<plugin>; etc.).
 4. Check whether `<session_root>/<name>.md` exists:
    - **Exists** → go directly to Step 4 (Resume existing) with that session.
-   - **Does not exist** → go directly to Step 6 (Establish Session Identity) as a new session of that type, then continue through Steps 7–8 as normal before Step 9 routing.
+   - **Does not exist** → before Step 6, check `<session_root>/_inbox.md` for a `[spawn]` entry whose label matches the target name. If found, archive it immediately with stamp `[PICKED UP YYYY-MM-DD — <target-name>]` to `<session_root>/_inbox_archive.md` (creating the archive file if needed). Then go to Step 6 (Establish Session Identity) and continue through Steps 7–8 as normal before Step 9 routing.
 5. Skip Steps 2, 3 entirely — no session listing, no inbox counts, no menu.
 
 **No argument or unrecognized argument:** fall through to Step 1 — run the full discovery flow as normal.
@@ -59,9 +59,9 @@ Resolve `session_root` and `handle` using Path Resolution (see Session Skill). I
 
 List all `.md` files in `session_root` (skip `_active`, `_inbox*`, `_history*`, and `_backlog*` files).
 
-For each file, read it and extract: `Name`, `Branch`, `Type`, `updated-by` (may be absent in older session files — treat as empty).
+**Read all session files in parallel** (one read call per file), then extract: `Name`, `Branch`, `Type`, `updated-by` (may be absent in older session files — treat as empty). **Read all inbox files in the same parallel batch as the session files.**
 
-For **last worked on**: read `<session_root>/_history.md` and find the most recent entry whose session name matches. If `_history.md` does not exist or has no matching entry, fall back to the `Last worked on` field in the session file.
+For **last worked on**: read `<session_root>/_history.md` and find the most recent entry whose session name matches. History entries have the format `[YYYY-MM-DD @handle] <session-name> — <description>` — the session name is the first token after `] ` and before ` —`. If `_history.md` does not exist or has no matching entry, fall back to the `Last worked on` field in the session file.
 
 For **plugin sessions**, also check `<session_root>/_inbox_<name>.md` and count **logical items** — lines that begin with `[20` or `## ` (entry markers), not raw non-blank lines. Body text under an entry does not count as a separate item. If count > 0, note it for display.
 
@@ -121,6 +121,8 @@ Same global inbox compact display as above if `_inbox.md` has items.
 ### 4. User Picks — Load or Create Session File
 
 **Resume existing [N]:**
+
+**Run these three reads in parallel:**
 - Read `<session_root>/<name>.md`
 - Read `<session_root>/_history.md` — count total entries and extract the most recent one for display.
 - Read the inbox file (`_inbox_<name>.md` for plugins, `_inbox.md` otherwise — from `session_root`) and collect all items (both in-progress and pending) for display.
@@ -141,7 +143,7 @@ Same global inbox compact display as above if `_inbox.md` has items.
   ```
   If inbox is empty: `Inbox: none`. If `_history.md` does not exist: `History: none`.
 - For the `Post-deploy` line: count `- [ ]` items (pending) vs `- [x]` items (acknowledged) from the `Post-deployment checks:` field. Show "N pending" if any unchecked, "all acknowledged" if all checked, "none" if field is absent or empty.
-- **If the session file has a `linked_sessions` field**, load each linked session and append a context block immediately after "Recent history":
+- **If the session file has a `linked_sessions` field**, load each linked session and append a context block immediately after the `History:` line in the resume block:
   ```
   Linked session context:
     <linked-session-name> (<type>) — <last worked on>
@@ -341,7 +343,7 @@ updated: [today's date]
 - **Last worked on:** [will be updated at checkpoint]
 - **Open items:** [carried from previous session, or "none"]
 - **Next step:** [will be updated at checkpoint]
-- **Plugin reviewed:** [yes / no]   ← plugin type only, omit for other types
+- **Plugin reviewed:** <version>   ← plugin type only; write current plugin.json version when marking reviewed; omit for other types
 - **Related CAB:** [CAB-XXX or "none"]   ← story type only, omit for other types
 - **Epic:** [BPT2-XXXX]   ← story type only; omit if no Jira epic link; set from Jira Epic Link during new story kickoff
 - **Post-deployment checks:**   ← story type only, omit for other types; omit entire field if none defined
@@ -377,12 +379,13 @@ Any implementation work should be routed to this session's inbox for a coding se
 ```
 
 **Plugin — existing plugin:**
-1. Read `plugin.json`, all command `.md` files, `SKILL.md` if present, and all files under the skill's `references/` directory if it exists
-2. Check the session file for `plugin_reviewed: yes`. If missing or `no`, show:
-   > "⚠ This plugin has not been reviewed with plugin-dev tools yet."
+1. **Read all of these files in parallel as a single batch:** `plugin.json`, all command `.md` files, `SKILL.md` if present, and all files under the skill's `references/` directory if it exists
+2. Check `plugin_reviewed` in the session file. Read the current version from `plugin.json`. If `plugin_reviewed` is missing, a legacy `yes`/`no` value, or its `MAJOR.MINOR` differs from the current version's `MAJOR.MINOR`, show:
+   > "⚠ This plugin has not been reviewed yet." (if missing/legacy) or "⚠ This plugin has not been reviewed since v<stored> (current: v<current>)."
    Follow immediately with: "Mark as reviewed? (Yes — I've already run it / No — remind me later)"
-   - **Yes:** update `plugin_reviewed: yes` in the session file immediately. No further action needed.
-   - **No:** continue. Will show again at next session start.
+   - **Yes:** update `plugin_reviewed: <current-version>` in the session file immediately. No further action needed.
+   - **No:** continue. Will show again at next session start if minor version still differs.
+   Patch bumps within the same `MAJOR.MINOR` do not trigger the reminder.
 3. Ask what needs to change if not already stated
 4. Confirm approach before making changes
 

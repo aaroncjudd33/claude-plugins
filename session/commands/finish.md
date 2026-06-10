@@ -48,7 +48,7 @@ Session Finish — <name> (<type>)
 | personal | current working directory |
 | general | skip |
 
-Check:
+**Run all git checks in parallel:**
 - Uncommitted/unstaged changes (`git status`)
 - Stashed changes (`git stash list`)
 - Unpushed commits (`git log --oneline @{u}..HEAD 2>/dev/null`)
@@ -156,7 +156,7 @@ Check if `<voPlaywrightTestsDir>/.browser-ws.txt` exists.
 - If it does not exist → skip.
 - If it exists, check ownership before prompting:
   1. Read `<voPlaywrightTestsDir>/.browser-owner.txt` if present
-  2. Compute current owner: `<slug>/<session-name>` (slug = last component of `pwd`; session name = contents of `~/.claude/memory/sessions/<slug>/_active`)
+  2. Compute current owner: `<slug>/<session-name>` (slug = last component of `pwd`; session name = the `<name>` resolved in Step 0)
   3. If owner file exists AND does not match current session → log "Browser running (owned by `<owner>`) — skipping close" and skip
   4. If owner matches OR no owner file exists → prompt: "Browser still running on port [N] — stop it? (or run `/e2e:stop`)"
      - If yes: run `npm run browser:stop` from `<voPlaywrightTestsDir>`, then delete `.browser-ws.txt` and `.browser-owner.txt`
@@ -252,6 +252,8 @@ Inbox — any pending items addressed this session (outside in-progress tracking
 
 If no pending items, skip silently.
 
+**Auto-purge archive:** After handling inbox items, if the archive file exists, drop entries whose `[DONE YYYY-MM-DD]` date is more than 30 days before today. Rewrite with only retained entries (preserving the header line).
+
 ### 10. History Entry
 
 Compose a 1-sentence description of the work accomplished this session. Write it as a complete thought that stands alone without conversation context.
@@ -266,12 +268,12 @@ This entry becomes the value for `Last worked on` in the session file.
 
 ### 11. Session Summary
 
-**Plugin type only — if `plugin_reviewed: no`:** before writing, prompt:
+**Plugin type only — if `plugin_reviewed` is missing, a legacy `yes`/`no` value, or its `MAJOR.MINOR` < current plugin.json version's:** before writing, prompt:
 ```
 Plugin reviewed this session? (Yes — I ran the code-reviewer / No)
 ```
-- **Yes:** set `plugin_reviewed: yes` in the session file.
-- **No:** leave as-is — reminder will fire again at next session start.
+- **Yes:** set `plugin_reviewed: <current-plugin-version>` in the session file.
+- **No:** leave as-is — reminder fires at next session start if minor version still differs.
 
 Before writing, read the existing `Open items` from the session file. If there are any **non-`[inbox]`** items, display them and ask:
 
@@ -306,7 +308,7 @@ updated: [today's date]
 - **Last worked on:** [most recent entry from _history.md — do not synthesize, read from file]
 - **Open items:** [bullet list, or "none"]
 - **Next step:** [concrete first action when resuming tomorrow]
-- **Plugin reviewed:** [yes / no]   ← plugin type only, omit for other types
+- **Plugin reviewed:** <version>   ← plugin type only; write current plugin.json version when marking reviewed; omit for other types
 - **Related CAB:** [CAB-XXX or "none"]   ← story type only, omit for other types
 - **Post-deployment checks:**   ← story type only, omit for other types; omit entire field if none defined
   - [ ] <check description>

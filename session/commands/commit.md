@@ -18,10 +18,21 @@ Determine the session name from conversation context:
 2. Fall back to reading `~/.claude/memory/sessions/<slug>/_active` if not in context.
 3. If neither is available, ask the user: "Which session are you committing for?"
 
-Read `<session_root>/<name>.md` and extract:
-- `type` (plugin / story / cab / general)
+Read `<session_root>/<name>.md` and extract all fields. Minimally:
+- `type` (plugin / story / cab / personal / general)
 - `name`
 - `branch`
+- `mode` (may be absent — preserve as-is)
+- `title` (story/cab only — may be absent in older session files; treat as empty)
+- `category` (general only — may be absent)
+- `teams_chat`
+- `related_cab` (story only — may be absent)
+- `post_deployment_checks` (story only — preserve entire block verbatim)
+- `related_stories` (cab only — may be absent)
+- `linked_sessions` (may be absent)
+- `plugin_reviewed` (plugin only — may be absent)
+
+When writing the session file in Step 6, preserve all fields present in the existing file — do not drop any field that was read here.
 
 ### 1. Git Scan
 
@@ -34,6 +45,8 @@ Read `<session_root>/<name>.md` and extract:
 | general | current working directory |
 
 Run from the appropriate directory:
+
+**Run all git checks in parallel:**
 
 ```bash
 git status
@@ -156,6 +169,7 @@ updated: [today's date]
 - **Name:** [name]
 - **updated-by:** @<handle>
 - **Title:** [Jira summary]   ← story/cab only; omit for other types
+- **Category:** [category]   ← general only, omit for other types
 - **Teams chat:** [teams_chat or "none"]
 - **Scope:** [scope path]   ← preserve from existing file; write relative if new; omit for general
 - **Status:** in-progress
@@ -163,7 +177,7 @@ updated: [today's date]
 - **Last worked on:** [most recent entry from _history.md — do not synthesize, read from file]
 - **Open items:** [bullet list, or "none"]
 - **Next step:** [concrete next action]
-- **Plugin reviewed:** [yes / no]   ← plugin type only, omit for other types
+- **Plugin reviewed:** <version>   ← plugin type only; write current plugin.json version when marking reviewed; omit for other types
 - **Related CAB:** [CAB-XXX or "none"]   ← story type only, omit for other types
 - **Post-deployment checks:**   ← story type only; preserve existing value exactly as-is; omit if field not present
   - [ ] <check description>

@@ -48,7 +48,7 @@ Session Checkpoint — <name> (<type>)
 | personal | current working directory |
 | general | skip |
 
-Check:
+**Run all git checks in parallel:**
 - Uncommitted/unstaged changes (`git status`)
 - Stashed changes (`git stash list`)
 - Unpushed commits (`git log --oneline @{u}..HEAD 2>/dev/null`)
@@ -162,12 +162,12 @@ Epic update (<key>):
 
 ### 6. Session Summary
 
-**Plugin type only — if `plugin_reviewed: no`:** before writing, prompt:
+**Plugin type only — if `plugin_reviewed` is missing, a legacy `yes`/`no` value, or its `MAJOR.MINOR` < current plugin.json version's:** before writing, prompt:
 ```
 Plugin reviewed this session? (Yes — I ran the code-reviewer / No)
 ```
-- **Yes:** set `plugin_reviewed: yes` in the session file.
-- **No:** leave as-is — reminder will fire again at next session start.
+- **Yes:** set `plugin_reviewed: <current-plugin-version>` in the session file.
+- **No:** leave as-is — reminder fires at next session start if minor version still differs.
 
 Before writing, read the existing `Open items` from the session file. If there are any **non-`[inbox]`** items, display them and ask:
 
@@ -202,7 +202,7 @@ updated: [today's date]
 - **Last worked on:** [most recent entry from _history.md — do not synthesize, read from file]
 - **Open items:** [bullet list, or "none"]
 - **Next step:** [concrete next action]
-- **Plugin reviewed:** [yes / no]   ← plugin type only, omit for other types
+- **Plugin reviewed:** <version>   ← plugin type only; write current plugin.json version when marking reviewed; omit for other types
 - **Related CAB:** [CAB-XXX or "none"]   ← story type only, omit for other types
 - **Post-deployment checks:**   ← story type only; preserve existing value exactly as-is; omit if field not present
   - [ ] <check description>
@@ -265,6 +265,8 @@ Inbox — any pending items addressed this session (outside in-progress tracking
 - **Marked as picked up mid-session:** insert `[in-progress — <session-name>, YYYY-MM-DD]` in the inbox entry after the `## [date]...` header, add `[inbox] <item>` to Open items — will be handled at next checkpoint or finish.
 
 If no pending items remain, skip silently.
+
+**Auto-purge archive:** After handling inbox items, if the archive file exists, drop entries whose `[DONE YYYY-MM-DD]` date is more than 30 days before today. Rewrite with only retained entries (preserving the header line).
 
 ### 8. Work Log
 

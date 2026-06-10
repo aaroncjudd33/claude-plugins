@@ -52,7 +52,7 @@ Collect all matches. If nothing found: print `No sessions or worklog entries fou
 
 List all session files from `session_root` (no searching). For each:
 - Read `Name`, `Branch`, `Last worked on`, `Status`, `updated-by` (from session file fields).
-- Count logical inbox items in `<session_root>/_inbox_<name>.md` (lines beginning with `[20` or `## `).
+- Count logical inbox items: for plugin sessions use `<session_root>/_inbox_<name>.md`; for all other session types use `<session_root>/_inbox.md`. Count lines beginning with `[20` or `## `.
 
 Print:
 

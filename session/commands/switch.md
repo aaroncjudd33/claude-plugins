@@ -1,4 +1,4 @@
----
+﻿---
 name: switch
 description: Switch to a different session without the full session:start overhead. Use mid-day to pivot between sessions.
 ---
@@ -17,7 +17,7 @@ Run `pwd` and extract the last path component as the repo slug. Resolve `session
 
 List all `.md` files in `session_root` (skip `_active`, `_inbox*`, `_history*`, `_backlog*`, and `_context*` files).
 
-For each file, read and extract: Name, Branch, Last worked on, `updated-by` (may be absent in older files).
+**Read all session .md files in parallel** (one read call per file), then extract: Name, Branch, Last worked on, `updated-by` (may be absent in older files).
 
 For plugin sessions (path contains `<pluginMarketplaceName>` from user-config): count logical items in `<session_root>/_inbox_<name>.md` for each session (lines beginning with `[20` or `## `).
 For all other sessions: count logical items in `<session_root>/_inbox.md`.
@@ -36,6 +36,8 @@ Sessions in <slug>   (type 'mine' to filter)
 ```
 
 ### 3. Display Resume Block
+
+**Run these three reads in parallel:**
 
 Read `<session_root>/<name>.md`.
 Read `<session_root>/_history.md` — count total entries and extract the most recent one.
@@ -88,5 +90,7 @@ For plugin sessions, also check `~/.claude/memory/sessions/<slug>/_inbox.md` for
 Write `~/.claude/memory/sessions/<slug>/_active` with the new session name (always local — plain text, no `.md`).
 
 Update `<session_root>/<name>.md`: set `updated` to today and set `updated-by: @<handle>`.
+
+**Note:** `switch` is not a save point — it does not write a `_history.md` entry or create a checkpoint. If you worked on the previous session before switching, run `/session:checkpoint` or `/session:commit` first so that work is captured.
 
 Done — proceed with the work.
