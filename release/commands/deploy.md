@@ -197,6 +197,8 @@ Write back `~/.claude/browser-links.json`. Do not prompt the user during this st
 
 Read `~/.claude/memory/sessions/<slug>/CAB-XXX.md` for the `Related stories` field.
 
+**Read all story session files in parallel** (one Read call per story key).
+
 For each related story key (e.g., `BPT2-6337`):
 1. Read `~/.claude/memory/sessions/<slug>/<story-key>.md`
 2. Extract the `Post-deployment checks:` field

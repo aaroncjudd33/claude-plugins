@@ -91,7 +91,7 @@ Release mode:
 
 #### 3a. Fetch feature stories
 
-For each BPT2 story key, call `getJiraIssue`. Extract summary and status. Warn if any story is not in a deployable state and ask for confirmation before continuing.
+Call `getJiraIssue` for all BPT2 story keys **in parallel**. Extract summary and status. Warn if any story is not in a deployable state and ask for confirmation before continuing.
 
 #### 3b. Identify or create the BPT2 tracking story
 

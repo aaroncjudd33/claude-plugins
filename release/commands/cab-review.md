@@ -80,10 +80,12 @@ Send via yl-msoffice `send_chat_message` → `confirm_action`.
 
 ### 6. Post status update to all related story chats
 
-For **each** story key in the session file's `Related stories` field:
+For **each** story key in the session file's `Related stories` field, **run these in parallel for all stories at once**:
 
 1. Read `~/.claude/memory/sessions/<slug>/<BPT2-XXXX>.md` for the story's `Teams chat` field. Look up the chat ID in `~/.claude/plugins/known-chats.md`. If not found or `none`, skip that story.
 2. Call `getJiraIssue` on the story to get its current Jira status.
+
+After all reads and Jira calls complete, draft messages for each story that has a valid chat.
 
 Read `~/.claude/plugins/marketplaces/ajudd-claude-plugins/comms/skills/comms/references/teams-html-guide.md` before drafting.
 

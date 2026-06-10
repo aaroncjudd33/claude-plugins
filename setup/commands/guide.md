@@ -60,7 +60,7 @@ Example: /setup:guide story
 
 ### 4. Detail mode
 
-Read the following for the named plugin:
+**Read all of the following files in parallel as a single batch:**
 
 1. `~/.claude/plugins/marketplaces/<MARKETPLACE_NAME>/<plugin>/.claude-plugin/plugin.json` — description and command paths
 2. `~/.claude/plugins/marketplaces/<MARKETPLACE_NAME>/<plugin>/skills/<plugin>/SKILL.md` — background context, design intent, key behaviors

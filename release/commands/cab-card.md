@@ -39,7 +39,7 @@ Store the BPT2 CAB key if provided.
 
 ### 3. Fetch BPT2 stories
 
-For each BPT2 story key (from arguments, memory, or prompt), call `getJiraIssue`.
+Call `getJiraIssue` for all BPT2 story keys (from arguments, memory, or prompt) **in parallel**.
 
 Extract: **Summary**, **Description/acceptance criteria**, **Status**, **Component/label**.
 
@@ -117,7 +117,7 @@ Always use Ready For Work here — whether the story was just created or already
 
 Establish all Jira issue links now — do not wait for Phase 3.
 
-For each BPT2 feature story, call `createIssueLink`:
+Call `createIssueLink` for all BPT2 feature stories **in parallel**:
 - Type: `Deploy Location` (outward: CAB card "deploys" the BPT2 story)
 - Inward issue: CAB-XXXX, Outward issue: BPT2-XXXX
 

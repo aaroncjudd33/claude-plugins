@@ -11,7 +11,7 @@ Show the phrase registry — shipped defaults and your personal additions.
 
 2. **Read config** — get `paths.pluginMarketplaceName` from `~/.claude/plugins/user-config.json`.
 
-3. **Read both files:**
+3. **Read both files in parallel:**
    - Shipped: `~/.claude/plugins/marketplaces/<name>/mapping/.claude-plugin/phrases.json`
    - User: `~/.claude/plugins/phrases.json`
    - Merge them. Mark user-added phrases with `[user]`.

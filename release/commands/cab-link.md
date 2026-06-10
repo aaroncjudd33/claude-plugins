@@ -15,9 +15,7 @@ Run `pwd` and extract the repo slug (last path component). Read `~/.claude/memor
 
 Extract: **CAB key**, **Branch**, **PR number**, **PR URL**, **Related BPT2 stories**, **Related BPT2 CAB**.
 
-Re-fetch the CAB card from Jira (`getJiraIssue`) to get: **summary**, **deploy date/time**, and any other context needed for ADF content.
-
-Re-fetch each BPT2 story (`getJiraIssue`) to get **summaries** and **descriptions** for the ADF fields.
+**Re-fetch the CAB card and all BPT2 stories from Jira in parallel** (`getJiraIssue` for each): the CAB card for **summary** and **deploy date/time**; each BPT2 story for **summaries** and **descriptions** for the ADF fields.
 
 If no session state found, prompt for the CAB key.
 
