@@ -16,7 +16,7 @@ Run `pwd` and extract the repo slug (last path component).
 Determine the session name from conversation context:
 1. Look for the most recent "Resuming `<name>`" line (from session:start) OR "Switching to `<name>`" line (from session:switch). Use whichever is most recent.
 2. Fall back to reading `~/.claude/memory/sessions/<slug>/_active` if not in context.
-3. If neither is available, treat as `type: general`.
+3. If neither is available, ask the user: "Which session are you committing for?"
 
 Read `~/.claude/memory/sessions/<slug>/<name>.md` and extract:
 - `type` (plugin / story / cab / general)
@@ -123,14 +123,20 @@ Out-of-scope work detected — will be excluded from this session record.
   Write a handoff note to the target session's inbox? (Yes / Skip)
 ```
 
-If Yes: append to `~/.claude/memory/sessions/<target-slug>/_inbox.md`:
+If Yes: derive the target slug from the file path.
+
+If the target slug is `ajudd-claude-plugins`, also determine the target plugin:
+- If the file path contains `ajudd-claude-plugins/<plugin>/` → write to `~/.claude/memory/sessions/ajudd-claude-plugins/_inbox_<plugin>.md`. Create the file if it doesn't exist with header `# Inbox — <plugin> plugin`.
+- If the item is a new plugin idea (no specific existing plugin maps to the file path) → write to `~/.claude/memory/sessions/ajudd-claude-plugins/_inbox.md` with a `[new-plugin]` tag on the entry.
+
+For all other target slugs, append to `~/.claude/memory/sessions/<target-slug>/_inbox.md`. Create the file if it does not exist, starting with `# Inbox — <target-slug>` as the first line.
+
+Entry format in all cases:
 
 ```markdown
 ## [date] from <source-slug> / <session-name>
 - <description of out-of-scope work done>
 ```
-
-Create the file if it does not exist, starting with `# Inbox — <target-slug>` as the first line.
 
 ### 6. Session State
 

@@ -366,5 +366,7 @@ Multiple entries per day are expected — always append, never overwrite.
 Remove the active marker so no future conversation inherits stale state:
 
 ```bash
-rm ~/.claude/memory/sessions/<slug>/_active
+rm -f ~/.claude/memory/sessions/<slug>/_active
 ```
+
+On PowerShell use: `Remove-Item -ErrorAction SilentlyContinue ~/.claude/memory/sessions/<slug>/_active`

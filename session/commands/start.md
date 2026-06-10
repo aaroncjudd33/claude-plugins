@@ -27,7 +27,7 @@ If arguments were passed to `/session:start`, attempt to resolve them before run
 2. Derive session type and target name from the arg (story key → type=story, name=BPT2-XXXX; plugin name → type=plugin, name=<plugin>; etc.).
 3. Check whether `~/.claude/memory/sessions/<slug>/<name>.md` exists:
    - **Exists** → go directly to Step 4 (Resume existing) with that session.
-   - **Does not exist** → go directly to Step 6 (Establish Session Identity) as a new session of that type, then Step 9 routing.
+   - **Does not exist** → go directly to Step 6 (Establish Session Identity) as a new session of that type, then continue through Steps 7–8 as normal before Step 9 routing.
 4. Skip Steps 2, 3 entirely — no session listing, no inbox counts, no menu.
 
 **No argument or unrecognized argument:** fall through to Step 1 — run the full discovery flow as normal.
@@ -225,7 +225,7 @@ Global inbox (<N> item(s)):
   [date] from <source-slug>/<session-name> — <regular item description>
 ```
 
-- **`[spawn]` entries:** Picking one up ("Work on it") runs the full new-session kickoff (Jira story, branch, etc.) with the spawn's linked context pre-loaded. Archive immediately at pickup with `[PICKED UP YYYY-MM-DD — <new-session-name>]` stamp. Note: spawns are the only inbox entries that archive at pickup — the spawn's job is done once it routes into a new session. All other items use the in-progress marker and archive only when work is complete.
+- **`[spawn]` entries:** Picking one up ("Work on it") runs the full new-session kickoff (Jira story, branch, etc.) with the spawn's linked context pre-loaded. Archive after Step 6 once the new session name is established, using stamp `[PICKED UP YYYY-MM-DD — <new-session-name>]`. Note: spawns are the only inbox entries that archive at pickup — the spawn's job is done once it routes into a new session. All other items use the in-progress marker and archive only when work is complete.
 - **Regular entries:** Work on it / Mark done / Move to backlog / Keep — same flow as always.
 
 Global inbox items are never auto-cleared. The same handling options apply, using `_inbox_archive.md` as the archive.
@@ -309,6 +309,8 @@ When the user refers to a chat informally ("my team chat", "the group chat", "ca
 
 Create `~/.claude/memory/sessions/<slug>/` if it does not exist.
 
+**Use the Open items list as it stands after Step 5 processing** — any items removed or added during inbox handling must be reflected here, not the state read in Step 4.
+
 Write `~/.claude/memory/sessions/<slug>/<name>.md`:
 
 ```
@@ -358,7 +360,7 @@ Any implementation work should be routed to this session's inbox for a coding se
 ```
 
 **Plugin — existing plugin:**
-1. Read `plugin.json`, all command `.md` files, and `SKILL.md` if present
+1. Read `plugin.json`, all command `.md` files, `SKILL.md` if present, and all files under the skill's `references/` directory if it exists
 2. Check the session file for `plugin_reviewed: yes`. If missing or `no`, show:
    > "⚠ This plugin has not been reviewed with plugin-dev tools yet. Run the code-reviewer agent against it when you get a chance."
    Continue regardless — this is a reminder, not a blocker.

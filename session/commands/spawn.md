@@ -37,7 +37,9 @@ Ask: "What context should the new session inherit? (or 'auto' to derive from thi
 
 ### 4. Write Spawn Entry to Global Inbox
 
-Append to `~/.claude/memory/sessions/<slug>/_inbox.md` (create if needed with header `# Inbox — <slug>`):
+If the spawn `Type` is `plugin`, write to `~/.claude/memory/sessions/<slug>/_inbox_<label>.md` (create if needed with header `# Inbox — <label> plugin`) so the entry surfaces in that plugin's primary inbox triage at `/session:start`.
+
+Otherwise, append to `~/.claude/memory/sessions/<slug>/_inbox.md` (create if needed with header `# Inbox — <slug>`).
 
 ```markdown
 ## [YYYY-MM-DD] from <slug> / <current-session-name> [spawn] — <label>

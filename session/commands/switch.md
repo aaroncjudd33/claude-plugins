@@ -56,7 +56,20 @@ If inbox is empty: `Inbox: none`. If no history: `History: none`.
 For plugin sessions (path contains `ajudd-claude-plugins`): check `~/.claude/memory/sessions/<slug>/_inbox_<name>.md`.
 For all other sessions: check `~/.claude/memory/sessions/<slug>/_inbox.md`.
 
-If the inbox file has content beyond the header, display and handle each item with **Work on it / Mark done / Move to backlog / Keep** — same logic as session:start Step 5:
+If the inbox file has content beyond the header, first scan for in-progress items, then handle pending items.
+
+**In-progress items** (entries with an `[in-progress — ...]` line) — show first:
+
+```
+Resuming in-progress (<N> item(s)):
+  [1] [in-progress since YYYY-MM-DD] <description from entry header>
+  Mark done (numbers, 'all') / Keep working / skip
+```
+
+- **Mark done:** strip the `[in-progress — ...]` line, archive with `[DONE YYYY-MM-DD]` stamp to `_inbox_<name>_archive.md` (plugin) or `_inbox_archive.md` (others), remove entry from inbox, remove matching `[inbox] <item>` from session Open items.
+- **Keep working / skip:** no change.
+
+**Pending items** (no in-progress marker) — show after, and handle each with **Work on it / Mark done / Move to backlog / Keep**:
 - **Work on it:** insert `[in-progress — <session-name>, YYYY-MM-DD]` after the `## [date]...` header in the inbox file. Do NOT archive. Add `[inbox] <item>` to session Open items.
 - **Mark done:** archive with `[DONE YYYY-MM-DD]` stamp to `_inbox_<name>_archive.md` (plugin) or `_inbox_archive.md` (others), remove from inbox.
 - **Move to backlog:** move to `_backlog_<name>.md` (plugin) or `_backlog.md` (others), remove from inbox.

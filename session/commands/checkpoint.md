@@ -101,14 +101,20 @@ Out-of-scope work detected — will be excluded from this checkpoint.
   Write a handoff note to the target session's inbox? (Yes / Skip)
 ```
 
-If Yes: derive the target slug from the file path and append to `~/.claude/memory/sessions/<target-slug>/_inbox.md`:
+If Yes: derive the target slug from the file path.
+
+If the target slug is `ajudd-claude-plugins`, also determine the target plugin:
+- If the file path contains `ajudd-claude-plugins/<plugin>/` → write to `~/.claude/memory/sessions/ajudd-claude-plugins/_inbox_<plugin>.md`. Create the file if it doesn't exist with header `# Inbox — <plugin> plugin`.
+- If the item is a new plugin idea (no specific existing plugin maps to the file path) → write to `~/.claude/memory/sessions/ajudd-claude-plugins/_inbox.md` with a `[new-plugin]` tag on the entry.
+
+For all other target slugs, append to `~/.claude/memory/sessions/<target-slug>/_inbox.md`. Create the file if it does not exist, starting with `# Inbox — <target-slug>` as the first line.
+
+Entry format in all cases:
 
 ```markdown
 ## [date] from <source-slug> / <session-name>
 - <description of out-of-scope work done>
 ```
-
-Create the file if it does not exist, starting with `# Inbox — <target-slug>` as the first line.
 
 Continue with the checkpoint for in-scope work only.
 
