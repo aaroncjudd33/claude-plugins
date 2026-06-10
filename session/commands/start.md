@@ -43,7 +43,7 @@ Run `pwd` and extract the **last path component** as the repo slug:
 - `/c/dev/gen-leadership-bonus` → `gen-leadership-bonus`
 
 Read `~/.claude/plugins/user-config.json` and extract:
-- `paths.pluginMarketplaceName` — default to `ajudd-claude-plugins` if absent
+- `paths.pluginMarketplaceName` — if absent, auto-detect by listing `~/.claude/plugins/marketplaces/` and using the first directory found
 - `paths.workReposDir` — e.g. `/c/dev` (may be empty)
 - `paths.personalProjectsDir` — e.g. `/c/claude` (may be empty)
 

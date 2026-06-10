@@ -18,6 +18,7 @@ If it exists and has a non-empty `user.jiraAccountId`, display current values:
 ```
 Existing config found:
   Name:          <user.name>
+  Handle:        <user.handle or "(not set)">
   Email:         <user.email>
   Jira ID:       <user.jiraAccountId>
   Teams ID:      <user.teamsUserId or "(not set)">
@@ -61,6 +62,7 @@ Display all detected values — whether auto-found or still blank:
 Here's what I found:
 
   Name:     Aaron Judd              (from git config)
+  Handle:   ajudd                   (derived from email prefix)
   Email:    ajudd@youngliving.com   (from git config)
   Jira ID:  620147d91fec260068...   (looked up from Atlassian)
   Teams ID: 4a1b2c3d-...            (looked up from Microsoft 365)
@@ -68,11 +70,13 @@ Here's what I found:
   Jira Project:  BPT2               (default)
 ```
 
+**Handle** is the short @-tag used to attribute session history and inbox entries (e.g. `@ajudd`). It defaults to the email prefix — only change it if you want a different short identifier.
+
 For any field that is blank or wrong, the user can correct it now.
 
-Ask: "Does everything look right? Type a field name to change it (name / email / jira / teams / project), or type 'go' to continue."
+Ask: "Does everything look right? Type a field name to change it (name / handle / email / jira / teams / project), or type 'go' to continue."
 
-- If they type a field name (e.g. "name", "email", "jira", "teams", "project"): prompt for that field, then re-display the screen.
+- If they type a field name (e.g. "name", "handle", "email", "jira", "teams", "project"): prompt for that field, then re-display the screen.
 - If they type "go": proceed to step 5.
 
 For blank fields that were not auto-detected, prompt for them explicitly before allowing the user to proceed:
@@ -262,6 +266,7 @@ Display a final summary:
 About to write ~/.claude/plugins/user-config.json:
 
   name:                    <value>
+  handle:                  <value>
   email:                   <value>
   jiraAccountId:           <value>
   teamsUserId:             <value or "(not set)">
@@ -279,6 +284,7 @@ If yes, **read the existing `~/.claude/plugins/user-config.json` first** (if it 
 {
   "user": {
     "name": "<collected or preserved>",
+    "handle": "<collected or preserved>",
     "email": "<collected or preserved>",
     "jiraAccountId": "<collected or preserved>",
     "teamsUserId": "<collected or preserved or empty string>"

@@ -42,7 +42,7 @@ Session Checkpoint — <name> (<type>)
 
 | Type | Scope |
 |------|-------|
-| plugin | `~/.claude/plugins/marketplaces/ajudd-claude-plugins` |
+| plugin | `~/.claude/plugins/marketplaces/<pluginMarketplaceName>` (read from user-config) |
 | story | current working directory (work repo) |
 | cab | current working directory — check release branch specifically |
 | personal | current working directory |
@@ -105,8 +105,8 @@ Out-of-scope work detected — will be excluded from this checkpoint.
 
 If Yes: derive the target slug from the file path.
 
-If the target slug is `ajudd-claude-plugins`, also determine the target plugin:
-- If the file path contains `ajudd-claude-plugins/<plugin>/` → resolve the target session_root for that slug and write to `<target_session_root>/_inbox_<plugin>.md`. Create the file if it doesn't exist with header `# Inbox — <plugin> plugin`.
+If the target slug matches `<pluginMarketplaceName>` (read from `~/.claude/plugins/user-config.json`), also determine the target plugin:
+- If the file path contains `<pluginMarketplaceName>/<plugin>/` → resolve the target session_root for that slug and write to `<target_session_root>/_inbox_<plugin>.md`. Create the file if it doesn't exist with header `# Inbox — <plugin> plugin`.
 - If the item is a new plugin idea (no specific existing plugin maps to the file path) → write to `<target_session_root>/_inbox.md` with a `[new-plugin]` tag on the entry.
 
 For all other target slugs, resolve the target session_root and append to `<target_session_root>/_inbox.md`. Create the file if it does not exist, starting with `# Inbox — <target-slug>` as the first line.

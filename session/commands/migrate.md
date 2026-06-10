@@ -6,9 +6,11 @@ argument-hint: "[--force]"
 
 # Session Migrate
 
-Move this project's session files from local memory into the git repo under `.claude/sessions/`. After migration all session reads and writes use the repo path. Local files are preserved as a backup but no longer updated.
+Move **the current repo's** session files from local memory into the git repo under `.claude/sessions/`. Run this from within any session on any repo — it uses `pwd` to determine which repo to migrate. After migration all session reads and writes use the repo path. Local files are preserved as a backup but no longer updated.
 
 Run once per project. Use `--force` to re-sync local → repo if repo sessions get corrupted.
+
+**Example:** Working in a VO story session and want to migrate that repo's sessions? Just run `/session:migrate` — it picks up `pwd` and migrates the VO repo's local session files into `<vo-repo>/.claude/sessions/`. You don't need to leave your current session or context.
 
 ---
 
@@ -104,12 +106,13 @@ For each file matching `_inbox*.md`, `_backlog*.md` in `~/.claude/memory/session
 2. For each entry header line matching `## [YYYY-MM-DD] from` (no handle present):
    - Rewrite as `## [YYYY-MM-DD @<handle>] from`
 
-### 9. Copy Context and Archive Files
+### 9. Copy Context, Archive, and Work Files
 
 Copy as-is (no handle tagging needed):
 - `_inbox_*_archive.md`
 - `_backlog_*_archive.md` (if any)
 - `_context_*.md` (pre-clear dumps — useful for teammates)
+- `_work_*.md` (work notes created during inbox processing — carry the decisions forward)
 
 Do **not** copy:
 - `_active` — per-user hint, excluded by `.gitignore`

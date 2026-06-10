@@ -19,7 +19,7 @@ List all `.md` files in `session_root` (skip `_active`, `_inbox*`, `_history*`, 
 
 For each file, read and extract: Name, Branch, Last worked on, `updated-by` (may be absent in older files).
 
-For plugin sessions (path contains `ajudd-claude-plugins`): count logical items in `<session_root>/_inbox_<name>.md` for each session (lines beginning with `[20` or `## `).
+For plugin sessions (path contains `<pluginMarketplaceName>` from user-config): count logical items in `<session_root>/_inbox_<name>.md` for each session (lines beginning with `[20` or `## `).
 For all other sessions: count logical items in `<session_root>/_inbox.md`.
 
 If an argument was passed to the command:
@@ -57,7 +57,7 @@ If inbox is empty: `Inbox: none`. If no history: `History: none`.
 
 ### 4. Check Inbox
 
-For plugin sessions (path contains `ajudd-claude-plugins`): check `<session_root>/_inbox_<name>.md`.
+For plugin sessions (path contains `<pluginMarketplaceName>` from user-config): check `<session_root>/_inbox_<name>.md`.
 For all other sessions: check `<session_root>/_inbox.md`.
 
 If the inbox file has content beyond the header, first scan for in-progress items, then handle pending items.

@@ -27,7 +27,7 @@ Read `<session_root>/<name>.md` and extract:
 
 | Type | Scope |
 |------|-------|
-| plugin | `~/.claude/plugins/marketplaces/ajudd-claude-plugins` |
+| plugin | `~/.claude/plugins/marketplaces/<pluginMarketplaceName>` (read from user-config) |
 | story | current working directory (work repo) |
 | cab | current working directory |
 | personal | current working directory |
@@ -127,8 +127,8 @@ Out-of-scope work detected — will be excluded from this session record.
 
 If Yes: derive the target slug from the file path. Resolve the target session_root using Path Resolution.
 
-If the target slug is `ajudd-claude-plugins`, also determine the target plugin:
-- If the file path contains `ajudd-claude-plugins/<plugin>/` → write to `<target_session_root>/_inbox_<plugin>.md`. Create the file if it doesn't exist with header `# Inbox — <plugin> plugin`.
+If the target slug matches `<pluginMarketplaceName>` (read from `~/.claude/plugins/user-config.json`), also determine the target plugin:
+- If the file path contains `<pluginMarketplaceName>/<plugin>/` → write to `<target_session_root>/_inbox_<plugin>.md`. Create the file if it doesn't exist with header `# Inbox — <plugin> plugin`.
 - If the item is a new plugin idea → write to `<target_session_root>/_inbox.md` with a `[new-plugin]` tag.
 
 For all other target slugs, append to `<target_session_root>/_inbox.md`. Create if needed with header `# Inbox — <target-slug>`.

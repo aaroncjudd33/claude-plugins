@@ -42,7 +42,7 @@ Session Finish — <name> (<type>)
 
 | Type | Scope |
 |------|-------|
-| plugin | `~/.claude/plugins/marketplaces/ajudd-claude-plugins` |
+| plugin | `~/.claude/plugins/marketplaces/<pluginMarketplaceName>` (read from user-config) |
 | story | current working directory (work repo) |
 | cab | current working directory — check release branch specifically |
 | personal | current working directory |
@@ -107,7 +107,7 @@ yl-cdk check:
 
 **All types** — if `teams_chat` is not `none`:
 - Prompt: "Post a closing update to [teams_chat]?"
-- If yes: read `~/.claude/plugins/marketplaces/ajudd-claude-plugins/comms/skills/comms/references/teams-html-guide.md`, draft using the Standard Message Template, preview, wait for confirmation before sending
+- If yes: read `~/.claude/plugins/marketplaces/<pluginMarketplaceName>/comms/skills/comms/references/teams-html-guide.md` (derive `pluginMarketplaceName` from user-config), draft using the Standard Message Template, preview, wait for confirmation before sending
 
 Story and cab: prompt automatically.
 Plugin, personal, and general: skip unless the user explicitly asks.
@@ -185,11 +185,11 @@ Cross-scope work detected — cannot close this session cleanly.
     [3] Cancel finish — I'll handle it manually
 ```
 
-**Option [1]:** Derive the target slug from the file path (e.g. `ajudd-claude-plugins` for plugin files; last component of `/dev/` paths for work projects).
+**Option [1]:** Derive the target slug from the file path (e.g. `<pluginMarketplaceName>` for plugin files; last component of work repo paths for work projects). Read `<pluginMarketplaceName>` from `~/.claude/plugins/user-config.json`.
 
-If the target slug is `ajudd-claude-plugins`, also determine the target plugin:
-- If the file path contains `ajudd-claude-plugins/<plugin>/` → resolve the target session_root for that slug and write to `<target_session_root>/_inbox_<plugin>.md`. Create the file if it doesn't exist with header `# Inbox — <plugin> plugin`.
-- If the item is a new plugin idea (no specific existing plugin maps to the file path) → write to `<target_session_root>/_inbox.md` with a `[new-plugin]` tag on the entry. Create the file if it doesn't exist with header `# Inbox — ajudd-claude-plugins`.
+If the target slug matches `<pluginMarketplaceName>`, also determine the target plugin:
+- If the file path contains `<pluginMarketplaceName>/<plugin>/` → resolve the target session_root for that slug and write to `<target_session_root>/_inbox_<plugin>.md`. Create the file if it doesn't exist with header `# Inbox — <plugin> plugin`.
+- If the item is a new plugin idea (no specific existing plugin maps to the file path) → write to `<target_session_root>/_inbox.md` with a `[new-plugin]` tag on the entry. Create the file if it doesn't exist with header `# Inbox — <pluginMarketplaceName>`.
 
 For all other target slugs, resolve the target session_root and append to `<target_session_root>/_inbox.md`. Create the file if it doesn't exist with header `# Inbox — <target-slug>`.
 
