@@ -11,14 +11,14 @@ Full end-of-day close. Runs the complete checklist to ensure nothing is left beh
 
 ### 0. Read Session Context
 
-Run `pwd` and extract the repo slug (last path component).
+Run `pwd` and extract the repo slug (last path component). Resolve `session_root` and `handle` using Path Resolution (see Session Skill).
 
 Determine the session name from conversation context:
 1. Look back at the current conversation for the most recent "Resuming `<name>`" line (from session:start) OR "Switching to `<name>`" line (from session:switch). Use whichever is most recent.
 2. If neither is found in this conversation, fall back to reading `~/.claude/memory/sessions/<slug>/_active` as a hint.
 3. If neither is available, ask the user: "Which session are you finishing?"
 
-Read `~/.claude/memory/sessions/<slug>/<name>.md` and extract:
+Read `<session_root>/<name>.md` and extract:
 - `type` (plugin / story / cab / personal / general)
 - `name`
 - `title` (story/cab only — may be absent in older session files; treat as empty string if missing)
@@ -27,7 +27,7 @@ Read `~/.claude/memory/sessions/<slug>/<name>.md` and extract:
 
 If no session name can be determined and `_active` does not exist, treat as `type: general` with `teams_chat: none`.
 
-If the session name is determined but `<name>.md` does not exist, warn the user: "Session file for `<name>` not found — run `/session:start` to re-establish." and stop.
+If the session name is determined but `<session_root>/<name>.md` does not exist, warn the user: "Session file for `<name>` not found — run `/session:start` to re-establish." and stop.
 
 ### 1. Header
 
@@ -167,7 +167,9 @@ Check if `<voPlaywrightTestsDir>/.browser-ws.txt` exists.
 
 Read the `Scope:` field from the session file. If the field is missing or the session type is `general`, skip this step.
 
-Review file paths that were accessed or modified during this conversation (Read, Edit, Write, Bash file operations). Any path that does not begin with the `Scope:` value is out-of-scope.
+If the scope value is relative (no leading `/`, `~`, or drive letter), resolve it as: `local_cfg.projectRoot + "/" + scope_value` (read `local_cfg` from `~/.claude/config/<slug>.json`). For legacy sessions with absolute scope, use as-is.
+
+Review file paths that were accessed or modified during this conversation (Read, Edit, Write, Bash file operations). Any path that does not begin with the resolved absolute scope is out-of-scope.
 
 If out-of-scope work is found, **hard block** — do not proceed to the Session Summary:
 
@@ -186,15 +188,15 @@ Cross-scope work detected — cannot close this session cleanly.
 **Option [1]:** Derive the target slug from the file path (e.g. `ajudd-claude-plugins` for plugin files; last component of `/dev/` paths for work projects).
 
 If the target slug is `ajudd-claude-plugins`, also determine the target plugin:
-- If the file path contains `ajudd-claude-plugins/<plugin>/` → write to `~/.claude/memory/sessions/ajudd-claude-plugins/_inbox_<plugin>.md`. Create the file if it doesn't exist with header `# Inbox — <plugin> plugin`.
-- If the item is a new plugin idea (no specific existing plugin maps to the file path) → write to `~/.claude/memory/sessions/ajudd-claude-plugins/_inbox.md` with a `[new-plugin]` tag on the entry. Create the file if it doesn't exist with header `# Inbox — ajudd-claude-plugins`.
+- If the file path contains `ajudd-claude-plugins/<plugin>/` → resolve the target session_root for that slug and write to `<target_session_root>/_inbox_<plugin>.md`. Create the file if it doesn't exist with header `# Inbox — <plugin> plugin`.
+- If the item is a new plugin idea (no specific existing plugin maps to the file path) → write to `<target_session_root>/_inbox.md` with a `[new-plugin]` tag on the entry. Create the file if it doesn't exist with header `# Inbox — ajudd-claude-plugins`.
 
-For all other target slugs, append to `~/.claude/memory/sessions/<target-slug>/_inbox.md`. Create the file if it doesn't exist with header `# Inbox — <target-slug>`.
+For all other target slugs, resolve the target session_root and append to `<target_session_root>/_inbox.md`. Create the file if it doesn't exist with header `# Inbox — <target-slug>`.
 
 In all cases, the entry format is:
 
 ```markdown
-## [date] from <source-slug> / <session-name>
+## [YYYY-MM-DD @<handle>] from <source-slug> / <session-name>
 - <description of out-of-scope work done>
 ```
 
@@ -206,8 +208,8 @@ Only proceed to step 9 once all flagged items are resolved (or none were found).
 
 ### 9. In-Progress Inbox Check
 
-For **plugin sessions**: read `~/.claude/memory/sessions/<slug>/_inbox_<name>.md`.
-For **all other sessions**: read `~/.claude/memory/sessions/<slug>/_inbox.md`.
+For **plugin sessions**: read `<session_root>/_inbox_<name>.md`.
+For **all other sessions**: read `<session_root>/_inbox.md`.
 
 **Step A — In-progress items:** Scan the inbox file for entries with an `[in-progress — ...]` line.
 
@@ -254,10 +256,10 @@ If no pending items, skip silently.
 
 Compose a 1-sentence description of the work accomplished this session. Write it as a complete thought that stands alone without conversation context.
 
-Append to `~/.claude/memory/sessions/<slug>/_history.md` (create the file if it does not exist, with header `# History — <slug>`):
+Append to `<session_root>/_history.md` (create the file if it does not exist, with header `# History — <slug>`):
 
 ```
-[YYYY-MM-DD] <session-name> — <accomplished sentence>
+[YYYY-MM-DD @<handle>] <session-name> — <accomplished sentence>
 ```
 
 This entry becomes the value for `Last worked on` in the session file.
@@ -275,7 +277,7 @@ Open items — any complete?
 
 Remove confirmed-complete items from the Open items list before writing.
 
-Write `~/.claude/memory/sessions/<slug>/<name>.md` with the final state for today:
+Write `<session_root>/<name>.md` with the final state for today:
 
 ```
 ---
@@ -287,11 +289,11 @@ updated: [today's date]
 - **Type:** [type]
 - **Mode:** [planning / coding / both]   ← preserve from session file; omit if not present (backward compat)
 - **Name:** [name]
+- **updated-by:** @<handle>
 - **Title:** [Jira summary]   ← story/cab only; omit for other types
 - **Category:** [category]   ← general only, omit for other types
 - **Teams chat:** [teams_chat or "none"]
-- **Project:** [project path]
-- **Scope:** [scope path]   ← story/cab/personal: pwd; plugin: ~/.claude/plugins/marketplaces/ajudd-claude-plugins/<name>; omit for general
+- **Scope:** [scope path]   ← preserve from existing file; write relative if new (story/cab/personal: "./"; plugin: "<plugin-name>/"); omit for general
 - **Status:** completed
 - **Branch:** [branch or "n/a"]
 - **Last worked on:** [most recent entry from _history.md — do not synthesize, read from file]
@@ -304,6 +306,8 @@ updated: [today's date]
   - [x] <acknowledged check description>
 - **Related stories:** [BPT2-XXXX, BPT2-YYYY or "none"]   ← cab type only, omit for other types
 ```
+
+**Backward compat:** If the existing session file has a `Project:` field, preserve it on write.
 
 **General sessions only:** Also check `~/.claude/memory/sessions/<slug>/<name>/` — if notes, decisions, or outputs were produced today, ensure they are written there before closing.
 
@@ -330,8 +334,8 @@ Add to: inbox (ready — pick up next session) / backlog (defer — not working 
 
 For **personal and general** session types, lead with inbox as the expected choice — work that surfaces at session close is usually planned and ready, not deferred.
 
-- **inbox:** write as an inbox entry to `_inbox_<name>.md` (plugin) or `_inbox.md` (others) using format `## [YYYY-MM-DD] from <slug> / <name> — <description>`. Create the file if needed with header `# Inbox — <name> plugin` (plugin) or `# Inbox — <slug>` (others). Set `Next step` in the session file to the description (convenience echo of the inbox entry).
-- **backlog:** write to `_backlog_<name>.md` (plugin) or `_backlog.md` (others) using the same entry format. Create the file if needed with header `# Backlog — <name> plugin` (plugin) or `# Backlog — <slug>` (others). Set `Next step` to "none".
+- **inbox:** write as an inbox entry to `<session_root>/_inbox_<name>.md` (plugin) or `<session_root>/_inbox.md` (others) using format `## [YYYY-MM-DD @<handle>] from <slug> / <name> — <description>`. Create the file if needed with header `# Inbox — <name> plugin` (plugin) or `# Inbox — <slug>` (others). Set `Next step` in the session file to the description (convenience echo of the inbox entry).
+- **backlog:** write to `<session_root>/_backlog_<name>.md` (plugin) or `<session_root>/_backlog.md` (others) using the same entry format. Create the file if needed with header `# Backlog — <name> plugin` (plugin) or `# Backlog — <slug>` (others). Set `Next step` to "none".
 - **skip:** set `Next step` to "none".
 
 If the user says "same" or similar, carry forward the current `Next step` value and write it to inbox.
@@ -363,7 +367,7 @@ Multiple entries per day are expected — always append, never overwrite.
 
 ### 13. Deactivate Session
 
-Remove the active marker so no future conversation inherits stale state:
+Remove the active marker so no future conversation inherits stale state. `_active` is always local — do not touch the repo session directory for this step:
 
 ```bash
 rm -f ~/.claude/memory/sessions/<slug>/_active

@@ -15,11 +15,11 @@ Run this **before** `/clear`. After `/clear`, run `/session:resume` to restore.
 
 Read current session from conversation context (most recent `session:start` output — "Resuming `<name>`"). If not found in context, read `~/.claude/memory/sessions/<slug>/_active` as a fallback.
 
-Run `pwd` and extract the repo slug (last path component).
+Run `pwd` and extract the repo slug (last path component). Resolve `session_root` using Path Resolution (see Session Skill).
 
 ### 2. Dump Context File
 
-Write `~/.claude/memory/sessions/<slug>/_context_<session-name>.md`:
+Write `<session_root>/_context_<session-name>.md` (goes to repo if repo-based — useful for teammates to see the pre-clear reasoning state):
 
 ```markdown
 # Pre-Clear Context — <session-name>
@@ -56,17 +56,17 @@ Focus on the volatile reasoning layer — things that are true NOW in this conve
 
 ### 3. Write Resume Marker
 
-Write `~/.claude/memory/sessions/<slug>/_resume_<session-name>` (plain text — just the session name, no extension):
+Write `~/.claude/memory/sessions/<slug>/_resume_<session-name>` (always local — never in repo; plain text, just the session name, no extension):
 
 ```
 <session-name>
 ```
 
-This is the durable signal that survives `/clear`. `/session:resume` scans for `_resume_*` files rather than relying on `_active`.
+This is the durable per-user signal that survives `/clear`. `/session:resume` scans `~/.claude/memory/sessions/<slug>/` for `_resume_*` files.
 
 ### 4. Update Session Status
 
-In `~/.claude/memory/sessions/<slug>/<session-name>.md`, update the `Status` field to `prepare-clear`. If the field does not exist, add it after the `Branch` line.
+In `<session_root>/<session-name>.md`, update the `Status` field to `prepare-clear`. If the field does not exist, add it after the `Branch` line.
 
 ### 5. Confirm to User
 

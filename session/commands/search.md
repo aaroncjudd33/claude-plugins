@@ -18,7 +18,7 @@ Read the argument string passed to the command.
 - **Jira key pattern** (`BPT2-\d+`, `CAB-\d+`) — story key mode: search for that exact key.
 - **Anything else** — keyword mode: treat the argument as a search phrase (strip surrounding quotes if present).
 
-Derive the repo slug from `pwd` (last path component). Session root = `~/.claude/memory/sessions/<slug>/`.
+Derive the repo slug from `pwd` (last path component). Resolve `session_root` and `handle` using Path Resolution (see Session Skill). Worklog always stays local at `~/.claude/memory/worklog/`.
 
 ---
 
@@ -26,11 +26,11 @@ Derive the repo slug from `pwd` (last path component). Session root = `~/.claude
 
 Collect files to search across:
 
-**Session files:** all `*.md` files in `~/.claude/memory/sessions/<slug>/` that do NOT start with `_`.
+**Session files:** all `*.md` files in `session_root` that do NOT start with `_`.
 
 **Worklog files:** all `*.md` files in `~/.claude/memory/worklog/`.
 
-**Global inbox:** `~/.claude/memory/sessions/<slug>/_inbox.md` (include only in keyword/story mode, not discovery mode).
+**Global inbox:** `<session_root>/_inbox.md` (include only in keyword/story mode, not discovery mode).
 
 ---
 
@@ -50,9 +50,9 @@ Collect all matches. If nothing found: print `No sessions or worklog entries fou
 
 ### 4. Discovery Mode (no argument)
 
-List all session files (no searching). For each:
-- Read `Name`, `Branch`, `Last worked on`, `Status` (from `updated:` frontmatter and body fields).
-- Count logical inbox items in `_inbox_<name>.md` (lines beginning with `[20` or `## `).
+List all session files from `session_root` (no searching). For each:
+- Read `Name`, `Branch`, `Last worked on`, `Status`, `updated-by` (from session file fields).
+- Count logical inbox items in `<session_root>/_inbox_<name>.md` (lines beginning with `[20` or `## `).
 
 Print:
 

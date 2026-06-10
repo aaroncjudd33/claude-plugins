@@ -11,29 +11,34 @@ Read-only snapshot of all sessions for the current project. Use this mid-session
 
 ### 1. Scan Sessions
 
-Run `pwd` and extract the repo slug (last path component).
+Run `pwd` and extract the repo slug (last path component). Resolve `session_root` and `handle` using Path Resolution (see Session Skill).
 
-List all `.md` files in `~/.claude/memory/sessions/<slug>/` — skip `_active`, `_inbox*`, `_history*`, `_backlog*`, and `_context*` files.
+Check for a `mine` argument — if present, set `filter_mine = true`.
+
+List all `.md` files in `session_root` — skip `_active`, `_inbox*`, `_history*`, `_backlog*`, and `_context*` files.
 
 For each session file, read and extract:
 - `Name`
 - `Status` (default to `in-progress` if field absent)
 - `Branch`
+- `updated-by` (may be absent in older files)
 - `Open items` — count bullet points
 - `Last worked on` — date portion only (first 10 chars)
 
+If `filter_mine`, filter to sessions where `updated-by` matches `@<handle>`.
+
 ### 2. Scan Global Inbox for Spawns
 
-Read `~/.claude/memory/sessions/<slug>/_inbox.md`. Count total logical items (lines beginning with `[20` or `## `). Extract any entries tagged `[spawn]` for separate display.
+Read `<session_root>/_inbox.md`. Count total logical items (lines beginning with `[20` or `## `). Extract any entries tagged `[spawn]` for separate display.
 
 ### 3. Output
 
-Print immediately — no prompts, no writes:
+Print immediately — no prompts, no writes. Add mine-filter hint if multiple developers' sessions are visible:
 
 ```
-Sessions in <slug>
-  <name>          <status>        branch: <branch>        open: N   <date>
-  <name>          <status>        branch: <branch>        open: N   <date>
+Sessions in <slug>   (type '/session:status mine' to filter to yours)
+  <name>   @<handle>   <status>   branch: <branch>   open: N   <date>
+  <name>   @<handle>   <status>   branch: <branch>   open: N   <date>
   ★ [spawn] <label>   ready to start — from <source-session>
 
 Global inbox: N items

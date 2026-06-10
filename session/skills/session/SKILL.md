@@ -9,6 +9,92 @@ Governs session lifecycle across all project types (plugin, story, cab, personal
 
 ---
 
+## Path Resolution
+
+**All session commands use this logic.** Do not hardcode `~/.claude/memory/sessions/<slug>/` — check for repo-based sessions first.
+
+```
+slug = last path component of pwd
+
+repo_root = $(git rev-parse --show-toplevel 2>/dev/null) or pwd if not a git repo
+
+if <repo_root>/.claude/sessions/ exists:
+    session_root = <repo_root>/.claude/sessions/
+    local_cfg    = ~/.claude/config/<slug>.json
+    if local_cfg missing → run First-Run prompt (see below)
+    handle = local_cfg.handle
+else:
+    session_root = ~/.claude/memory/sessions/<slug>/
+    handle = user-config.json → user.handle (fallback: prefix of user.email)
+
+Always local (never in repo, regardless of mode):
+    _active        → ~/.claude/memory/sessions/<slug>/_active
+    _resume_*      → ~/.claude/memory/sessions/<slug>/
+```
+
+**Scope resolution for the scope guard:** If the session file's `Scope:` value is relative (no leading `/`, `~`, or drive letter), resolve it as `local_cfg.projectRoot + "/" + scope_value`. If absolute (old format), use as-is.
+
+**Cross-repo inbox writes** (e.g., story plugin writing to release plugin inbox): substitute the target slug and re-run path resolution to find the target session_root.
+
+### First-Run Prompt
+
+Triggered once per developer per repo-based project when `~/.claude/config/<slug>.json` is missing.
+
+```
+First session on this repo. What's your local project path?
+(e.g. C:\dev\virtual-office)
+>
+```
+
+If `user-config.json` has no `user.handle` field, also ask:
+```
+Your short handle for attribution (e.g. ajudd):
+>
+```
+
+Write `~/.claude/config/<slug>.json`:
+```json
+{ "projectRoot": "<answer>", "handle": "<answer>" }
+```
+Never ask again.
+
+---
+
+## @handle Tagging
+
+Every entry written to shared files (history, inbox, backlog) must carry the current user's handle.
+
+**Handle lookup order:**
+1. `~/.claude/config/<slug>.json` → `handle` field (repo-based projects)
+2. `~/.claude/plugins/user-config.json` → `user.handle`
+3. Fallback: prefix of `user.email` (e.g., `ajudd@youngliving.com` → `ajudd`)
+
+**History entry format** (new and going forward):
+```
+[YYYY-MM-DD @<handle>] <session-name> — <accomplished sentence>
+```
+
+**Inbox/backlog entry header format** (new and going forward):
+```
+## [YYYY-MM-DD @<handle>] from <slug> / <session-name> — <description>
+```
+
+**`updated-by` field in session files** — written on every checkpoint/finish/commit/switch:
+```
+- **updated-by:** @<handle>
+```
+Position: in the session file body after `Name:`, before `Teams chat:`.
+
+### "Mine" Filter
+
+Any listing command (start, switch, status, search) supports filtering sessions to those where `updated-by` matches `@<handle>`.
+
+- Argument `mine` → filter immediately (e.g., `/session:start mine`)
+- Without argument → show all sessions; if multiple developers' sessions are visible, add hint: "(type `mine` to filter to yours)"
+- In filtered mode, show label: `(filtered to @<handle>)`
+
+---
+
 ## Epic Context — Cross-Story Research
 
 When the active session has an `Epic` field, the epic file (`~/.claude/memory/epics/<key>.md`) is the canonical source for anything that crosses story boundaries: architecture decisions, blockers, open questions, and the story map.

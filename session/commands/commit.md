@@ -11,14 +11,14 @@ Commit in-progress work, update memory, and save session state. Use this mid-ses
 
 ### 0. Read Session Context
 
-Run `pwd` and extract the repo slug (last path component).
+Run `pwd` and extract the repo slug (last path component). Resolve `session_root` and `handle` using Path Resolution (see Session Skill).
 
 Determine the session name from conversation context:
 1. Look for the most recent "Resuming `<name>`" line (from session:start) OR "Switching to `<name>`" line (from session:switch). Use whichever is most recent.
 2. Fall back to reading `~/.claude/memory/sessions/<slug>/_active` if not in context.
 3. If neither is available, ask the user: "Which session are you committing for?"
 
-Read `~/.claude/memory/sessions/<slug>/<name>.md` and extract:
+Read `<session_root>/<name>.md` and extract:
 - `type` (plugin / story / cab / general)
 - `name`
 - `branch`
@@ -89,10 +89,10 @@ Before posting, check if the most recent Jira comment already covers this commit
 
 Compose a 1-sentence description of what was accomplished in this commit. Write it as a complete thought that stands alone without conversation context.
 
-Append to `~/.claude/memory/sessions/<slug>/_history.md` (create the file if it does not exist, with header `# History — <slug>`):
+Append to `<session_root>/_history.md` (create the file if it does not exist, with header `# History — <slug>`):
 
 ```
-[YYYY-MM-DD] <session-name> — <accomplished sentence>
+[YYYY-MM-DD @<handle>] <session-name> — <accomplished sentence>
 ```
 
 This entry becomes the value for `Last worked on` in the session file.
@@ -110,7 +110,9 @@ Save what's missing. Report: "Saved: [list]" or "Memory: nothing new to save."
 
 Read the `Scope:` field from the session file. If the field is missing or the session type is `general`, skip this step.
 
-Review file paths accessed or modified during this conversation. Any path not beginning with the `Scope:` value is out-of-scope.
+If the scope value is relative, resolve it as: `local_cfg.projectRoot + "/" + scope_value` (read `local_cfg` from `~/.claude/config/<slug>.json`). For legacy sessions with absolute scope, use as-is.
+
+Review file paths accessed or modified during this conversation. Any path not beginning with the resolved absolute scope is out-of-scope.
 
 If out-of-scope work is found, warn but do not block:
 
@@ -123,24 +125,24 @@ Out-of-scope work detected — will be excluded from this session record.
   Write a handoff note to the target session's inbox? (Yes / Skip)
 ```
 
-If Yes: derive the target slug from the file path.
+If Yes: derive the target slug from the file path. Resolve the target session_root using Path Resolution.
 
 If the target slug is `ajudd-claude-plugins`, also determine the target plugin:
-- If the file path contains `ajudd-claude-plugins/<plugin>/` → write to `~/.claude/memory/sessions/ajudd-claude-plugins/_inbox_<plugin>.md`. Create the file if it doesn't exist with header `# Inbox — <plugin> plugin`.
-- If the item is a new plugin idea (no specific existing plugin maps to the file path) → write to `~/.claude/memory/sessions/ajudd-claude-plugins/_inbox.md` with a `[new-plugin]` tag on the entry.
+- If the file path contains `ajudd-claude-plugins/<plugin>/` → write to `<target_session_root>/_inbox_<plugin>.md`. Create the file if it doesn't exist with header `# Inbox — <plugin> plugin`.
+- If the item is a new plugin idea → write to `<target_session_root>/_inbox.md` with a `[new-plugin]` tag.
 
-For all other target slugs, append to `~/.claude/memory/sessions/<target-slug>/_inbox.md`. Create the file if it does not exist, starting with `# Inbox — <target-slug>` as the first line.
+For all other target slugs, append to `<target_session_root>/_inbox.md`. Create if needed with header `# Inbox — <target-slug>`.
 
 Entry format in all cases:
 
 ```markdown
-## [date] from <source-slug> / <session-name>
+## [YYYY-MM-DD @<handle>] from <source-slug> / <session-name>
 - <description of out-of-scope work done>
 ```
 
 ### 6. Session State
 
-Write `~/.claude/memory/sessions/<slug>/<name>.md` with current state:
+Write `<session_root>/<name>.md` with current state:
 
 ```
 ---
@@ -152,10 +154,10 @@ updated: [today's date]
 - **Type:** [type]
 - **Mode:** [planning / coding / both]   ← preserve from session file; omit if not present (backward compat)
 - **Name:** [name]
+- **updated-by:** @<handle>
 - **Title:** [Jira summary]   ← story/cab only; omit for other types
 - **Teams chat:** [teams_chat or "none"]
-- **Project:** [project path]
-- **Scope:** [scope path]   ← story/cab/personal: pwd; plugin: ~/.claude/plugins/marketplaces/ajudd-claude-plugins/<name>; omit for general
+- **Scope:** [scope path]   ← preserve from existing file; write relative if new; omit for general
 - **Status:** in-progress
 - **Branch:** [branch or "n/a"]
 - **Last worked on:** [most recent entry from _history.md — do not synthesize, read from file]
@@ -169,6 +171,8 @@ updated: [today's date]
 - **Related stories:** [BPT2-XXXX, BPT2-YYYY or "none"]   ← cab type only, omit for other types
 - **linked_sessions:** [<session-name>, ...]   ← preserve as-is; omit if not present
 ```
+
+**Backward compat:** If the existing session file has a `Project:` field, preserve it on write.
 
 Print the summary to screen.
 

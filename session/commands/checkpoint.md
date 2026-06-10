@@ -11,14 +11,14 @@ Quick mid-session save. Captures current state so nothing is lost if the session
 
 ### 0. Read Session Context
 
-Run `pwd` and extract the repo slug (last path component).
+Run `pwd` and extract the repo slug (last path component). Resolve `session_root` and `handle` using Path Resolution (see Session Skill).
 
 Determine the session name from conversation context:
 1. Look back at the current conversation for the most recent "Resuming `<name>`" line (from session:start) OR "Switching to `<name>`" line (from session:switch). Use whichever is most recent.
 2. If neither is found in this conversation, fall back to reading `~/.claude/memory/sessions/<slug>/_active` as a hint.
 3. If neither is available, ask the user: "Which session are you checkpointing?"
 
-Read `~/.claude/memory/sessions/<slug>/<name>.md` and extract:
+Read `<session_root>/<name>.md` and extract:
 - `type` (plugin / story / cab / personal / general)
 - `name`
 - `title` (story/cab only — may be absent in older session files; treat as empty string if missing)
@@ -27,7 +27,7 @@ Read `~/.claude/memory/sessions/<slug>/<name>.md` and extract:
 
 If no session name can be determined and `_active` does not exist, treat as `type: general` with `teams_chat: none`.
 
-If the session name is determined but `<name>.md` does not exist, warn the user: "Session file for `<name>` not found — run `/session:start` to re-establish." and stop.
+If the session name is determined but `<session_root>/<name>.md` does not exist, warn the user: "Session file for `<name>` not found — run `/session:start` to re-establish." and stop.
 
 ### 1. Header
 
@@ -88,7 +88,9 @@ Skip entirely for plugin, personal, and general session types.
 
 Read the `Scope:` field from the session file. If the field is missing or the session type is `general`, skip this step.
 
-Review file paths accessed or modified during this conversation. Any path not beginning with the `Scope:` value is out-of-scope.
+If the scope value is relative (no leading `/`, `~`, or drive letter), resolve it as: `local_cfg.projectRoot + "/" + scope_value` (read `local_cfg` from `~/.claude/config/<slug>.json`). For legacy sessions with absolute scope, use as-is.
+
+Review file paths accessed or modified during this conversation. Any path not beginning with the resolved absolute scope is out-of-scope.
 
 If out-of-scope work is found, warn but do not block:
 
@@ -104,15 +106,15 @@ Out-of-scope work detected — will be excluded from this checkpoint.
 If Yes: derive the target slug from the file path.
 
 If the target slug is `ajudd-claude-plugins`, also determine the target plugin:
-- If the file path contains `ajudd-claude-plugins/<plugin>/` → write to `~/.claude/memory/sessions/ajudd-claude-plugins/_inbox_<plugin>.md`. Create the file if it doesn't exist with header `# Inbox — <plugin> plugin`.
-- If the item is a new plugin idea (no specific existing plugin maps to the file path) → write to `~/.claude/memory/sessions/ajudd-claude-plugins/_inbox.md` with a `[new-plugin]` tag on the entry.
+- If the file path contains `ajudd-claude-plugins/<plugin>/` → resolve the target session_root for that slug and write to `<target_session_root>/_inbox_<plugin>.md`. Create the file if it doesn't exist with header `# Inbox — <plugin> plugin`.
+- If the item is a new plugin idea (no specific existing plugin maps to the file path) → write to `<target_session_root>/_inbox.md` with a `[new-plugin]` tag on the entry.
 
-For all other target slugs, append to `~/.claude/memory/sessions/<target-slug>/_inbox.md`. Create the file if it does not exist, starting with `# Inbox — <target-slug>` as the first line.
+For all other target slugs, resolve the target session_root and append to `<target_session_root>/_inbox.md`. Create the file if it does not exist, starting with `# Inbox — <target-slug>` as the first line.
 
 Entry format in all cases:
 
 ```markdown
-## [date] from <source-slug> / <session-name>
+## [YYYY-MM-DD @<handle>] from <source-slug> / <session-name>
 - <description of out-of-scope work done>
 ```
 
@@ -122,10 +124,10 @@ Continue with the checkpoint for in-scope work only.
 
 Compose a 1-sentence description of the work accomplished since the last checkpoint. This is the canonical record — write it as a complete thought that stands alone without conversation context (e.g. "Fixed NoteForm missing Tags/Collections and wired ExpeditionPicker into NoteDetail" not "finished the bugs").
 
-Append to `~/.claude/memory/sessions/<slug>/_history.md` (create the file if it does not exist, with header `# History — <slug>`):
+Append to `<session_root>/_history.md` (create the file if it does not exist, with header `# History — <slug>`):
 
 ```
-[YYYY-MM-DD] <session-name> — <accomplished sentence>
+[YYYY-MM-DD @<handle>] <session-name> — <accomplished sentence>
 ```
 
 This entry becomes the value for `Last worked on` in the session file.
@@ -171,7 +173,7 @@ Open items — any complete?
 
 Remove confirmed-complete items from the Open items list before writing.
 
-Write `~/.claude/memory/sessions/<slug>/<name>.md` with the current state:
+Write `<session_root>/<name>.md` with the current state:
 
 ```
 ---
@@ -183,11 +185,11 @@ updated: [today's date]
 - **Type:** [type]
 - **Mode:** [planning / coding / both]   ← preserve from session file; omit if not present (backward compat)
 - **Name:** [name]
+- **updated-by:** @<handle>
 - **Title:** [Jira summary]   ← story/cab only; omit for other types
 - **Category:** [category]   ← general only, omit for other types
 - **Teams chat:** [teams_chat or "none"]
-- **Project:** [project path]
-- **Scope:** [scope path]   ← story/cab/personal: pwd; plugin: ~/.claude/plugins/marketplaces/ajudd-claude-plugins/<name>; omit for general
+- **Scope:** [scope path]   ← preserve from existing file; write relative if new (story/cab/personal: "./"; plugin: "<plugin-name>/"); omit for general
 - **Status:** in-progress   ← always reset to in-progress at checkpoint
 - **Branch:** [branch or "n/a"]
 - **Last worked on:** [most recent entry from _history.md — do not synthesize, read from file]
@@ -202,6 +204,8 @@ updated: [today's date]
 - **linked_sessions:** [<session-name>, ...]   ← preserve as-is; omit if not present
 ```
 
+**Backward compat:** If the existing session file has a `Project:` field, preserve it on write. Do not add it to new sessions.
+
 Print the summary to screen. After the summary block, display the last 5 entries from `_history.md` (all entries if fewer than 5):
 
 ```
@@ -213,8 +217,8 @@ Recent history (<slug>):
 
 ### 7. In-Progress Inbox Check
 
-For **plugin sessions**: read `~/.claude/memory/sessions/<slug>/_inbox_<name>.md`.
-For **all other sessions**: read `~/.claude/memory/sessions/<slug>/_inbox.md`.
+For **plugin sessions**: read `<session_root>/_inbox_<name>.md`.
+For **all other sessions**: read `<session_root>/_inbox.md`.
 
 **Step A — In-progress items:** Scan the inbox file for entries with an `[in-progress — ...]` line.
 

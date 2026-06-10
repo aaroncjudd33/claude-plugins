@@ -17,18 +17,20 @@ If arguments were passed to `/session:start`, attempt to resolve them before run
 
 | Pattern | Example | Resolves to |
 |---------|---------|-------------|
+| `mine` | `/session:start mine` | full discovery flow with mine filter |
 | `BPT2-XXXX` (Jira story key) | `/session:start BPT2-6429` | story session |
 | `CAB-XXXX` (CAB key) | `/session:start CAB-9260` | cab session |
 | `cab BPT2-XXXX [...]` | `/session:start cab BPT2-6429 BPT2-6430` | new CAB for those stories |
 | Plugin name in marketplace | `/session:start release` | plugin session |
 
 **Fast-path flow:**
-1. Run `pwd`, extract slug, read `~/.claude/plugins/user-config.json` (same as Step 1).
-2. Derive session type and target name from the arg (story key → type=story, name=BPT2-XXXX; plugin name → type=plugin, name=<plugin>; etc.).
-3. Check whether `~/.claude/memory/sessions/<slug>/<name>.md` exists:
+1. Run `pwd`, extract slug, read `~/.claude/plugins/user-config.json` (same as Step 1). Resolve `session_root` and `handle` using Path Resolution (see Session Skill).
+2. If arg is `mine`: set `filter_mine = true`, fall through to Step 1 — full discovery with mine filter.
+3. Derive session type and target name from the arg (story key → type=story, name=BPT2-XXXX; plugin name → type=plugin, name=<plugin>; etc.).
+4. Check whether `<session_root>/<name>.md` exists:
    - **Exists** → go directly to Step 4 (Resume existing) with that session.
    - **Does not exist** → go directly to Step 6 (Establish Session Identity) as a new session of that type, then continue through Steps 7–8 as normal before Step 9 routing.
-4. Skip Steps 2, 3 entirely — no session listing, no inbox counts, no menu.
+5. Skip Steps 2, 3 entirely — no session listing, no inbox counts, no menu.
 
 **No argument or unrecognized argument:** fall through to Step 1 — run the full discovery flow as normal.
 
@@ -51,26 +53,32 @@ Detect session type from the current path:
 - **personal** — `personalProjectsDir` is set and path begins with it; fallback: path contains `/c/claude/`
 - **general** — anything else
 
-### 2. Load Repo Sessions
+Resolve `session_root` and `handle` using Path Resolution (see Session Skill). If repo-based and `~/.claude/config/<slug>.json` is missing, run the First-Run prompt before continuing.
 
-List all `.md` files in `~/.claude/memory/sessions/<slug>/` (skip `_active`, `_inbox*`, `_history*`, and `_backlog*` files).
+### 2. Load Sessions
 
-For each file, read it and extract: `Name`, `Branch`, `Type`.
+List all `.md` files in `session_root` (skip `_active`, `_inbox*`, `_history*`, and `_backlog*` files).
 
-For **last worked on**: read `~/.claude/memory/sessions/<slug>/_history.md` and find the most recent entry whose session name matches. If `_history.md` does not exist or has no matching entry, fall back to the `Last worked on` field in the session file.
+For each file, read it and extract: `Name`, `Branch`, `Type`, `updated-by` (may be absent in older session files — treat as empty).
 
-For **plugin sessions**, also check `~/.claude/memory/sessions/<slug>/_inbox_<name>.md` and count **logical items** — lines that begin with `[20` or `## ` (entry markers), not raw non-blank lines. Body text under an entry does not count as a separate item. If count > 0, note it for display.
+For **last worked on**: read `<session_root>/_history.md` and find the most recent entry whose session name matches. If `_history.md` does not exist or has no matching entry, fall back to the `Last worked on` field in the session file.
 
-For **non-plugin sessions**, check `~/.claude/memory/sessions/<slug>/_inbox.md` and count logical items the same way. Note this count — it will be surfaced in Step 3 before the options are presented.
+For **plugin sessions**, also check `<session_root>/_inbox_<name>.md` and count **logical items** — lines that begin with `[20` or `## ` (entry markers), not raw non-blank lines. Body text under an entry does not count as a separate item. If count > 0, note it for display.
 
-If sessions exist, print a numbered list. Always include an `inbox N` column for every row (use `inbox 0` when empty) so columns stay aligned:
+For **non-plugin sessions**, check `<session_root>/_inbox.md` and count logical items the same way. Note this count — it will be surfaced in Step 3 before the options are presented.
+
+If `filter_mine` is active, filter the session list to those where `updated-by` matches `@<handle>`.
+
+If sessions exist, print a numbered list. Always include `updated-by` and `inbox N` columns (use `inbox 0` when empty):
 ```
-Sessions in <slug>
-  [1]  <name>  |  <type>  |  <branch>  |  inbox 0  |  <last worked on — from history>
-  [2]  <name>  |  <type>  |  <branch>  |  inbox 3  |  <last worked on — from history>
+Sessions in <slug>   [filtered to @<handle>]  ← omit if not filtering
+  [1]  <name>  |  <type>  |  <branch>  |  @<handle>  |  inbox 0  |  <last worked on>
+  [2]  <name>  |  <type>  |  <branch>  |  @<handle>  |  inbox 3  |  <last worked on>
 ```
 
-If the directory does not exist or is empty, skip this section.
+If multiple developers' sessions are visible (different `updated-by` values) and no `mine` filter is active, append: `(type 'mine' to filter to yours)`
+
+If `session_root` does not exist or is empty, skip this section.
 
 ### 3. Present Options
 
@@ -113,9 +121,9 @@ Same global inbox compact display as above if `_inbox.md` has items.
 ### 4. User Picks — Load or Create Session File
 
 **Resume existing [N]:**
-- Read `~/.claude/memory/sessions/<slug>/<name>.md`
-- Read `~/.claude/memory/sessions/<slug>/_history.md` — count total entries and extract the most recent one for display.
-- Read the inbox file (`_inbox_<name>.md` for plugins, `_inbox.md` otherwise) and collect all items (both in-progress and pending) for display.
+- Read `<session_root>/<name>.md`
+- Read `<session_root>/_history.md` — count total entries and extract the most recent one for display.
+- Read the inbox file (`_inbox_<name>.md` for plugins, `_inbox.md` otherwise — from `session_root`) and collect all items (both in-progress and pending) for display.
 - Display the resume block:
   ```
   Resuming <name>
@@ -143,7 +151,7 @@ Same global inbox compact display as above if `_inbox.md` has items.
         [YYYY-MM-DD] <entry>
         ...
   ```
-  Read each linked session's `.md` file from `~/.claude/memory/sessions/<slug>/` and its last 5 entries from `_history.md`. If the linked session file does not exist, note "session file not found" and continue. This block is read-only context — it does not affect the current session's state.
+  Read each linked session's `.md` file from `session_root` and its last 5 entries from `<session_root>/_history.md`. If the linked session file does not exist, note "session file not found" and continue. This block is read-only context — it does not affect the current session's state.
 - **If the session file has an `Epic` field**, load `~/.claude/memory/epics/<key>.md` and append a compact context block:
   ```
   Epic context: <key> — <title>
@@ -164,9 +172,9 @@ Same global inbox compact display as above if `_inbox.md` has items.
 
 ### 5. Check Inbox
 
-**For plugin sessions**, check `~/.claude/memory/sessions/<slug>/_inbox_<name>.md` (e.g. `_inbox_release.md`). This is the plugin-specific inbox where cross-scope work from other sessions is routed.
+**For plugin sessions**, check `<session_root>/_inbox_<name>.md` (e.g. `_inbox_release.md`). This is the plugin-specific inbox where cross-scope work from other sessions is routed.
 
-**For all other sessions**, check `~/.claude/memory/sessions/<slug>/_inbox.md`.
+**For all other sessions**, check `<session_root>/_inbox.md`.
 
 If the inbox file exists and has content beyond the header line, scan for two categories of items based on whether an `[in-progress — ...]` line appears immediately after the `## [date]...` entry header:
 
@@ -193,7 +201,7 @@ Inbox (<N> item(s)):
 
 If multiple pending items, offer a bulk shortcut first: **"Handle all: Work on all / Mark all done / Move all to backlog / Keep all"**. Handle each item individually with: **Work on it / Mark done / Move to backlog / Keep**
 
-- **Work on it:** insert `[in-progress — <session-name>, YYYY-MM-DD]` on the line immediately after the `## [date]...` header in the inbox file. Do NOT archive yet — the item stays in the inbox until work is complete. Add `[inbox] <short description>` to session `Open items`. For items with significant depth, offer: "Create a work file for decisions/notes? (yes / skip)" — if yes, create `~/.claude/memory/sessions/<slug>/_work_<name>_YYYY-MM-DD-<short-slug>.md` with the original problem and a `## Notes` section; add `Work file: _work_<name>_YYYY-MM-DD-<short-slug>.md` to the inbox entry on a new line after the in-progress marker.
+- **Work on it:** insert `[in-progress — <session-name>, YYYY-MM-DD]` on the line immediately after the `## [date]...` header in the inbox file. Do NOT archive yet — the item stays in the inbox until work is complete. Add `[inbox] <short description>` to session `Open items`. For items with significant depth, offer: "Create a work file for decisions/notes? (yes / skip)" — if yes, create `<session_root>/_work_<name>_YYYY-MM-DD-<short-slug>.md` with the original problem and a `## Notes` section; add `Work file: _work_<name>_YYYY-MM-DD-<short-slug>.md` to the inbox entry on a new line after the in-progress marker.
 - **Mark done:** archive with `[DONE YYYY-MM-DD]` stamp (see Archive files), remove from inbox.
 - **Move to backlog:** move to backlog file (`_backlog_<name>.md` for plugins, `_backlog.md` for others), remove from inbox. Create the backlog file if it doesn't exist with header `# Backlog — <name> plugin` (plugin) or `# Backlog — <slug>` (others). No archive — backlog items stay until explicitly deleted.
 - **Keep:** leave as-is. Do NOT add to Open items.
@@ -201,8 +209,8 @@ If multiple pending items, offer a bulk shortcut first: **"Handle all: Work on a
 If the file does not exist or contains only the header, skip silently.
 
 **Archive files:**
-- Plugin: `~/.claude/memory/sessions/<slug>/_inbox_<name>_archive.md` — header: `# Inbox Archive — <name> plugin`
-- Non-plugin: `~/.claude/memory/sessions/<slug>/_inbox_archive.md` — header: `# Inbox Archive — <slug>`
+- Plugin: `<session_root>/_inbox_<name>_archive.md` — header: `# Inbox Archive — <name> plugin`
+- Non-plugin: `<session_root>/_inbox_archive.md` — header: `# Inbox Archive — <slug>`
 
 Create the archive file if it does not exist. Archive entry format (append, blank line between entries):
 ```
@@ -216,7 +224,7 @@ All archived entries use `[DONE YYYY-MM-DD]`. The `[in-progress — ...]` marker
 
 **Auto-purge archive:** After handling inbox items, if the archive file exists, read it and drop any entries whose `[DONE YYYY-MM-DD]` date is more than 30 days before today. Rewrite the file with only the retained entries (preserving the header line).
 
-**Additionally**, for plugin sessions, check `~/.claude/memory/sessions/<slug>/_inbox.md` for any global items (new plugin ideas, undirected notes, or spawned sessions). If it has content, show it separately. Flag `[spawn]` entries prominently — they are pre-loaded handoffs ready to start as a new session:
+**Additionally**, for plugin sessions, check `<session_root>/_inbox.md` for any global items (new plugin ideas, undirected notes, or spawned sessions). If it has content, show it separately. Flag `[spawn]` entries prominently — they are pre-loaded handoffs ready to start as a new session:
 
 ```
 Global inbox (<N> item(s)):
@@ -307,11 +315,11 @@ When the user refers to a chat informally ("my team chat", "the group chat", "ca
 
 ### 8. Write Session State
 
-Create `~/.claude/memory/sessions/<slug>/` if it does not exist.
+Create `session_root` directory if it does not exist.
 
 **Use the Open items list as it stands after Step 5 processing** — any items removed or added during inbox handling must be reflected here, not the state read in Step 4.
 
-Write `~/.claude/memory/sessions/<slug>/<name>.md`:
+Write `<session_root>/<name>.md`:
 
 ```
 ---
@@ -323,11 +331,11 @@ updated: [today's date]
 - **Type:** [type]
 - **Mode:** [planning / coding / both]
 - **Name:** [name]
+- **updated-by:** @<handle>
 - **Title:** [Jira summary]   ← story/cab only — from getJiraIssue; omit for other types
 - **Category:** [category]   ← general only, omit for other types
 - **Teams chat:** [teams_chat or "none"]
-- **Project:** [project path]
-- **Scope:** [scope path]   ← story/cab/personal: pwd; plugin: ~/.claude/plugins/marketplaces/<pluginMarketplaceName>/<name> (read pluginMarketplaceName from user-config); omit for general
+- **Scope:** [scope path]   ← relative path: story/cab/personal: "./"; plugin: "<plugin-name>/"; omit for general
 - **Status:** in-progress
 - **Branch:** [branch or "n/a"]
 - **Last worked on:** [will be updated at checkpoint]
@@ -342,9 +350,18 @@ updated: [today's date]
 - **linked_sessions:** [<session-name>, ...]   ← omit if empty; set by /session:spawn; preserve as-is on resume
 ```
 
+**Scope field — relative path rules:**
+- Plugin sessions: `<plugin-name>/` (e.g., `session/`, `release/`)
+- Story / cab / personal: `./` (whole repo) or a service subdirectory if the session targets one
+- General: omit the field entirely
+
+The scope guard resolves this to an absolute path at runtime: `local_cfg.projectRoot + "/" + scope_value` for repo-based sessions; absolute path as-is for legacy local sessions.
+
+**Backward compatibility:** When resuming an older session file that still has an absolute `Scope:` or a `Project:` field, preserve them as-is rather than rewriting. Rewrite only when the session is new or when the user explicitly runs `session:migrate`.
+
 For story and cab types, populate **Title** from the `summary` field of `getJiraIssue`. When resuming an existing session, preserve the existing Title if present. If the session file predates this field (no Title line), fetch from Jira during Step 9 routing and add it.
 
-Write `~/.claude/memory/sessions/<slug>/_active` (plain text, just the name — no `.md` extension):
+Write `~/.claude/memory/sessions/<slug>/_active` (always local — plain text, just the name, no `.md` extension):
 ```
 BPT2-1234
 ```

@@ -22,7 +22,9 @@ slug=$(basename $(pwd))
 session_name=$(cat ~/.claude/memory/sessions/$slug/_active 2>/dev/null)
 ```
 
-If `session_name` is set, read `~/.claude/memory/sessions/<slug>/<session_name>.md` and look for:
+Resolve `session_root`: if `$(git rev-parse --show-toplevel 2>/dev/null)/.claude/sessions/` exists, use it; otherwise use `~/.claude/memory/sessions/$slug/`.
+
+If `session_name` is set, read `<session_root>/<session_name>.md` and look for:
 ```
 - **E2E tests dir:** /path/to/tests
 ```
@@ -79,7 +81,7 @@ Where are the Playwright tests for this project?
 
 **Save e2eTestsDir to session file:**
 
-After resolving the path (either provided or scaffolded), write it to the active session file.
+After resolving the path (either provided or scaffolded), write it to the active session file at `<session_root>/<session_name>.md`.
 Find the `- **E2E tests dir:**` line and update it, or append it after the `Next step:` line if absent:
 ```
 - **E2E tests dir:** <resolved-path>

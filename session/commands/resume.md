@@ -13,7 +13,7 @@ Fast context restoration after `/clear`. Reads `_resume_*` marker files to find 
 
 ### 1. Find Waiting Sessions
 
-Run `pwd` and extract the repo slug.
+Run `pwd` and extract the repo slug. Resolve `session_root` using Path Resolution (see Session Skill). `_resume_*` markers are always local — scan `~/.claude/memory/sessions/<slug>/`, not `session_root`.
 
 Scan `~/.claude/memory/sessions/<slug>/` for any files matching `_resume_*`. Each file represents a session waiting to be resumed after a `/clear`.
 
@@ -29,13 +29,13 @@ Scan `~/.claude/memory/sessions/<slug>/` for any files matching `_resume_*`. Eac
 
 ### 2. Load Session File
 
-Read `~/.claude/memory/sessions/<slug>/<session-name>.md` and extract all fields.
+Read `<session_root>/<session-name>.md` and extract all fields.
 
-Read last 5 entries from `~/.claude/memory/sessions/<slug>/_history.md` (omit block if file doesn't exist).
+Read last 5 entries from `<session_root>/_history.md` (omit block if file doesn't exist).
 
 ### 3. Load Pre-Clear Context (if present)
 
-Check for `~/.claude/memory/sessions/<slug>/_context_<session-name>.md`.
+Check for `<session_root>/_context_<session-name>.md`.
 
 If found, read the full file. This is the volatile reasoning layer captured before `/clear`.
 
@@ -71,9 +71,9 @@ Archive the pre-clear context file? (Yes / Keep for reference)
 - **Yes:** delete the file — it's been loaded into context, no longer needed.
 - **Keep:** leave it in place for this session; it will not be shown again automatically.
 
-Update `Status` field in the session file back to `in-progress`.
+Update `Status` field in `<session_root>/<session-name>.md` back to `in-progress`.
 
-Write `_active` with the session name (refreshes the hint for session:start).
+Write `~/.claude/memory/sessions/<slug>/_active` with the session name (always local — refreshes the hint for session:start).
 
 ### 6. Continue
 

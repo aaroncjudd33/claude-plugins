@@ -15,7 +15,7 @@ Prepares a handoff for a new session by writing a `[spawn]` entry to the global 
 
 Read current session from conversation context (the most recent `session:start` output — "Resuming `<name>`"). Do NOT read `_active`.
 
-Run `pwd` and extract the repo slug (last path component).
+Run `pwd` and extract the repo slug (last path component). Resolve `session_root` and `handle` using Path Resolution (see Session Skill).
 
 ### 2. Determine Label and Type
 
@@ -37,12 +37,12 @@ Ask: "What context should the new session inherit? (or 'auto' to derive from thi
 
 ### 4. Write Spawn Entry to Global Inbox
 
-If the spawn `Type` is `plugin`, write to `~/.claude/memory/sessions/<slug>/_inbox_<label>.md` (create if needed with header `# Inbox — <label> plugin`) so the entry surfaces in that plugin's primary inbox triage at `/session:start`.
+If the spawn `Type` is `plugin`, write to `<session_root>/_inbox_<label>.md` (create if needed with header `# Inbox — <label> plugin`) so the entry surfaces in that plugin's primary inbox triage at `/session:start`.
 
-Otherwise, append to `~/.claude/memory/sessions/<slug>/_inbox.md` (create if needed with header `# Inbox — <slug>`).
+Otherwise, append to `<session_root>/_inbox.md` (create if needed with header `# Inbox — <slug>`).
 
 ```markdown
-## [YYYY-MM-DD] from <slug> / <current-session-name> [spawn] — <label>
+## [YYYY-MM-DD @<handle>] from <slug> / <current-session-name> [spawn] — <label>
 - **Type:** <story / cab / plugin / personal / general>
 - **linked_sessions:** <current-session-name>
 - **Next step:** <concrete first action for the person picking this up>
