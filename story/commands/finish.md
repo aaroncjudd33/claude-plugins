@@ -1,14 +1,15 @@
 ---
 name: finish
-description: Hand off a completed story for production deploy. Captures PR, risk, rollback, and post-deploy validation steps and writes a CAB-ready spawn entry to the release inbox.
+description: Pass story information to the release inbox. Writes a pre-filled item with PR, risk, rollback, and post-deploy checks so the next CAB session has everything ready to pick up.
 argument-hint: "[BPT2-XXXX]"
 ---
 
 # /story:finish [BPT2-XXXX]
 
-Hand off a completed story to the release workflow. Creates a `[spawn]` entry in the plugin global inbox so the next `/release:create-cab` session has all required fields pre-filled.
-
-The spawn entry is **not** a CAB — it is a pre-loaded handoff. The user still runs `/session:start` in the plugin directory, picks up the spawn, and CAB creation runs with the collected data already present. `/release:create-cab` remains fully usable standalone for multi-story CABs.
+Pass key story details to the release plugin inbox. That's all this does — it writes a single
+inbox item with the information the CAB creation flow needs. Nothing is created yet. The next
+time the user starts a release session, the item is there to pick up (alone or alongside
+other stories in the same CAB).
 
 ---
 
@@ -16,35 +17,30 @@ The spawn entry is **not** a CAB — it is a pre-loaded handoff. The user still 
 
 ### 1. Resolve story key
 
-Use the argument if provided. If not, extract the repo slug from `pwd` (last path component), read `~/.claude/memory/sessions/<slug>/_active`, then read the active session file to find the current story key. If still unclear, ask.
+Use the argument if provided. If not, extract the repo slug from `pwd` (last path component),
+read `~/.claude/memory/sessions/<slug>/_active`, and read the session file to find the story
+key. If still unclear, ask.
 
-Also read the story session file at `~/.claude/memory/sessions/<slug>/<story-key>.md` if it exists — extract the `Post-deployment checks:` field (a checkbox list) for use in step 5.
+Also read `~/.claude/memory/sessions/<slug>/<story-key>.md` if it exists — extract the
+`Post-deployment checks:` list for inclusion in the inbox item.
 
-### 2. Fetch Jira state
+### 2. Fetch story summary
 
-Call `getJiraIssue` to retrieve: `summary`, `status`.
+Call `getJiraIssue` and pull the `summary` field. That's all that's needed from Jira here.
 
-If the story is not in a deployable state (Done, Approved for Release, Ready For Test, QA In-Progress, Ready for UAT), warn:
+### 3. Detect merged PR
 
-> "This story is [status] — are you sure it's ready for production deploy? (yes / cancel)"
-
-Cancel if the user declines.
-
-### 3. Detect PR
-
-Try to find the merged PR for the current branch:
+Try:
 
 ```bash
 gh pr list --state merged --head "$(git branch --show-current)" --json number,title,url --limit 3
 ```
 
-If exactly one result is found, use it — show it to the user for confirmation:
-> "Found PR: [title] ([url]) — correct? (yes / enter a different one)"
+If one result is found, show it: "Found PR: [title] — correct? (yes / enter a different one)"
 
-If no result, or the user declines, ask:
-> "Paste the PR title and URL:"
+If nothing is found or the user declines, ask: "Paste the PR title and URL:"
 
-### 4. Collect handoff details
+### 4. Collect the rest
 
 Use AskUserQuestion (single-select) for urgency and risk:
 
@@ -64,68 +60,44 @@ options:
 ```
 
 Then ask (free text):
-- "Rollback approach? (e.g. 'Revert PR #N and redeploy')"
-- "Any additional post-deploy validation steps beyond what's in the session file? (Enter to skip)"
+- "Rollback approach? (e.g. 'Revert PR #N and redeploy'  — or Enter to skip)"
 
-### 5. Build spawn entry
+### 5. Write to release inbox
 
-Read `pluginMarketplaceName` from `~/.claude/plugins/user-config.json` (default: `ajudd-claude-plugins`).
+Read `pluginMarketplaceName` from `~/.claude/plugins/user-config.json`
+(default: `ajudd-claude-plugins`).
 
-Compile post-deploy checks: merge the `Post-deployment checks:` list from the story session file (strip checkbox markers — render as plain bullets) with any additional steps the user provided. If neither source has checks, omit the section.
+Target file: `~/.claude/memory/sessions/<pluginMarketplaceName>/_inbox_release.md`
 
-Spawn entry format:
+Create the file with header `# Inbox — release plugin` if it does not exist.
+
+Append the inbox entry (blank line before it):
+
 ```
-## [YYYY-MM-DD] from <slug>/<story-key> [spawn]
-[spawn — release, create-cab]
+## [YYYY-MM-DD] from <slug>/<story-key>
 - **Story:** <story-key> — <summary>
 - **PR:** <pr-title> (<pr-url>)
 - **Urgency:** <urgency>
 - **Risk:** <risk>
-- **Rollback:** <approach>
+- **Rollback:** <approach>  ← omit line if user skipped
 - **Post-deploy checks:**
-  - <check 1>
+  - <check 1>              ← omit entire section if none
   - <check 2>
-  (omit entire section if no checks)
 ```
 
-### 6. Write to global inbox
-
-Read `~/.claude/memory/sessions/<pluginMarketplaceName>/_inbox.md`.
-
-If the file does not exist, create it with:
-```
-# Inbox — <pluginMarketplaceName>
-```
-
-Append the spawn entry (blank line before it). Write back.
-
-### 7. Transition Jira (optional)
-
-Ask:
-> "Transition story to 'Approved for Release' in Jira? (yes / skip)"
-
-If yes, call `transitionJiraIssue` with transition ID `261`.
-
-### 8. Update story session file (if applicable)
-
-If the story session file at `~/.claude/memory/sessions/<slug>/<story-key>.md` exists, update:
-- `Open items` — remove any items related to this handoff, or set to `none`
-- `Next step` — `none — CAB spawn written to release inbox`
-
-### 9. Report
+### 6. Report
 
 ```
 /story:finish — <story-key>
-  Story:    <summary>
-  PR:       <title> (<url>)
+  <summary>
+
+  PR:       <title>
   Urgency:  <urgency>
   Risk:     <risk>
-  Rollback: <approach>
-  Post-deploy checks: N step(s)   ← or "none"
+  Rollback: <approach>   ← or "(none)"
+  Post-deploy checks: N   ← or "none"
 
-  ✓ Spawn entry written → ~/.claude/memory/sessions/<pluginMarketplaceName>/_inbox.md
-  ✓ Jira transitioned to Approved for Release   ← or: "(skipped)"
+  ✓ Written to release inbox
 
-Next: run /session:start in the plugin directory and pick up the ★ spawn
-entry to create the CAB.
+Start a release session and pick this up when you're ready to create the CAB.
 ```
