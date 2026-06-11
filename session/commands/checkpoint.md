@@ -82,13 +82,13 @@ Record any out-of-scope items found — they will be surfaced in the batch block
 
 Compose a 1-sentence description of the work accomplished since the last checkpoint. Write it as a complete thought that stands alone without conversation context (e.g. "Fixed NoteForm missing Tags/Collections and wired ExpeditionPicker into NoteDetail" not "finished the bugs").
 
-Append to `<session_root>/_history.md` (create the file if it does not exist, with header `# History — <slug>`):
-
+Append to `<session_root>/_history.md` via Bash — **do not Read the file first:**
+```bash
+[ -f "<session_root>/_history.md" ] || printf "# History — <slug>\n" > "<session_root>/_history.md"
+printf "[YYYY-MM-DD @<handle>] <session-name> — <accomplished sentence>\n" >> "<session_root>/_history.md"
 ```
-[YYYY-MM-DD @<handle>] <session-name> — <accomplished sentence>
-```
 
-This entry becomes the value for `Last worked on` in the session file.
+The composed entry is already in context and becomes the value for `Last worked on` in the session file — **do not re-read `_history.md` to retrieve it.**
 
 ### 5a. Jira Progress Comment *(story/cab only)*
 
@@ -242,7 +242,7 @@ updated: [today's date]
 - **Scope:** [scope path]   ← preserve from existing file; write relative if new (story/cab/personal: "./"; plugin: "<plugin-name>/"); omit for general
 - **Status:** in-progress   ← always reset to in-progress at checkpoint
 - **Branch:** [branch or "n/a"]
-- **Last worked on:** [most recent entry from _history.md — do not synthesize, read from file]
+- **Last worked on:** [the entry composed and written in Step 5 — use that value directly; do not re-read _history.md]
 - **Open items:**
   - [YYYY-MM-DD @<handle>] <item text>   ← all items tagged; "none" if empty
 - **Next steps:**

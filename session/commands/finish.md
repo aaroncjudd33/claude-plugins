@@ -113,13 +113,14 @@ Only proceed to the batch block once all flagged items are resolved.
 
 ### 6. Pre-Batch Preparation (Silent)
 
-Before assembling the batch, gather contextual data needed to build the batch items:
+Before assembling the batch, gather contextual data needed to build the batch items. **Run all applicable reads in parallel — issue them as a single batch before processing any result.**
 
 1. **Inbox file:** read `<session_root>/_inbox_<name>.md` (plugin) or `<session_root>/_inbox.md` (others). Categorize items as in-progress or pending.
 2. **Plugin version:** if type is plugin, read current version from `plugin.json`.
 3. **Epic file:** if session has `Epic` field and the epic file exists, note whether it has a Confluence page link.
 4. **Story doc path:** read `paths.jiraStoriesDir` from user-config. Derive doc path: `<jiraStoriesDir>/<jiraProject>/<session-name>-<slug>.md`. Check if it exists.
 5. **Browser:** if type is story, check `<voPlaywrightTestsDir>/.browser-ws.txt`. If it exists, read `<voPlaywrightTestsDir>/.browser-owner.txt` and compare owner to current `<slug>/<session-name>`. Include in batch only if owner matches or file is absent.
+6. **Teams guide pre-fetch:** if `teams_chat != "none"` and type is story/cab, read `~/.claude/plugins/marketplaces/<pluginMarketplaceName>/comms/skills/comms/references/teams-html-guide.md` now — it will be needed if the user answers yes to the Teams question. (O9)
 
 ### 7. Finish Batch
 
@@ -279,13 +280,13 @@ Reply with overrides or "go".
 
 Compose a 1-sentence description of the work accomplished this session. Write it as a complete thought that stands alone without conversation context.
 
-Append to `<session_root>/_history.md` (create the file if it does not exist, with header `# History — <slug>`):
-
+Append to `<session_root>/_history.md` via Bash — **do not Read the file first:**
+```bash
+[ -f "<session_root>/_history.md" ] || printf "# History — <slug>\n" > "<session_root>/_history.md"
+printf "[YYYY-MM-DD @<handle>] <session-name> — <accomplished sentence>\n" >> "<session_root>/_history.md"
 ```
-[YYYY-MM-DD @<handle>] <session-name> — <accomplished sentence>
-```
 
-This entry becomes the value for `Last worked on` in the session file.
+The composed entry is already in context and becomes the value for `Last worked on` in the session file — **do not re-read `_history.md` to retrieve it.**
 
 ### 9. Session Summary
 
@@ -331,7 +332,7 @@ updated: [today's date]
 - **Scope:** [scope path]   ← preserve from existing file; write relative if new; omit for general
 - **Status:** completed
 - **Branch:** [branch or "n/a"]
-- **Last worked on:** [most recent entry from _history.md — do not synthesize, read from file]
+- **Last worked on:** [the entry composed and written in Step 8 — use that value directly; do not re-read _history.md]
 - **Open items:**
   - [YYYY-MM-DD @<handle>] <item text>   ← all items tagged; "none" if empty
 - **Next steps:**
@@ -347,9 +348,9 @@ updated: [today's date]
 
 **Backward compat:** If the existing session file has a `Project:` field, preserve it. If `- **Next step:** <text>` (scalar), re-write as `- **Next steps:**` array tagged `[today @<handle>]`.
 
-**After writing — update approved-hash (repo sessions only):** Recompute SHA-256 and overwrite `~/.claude/memory/sessions/<slug>/<name>.approved-hash`:
+**After writing — update approved-hash (repo sessions only):** Recompute hash and overwrite `~/.claude/memory/sessions/<slug>/<name>.approved-hash`:
 ```bash
-python3 -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" "<session_root>/<name>.md" > ~/.claude/memory/sessions/<slug>/<name>.approved-hash
+git hash-object "<session_root>/<name>.md" > ~/.claude/memory/sessions/<slug>/<name>.approved-hash
 ```
 
 **Update `_index.md`:** Find the line for `<name>`: extract `@created-by` and `created-date` to preserve. Replace or append: `<name> | @<created-by> | <created-date> | @<handle> | <today> | completed | <title-or-dash>`.
@@ -360,7 +361,14 @@ Print the summary to screen as the final output.
 
 ### 10. Work Log
 
-Append to `~/.claude/memory/worklog/<YYYY-MM-DD>.md` (create the file and `~/.claude/memory/worklog/` directory if they don't exist).
+Append to `~/.claude/memory/worklog/<YYYY-MM-DD>.md` via Bash — **do not Read the file first.** Worklog is append-only; existing content is never examined.
+
+```bash
+mkdir -p ~/.claude/memory/worklog
+cat >> ~/.claude/memory/worklog/<YYYY-MM-DD>.md << 'ENTRY'
+[entry content here]
+ENTRY
+```
 
 Use today's date for the filename. Use the current local time (HH:MM) for the entry header.
 

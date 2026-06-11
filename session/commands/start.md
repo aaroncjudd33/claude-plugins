@@ -146,6 +146,10 @@ If the active session (call 6) is in the table, append inline hints on the follo
 Then output the routing line:
 ```
   resume <n>  ·  start <plugin>  ·  new plugin
+
+  mine   — show only your sessions
+  all    — include completed sessions
+  <text> — search by name or title
 ```
 
 **Accepted inputs:**
@@ -176,6 +180,10 @@ Full inbox handling (work/done/backlog/keep) happens at Step 5.
 Then output the routing line:
 ```
   resume <n>  ·  start story  ·  start cab
+
+  mine   — show only your sessions
+  all    — include completed sessions
+  <text> — search by name or title
 ```
 
 **Accepted inputs:**
@@ -185,6 +193,9 @@ Then output the routing line:
 - `start story BPT2-XXXX` → route directly with that key
 - `start cab` → route to new CAB; if no keys in reply, ask "Story keys? (space-separated)" as follow-up
 - `work <n>` on a global inbox `[spawn]` item → route through spawn flow
+- `mine` → filter table to sessions where @created-by or @updated-by matches current user; re-display filtered table and re-show routing
+- `all` → re-display including completed sessions and re-show routing
+- Any other text → treat as search filter; match against name, title, handle, or status; re-display with `(filtered by '<query>')` and re-show routing
 
 ---
 
@@ -195,6 +206,10 @@ If `_inbox.md` has items, show compact summary before the routing line.
 Then output the routing line:
 ```
   resume <n>  ·  start
+
+  mine   — show only your sessions
+  all    — include completed sessions
+  <text> — search by name or title
 ```
 
 **Accepted inputs:**
@@ -202,6 +217,9 @@ Then output the routing line:
 - `resume <n>` → resume
 - `start` → route to new personal session; if no name in reply, ask "Session name?" as follow-up
 - `start <name>` → route directly with that name
+- `mine` → filter table to sessions where @created-by or @updated-by matches current user; re-display and re-show routing
+- `all` → re-display including completed sessions and re-show routing
+- Any other text → treat as search filter; match against name, title, handle, or status; re-display with `(filtered by '<query>')` and re-show routing
 
 ---
 
@@ -212,12 +230,19 @@ If `_inbox.md` has items, show compact summary before the routing line.
 Then output the routing line:
 ```
   resume <n>  ·  start
+
+  mine   — show only your sessions
+  all    — include completed sessions
+  <text> — search by name or title
 ```
 
 **Accepted inputs:**
 - Number or session name → resume
 - `resume <n>` → resume
 - `start` → route to new session; if no name/context in reply, ask "Name and what you're working on?" as follow-up
+- `mine` → filter table to sessions where @created-by or @updated-by matches current user; re-display and re-show routing
+- `all` → re-display including completed sessions and re-show routing
+- Any other text → treat as search filter; match against name, title, handle, or status; re-display with `(filtered by '<query>')` and re-show routing
 
 ---
 
