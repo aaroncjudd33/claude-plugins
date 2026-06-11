@@ -19,8 +19,7 @@ List all `.md` files in `session_root` (skip `_active`, `_inbox*`, `_history*`, 
 
 **Read all session .md files in parallel** (one read call per file), then extract: Name, Branch, Last worked on, `updated-by` (may be absent in older files).
 
-For plugin sessions (path contains `<pluginMarketplaceName>` from user-config): count logical items in `<session_root>/_inbox_<name>.md` for each session (lines beginning with `[20` or `## `).
-For all other sessions: count logical items in `<session_root>/_inbox.md`.
+For all sessions: count logical items in `<session_root>/_inbox_<name>.md` (lines beginning with `[20` or `## `). Also count outbox entries in `<session_root>/_outbox_<name>.md` (lines beginning with `## `).
 
 If an argument was passed to the command:
 - Argument is `mine`: set `filter_mine = true`, show filtered list — do not skip to step 3.
@@ -31,8 +30,8 @@ If `filter_mine`, filter the session list to those where `updated-by` matches `@
 Otherwise, print the numbered list and wait for selection. Show `updated-by` column; append mine-filter hint if multiple developers are visible:
 ```
 Sessions in <slug>   (type 'mine' to filter)
-  [1]  <name>  |  master  |  @<handle>  |  inbox 0  |  <last worked on>
-  [2]  <name>  |  master  |  @<handle>  |  inbox 2  |  <last worked on>
+  [1]  <name>  |  master  |  @<handle>  |  inbox 0  outbox 0  |  <last worked on>
+  [2]  <name>  |  master  |  @<handle>  |  inbox 2  outbox 1  |  <last worked on>
 ```
 
 ### 3. Display Resume Block
@@ -59,8 +58,7 @@ If inbox is empty: `Inbox: none`. If no history: `History: none`.
 
 ### 4. Check Inbox
 
-For plugin sessions (path contains `<pluginMarketplaceName>` from user-config): check `<session_root>/_inbox_<name>.md`.
-For all other sessions: check `<session_root>/_inbox.md`.
+For all sessions: check `<session_root>/_inbox_<name>.md`.
 
 If the inbox file has content beyond the header, first scan for in-progress items, then handle pending items.
 

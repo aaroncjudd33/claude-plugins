@@ -1,6 +1,6 @@
 {
   "name": "session",
-  "version": "1.34.2",
+  "version": "1.35.0",
   "description": "Session lifecycle commands — start a session with intent, commit mid-session, checkpoint state, and finish at end of day.",
   "author": {
     "name": "Aaron Judd",
@@ -20,6 +20,7 @@
     "./commands/resume.md",
     "./commands/status.md",
     "./commands/search.md",
-    "./commands/migrate.md"
+    "./commands/migrate.md",
+    "./commands/inbox.md"
   ]
 }

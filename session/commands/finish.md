@@ -177,30 +177,16 @@ If out-of-scope work is found, **hard block** — do not proceed to the Session 
 Cross-scope work detected — cannot close this session cleanly.
 
   Out-of-scope changes:
-    - <file path>  (belongs in: <target slug>)
+    - <file path>  (belongs in: <target slug> / <target session>)
 
-  Options:
-    [1] Write a handoff note to the correct session's inbox and exclude from this record
-    [2] Acknowledge as out-of-scope, exclude from record (no handoff)
-    [3] Cancel finish — I'll handle it manually
+  [1] Route to target inbox and exclude from this record (via /session:inbox)
+  [2] Acknowledge as out-of-scope, exclude from record (no handoff)
+  [3] Cancel finish — I'll handle it manually
 ```
 
-**Option [1]:** Derive the target slug from the file path (e.g. `<pluginMarketplaceName>` for plugin files; last component of work repo paths for work projects). Read `<pluginMarketplaceName>` from `~/.claude/plugins/user-config.json`.
+**Option [1]:** Derive the target slug and session name from the file path, then invoke the `/session:inbox` flow with the out-of-scope item pre-populated. The routing is never silent — user sees and confirms before the inbox write happens.
 
-If the target slug matches `<pluginMarketplaceName>`, also determine the target plugin:
-- If the file path contains `<pluginMarketplaceName>/<plugin>/` → resolve the target session_root for that slug and write to `<target_session_root>/_inbox_<plugin>.md`. Create the file if it doesn't exist with header `# Inbox — <plugin> plugin`.
-- If the item is a new plugin idea (no specific existing plugin maps to the file path) → write to `<target_session_root>/_inbox.md` with a `[new-plugin]` tag on the entry. Create the file if it doesn't exist with header `# Inbox — <pluginMarketplaceName>`.
-
-For all other target slugs, resolve the target session_root and append to `<target_session_root>/_inbox.md`. Create the file if it doesn't exist with header `# Inbox — <target-slug>`.
-
-In all cases, the entry format is:
-
-```markdown
-## [YYYY-MM-DD @<handle>] from <source-slug> / <session-name>
-- <description of out-of-scope work done>
-```
-
-**Option [2]:** Note the excluded work in the session summary's Open items field.
+**Option [2]:** Note the excluded work in the session summary's Open items field. No inbox write.
 
 **Option [3]:** Stop. Do not write the Session Summary or Deactivate the session.
 
@@ -226,7 +212,7 @@ In-progress inbox items — mark any done before closing?
 
 For each **inbox-file item** (Step A) marked done:
 1. Strip the `[in-progress — ...]` line from the entry.
-2. Archive the full entry with `[DONE YYYY-MM-DD]` stamp. Plugin: `_inbox_<name>_archive.md`; others: `_inbox_archive.md`. Create archive with header if needed. Preserve any `Work file:` reference.
+2. Archive the full entry with `[DONE YYYY-MM-DD]` stamp to `_inbox_<name>_archive.md`. Create archive with header `# Inbox Archive — <name>` if needed. Preserve any `Work file:` reference.
 3. Remove the entry from the inbox file. Rewrite inbox preserving header.
 4. Remove the matching `[inbox] <item>` from session `Open items`.
 
@@ -314,6 +300,7 @@ updated: [today's date]
   - [ ] <check description>
   - [x] <acknowledged check description>
 - **Related stories:** [BPT2-XXXX, BPT2-YYYY or "none"]   ← cab type only, omit for other types
+- **linked_sessions:** [<session-name>, ...]   ← preserve as-is; omit if not present
 ```
 
 **Backward compat:** If the existing session file has a `Project:` field, preserve it on write.
@@ -333,21 +320,25 @@ Post-deployment checks — anything to add or update? (enter new checks, or 'ski
 - If the user skips and the field is already set, preserve it as-is
 - These checks will be surfaced and acknowledged when the related CAB closes via `/release:deploy`
 
-**Ask next step:**
+**Derive `Next step` — do not ask:**
 
-Before writing, ask the user: "What's the first thing to pick up next time? (or 'skip')" Then offer where to route it:
+Check in order and use the first that applies:
+1. Remaining items in `<session_root>/_inbox_<name>.md` (pending or in-progress) → set `Next step` to "See inbox — N items pending"
+2. Non-`[inbox]`-tagged Open items → use the first item's text
+3. Story/CAB type → check Jira status and current branch state for a concrete action (e.g. "In review — waiting on QA approval", "Ready to deploy — CAB approved")
+4. Only if none of the above apply: ask the user "What's the first thing to pick up next time? (or 'skip')"
+
+After deriving (or asking), offer where to route a **new** item if the user wants to add one:
 
 ```
-Add to: inbox (ready — pick up next session) / backlog (defer — not working on it soon) / skip
+Add a new next-step item? (inbox — ready / backlog — defer / skip)
 ```
 
-For **personal and general** session types, lead with inbox as the expected choice — work that surfaces at session close is usually planned and ready, not deferred.
+- **inbox:** invoke `/session:inbox` flow targeting this same session. Set `Next step` to the description.
+- **backlog:** write to `<session_root>/_backlog_<name>.md` (plugin) or `<session_root>/_backlog.md` (others). Set `Next step` to "none".
+- **skip:** keep the derived `Next step` as-is.
 
-- **inbox:** write as an inbox entry to `<session_root>/_inbox_<name>.md` (plugin) or `<session_root>/_inbox.md` (others) using format `## [YYYY-MM-DD @<handle>] from <slug> / <name> — <description>`. Create the file if needed with header `# Inbox — <name> plugin` (plugin) or `# Inbox — <slug>` (others). Set `Next step` in the session file to the description (convenience echo of the inbox entry).
-- **backlog:** write to `<session_root>/_backlog_<name>.md` (plugin) or `<session_root>/_backlog.md` (others) using the same entry format. Create the file if needed with header `# Backlog — <name> plugin` (plugin) or `# Backlog — <slug>` (others). Set `Next step` to "none".
-- **skip:** set `Next step` to "none".
-
-If the user says "same" or similar, carry forward the current `Next step` value and write it to inbox.
+If the user says "same" or similar, carry forward the current `Next step` value.
 
 Print the summary to screen as the final output.
 

@@ -53,7 +53,7 @@ Detect session type from the current path:
 - **personal** — `personalProjectsDir` is set and path begins with it; fallback: path contains `/c/claude/`
 - **general** — anything else
 
-Resolve `session_root` and `handle` using Path Resolution (see Session Skill). If repo-based and `~/.claude/config/<slug>.json` is missing, run the First-Run prompt before continuing.
+Resolve `session_root` and `handle` using Path Resolution (see Session Skill). If repo-based and `~/.claude/config/<slug>.json` is missing, auto-create it silently (see First-Run Auto-Config in Session Skill).
 
 ### 2. Load Sessions
 
@@ -63,17 +63,17 @@ List all `.md` files in `session_root` (skip `_active`, `_inbox*`, `_history*`, 
 
 For **last worked on**: read `<session_root>/_history.md` and find the most recent entry whose session name matches. History entries have the format `[YYYY-MM-DD @handle] <session-name> — <description>` — the session name is the first token after `] ` and before ` —`. If `_history.md` does not exist or has no matching entry, fall back to the `Last worked on` field in the session file.
 
-For **plugin sessions**, also check `<session_root>/_inbox_<name>.md` and count **logical items** — lines that begin with `[20` or `## ` (entry markers), not raw non-blank lines. Body text under an entry does not count as a separate item. If count > 0, note it for display.
+For **all sessions**, check `<session_root>/_inbox_<name>.md` and count **logical items** — lines that begin with `[20` or `## ` (entry markers), not raw non-blank lines. Body text under an entry does not count as a separate item. Also check `<session_root>/_outbox_<name>.md` and count logical items (lines beginning with `## `). Note inbox and outbox counts for display.
 
-For **non-plugin sessions**, check `<session_root>/_inbox.md` and count logical items the same way. Note this count — it will be surfaced in Step 3 before the options are presented.
+For **global inbox** (`<session_root>/_inbox.md`): count logical items separately — these are truly undirected items and spawned sessions. Note this count — surfaced in Step 3.
 
 If `filter_mine` is active, filter the session list to those where `updated-by` matches `@<handle>`.
 
-If sessions exist, print a numbered list. Always include `updated-by` and `inbox N` columns (use `inbox 0` when empty):
+If sessions exist, print a numbered list. Always include `updated-by`, `inbox N`, and `outbox N` columns (use `0` when empty):
 ```
 Sessions in <slug>   [filtered to @<handle>]  ← omit if not filtering
-  [1]  <name>  |  <type>  |  <branch>  |  @<handle>  |  inbox 0  |  <last worked on>
-  [2]  <name>  |  <type>  |  <branch>  |  @<handle>  |  inbox 3  |  <last worked on>
+  [1]  <name>  |  <type>  |  <branch>  |  @<handle>  |  inbox 0  outbox 0  |  <last worked on>
+  [2]  <name>  |  <type>  |  <branch>  |  @<handle>  |  inbox 3  outbox 1  |  <last worked on>
 ```
 
 If multiple developers' sessions are visible (different `updated-by` values) and no `mine` filter is active, append: `(type 'mine' to filter to yours)`
@@ -174,9 +174,7 @@ Same global inbox compact display as above if `_inbox.md` has items.
 
 ### 5. Check Inbox
 
-**For plugin sessions**, check `<session_root>/_inbox_<name>.md` (e.g. `_inbox_release.md`). This is the plugin-specific inbox where cross-scope work from other sessions is routed.
-
-**For all other sessions**, check `<session_root>/_inbox.md`.
+**For all sessions**, check `<session_root>/_inbox_<name>.md` (e.g. `_inbox_release.md`, `_inbox_BPT2-6479.md`). This is the session-specific inbox where cross-scope work is routed via `/session:inbox`.
 
 If the inbox file exists and has content beyond the header line, scan for two categories of items based on whether an `[in-progress — ...]` line appears immediately after the `## [date]...` entry header:
 
@@ -211,8 +209,7 @@ If multiple pending items, offer a bulk shortcut first: **"Handle all: Work on a
 If the file does not exist or contains only the header, skip silently.
 
 **Archive files:**
-- Plugin: `<session_root>/_inbox_<name>_archive.md` — header: `# Inbox Archive — <name> plugin`
-- Non-plugin: `<session_root>/_inbox_archive.md` — header: `# Inbox Archive — <slug>`
+- All sessions: `<session_root>/_inbox_<name>_archive.md` — header: `# Inbox Archive — <name>`
 
 Create the archive file if it does not exist. Archive entry format (append, blank line between entries):
 ```
@@ -226,7 +223,7 @@ All archived entries use `[DONE YYYY-MM-DD]`. The `[in-progress — ...]` marker
 
 **Auto-purge archive:** After handling inbox items, if the archive file exists, read it and drop any entries whose `[DONE YYYY-MM-DD]` date is more than 30 days before today. Rewrite the file with only the retained entries (preserving the header line).
 
-**Additionally**, for plugin sessions, check `<session_root>/_inbox.md` for any global items (new plugin ideas, undirected notes, or spawned sessions). If it has content, show it separately. Flag `[spawn]` entries prominently — they are pre-loaded handoffs ready to start as a new session:
+**Additionally**, check `<session_root>/_inbox.md` for global items (undirected notes, new plugin ideas, or spawned sessions without a named target). If it has content, show it separately. Flag `[spawn]` entries prominently — they are pre-loaded handoffs ready to start as a new session:
 
 ```
 Global inbox (<N> item(s)):
@@ -408,7 +405,7 @@ Any implementation work should be routed to this session's inbox for a coding se
 2. Check for Epic Link in the Jira issue. If an epic key is present:
    - Check whether `~/.claude/memory/epics/<epic-key>.md` exists
    - **Not found:** "No epic memory for <key> — create one? (Yes / Skip)"
-     - **Yes:** create `~/.claude/memory/epics/<key>.md` with pre-populated structure: epic title from Jira, story map row for the current story. Use `~/.claude/memory/epics/BPT2-5557.md` as the structural reference.
+     - **Yes:** create `~/.claude/memory/epics/<key>.md` with pre-populated structure: epic title from Jira, story map row for the current story. Use `references/epic-template.md` from the session skill as the structural template.
    - **Found:** note "Epic memory loaded for <key>" — file is already in context
    - Set `Epic: <key>` in the session file
 3. Investigate codebase, confirm Teams chat exists, check Confluence page

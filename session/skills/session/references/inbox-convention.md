@@ -29,7 +29,7 @@ If a change touches two plugins, split it into two entries and cross-reference e
 ## Entry Format
 
 ```markdown
-## [YYYY-MM-DD] from <source-slug> / <session-name> — <short title>
+## [YYYY-MM-DD @<handle>] from <source-slug> / <session-name> — <short title>
 
 <Context: what the item is, why it matters, what needs to happen.>
 ```
@@ -42,14 +42,14 @@ Items move through three states, all tracked inline in the inbox file:
 
 **Pending** — item has arrived, not yet picked up:
 ```markdown
-## [2026-05-13] from virtual-office / BPT2-6258 — Add /comms:pto command
+## [2026-05-13 @ajudd] from virtual-office / BPT2-6258 — Add /comms:pto command
 
 Add a `/comms:pto` command...
 ```
 
 **In-progress** — session picked it up, work is underway. A marker is inserted after the `## [date]` header:
 ```markdown
-## [2026-05-13] from virtual-office / BPT2-6258 — Add /comms:pto command
+## [2026-05-13 @ajudd] from virtual-office / BPT2-6258 — Add /comms:pto command
 [in-progress — session, 2026-06-04]
 [Work file: _work_session_2026-06-04-comms-pto.md]   ← optional, for deep items
 
@@ -61,7 +61,7 @@ The item stays in the inbox file until work is complete. A matching `[inbox] Add
 **Done** — work complete. Item is removed from inbox and appended to the archive file (`_inbox_<name>_archive.md` or `_inbox_archive.md`) with a `[DONE]` stamp:
 ```markdown
 [DONE 2026-06-05]
-## [2026-05-13] from virtual-office / BPT2-6258 — Add /comms:pto command
+## [2026-05-13 @ajudd] from virtual-office / BPT2-6258 — Add /comms:pto command
 [Work file: _work_session_2026-06-05-comms-pto.md]   ← preserved if one was created
 ```
 

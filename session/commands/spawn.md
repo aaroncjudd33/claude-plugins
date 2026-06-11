@@ -35,11 +35,11 @@ Ask: "What context should the new session inherit? (or 'auto' to derive from thi
 - **auto:** Derive a handoff summary from the current conversation — key findings, decisions made, rejected options, open questions, concrete next step. Cap at ~10 bullets.
 - **Manual:** User provides a description; use as-is.
 
-### 4. Write Spawn Entry to Global Inbox
+### 4. Write Spawn Entry to Inbox
 
-If the spawn `Type` is `plugin`, write to `<session_root>/_inbox_<label>.md` (create if needed with header `# Inbox — <label> plugin`) so the entry surfaces in that plugin's primary inbox triage at `/session:start`.
+If the spawn `Type` is `plugin` or if the `Label` matches an existing session name in `session_root`, write to `<session_root>/_inbox_<label>.md` (create if needed with header `# Inbox — <label>`).
 
-Otherwise, append to `<session_root>/_inbox.md` (create if needed with header `# Inbox — <slug>`).
+Otherwise (target session does not exist yet), append to `<session_root>/_inbox.md` (global — surfaces at the next `/session:start` for anyone to pick up; create if needed with header `# Inbox — <slug>`).
 
 ```markdown
 ## [YYYY-MM-DD @<handle>] from <slug> / <current-session-name> [spawn] — <label>

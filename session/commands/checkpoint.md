@@ -98,25 +98,16 @@ If out-of-scope work is found, warn but do not block:
 Out-of-scope work detected — will be excluded from this checkpoint.
 
   Out-of-scope:
-    - <file path>  (belongs in: <target slug>)
+    - <file path>  (belongs in: <target slug> / <target session>)
 
-  Write a handoff note to the target session's inbox? (Yes / Skip)
+  [1] Route to target inbox now (via /session:inbox)
+  [2] Acknowledge only — I'll handle it manually
+  [3] Skip
 ```
 
-If Yes: derive the target slug from the file path.
-
-If the target slug matches `<pluginMarketplaceName>` (read from `~/.claude/plugins/user-config.json`), also determine the target plugin:
-- If the file path contains `<pluginMarketplaceName>/<plugin>/` → resolve the target session_root for that slug and write to `<target_session_root>/_inbox_<plugin>.md`. Create the file if it doesn't exist with header `# Inbox — <plugin> plugin`.
-- If the item is a new plugin idea (no specific existing plugin maps to the file path) → write to `<target_session_root>/_inbox.md` with a `[new-plugin]` tag on the entry.
-
-For all other target slugs, resolve the target session_root and append to `<target_session_root>/_inbox.md`. Create the file if it does not exist, starting with `# Inbox — <target-slug>` as the first line.
-
-Entry format in all cases:
-
-```markdown
-## [YYYY-MM-DD @<handle>] from <source-slug> / <session-name>
-- <description of out-of-scope work done>
-```
+- **[1] Route:** Derive the target slug and session name from the file path, then invoke the `/session:inbox` flow with the out-of-scope item pre-populated as the content and target. The routing is never silent — the user sees and confirms it.
+- **[2] Acknowledge:** Note the excluded work in the session summary's Open items but do not write to any inbox.
+- **[3] Skip:** Continue without noting.
 
 Continue with the checkpoint for in-scope work only.
 
@@ -242,7 +233,7 @@ In-progress inbox items — mark any done?
 
 For each **inbox-file item** (Step A) marked done:
 1. Strip the `[in-progress — ...]` line from the entry.
-2. Archive the full entry with `[DONE YYYY-MM-DD]` stamp prepended. Plugin: `_inbox_<name>_archive.md`; others: `_inbox_archive.md`. Create archive with appropriate header if it does not exist. Preserve any `Work file:` reference in the archive entry.
+2. Archive the full entry with `[DONE YYYY-MM-DD]` stamp prepended to `_inbox_<name>_archive.md`. Create archive with header `# Inbox Archive — <name>` if it does not exist. Preserve any `Work file:` reference in the archive entry.
 3. Remove the entry from the inbox file. Rewrite inbox preserving header and remaining entries.
 4. Remove the matching `[inbox] <item>` line from session `Open items`. Rewrite the session file.
 

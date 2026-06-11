@@ -1,6 +1,6 @@
 ---
 name: session
-description: "Background skill — do not run directly. Use /session:start, /session:checkpoint, or /session:finish. Auto-loads when: any session command is invoked or session state is relevant."
+description: "This skill governs session lifecycle across all project types. Load whenever the user invokes a session command (/session:start, /session:checkpoint, /session:commit, /session:finish, /session:switch, /session:search, /session:status, /session:spawn, /session:resume, /session:prepare-clear, /session:worklog, /session:migrate), asks about session state, asks what they were working on, wants to save progress, wants to start or end a working session, or asks about their inbox, backlog, or open items. Provides path resolution logic, @handle tagging rules, epic context, context-recovery guidance, and Teams messaging rules used by all session commands."
 ---
 
 # Session Skill
@@ -36,27 +36,30 @@ Always local (never in repo, regardless of mode):
 
 **Cross-repo inbox writes** (e.g., story plugin writing to release plugin inbox): substitute the target slug and re-run path resolution to find the target session_root.
 
-### First-Run Prompt
+**Inbox / Outbox file naming:**
+- Per-session inbox (any type): `_inbox_<session-name>.md` — e.g., `_inbox_BPT2-6479.md`, `_inbox_release.md`
+- Global inbox (no known target session): `_inbox.md`
+- Outbox (append-only send record): `_outbox_<session-name>.md`
 
-Triggered once per developer per repo-based project when `~/.claude/config/<slug>.json` is missing.
+All cross-session routing goes through `/session:inbox` — scope guards invoke it rather than writing directly.
+
+### First-Run Auto-Config
+
+Triggered once per developer per repo-based project when `~/.claude/config/<slug>.json` is missing. **No prompt needed** — derive everything silently:
 
 ```
-First session on this repo. What's your local project path?
-(e.g. C:\dev\virtual-office)
->
-```
-
-If `user-config.json` has no `user.handle` field, also ask:
-```
-Your short handle for attribution (e.g. ajudd):
->
+projectRoot = git rev-parse --show-toplevel   ← always known
+handle      = user-config.json → user.handle  ← already in user-config
 ```
 
 Write `~/.claude/config/<slug>.json`:
 ```json
-{ "projectRoot": "<answer>", "handle": "<answer>" }
+{ "projectRoot": "<derived>", "handle": "<derived>" }
 ```
-Never ask again.
+
+Then show a one-time notice: `"Repo sessions active for <slug> — local config written to ~/.claude/config/<slug>.json"`
+
+Only ask for `handle` if `user-config.json` is completely absent (plugin not set up at all — uncommon edge case).
 
 ---
 
@@ -119,19 +122,26 @@ Example: working on BPT2-6382 (frontend) and need the wire format for `periodId`
 
 ## Context Recovery After /clear
 
-If the user asks "what was I working on", "did I work on BPT2-XXXX before", "find my session for X", or similar recall questions, suggest **`/session:search <query>`** — it searches session files and worklogs by story key or keyword without requiring an active session.
+If the user asks "what was I working on", "did I work on BPT2-XXXX before", "find my session for X", or similar recall questions, suggest **`/session:search <query>`** — it searches session files and worklogs by story key or keyword without requiring an active session. For date-based review ("what did I do yesterday"), suggest **`/session:worklog`**.
 
-If the user runs `/clear` or mentions that context was lost, **immediately suggest running `/session:start`**:
+If the user runs `/clear` or mentions that context was lost, **immediately suggest running `/session:resume`** (fastest post-`/clear` path — skips the menu and restores context directly) or **`/session:start`** for the full flow:
 
-> "Context cleared — run `/session:start` to restore your session state (branch, open items, next step) without re-explaining anything."
+> "Context cleared — run `/session:resume` to restore context directly, or `/session:start` to pick up from the full session menu."
 
 This is the primary recovery path. `/session:start` reads `_active` to identify the current session, then loads the session file and surfaces everything needed to resume. New developers especially should be nudged here — the workflow is not obvious without it.
+
+---
+
+## Planning Mode Enforcement
+
+When `Mode: planning` is active in the session file, enforce read-only behavior: no code edits or file writes outside `~/.claude/memory/`. Implementation requests are routed to the session inbox instead. This is enforced via the global CLAUDE.md session check — the Mode field drives it.
 
 ---
 
 ## Reference Files
 
 - `references/inbox-convention.md` — How to write cross-session/cross-project change instructions to plugin inbox files
+- `references/epic-template.md` — Template structure for creating new epic memory files at `~/.claude/memory/epics/<key>.md`
 
 ---
 
@@ -140,7 +150,7 @@ This is the primary recovery path. `/session:start` reads `_active` to identify 
 Whenever any session command posts a Teams message, apply these rules without exception:
 
 1. **Always end with the Claude signature** — no exceptions:
-   `<p><em>Posted by Claude Code on behalf of {USER_NAME}</em></p>`
+   `<p><em>Posted by Claude Code on behalf of {USER_NAME}</em></p>` — use the display name from `user-config.json → user.name`, or fall back to `@<handle>`
 2. **Always preview before sending.** Show the full message content and wait for explicit approval before calling `send_chat_message`.
 3. **Always use HTML formatting.** `send_chat_message` body supports and renders HTML.
 4. **Always open with an intro paragraph** (`<p>`) before the first section.

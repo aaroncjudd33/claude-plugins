@@ -27,9 +27,13 @@ List all `.md` files in `session_root` — skip `_active`, `_inbox*`, `_history*
 
 If `filter_mine`, filter to sessions where `updated-by` matches `@<handle>`.
 
-### 2. Scan Global Inbox for Spawns
+### 2. Scan Inboxes, Outboxes, and Global Inbox
 
-Read `<session_root>/_inbox.md`. Count total logical items (lines beginning with `[20` or `## `). Extract any entries tagged `[spawn]` for separate display.
+For each session, count:
+- Inbox items: lines beginning with `[20` or `## ` in `<session_root>/_inbox_<name>.md`
+- Outbox items: lines beginning with `## ` in `<session_root>/_outbox_<name>.md`
+
+Read `<session_root>/_inbox.md`. Count total logical items. Extract any entries tagged `[spawn]` for separate display.
 
 ### 3. Output
 
@@ -37,8 +41,8 @@ Print immediately — no prompts, no writes. Add mine-filter hint if multiple de
 
 ```
 Sessions in <slug>   (type '/session:status mine' to filter to yours)
-  <name>   @<handle>   <status>   branch: <branch>   open: N   <date>
-  <name>   @<handle>   <status>   branch: <branch>   open: N   <date>
+  <name>   @<handle>   <status>   branch: <branch>   open: N   inbox: N  outbox: N   <date>
+  <name>   @<handle>   <status>   branch: <branch>   open: N   inbox: N  outbox: N   <date>
   ★ [spawn] <label>   ready to start — from <source-session>
 
 Global inbox: N items
