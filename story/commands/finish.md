@@ -28,10 +28,10 @@ Call `getJiraIssue` to get: `summary`, `status`.
 Ask:
 > "Transition story status? (current: [status])"
 
-Options via AskUserQuestion:
-- Done
-- Approved for Release
-- Skip — leave status as-is
+Output and wait:
+```
+  done  ·  approved-for-release  ·  skip
+```
 
 Apply the transition if selected (see transition IDs in the story skill reference).
 

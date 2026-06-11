@@ -35,10 +35,12 @@ If `filter_mine`, filter the session list to those where `@created-by` or `@upda
 Otherwise, print the numbered list and wait for selection. Always include a column header line:
 ```
 Sessions in <slug>   (type 'mine' to filter)
-  #    name         created              last edit            status        in  out  title
-  [1]  BPT2-6377    @ajudd  Jun 01       @ajudd  Jun 09       in-progress    1    0   Shopify Member Agreement Prompt
-  [2]  session      @ajudd  Jun 01       @nivi   Jun 11       in-progress    0    0   —
+  #    name         title                            status        in  out  created        last edit
+  [1]  BPT2-6377    Shopify Member Agreement Pro...   in-progress    1    0   @ajudd Jun 01  @ajudd Jun 09
+  [2]  session      —                                in-progress    0    0   @ajudd Jun 01  @nivi  Jun 11
 ```
+
+**Title truncation:** cap title at 32 characters. If longer, truncate and append `...`. If title is `—` (absent), show `—` with no padding.
 
 Show `@creator created-date` in "created" column; `@updater updated-date` in "last edit" column. Always show both `in` and `out` counts (show `0` — never omit). Sort in-progress/paused first, completed at bottom.
 

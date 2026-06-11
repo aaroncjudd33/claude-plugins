@@ -99,12 +99,14 @@ The index is built lazily: Step 8 seeds an entry whenever a session is loaded or
 If sessions exist, display in-progress and paused sessions first (sorted by updated-date, newest first), completed sessions grouped at the bottom. Always include a column header line:
 ```
 Sessions in <slug>
-  #    name         created              last edit            status        in  out  title
-  1    CAB-9240     @ajudd  May 18       @ajudd  May 27       in-progress    0    0   BP2 - Downline Reports - SG Daily Reports Fix
-  2    BPT2-6377    @ajudd  Jun 01       @nivi   Jun 11       in-progress    1    0   Shopify Member Agreement Prompt
+  #    name         title                            status        in  out  created        last edit
+  1    CAB-9240     BP2 - Downline Reports - SG...   in-progress    0    0   @ajudd May 18  @ajudd May 27
+  2    BPT2-6377    Shopify Member Agreement Pro...   in-progress    1    0   @ajudd Jun 01  @nivi  Jun 11
 
   7 completed — type 'all' to show
 ```
+
+**Title truncation:** cap title at 32 characters. If longer, truncate and append `...`. If title is `—` (absent), show `—` with no padding.
 
 Show `@creator date` in "created" column; show `@updater date` in "last edit" column. When creator == updater AND dates differ, still show both columns. Always show both `in` and `out` counts (show `0` — never omit). When user types `all`, re-display including completed sessions. Mark the active session from call 6 with `←` on that row.
 
