@@ -103,12 +103,14 @@ Sessions in <slug>
   1    CAB-9240     BP2 - Downline Reports - SG...   in-progress    0    0   @ajudd May 18  @ajudd May 27
   2    BPT2-6377    Shopify Member Agreement Pro...   in-progress    1    0   @ajudd Jun 01  @nivi  Jun 11
 
-  7 completed — type 'all' to show
+  2 in-progress · 7 completed
 ```
 
 **Title truncation:** cap title at 32 characters. If longer, truncate and append `...`. If title is `—` (absent), show `—` with no padding.
 
-Show `@creator date` in "created" column; show `@updater date` in "last edit" column. When creator == updater AND dates differ, still show both columns. Always show both `in` and `out` counts (show `0` — never omit). When user types `all`, re-display including completed sessions. Mark the active session from call 6 with `←` on that row.
+Show `@creator date` in "created" column; show `@updater date` in "last edit" column. When creator == updater AND dates differ, still show both columns. Always show both `in` and `out` counts (show `0` — never omit). Mark the active session from call 6 with `←` on that row.
+
+**Status summary line:** show counts for each status that has at least one session (e.g. `2 in-progress · 1 paused · 7 completed`). Omit any status with a count of zero. When user types `all`, re-display including completed sessions.
 
 **`filter_mine` active** (user passed `mine` arg): filter index entries where `@created-by` or `@updated-by` matches the current user — no additional file reads needed. Show `[filtered to @<handle>]` on the header.
 
@@ -145,16 +147,16 @@ If the active session (call 6) is in the table, append inline hints on the follo
 
 Then output the routing block:
 ```
-  Open:
-  resume <n>       — resume by number
-  start <plugin>   — start a session for a plugin
-  new plugin       — create a brand new plugin
+  Start / Resume:
+    resume <n>       — resume by number
+    start <plugin>   — start a session for a plugin
+    new plugin       — create a brand new plugin
 
-  Filter:
-  mine             — show only your sessions
-  all              — include completed sessions
-  status <value>   — filter by in-progress / paused / completed
-  <text>           — search name or title, or describe a filter (e.g. "has inbox", "updated by nivi")
+  Search by:
+    mine             — show only your sessions
+    all              — include completed sessions
+    status <value>   — filter by in-progress / paused / completed
+    <text>           — search name or title, or describe a filter (e.g. "has inbox", "updated by nivi")
 ```
 
 **Accepted inputs:**
@@ -187,16 +189,16 @@ Full inbox handling (work/done/backlog/keep) happens at Step 5.
 
 Then output the routing block:
 ```
-  Open:
-  resume <n>       — resume by number (e.g. resume 2)
-  start story      — start a new story — you'll give a key or URL
-  start cab        — start a new CAB — you'll give story keys
+  Start / Resume:
+    resume <n>       — resume by number (e.g. resume 2)
+    start story      — start a new story — you'll give a key or URL
+    start cab        — start a new CAB — you'll give story keys
 
-  Filter:
-  mine             — show only your sessions
-  all              — include completed sessions
-  status <value>   — filter by in-progress / paused / completed
-  <text>           — search name or title, or describe a filter (e.g. "has inbox", "updated by nivi")
+  Search by:
+    mine             — show only your sessions
+    all              — include completed sessions
+    status <value>   — filter by in-progress / paused / completed
+    <text>           — search name or title, or describe a filter (e.g. "has inbox", "updated by nivi")
 ```
 
 **Accepted inputs:**
@@ -219,15 +221,15 @@ If `_inbox.md` has items, show compact summary before the routing line.
 
 Then output the routing block:
 ```
-  Open:
-  resume <n>       — resume by number
-  start            — start a new session — you'll give it a name
+  Start / Resume:
+    resume <n>       — resume by number
+    start            — start a new session — you'll give it a name
 
-  Filter:
-  mine             — show only your sessions
-  all              — include completed sessions
-  status <value>   — filter by in-progress / paused / completed
-  <text>           — search name or title, or describe a filter (e.g. "has inbox", "updated by nivi")
+  Search by:
+    mine             — show only your sessions
+    all              — include completed sessions
+    status <value>   — filter by in-progress / paused / completed
+    <text>           — search name or title, or describe a filter (e.g. "has inbox", "updated by nivi")
 ```
 
 **Accepted inputs:**
@@ -248,15 +250,15 @@ If `_inbox.md` has items, show compact summary before the routing line.
 
 Then output the routing block:
 ```
-  Open:
-  resume <n>       — resume by number
-  start            — start a new session — you'll give a name and context
+  Start / Resume:
+    resume <n>       — resume by number
+    start            — start a new session — you'll give a name and context
 
-  Filter:
-  mine             — show only your sessions
-  all              — include completed sessions
-  status <value>   — filter by in-progress / paused / completed
-  <text>           — search name or title, or describe a filter (e.g. "has inbox", "updated by nivi")
+  Search by:
+    mine             — show only your sessions
+    all              — include completed sessions
+    status <value>   — filter by in-progress / paused / completed
+    <text>           — search name or title, or describe a filter (e.g. "has inbox", "updated by nivi")
 ```
 
 **Accepted inputs:**
