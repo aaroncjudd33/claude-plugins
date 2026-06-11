@@ -57,13 +57,13 @@ Resolve `session_root` and `handle` using Path Resolution (see Session Skill). I
 
 ### 2. Load Sessions
 
-Run **three calls in parallel** — no session file reads at this stage:
+Run **four calls in parallel** — no session file reads at this stage:
 
 1. **List sessions directory with timestamps:**
    ```bash
    ls -lt <session_root>/
    ```
-   Extract session names from `.md` filenames, skipping files that start with `_`. Use the file modification date as last-active date for display. Note any `_outbox_<name>.md` files for outbox count detection.
+   Extract session names from `.md` filenames, skipping files that start with `_`. Use the file modification date as the sort key and display date. Note any `_outbox_<name>.md` files.
 
 2. **Read all inbox files in one shot:**
    ```bash
@@ -73,24 +73,26 @@ Run **three calls in parallel** — no session file reads at this stage:
 
 3. **Read `<marketplace_root>/.claude-plugin/marketplace.json`** (plugin type only — used in Step 3).
 
-**Do not read session file contents, history, or outbox files here** — all of that loads in Step 4 after the user picks a session.
+4. **Read `<session_root>/_index.md`** (if it exists) — one pipe-delimited line per session: `<name> | @created-by | @updated-by | date | status | title`. If the file does not exist, show `@—` for handles, `—` for status and title. Do NOT read session files — `_index.md` is the only source of display data at listing time.
 
-If sessions exist, display sorted by modification date (newest first):
+If sessions exist, display in-progress and paused sessions first (sorted by modification date, newest first), completed sessions grouped at the bottom:
 ```
 Sessions in <slug>
-  [1]  <name>  |  inbox N  outbox 0  |  <date>
-  [2]  <name>  |  inbox 0  outbox 0  |  <date>
+  [1]  BPT2-6377  @ajudd           in-progress  inbox 1  Jun 09  Shopify Member Agreement Prompt
+  [2]  session    @ajudd→@nivi     paused       inbox 0  Jun 05  —
+
+  2 completed — type 'all' to show
 ```
 
-Outbox count: 0 unless `_outbox_<name>.md` appeared in the `ls` output, in which case count its `## ` lines.
+Show `@creator` when created-by == updated-by; show `@creator→@updater` when they differ. Show outbox count only when `_outbox_<name>.md` has entries — append `outbox N` after inbox count; omit when 0. If a session has no `_index.md` entry, show `@—` for handles, `—` for status and title. When user types `all`, re-display including completed sessions.
 
-**CRITICAL — no session file reads in the listing:** The table above uses ONLY data from `ls -lt` (name, date) and inbox counts from Step 2. Do NOT read session files to add titles, "last worked on" text, status, or any other content to this table. Titles and details load in Step 4 after the user picks a session.
-
-**`filter_mine` active** (user passed `mine` arg): read session files in a separate parallel batch just to extract `updated-by`, then filter. Show `[filtered to @<handle>]` on the header.
+**`filter_mine` active** (user passed `mine` arg): filter index entries where `@created-by` or `@updated-by` matches the current user — no additional file reads needed. Show `[filtered to @<handle>]` on the header.
 
 If `session_root` does not exist or is empty, skip this section.
 
 ### 3. Present Options
+
+**Keyword/status search:** If the user's response is not a number, `mine`, `all`, or a recognized keyword, treat it as a search query. Filter the sessions listing by matching against name, title, handle (created-by or updated-by), or status from `_index.md`. Re-display the filtered sessions listing and re-present this step's options. Show `(filtered by '<query>')` on the listing header. If no sessions match, show "No sessions match '<query>'" and re-prompt. Clear the filter when the user picks a numbered option or recognized keyword.
 
 **Plugin project** — use the `marketplace.json` loaded in Step 2. Always show the inbox count (use `inbox 0` when empty):
 - **[N] Resume <plugin-name>**  inbox N  — <date>
@@ -394,6 +396,7 @@ updated: [today's date]
 - **Mode:** [planning / coding / both]
 - **Name:** [name]
 - **updated-by:** @<handle>
+- **created-by:** @<handle>   ← written once at creation; never overwrite on checkpoint/finish/commit/switch
 - **Title:** [Jira summary]   ← story/cab only — from getJiraIssue; omit for other types
 - **Category:** [category]   ← general only, omit for other types
 - **Teams chat:** [teams_chat or "none"]
@@ -429,6 +432,15 @@ BPT2-1234
 ```
 
 `_active` is a convenience hint for `session:start` resume suggestions only — it is not read by `session:checkpoint` or `session:finish` to determine session identity.
+
+**Seed `_index.md`:** Update `<session_root>/_index.md` — create with header if not exists:
+```
+# Session Index — <slug>
+# name | created-by | updated-by | date | status | title
+```
+Find the line starting with `<name> | ` and replace it; if not found, append. Write line:
+`<name> | @<handle> | @<handle> | <today> | in-progress | <title-or-dash>`
+Where `<title-or-dash>` = `Title:` field for story/cab; `—` for other types.
 
 ### 9. Route Based on Choice
 

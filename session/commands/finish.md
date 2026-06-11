@@ -287,6 +287,7 @@ updated: [today's date]
 - **Mode:** [planning / coding / both]   ← preserve from session file; omit if not present (backward compat)
 - **Name:** [name]
 - **updated-by:** @<handle>
+- **created-by:** @<original-handle>   ← read from existing file; preserve as-is — never overwrite
 - **Title:** [Jira summary]   ← story/cab only; omit for other types
 - **Category:** [category]   ← general only, omit for other types
 - **Teams chat:** [teams_chat or "none"]
@@ -313,6 +314,8 @@ updated: [today's date]
 ```bash
 python3 -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" "<session_root>/<name>.md" > ~/.claude/memory/sessions/<slug>/<name>.approved-hash
 ```
+
+**Update `_index.md`:** Read `<session_root>/_index.md` — create with header if not exists. Find the line for `<name>`, extract `@created-by` from column 2 (or use `@<handle>` if no entry). Replace or append: `<name> | @<created-by> | @<handle> | <today> | completed | <title-or-dash>`. Where `<title-or-dash>` = `Title:` field for story/cab, `—` for other types.
 
 **General sessions only:** Also check `~/.claude/memory/sessions/<slug>/<name>/` — if notes, decisions, or outputs were produced today, ensure they are written there before closing.
 

@@ -15,24 +15,31 @@ Run `pwd` and extract the last path component as the repo slug. Resolve `session
 
 ### 2. Load Session List
 
-List all `.md` files in `session_root` (skip `_active`, `_inbox*`, `_history*`, `_backlog*`, and `_context*` files).
+Run **three calls in parallel:**
+1. `ls -lt <session_root>/` — extract session names from `.md` filenames, skipping `_*` files. Use file modification date as sort key and display date.
+2. Inbox/outbox counts (batch shell loop):
+   ```bash
+   for f in "<session_root>/_inbox"*.md; do echo "=== FILE: $f ==="; cat "$f"; done
+   ```
+   Count logical items per named inbox file (lines beginning with `[20` or `## `). Also check `_outbox_<name>.md` files for outbox counts.
+3. **Read `<session_root>/_index.md`** — handle, status, and title data for all sessions. If absent, show `@—` for handles, `—` for status and title.
 
-**Read all session .md files in parallel** (one read call per file), then extract: Name, Branch, Last worked on, `updated-by` (may be absent in older files).
-
-For all sessions: count logical items in `<session_root>/_inbox_<name>.md` (lines beginning with `[20` or `## `). Also count outbox entries in `<session_root>/_outbox_<name>.md` (lines beginning with `## `).
+No session `.md` file reads at listing time.
 
 If an argument was passed to the command:
 - Argument is `mine`: set `filter_mine = true`, show filtered list — do not skip to step 3.
 - Any other argument (e.g. `/session:switch release`): skip the list and jump directly to step 3 with that name.
 
-If `filter_mine`, filter the session list to those where `updated-by` matches `@<handle>`.
+If `filter_mine`, filter the session list to those where `@created-by` or `@updated-by` from `_index.md` matches `@<handle>`.
 
-Otherwise, print the numbered list and wait for selection. Show `updated-by` column; append mine-filter hint if multiple developers are visible:
+Otherwise, print the numbered list and wait for selection. Show attribution from `_index.md`; append mine-filter hint if multiple developers are visible:
 ```
 Sessions in <slug>   (type 'mine' to filter)
-  [1]  <name>  |  master  |  @<handle>  |  inbox 0  outbox 0  |  <last worked on>
-  [2]  <name>  |  master  |  @<handle>  |  inbox 2  outbox 1  |  <last worked on>
+  [1]  BPT2-6377  @ajudd           in-progress  inbox 1  Jun 09  Shopify Member Agreement Prompt
+  [2]  session    @ajudd→@nivi     paused       inbox 0  Jun 05  —
 ```
+
+Show `@creator→@updater` when they differ, `@creator` alone when same. Sort in-progress/paused first, completed at bottom.
 
 ### 3. Display Resume Block
 
@@ -94,12 +101,14 @@ For plugin sessions, also check `~/.claude/memory/sessions/<slug>/_inbox.md` for
 
 Write `~/.claude/memory/sessions/<slug>/_active` with the new session name (always local — plain text, no `.md`).
 
-Update `<session_root>/<name>.md`: set `updated` to today and set `updated-by: @<handle>`. Tag any untagged Open items or Next steps items with `[today @<handle>]`.
+Update `<session_root>/<name>.md`: set `updated` to today, set `updated-by: @<handle>`, and preserve `created-by:` as-is (never overwrite). Tag any untagged Open items or Next steps items with `[today @<handle>]`.
 
 **After writing — update approved-hash (repo sessions only):** Recompute and overwrite `~/.claude/memory/sessions/<slug>/<name>.approved-hash`:
 ```bash
 python3 -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" "<session_root>/<name>.md" > ~/.claude/memory/sessions/<slug>/<name>.approved-hash
 ```
+
+**Update `_index.md`:** Read `<session_root>/_index.md` — create with header if not exists. Find the line for `<name>`, extract `@created-by` from column 2 (or use `@<handle>` if no entry). Replace or append: `<name> | @<created-by> | @<handle> | <today> | <status> | <title-or-dash>`. Where `<status>` = the session's current `Status:` field; `<title-or-dash>` = `Title:` for story/cab, `—` for other types.
 
 **Note:** `switch` is not a save point — it does not write a `_history.md` entry or create a checkpoint. If you worked on the previous session before switching, run `/session:checkpoint` or `/session:commit` first so that work is captured.
 

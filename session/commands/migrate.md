@@ -88,6 +88,7 @@ For each `<name>.md` not starting with `_` in `~/.claude/memory/sessions/<slug>/
    - For story/personal the scope was the repo root (i.e., `./`)
    - If scope is already relative or empty, leave as-is.
 4. Add `- **updated-by:** @<handle>` after the `- **Name:** ...` line if not already present.
+4a. Add `- **created-by:** @<handle>` immediately after the `- **updated-by:** ...` line if not already present. Seeded from the migrating user's handle as the best available approximation — original authorship cannot be determined from local session files.
 5. Convert `- **Next step:** <text>` (scalar) to array format: `- **Next steps:**\n  - [today @<handle>] <text>`. If value is "none" or empty, write `- **Next steps:** none`.
 6. Tag any untagged Open items: for each item under `- **Open items:**` that does not start with `[YYYY-MM-DD @`, prepend `[today @<handle>] `.
 7. Scan body text for absolute local paths and report them:
@@ -165,12 +166,37 @@ fi
 
 Note: `.git/hooks/` is local only — not committed. Each developer installs by running `session:migrate` once.
 
+### 11a. Build `_index.md`
+
+Construct the session index from all written session files. Enables fast, handle-attributed listings without reading individual session files at listing time.
+
+Write `<repo_root>/.claude/sessions/_index.md`:
+```
+# Session Index — <slug>
+# name | created-by | updated-by | date | status | title
+```
+
+For each `<name>.md` written in Step 6, append one line:
+- `name` = filename without `.md`
+- `@created-by` = `created-by:` field from the written file (or `@<handle>` if absent)
+- `@updated-by` = `updated-by:` field from the written file (or `@<handle>` if absent)
+- `date` = `updated:` value from the frontmatter
+- `status` = `Status:` field value (e.g. `in-progress`, `completed`, `paused`)
+- `title` = `Title:` field for story/cab types; `—` for plugin, personal, and general
+
+Example:
+```
+BPT2-6377 | @ajudd | @ajudd | 2026-06-09 | in-progress | Shopify Member Agreement Prompt
+session   | @ajudd | @ajudd | 2026-06-11 | in-progress | —
+```
+
 ### 12. Confirm and Commit
 
 Show a summary:
 ```
 Ready to commit:
-  .claude/sessions/     — N session file(s), transformed (Next steps array, @handle tags, path cleanup)
+  .claude/sessions/     — N session file(s), transformed (Next steps array, created-by/updated-by, @handle tags, path cleanup)
+  .claude/sessions/_index.md   — N sessions indexed (name | @created-by | @updated-by | date | status | title)
   .claude/sessions/_history.md — N entries tagged @<handle>
   .claude/sessions/.gitignore  — includes *.approved-hash exclusion
   .gitignore            — added .claude/config/ exclusion

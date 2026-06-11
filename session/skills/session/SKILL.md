@@ -30,6 +30,11 @@ else:
 Always local (never in repo, regardless of mode):
     _active        → ~/.claude/memory/sessions/<slug>/_active
     _resume_*      → ~/.claude/memory/sessions/<slug>/
+
+Session index (in session_root — tracked with session files):
+    _index.md      → <session_root>/_index.md
+                     One line per session: `name | @created-by | @updated-by | date | status | title`
+                     Written by: start (seed), checkpoint/finish/commit/switch (update), migrate (build)
 ```
 
 **Scope resolution for the scope guard:** If the session file's `Scope:` value is relative (no leading `/`, `~`, or drive letter), resolve it as `local_cfg.projectRoot + "/" + scope_value`. If absolute (old format), use as-is.
@@ -87,6 +92,12 @@ Every entry written to shared files (history, inbox, backlog) must carry the cur
 - **updated-by:** @<handle>
 ```
 Position: in the session file body after `Name:`, before `Teams chat:`.
+
+**`created-by` field in session files** — written once at session creation (start.md Step 8); preserved as-is on all subsequent writes (checkpoint/finish/commit/switch):
+```
+- **created-by:** @<handle>
+```
+Position: immediately after `updated-by:`. On migrate: seeded from the migrating user's handle (best available approximation — original authorship cannot be determined from local files). The combination of `created-by` + `updated-by` enables attribution display in listings: show `@creator→@updater` when they differ, `@creator` alone when same.
 
 ### "Mine" Filter
 

@@ -186,6 +186,7 @@ updated: [today's date]
 - **Mode:** [planning / coding / both]   ← preserve from session file; omit if not present (backward compat)
 - **Name:** [name]
 - **updated-by:** @<handle>
+- **created-by:** @<original-handle>   ← read from existing file; preserve as-is — never overwrite
 - **Title:** [Jira summary]   ← story/cab only; omit for other types
 - **Category:** [category]   ← general only, omit for other types
 - **Teams chat:** [teams_chat or "none"]
@@ -212,6 +213,8 @@ updated: [today's date]
 ```bash
 python3 -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" "<session_root>/<name>.md" > ~/.claude/memory/sessions/<slug>/<name>.approved-hash
 ```
+
+**Update `_index.md`:** Read `<session_root>/_index.md` — create with header `# Session Index — <slug>` + `# name | created-by | updated-by | date | status | title` if it does not exist. Find the line starting with `<name> | ` and extract the `@created-by` value (second column); if no existing line for this session, use `@<handle>` as `created-by`. Replace the line (or append): `<name> | @<created-by> | @<handle> | <today> | in-progress | <title-or-dash>`. Where `<title-or-dash>` = `Title:` field for story/cab, `—` for other types.
 
 Print the summary to screen. After the summary block, display the last 5 entries from `_history.md` (all entries if fewer than 5):
 
