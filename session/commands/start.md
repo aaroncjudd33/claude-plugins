@@ -145,10 +145,12 @@ If the active session (call 6) is in the table, append inline hints on the follo
 
 Then output the routing block:
 ```
+  Open:
   resume <n>       — resume by number
   start <plugin>   — start a session for a plugin
   new plugin       — create a brand new plugin
 
+  Filter:
   mine             — show only your sessions
   all              — include completed sessions
   status <value>   — filter by in-progress / paused / completed
@@ -185,10 +187,12 @@ Full inbox handling (work/done/backlog/keep) happens at Step 5.
 
 Then output the routing block:
 ```
+  Open:
   resume <n>       — resume by number (e.g. resume 2)
   start story      — start a new story — you'll give a key or URL
   start cab        — start a new CAB — you'll give story keys
 
+  Filter:
   mine             — show only your sessions
   all              — include completed sessions
   status <value>   — filter by in-progress / paused / completed
@@ -215,9 +219,11 @@ If `_inbox.md` has items, show compact summary before the routing line.
 
 Then output the routing block:
 ```
+  Open:
   resume <n>       — resume by number
   start            — start a new session — you'll give it a name
 
+  Filter:
   mine             — show only your sessions
   all              — include completed sessions
   status <value>   — filter by in-progress / paused / completed
@@ -242,9 +248,11 @@ If `_inbox.md` has items, show compact summary before the routing line.
 
 Then output the routing block:
 ```
+  Open:
   resume <n>       — resume by number
   start            — start a new session — you'll give a name and context
 
+  Filter:
   mine             — show only your sessions
   all              — include completed sessions
   status <value>   — filter by in-progress / paused / completed

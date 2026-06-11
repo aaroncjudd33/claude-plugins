@@ -39,7 +39,10 @@ Sessions in <slug>
   [1]  BPT2-6377    Shopify Member Agreement Pro...   in-progress    1    0   @ajudd Jun 01  @ajudd Jun 09
   [2]  session      —                                in-progress    0    0   @ajudd Jun 01  @nivi  Jun 11
 
+  Open:
   <n>              — switch to session by number
+
+  Filter:
   mine             — show only your sessions
   all              — include completed sessions
   status <value>   — filter by in-progress / paused / completed
