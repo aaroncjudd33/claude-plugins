@@ -57,7 +57,7 @@ Resolve `session_root` and `handle` using Path Resolution (see Session Skill). I
 
 ### 2. Load Sessions
 
-Run **five calls in parallel** — no session file reads at this stage:
+Run **five calls in parallel** — no session file reads at this stage. **Issue all five as a single parallel batch before processing any result — do not wait for one to complete before issuing the next.**
 
 1. **List sessions directory with timestamps:**
    ```bash
@@ -65,11 +65,11 @@ Run **five calls in parallel** — no session file reads at this stage:
    ```
    Extract session names from `.md` filenames, skipping files that start with `_`. Use the file modification date as the sort key and display date. Note any `_outbox_<name>.md` files.
 
-2. **Read all inbox files in one shot:**
+2. **Count inbox items — no content read:**
    ```bash
-   for f in "<session_root>/_inbox"*.md; do echo "=== FILE: $f ==="; cat "$f"; done
+   for f in "<session_root>/_inbox"*.md; do printf "%s: " "$f"; grep -c "^## \|^\[20" "$f" 2>/dev/null || echo 0; done
    ```
-   Count logical items per named inbox file (lines beginning with `[20` or `## `). Global inbox (`_inbox.md`) counted separately — surfaced in Step 3.
+   Extract item count per named inbox file. Global inbox (`_inbox.md`) counted separately — surfaced in Step 3. **Do not read inbox file contents at listing time** — content is loaded in Step 5 only after the user selects a session.
 
 3. **Read `<marketplace_root>/.claude-plugin/marketplace.json`** (plugin type only — used in Step 3).
 
@@ -81,11 +81,11 @@ Run **five calls in parallel** — no session file reads at this stage:
    ```
    If `<repo_root>/.claude/memory/MEMORY.md` exists, read it. Count entries = lines beginning with `- [`.
 
-**If `_index.md` is absent or missing entries for sessions found in step 1:** read the affected session `.md` files in parallel (one read per file) to extract: `updated-by:` (use as both created-by and updated-by if `created-by:` is absent), `updated:` frontmatter date (use as updated-date). For created-date, try git first:
-```bash
-git log --diff-filter=A --follow --format=%as -- "<session_root>/<name>.md" | tail -1
+**If `_index.md` is absent or missing entries for sessions found in step 1:** display the table immediately using only the data from calls 1 and 4 — show `—` for any missing creator, created-date, or title columns. **Do not read session files or run git log at listing time.** Add a footer note below the table:
 ```
-If git returns a date, use it as created-date; otherwise fall back to the `updated:` frontmatter date. Write `_index.md` now with these entries so subsequent starts are fast. Show: "`_index.md` built from N session files." Do NOT degrade to `@—` — always build the index before displaying.
+  (index missing or incomplete — type 'index' to build it)
+```
+The index is built lazily: Step 8 seeds an entry whenever a session is loaded or created. If the user types `index`, run a parallel read of all session `.md` files (no git log), extract `updated-by:`, `updated:`, `created-by:`, and `Title:` fields, write `_index.md`, and re-display the table.
 
 If sessions exist, display in-progress and paused sessions first (sorted by updated-date, newest first), completed sessions grouped at the bottom. Always include a column header line:
 ```
@@ -111,7 +111,7 @@ If `session_root` does not exist or is empty, skip this section.
 
 ### 3. Present Options
 
-**Free-text and search:** Before showing the action picker, the user may type text to filter the sessions table (keywords `mine`, `all`, and `backlog` are handled directly — see above). If the user uses the "Other" field in the AskUserQuestion picker to type something, try it as a session filter first — match against name, title, handle, or status. Re-display the filtered table with `(filtered by '<query>')` and re-present the picker. If no sessions match, treat the input as free-form intent and proceed naturally.
+**Free-text and search:** Before showing the action picker, the user may type text to filter the sessions table (keywords `mine`, `all`, `backlog`, and `index` are handled directly — see above). If the user uses the "Other" field in the AskUserQuestion picker to type something, try it as a session filter first — match against name, title, handle, or status. Re-display the filtered table with `(filtered by '<query>')` and re-present the picker. If no sessions match, treat the input as free-form intent and proceed naturally.
 
 **Plugin project** — use the `marketplace.json` loaded in Step 2. List any plugins from `marketplace.json` not already in the sessions table as reference below the table:
 ```
