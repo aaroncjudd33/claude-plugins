@@ -99,21 +99,32 @@ If `session_root` does not exist or is empty, skip this section.
 
 ### 3. Present Options
 
-**Free-text and search:** If the user's response doesn't match a recognized verb pattern (`resume <n>`, `start <...>`, `new`, `mine`, `all`, `backlog`, `?`), try it as a session filter first — match against name, title, handle (created-by or updated-by), or status from `_index.md`. Re-display the filtered sessions table with `(filtered by '<query>')` on the header and re-present the verb prompt. If no sessions match, treat the input as free-form intent — proceed naturally based on what the user described. Clear the filter when the user uses a recognized verb.
+**Free-text and search:** Before showing the action picker, the user may type text to filter the sessions table (keywords `mine`, `all`, and `backlog` are handled directly — see above). If the user uses the "Other" field in the AskUserQuestion picker to type something, try it as a session filter first — match against name, title, handle, or status. Re-display the filtered table with `(filtered by '<query>')` and re-present the picker. If no sessions match, treat the input as free-form intent and proceed naturally.
 
-**Plugin project** — use the `marketplace.json` loaded in Step 2. After displaying the sessions table, show this verb prompt:
-
+**Plugin project** — use the `marketplace.json` loaded in Step 2. List any plugins from `marketplace.json` not already in the sessions table as reference below the table:
 ```
-resume <n>       resume a session by number from the table
-start <name>     start a session for a plugin (new or existing)
-new plugin       create a brand new plugin from scratch
-?                just describe what you want
+  · <plugin-name> — <one-phrase description>  (no session yet)
 ```
 
-List any plugins from `marketplace.json` not already in the sessions table as reference below the prompt (no number — start with `start <name>`):
+Then use **AskUserQuestion** (single-select):
+```yaml
+question: "What would you like to do?"
+header: "Action"
+options:
+  - label: "resume"
+    description: "Resume an existing session — you'll pick the number next"
+  - label: "start"
+    description: "Start a session for a plugin — you'll give the name"
+  - label: "new plugin"
+    description: "Create a brand new plugin from scratch"
 ```
-  · <plugin-name> — <one-phrase description>
-```
+"Other" is the free-text path — type anything and Claude will interpret it.
+
+After selection:
+- **resume** → ask immediately: "Which number?" — use it to load the session in Step 4.
+- **start** → ask immediately: "Which plugin?" — route to new or existing session.
+- **new plugin** → proceed to Step 6 new plugin flow.
+- **Other** → interpret the typed text as intent and proceed naturally.
 
 **Work project:**
 
@@ -126,38 +137,61 @@ Global inbox (N items):
 ```
 Full handling (work/done/backlog/keep) happens at Step 5.
 
-Show the verb prompt after the inbox summary:
+Use **AskUserQuestion** (single-select) after the inbox summary:
+```yaml
+question: "What would you like to do?"
+header: "Action"
+options:
+  - label: "resume"
+    description: "Resume an existing session — you'll pick the number next"
+  - label: "start story"
+    description: "Start a new story — you'll give a Jira key (BPT2-XXXX) or URL"
+  - label: "start cab"
+    description: "Start a CAB — you'll list the story keys"
+```
+"Other" is the free-text path — type anything and Claude will interpret it.
 
-```
-resume <n>            resume a session by number from the table
-start <key>           start a new story (BPT2-XXXX, CAB-XXXX, or URL)
-start cab <keys>      start a new CAB (e.g. start cab BPT2-6499 BPT2-6500)
-?                     just describe what you want
-```
+After selection:
+- **resume** → ask immediately: "Which number?" — use it to load the session in Step 4.
+- **start story** → ask immediately: "Story key or URL?"
+- **start cab** → ask immediately: "Story keys? (space-separated, e.g. BPT2-6499 BPT2-6500)"
+- **Other** → interpret the typed text as intent and proceed naturally.
 
 **Personal project** (path under `/c/claude/`):
 
 Same global inbox compact display as above if `_inbox.md` has items.
 
+Use **AskUserQuestion** (single-select):
+```yaml
+question: "What would you like to do?"
+header: "Action"
+options:
+  - label: "resume"
+    description: "Resume an existing session — you'll pick the number next"
+  - label: "start"
+    description: "Start a new personal session — you'll give it a name"
 ```
-resume <n>       resume by number from the table
-start <name>     start a new personal session
-?                just describe what you want
-```
+"Other" is the free-text path. After: **resume** → "Which number?"; **start** → "Session name?"; **Other** → proceed naturally.
 
 **General / unknown project:**
 
 Same global inbox compact display as above if `_inbox.md` has items.
 
+Use **AskUserQuestion** (single-select):
+```yaml
+question: "What would you like to do?"
+header: "Action"
+options:
+  - label: "resume"
+    description: "Resume an existing session — you'll pick the number next"
+  - label: "start"
+    description: "Start something new — you'll name it and pick a category"
 ```
-resume <n>       resume by number from the table
-start <name>     start something new (prompt for category if not obvious)
-?                just describe what you want
-```
+"Other" is the free-text path. After: **resume** → "Which number?"; **start** → "Name and category?"; **Other** → proceed naturally.
 
 ### 4. User Picks — Load or Create Session File
 
-**`resume <n>` — Resume existing** (plain `<n>` also accepted for backward compatibility):**
+**Resume existing** (`resume <n>` — plain `<n>` also accepted for backward compatibility):
 
 **Run these three reads in parallel:**
 - Read `<session_root>/<name>.md`
@@ -272,40 +306,55 @@ start <name>     start something new (prompt for category if not obvious)
 
 If the inbox file exists and has content beyond the header line, scan for two categories of items based on whether an `[in-progress — ...]` line appears immediately after the `## [date]...` entry header:
 
-**In-progress items** (already picked up by this or a prior unfinished session) — show first:
-
+**In-progress items** (already picked up by this or a prior unfinished session) — show first as a numbered list:
 ```
 Resuming in-progress (N item(s)):
   1  [in-progress since YYYY-MM-DD] <description from entry header>
-
-done <n>     mark done — archive and remove from inbox
-done all     mark all done
-keep         keep working — no change
 ```
 
-- **done <n>:** strip the `[in-progress — ...]` line, archive with `[DONE YYYY-MM-DD]` stamp (see Archive files below), remove entry from inbox, remove matching `[inbox] <item>` from session Open items.
+Then use **AskUserQuestion** (single-select):
+```yaml
+question: "Mark any in-progress items done?"
+header: "Inbox"
+options:
+  - label: "done"
+    description: "Mark item(s) complete — you'll pick the number(s) or 'all' next"
+  - label: "keep"
+    description: "Keep working — no change"
+```
+After **done** → ask: "Which item(s)? (number, comma list, or 'all')"
+
+- **done:** strip the `[in-progress — ...]` line, archive with `[DONE YYYY-MM-DD]` stamp (see Archive files below), remove entry from inbox, remove matching `[inbox] <item>` from session Open items.
 - **keep:** no change — stays in inbox as in-progress, stays in Open items.
 
-**Pending items** (no in-progress marker) — show after in-progress items:
-
+**Pending items** (no in-progress marker) — show after in-progress items as a numbered list:
 ```
 Inbox (N item(s)):
   1  [date] from <source-slug> / <session-name> — <one-line summary>
   2  [date] from <source-slug> / <session-name> — <one-line summary>
-
-work <n>      pick up — mark in-progress, add to Open items
-done <n>      mark complete — archive without picking up
-backlog <n>   defer to backlog
-keep <n>      leave as-is
-all <verb>    apply to all (e.g. "done all", "keep all", "backlog all")
-?             just describe what you want
 ```
 
-- **work <n>:** insert `[in-progress — <session-name>, YYYY-MM-DD]` on the line immediately after the `## [date]...` header in the inbox file. Do NOT archive yet — the item stays in the inbox until work is complete. Add `[inbox] <short description>` to session `Open items`. For items with significant depth, offer: "Create a work file for decisions/notes? (yes / skip)" — if yes, create `<session_root>/_work_<name>_YYYY-MM-DD-<short-slug>.md` with the original problem and a `## Notes` section; add `Work file: _work_<name>_YYYY-MM-DD-<short-slug>.md` to the inbox entry on a new line after the in-progress marker.
-- **done <n>:** archive with `[DONE YYYY-MM-DD]` stamp (see Archive files), remove from inbox.
-- **backlog <n>:** move to backlog file (`_backlog_<name>.md` for plugins, `_backlog.md` for others), remove from inbox. Create the backlog file if it doesn't exist with header `# Backlog — <name> plugin` (plugin) or `# Backlog — <slug>` (others). No archive — backlog items stay until explicitly deleted.
-- **keep <n>:** leave as-is. Do NOT add to Open items.
-- **all <verb>:** apply the verb to all pending items at once.
+Then use **AskUserQuestion** (single-select):
+```yaml
+question: "What would you like to do with these items?"
+header: "Inbox"
+options:
+  - label: "work"
+    description: "Pick up — mark in-progress and add to Open items"
+  - label: "done"
+    description: "Mark complete — archive without picking up"
+  - label: "backlog"
+    description: "Defer to backlog for later"
+  - label: "keep"
+    description: "Leave as-is — no action"
+```
+"Other" → describe what you want (e.g. "work 1, keep 2"). After selection → ask: "Which item(s)? (number, comma list, or 'all')"
+
+- **work:** insert `[in-progress — <session-name>, YYYY-MM-DD]` on the line immediately after the `## [date]...` header in the inbox file. Do NOT archive yet — the item stays in the inbox until work is complete. Add `[inbox] <short description>` to session `Open items`. For items with significant depth, offer: "Create a work file for decisions/notes? (yes / skip)" — if yes, create `<session_root>/_work_<name>_YYYY-MM-DD-<short-slug>.md` with the original problem and a `## Notes` section; add `Work file: _work_<name>_YYYY-MM-DD-<short-slug>.md` to the inbox entry on a new line after the in-progress marker.
+- **done:** archive with `[DONE YYYY-MM-DD]` stamp (see Archive files), remove from inbox.
+- **backlog:** move to backlog file (`_backlog_<name>.md` for plugins, `_backlog.md` for others), remove from inbox. Create the backlog file if it doesn't exist with header `# Backlog — <name> plugin` (plugin) or `# Backlog — <slug>` (others). No archive — backlog items stay until explicitly deleted.
+- **keep:** leave as-is. Do NOT add to Open items.
+- When user responds "all" to the "Which item(s)?" follow-up, apply the action to all pending items at once.
 
 If the file does not exist or contains only the header, skip silently.
 
@@ -334,7 +383,7 @@ Global inbox (<N> item(s)):
 ```
 
 - **`[spawn]` entries:** Picking one up (`work <n>`) runs the full new-session kickoff (Jira story, branch, etc.) with the spawn's linked context pre-loaded. Archive after Step 6 once the new session name is established, using stamp `[PICKED UP YYYY-MM-DD — <new-session-name>]`. Note: spawns are the only inbox entries that archive at pickup — the spawn's job is done once it routes into a new session. All other items use the in-progress marker and archive only when work is complete.
-- **Regular entries:** use the same verb table (`work/done/backlog/keep/all`) as the session-specific inbox above.
+- **Regular entries:** use the same AskUserQuestion pattern (work/done/backlog/keep) as the session-specific inbox above.
 
 Global inbox items are never auto-cleared. The same handling options apply, using `_inbox_archive.md` as the archive.
 
