@@ -103,14 +103,14 @@ Sessions in <slug>
   1    CAB-9240     BP2 - Downline Reports - SG...   in-progress    0    0   @ajudd May 18  @ajudd May 27
   2    BPT2-6377    Shopify Member Agreement Pro...   in-progress    1    0   @ajudd Jun 01  @nivi  Jun 11
 
-  2 in-progress · 7 completed
+  2 in-progress · 0 paused · 7 completed
 ```
 
 **Title truncation:** cap title at 32 characters. If longer, truncate and append `...`. If title is `—` (absent), show `—` with no padding.
 
 Show `@creator date` in "created" column; show `@updater date` in "last edit" column. When creator == updater AND dates differ, still show both columns. Always show both `in` and `out` counts (show `0` — never omit). Mark the active session from call 6 with `←` on that row.
 
-**Status summary line:** show counts for each status that has at least one session (e.g. `2 in-progress · 1 paused · 7 completed`). Omit any status with a count of zero. When user types `all`, re-display including completed sessions.
+**Status summary line:** always show all three statuses in this exact format: `N in-progress · N paused · N completed`. Show `0` for any status with no sessions — never omit a status. Do not append any instructional text like "type 'all' to show" — the Search by block already covers that. When user types `all`, re-display including completed sessions.
 
 **`filter_mine` active** (user passed `mine` arg): filter index entries where `@created-by` or `@updated-by` matches the current user — no additional file reads needed. Show `[filtered to @<handle>]` on the header.
 
