@@ -84,6 +84,8 @@ Sessions in <slug>
 
 Outbox count: 0 unless `_outbox_<name>.md` appeared in the `ls` output, in which case count its `## ` lines.
 
+**CRITICAL — no session file reads in the listing:** The table above uses ONLY data from `ls -lt` (name, date) and inbox counts from Step 2. Do NOT read session files to add titles, "last worked on" text, status, or any other content to this table. Titles and details load in Step 4 after the user picks a session.
+
 **`filter_mine` active** (user passed `mine` arg): read session files in a separate parallel batch just to extract `updated-by`, then filter. Show `[filtered to @<handle>]` on the header.
 
 If `session_root` does not exist or is empty, skip this section.
@@ -107,7 +109,7 @@ Global inbox (N items):
 ```
 Full handling (Work on it / Mark done / Move to backlog / Keep) happens at Step 5.
 
-- **[N] Resume <BPT2-XXXX>** — <last worked on> *(one line per existing session)*
+- **[N] Resume <BPT2-XXXX>** — inbox N | <date>  *(use name + inbox count + date from table above — no session file reads; titles and details load in Step 4)*
 - Pick up a story (Jira URL or key)
 - Start a CAB
 - Something else — describe it
@@ -116,14 +118,14 @@ Full handling (Work on it / Mark done / Move to backlog / Keep) happens at Step 
 
 Same global inbox compact display as above if `_inbox.md` has items.
 
-- **[N] Resume <name>** — <last worked on> *(one line per existing session)*
+- **[N] Resume <name>** — inbox N | <date>  *(name + inbox count + date only — no session file reads)*
 - Start something new — give it a name
 
 **General / unknown project:**
 
 Same global inbox compact display as above if `_inbox.md` has items.
 
-- **[N] Resume <name>** — <last worked on> *(one line per existing session)*
+- **[N] Resume <name>** — inbox N | <date>  *(name + inbox count + date only — no session file reads)*
 - Start something new — give it a name and category
 
 ### 4. User Picks — Load or Create Session File
@@ -170,6 +172,7 @@ Same global inbox compact display as above if `_inbox.md` has items.
   ```
   Resuming <name>
     Branch:      [branch]
+    Updated by:  @<handle>   ← from updated-by field; confirms attribution
     Mode:        [planning / coding / both]
     Open items (mine, N):
       - [date @ajudd] item one
