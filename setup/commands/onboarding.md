@@ -327,6 +327,19 @@ Key Commands to Know First
   /session:finish     End of day — saves state, updates Jira, posts Teams summary
 
 ─────────────────────────────────────────────────────────────
+Session Security
+
+  When you work on repos where teammates also use session files (.claude/sessions/),
+  a local approval hash at ~/.claude/memory/sessions/<slug>/<name>.approved-hash
+  tracks the last content you approved. If a teammate modifies a session file, you'll
+  see a diff and approve the changes before they enter your context. This file is
+  created automatically on first session load — no manual setup needed.
+
+  To protect a new repo: run /session:migrate from any session in that repo.
+  This moves session files into the repo and installs the pre-commit guard so
+  injection content is blocked before it can even be committed.
+
+─────────────────────────────────────────────────────────────
 
 For a full reference on any plugin and its commands:
 

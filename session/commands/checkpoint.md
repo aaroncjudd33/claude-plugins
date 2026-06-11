@@ -171,6 +171,8 @@ Open items — any complete?
 
 Remove confirmed-complete items from the Open items list before writing.
 
+**Before writing — tag any untagged items:** For each Open item that does not already start with `[YYYY-MM-DD @`, prepend `[YYYY-MM-DD @<handle>] `. Preserve existing tags as-is.
+
 Write `<session_root>/<name>.md` with the current state:
 
 ```
@@ -191,8 +193,10 @@ updated: [today's date]
 - **Status:** in-progress   ← always reset to in-progress at checkpoint
 - **Branch:** [branch or "n/a"]
 - **Last worked on:** [most recent entry from _history.md — do not synthesize, read from file]
-- **Open items:** [bullet list, or "none"]
-- **Next step:** [concrete next action]
+- **Open items:**
+  - [YYYY-MM-DD @<handle>] <item text>   ← all items tagged; "none" if empty
+- **Next steps:**
+  - [YYYY-MM-DD @<handle>] <next step>   ← array format; "none" if no next step
 - **Plugin reviewed:** <version>   ← plugin type only; write current plugin.json version when marking reviewed; omit for other types
 - **Related CAB:** [CAB-XXX or "none"]   ← story type only, omit for other types
 - **Post-deployment checks:**   ← story type only; preserve existing value exactly as-is; omit if field not present
@@ -202,7 +206,12 @@ updated: [today's date]
 - **linked_sessions:** [<session-name>, ...]   ← preserve as-is; omit if not present
 ```
 
-**Backward compat:** If the existing session file has a `Project:` field, preserve it on write. Do not add it to new sessions.
+**Backward compat:** If the existing session file has a `Project:` field, preserve it on write. Do not add it to new sessions. If the existing file has `- **Next step:** <text>` (scalar), re-write as `- **Next steps:**` array with the item tagged `[today @<handle>]`.
+
+**After writing — update approved-hash (repo sessions only):** If `session_root` is inside a repo, recompute the SHA-256 hash of the written file and overwrite `~/.claude/memory/sessions/<slug>/<name>.approved-hash`:
+```bash
+python3 -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" "<session_root>/<name>.md" > ~/.claude/memory/sessions/<slug>/<name>.approved-hash
+```
 
 Print the summary to screen. After the summary block, display the last 5 entries from `_history.md` (all entries if fewer than 5):
 

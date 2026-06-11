@@ -42,19 +42,26 @@ Read `<session_root>/<name>.md`.
 Read `<session_root>/_history.md` — count total entries and extract the most recent one.
 Read the inbox file (`_inbox_<name>.md` for plugins, `_inbox.md` otherwise — from `session_root`) and collect all items (in-progress and pending).
 
+**Security check (repo sessions only):** If `session_root` is inside a repo, run the approval-hash check using the same flow as `session:start` Step 4 — compute SHA-256, compare to `~/.claude/memory/sessions/<slug>/<name>.approved-hash`, handle missing/matching/differing cases with first-time review, normal load, or diff-review flow. See SKILL.md "Repo Session File Safety" for details.
+
 Display:
 
 ```
 Switching to <name>
   Branch:      [branch]
   Mode:        [planning / coding / both — omit if field absent]
-  Open items:  [bullets or "none"]
+  Open items (mine, N):
+    - [date @handle] item
+  Teammate notes (N — read-only):
+    - [date @other] item
   Inbox (N):
     [1] [date] <description> — in-progress / pending
+  Next steps (mine, N):
+    - [date @handle] next step
   History:     N entries — last: [condensed one-liner of most recent entry]
 ```
 
-If inbox is empty: `Inbox: none`. If no history: `History: none`.
+If inbox is empty: `Inbox: none`. If no history: `History: none`. Omit Teammate sections if no teammate items exist. Old scalar `Next step: <text>` treated as mine.
 
 ### 4. Check Inbox
 
@@ -87,7 +94,12 @@ For plugin sessions, also check `~/.claude/memory/sessions/<slug>/_inbox.md` for
 
 Write `~/.claude/memory/sessions/<slug>/_active` with the new session name (always local — plain text, no `.md`).
 
-Update `<session_root>/<name>.md`: set `updated` to today and set `updated-by: @<handle>`.
+Update `<session_root>/<name>.md`: set `updated` to today and set `updated-by: @<handle>`. Tag any untagged Open items or Next steps items with `[today @<handle>]`.
+
+**After writing — update approved-hash (repo sessions only):** Recompute and overwrite `~/.claude/memory/sessions/<slug>/<name>.approved-hash`:
+```bash
+python3 -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" "<session_root>/<name>.md" > ~/.claude/memory/sessions/<slug>/<name>.approved-hash
+```
 
 **Note:** `switch` is not a save point — it does not write a `_history.md` entry or create a checkpoint. If you worked on the previous session before switching, run `/session:checkpoint` or `/session:commit` first so that work is captured.
 

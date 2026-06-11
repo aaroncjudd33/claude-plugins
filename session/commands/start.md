@@ -134,15 +134,55 @@ Same global inbox compact display as above if `_inbox.md` has items.
 - Read `<session_root>/<name>.md`
 - Read `<session_root>/_history.md` — count total entries and extract the most recent one for display.
 - Read the inbox file (`_inbox_<name>.md` for plugins, `_inbox.md` otherwise — from `session_root`) and collect all items (both in-progress and pending) for display.
+
+**Security check (repo sessions only):** If `session_root` is inside a repo (not `~/.claude/memory/sessions/`), run the approval-hash check before displaying any session content:
+
+1. Compute `hash_now = SHA-256(file content)`:
+   ```bash
+   python3 -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" "<session_root>/<name>.md"
+   ```
+2. Read `~/.claude/memory/sessions/<slug>/<name>.approved-hash` (local, never in repo).
+3. **Hash file missing (first-time load):**
+   - Show: `"First time loading this session file from the repo — reviewing before use."`
+   - Display key fields: Type, Branch, Mode, Open items, Next steps, Notes.
+   - Ask: `"Approve and load? (yes / skip teammate fields / cancel)"`
+     - **yes** → write `hash_now` to `~/.claude/memory/sessions/<slug>/<name>.approved-hash`, load normally.
+     - **skip teammate fields** → quarantine items not tagged with current `@<handle>` (see Quarantine below), write hash.
+     - **cancel** → abort session start.
+4. **Hash matches** → load normally, no prompt.
+5. **Hash differs (changes since last approval):**
+   - Run: `git log -1 --format="%an — %ar" -- "<session_root>/<name>.md"` → who changed it, when.
+   - Run: `git diff HEAD~1 HEAD -- "<session_root>/<name>.md"` → what changed. If file not yet in git history, show full content instead.
+   - Display: `"Session file modified by @<committer> since you last approved it."` + diff output.
+   - Ask: `"Approve these changes? (yes / load with changes quarantined / cancel)"`
+     - **yes** → overwrite approved-hash with `hash_now`, load normally.
+     - **quarantined** → show changed fields as `[PENDING REVIEW — @handle, date]` in resume block; not added to active Open items routing. Hash still differs — approval required on next load too.
+     - **cancel** → abort.
+
+**Quarantined field display:** Changed fields from teammates appear in the resume block as read-only, clearly marked:
+```
+  Teammate notes (quarantined — pending approval):
+    [PENDING REVIEW — @hiranatam, 2026-06-11]
+    - [2026-06-11 @hiranatam] Review DynamoDB schema before load test
+```
+
 - Display the resume block:
   ```
   Resuming <name>
     Branch:      [branch]
     Mode:        [planning / coding / both]
-    Open items:  [bullets or "none"]
+    Open items (mine, N):
+      - [date @ajudd] item one
+      - [date @ajudd] item two
+    Teammate notes (N — read-only):
+      - [date @other] their item
     Inbox (N):
       [1] [date] <description> — in-progress
       [2] [date] <description> — pending
+    Next steps (mine, N):
+      - [date @ajudd] next step one
+    Teammate next steps (N):
+      - [date @other] their suggestion
     Related CAB: [CAB-XXX]   ← story type only, omit if none
     Post-deploy: N pending / all acknowledged / none   ← story type only, omit if none
     Epic:        [BPT2-XXXX]   ← story type only, omit if none
@@ -150,6 +190,18 @@ Same global inbox compact display as above if `_inbox.md` has items.
     History:     N entries — last: [condensed one-liner of most recent _history.md entry]
   ```
   If inbox is empty: `Inbox: none`. If `_history.md` does not exist: `History: none`.
+
+  **Mine vs. teammate split rules:**
+  - "Mine" = item tagged `[YYYY-MM-DD @<handle>]` where handle matches current user, OR untagged (backward compat — treat as mine).
+  - "Teammate" = tagged with a different handle.
+  - Old scalar `Next step: <text>` → treat as mine, re-write as array item on next checkpoint/finish.
+  - If no teammate items exist, omit the "Teammate notes" and "Teammate next steps" blocks entirely.
+
+  **After displaying teammate next steps**, offer:
+  ```
+  Adopt any teammate next steps as your own? (numbers, 'all', or 'skip')
+  ```
+  Adopted items re-tagged: `[YYYY-MM-DD @<handle>] <text> (via @<original-handle>)` and moved into your active Next steps. Declined items remain as FYI context only — not used for inbox routing or finish derivation.
 - For the `Post-deploy` line: count `- [ ]` items (pending) vs `- [x]` items (acknowledged) from the `Post-deployment checks:` field. Show "N pending" if any unchecked, "all acknowledged" if all checked, "none" if field is absent or empty.
 - **If the session file has a `linked_sessions` field**, load each linked session and append a context block immediately after the `History:` line in the resume block:
   ```

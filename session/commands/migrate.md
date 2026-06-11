@@ -64,6 +64,7 @@ Write `<repo_root>/.claude/sessions/.gitignore`:
 # Per-user state — never commit
 _active
 _resume_*
+*.approved-hash
 ```
 
 Add to repo root `.gitignore` if `.claude/config/` is not already excluded:
@@ -87,7 +88,14 @@ For each `<name>.md` not starting with `_` in `~/.claude/memory/sessions/<slug>/
    - For story/personal the scope was the repo root (i.e., `./`)
    - If scope is already relative or empty, leave as-is.
 4. Add `- **updated-by:** @<handle>` after the `- **Name:** ...` line if not already present.
-5. Write to `<repo_root>/.claude/sessions/<name>.md`.
+5. Convert `- **Next step:** <text>` (scalar) to array format: `- **Next steps:**\n  - [today @<handle>] <text>`. If value is "none" or empty, write `- **Next steps:** none`.
+6. Tag any untagged Open items: for each item under `- **Open items:**` that does not start with `[YYYY-MM-DD @`, prepend `[today @<handle>] `.
+7. Scan body text for absolute local paths and report them:
+   ```bash
+   grep -n "C:\\dev\|C:\\temp\|C:\\Users\|/c/dev\|~/.claude/memory\|~/.claude/projects" "<name>.md"
+   ```
+   If any found, show them and note: "These paths may need manual cleanup — they reference local machine paths that won't resolve for other developers." Do not block the migration; report after all files are processed.
+8. Write to `<repo_root>/.claude/sessions/<name>.md`.
 
 ### 7. Retroactively Tag History
 
@@ -130,15 +138,46 @@ Write `~/.claude/config/<slug>.json`:
 
 Create `~/.claude/config/` directory if it does not exist.
 
-### 11. Confirm and Commit
+### 11. Write Approved-Hashes and Install Pre-Commit Hook
+
+**Approved-hashes:** For each session file written to `<repo_root>/.claude/sessions/<name>.md`, compute its SHA-256 hash and write to the local approved-hash file:
+```bash
+python3 -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" "<repo_root>/.claude/sessions/<name>.md" > ~/.claude/memory/sessions/<slug>/<name>.approved-hash
+```
+This seeds the approval baseline so the first `session:start` after migration loads cleanly without triggering a first-time review prompt.
+
+**Pre-commit hook:** Write the session content guard directly into `.git/hooks/pre-commit` (create or append). Read the script content from `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session-commit-guard.py` and embed it:
+
+```bash
+# Check if pre-commit hook already exists
+if [ -f "<repo_root>/.git/hooks/pre-commit" ]; then
+  # Append a call to session-commit-guard.py if not already present
+  grep -q "session-commit-guard" "<repo_root>/.git/hooks/pre-commit" || \
+    echo 'python3 ~/.claude/plugins/cache/ajudd-claude-plugins/session/*/hooks/scripts/session-commit-guard.py || exit 1' >> "<repo_root>/.git/hooks/pre-commit"
+else
+  # Write full script content directly — no path dependency on plugin cache
+  cp "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session-commit-guard.py" "<repo_root>/.git/hooks/pre-commit"
+  chmod +x "<repo_root>/.git/hooks/pre-commit"
+fi
+```
+
+**Preferred approach:** Write the full script content directly into `.git/hooks/pre-commit` rather than calling the plugin cache path. This avoids breakage if the plugin is updated or the cache is cleared. Read `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session-commit-guard.py` and write its content to `.git/hooks/pre-commit`, prepending `#!/usr/bin/env python3` if not already present.
+
+Note: `.git/hooks/` is local only — not committed. Each developer installs by running `session:migrate` once.
+
+### 12. Confirm and Commit
 
 Show a summary:
 ```
 Ready to commit:
-  .claude/sessions/     — N session file(s)
+  .claude/sessions/     — N session file(s), transformed (Next steps array, @handle tags, path cleanup)
   .claude/sessions/_history.md — N entries tagged @<handle>
-  .claude/sessions/.gitignore
+  .claude/sessions/.gitignore  — includes *.approved-hash exclusion
   .gitignore            — added .claude/config/ exclusion
+
+Local only (not committed):
+  ~/.claude/memory/sessions/<slug>/<name>.approved-hash — N files seeded
+  .git/hooks/pre-commit — session-commit-guard installed
 
 Commit and push? (Yes / Edit message / Cancel)
 ```
@@ -149,7 +188,7 @@ Default commit message: `chore: add Claude Code session files (.claude/sessions/
 - **Edit message:** ask for preferred message, then commit and push.
 - **Cancel:** leave files in place but do not commit. User can commit manually.
 
-### 12. Confirm Completion
+### 13. Confirm Completion
 
 ```
 Migrated — session files are now repo-based.
