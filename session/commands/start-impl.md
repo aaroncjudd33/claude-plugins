@@ -78,7 +78,10 @@ Loaded by `start.md` after the user makes their selection. Context already in sc
     Epic:        [BPT2-XXXX]   ← story type only, omit if none
     Related:     [BPT2-XXXX, ...]   ← cab type only, omit if none
     History:     N entries — last: [condensed one-liner of most recent _history.md entry]
+    Memory:      <N global> entries available — say 'load memory [topic]' to load relevant files
   ```
+  For non-plugin sessions where Call 5 (repo memory) returned a count M, show `<N global> global / <M project> project entries` instead. For plugin sessions (Call 5 skipped), show global count only. Count N by scanning the global `~/.claude/memory/MEMORY.md` index already in context (lines starting with `- [`); no extra tool call needed.
+
   If inbox is empty: `Inbox: none`. If `_history.md` does not exist: `History: none`.
 
   **Mine vs. teammate split rules:**

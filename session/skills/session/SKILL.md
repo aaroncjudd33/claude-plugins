@@ -153,7 +153,7 @@ A `PreToolUse` hook (`session-file-guard.py`) scans repo session files and repo 
 
 **Load-time flow** (start.md Step 4, switch.md Step 3):
 1. Hook scans file content — blocked? Stop, tell user to inspect. No hash written.
-2. Hook passes → compute `SHA-256(content)` via `python3 -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" <file>`
+2. Hook passes → compute hash via `git hash-object <file>`
 3. Read `~/.claude/memory/sessions/<slug>/<name>.approved-hash`
    - Missing → first-time review flow: show key fields, ask to approve, write hash
    - Matches → load normally
@@ -179,6 +179,12 @@ Project memories can be stored in the repo under `.claude/memory/` for team shar
 **Activation:** Run `/session:migrate` — creates `.claude/memory/`, writes attribution frontmatter on each migrated file, regenerates `MEMORY.md`, writes `.claude/CLAUDE.md` `@import` and write redirect.
 
 **Auto-load:** `.claude/CLAUDE.md` contains `@.claude/memory/MEMORY.md`. Any Claude Code session in the repo loads it automatically — no session plugin required. `session:start` shows "Repo memory: N entries" as confirmation.
+
+**On-demand loading rule:** The MEMORY.md index is the only project memory file that auto-loads. **Do not proactively read individual project memory files at session start** — the index is sufficient to know what exists. Load individual project memory files only when: (1) the user explicitly says "load memory" or "load memory for [topic]", or (2) the user's current task directly and specifically maps to a topic described in a memory file's one-line description.
+
+When the user says "load memory [topic]": scan MEMORY.md descriptions for relevance matches, read only the matching files (typically 1–5), and report what was loaded. If no topic is given, ask: "What are you working on? I'll load the relevant files." Never load all files speculatively — always filter by relevance first.
+
+**Global vs. project memory:** This on-demand rule applies to project memory (repo `.claude/memory/` and local `~/.claude/projects/<encoded>/memory/`). Global memory (`~/.claude/memory/`) contains behavioral guidelines — feedback, preferences, cross-project rules — and may load freely as needed.
 
 **Write redirect:** `.claude/CLAUDE.md` also contains an instruction to write new project memories to `.claude/memory/` instead of the local `~/.claude/projects/` path. Travels with the repo — any developer who opens the repo gets the redirect automatically.
 
