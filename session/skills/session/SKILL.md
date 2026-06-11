@@ -167,6 +167,29 @@ A `PreToolUse` hook (`session-file-guard.py`) scans repo session files and repo 
 
 ---
 
+## Repo Project Memory
+
+Project memories can be stored in the repo under `.claude/memory/` for team sharing.
+
+**Three tiers:**
+- Global (`~/.claude/memory/`) — cross-project, always loaded
+- Local (`~/.claude/projects/<encoded>/memory/`) — machine-specific, auto-loaded by Claude Code
+- Repo (`.claude/memory/`) — git-tracked, shared; activated by running `/session:migrate`
+
+**Activation:** Run `/session:migrate` — creates `.claude/memory/`, writes attribution frontmatter on each migrated file, regenerates `MEMORY.md`, writes `.claude/CLAUDE.md` `@import` and write redirect.
+
+**Auto-load:** `.claude/CLAUDE.md` contains `@.claude/memory/MEMORY.md`. Any Claude Code session in the repo loads it automatically — no session plugin required. `session:start` shows "Repo memory: N entries" as confirmation.
+
+**Write redirect:** `.claude/CLAUDE.md` also contains an instruction to write new project memories to `.claude/memory/` instead of the local `~/.claude/projects/` path. Travels with the repo — any developer who opens the repo gets the redirect automatically.
+
+**Merge semantics:** Re-running `/session:migrate` is safe — adds files not yet in repo, skips files already present. Multiple developers can migrate independently; files merge together with no overwrites.
+
+**Rollback:** Delete `.claude/` folder. Claude falls back to local memory automatically. Same format both places — no manual steps required.
+
+**Sentinel:** `~/.claude/projects/<encoded>/memory/.migrated-to-repo` — local-only marker with migration date and repo path.
+
+---
+
 ## Epic Context — Cross-Story Research
 
 When the active session has an `Epic` field, the epic file (`~/.claude/memory/epics/<key>.md`) is the canonical source for anything that crosses story boundaries: architecture decisions, blockers, open questions, and the story map.

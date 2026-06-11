@@ -57,7 +57,7 @@ Resolve `session_root` and `handle` using Path Resolution (see Session Skill). I
 
 ### 2. Load Sessions
 
-Run **four calls in parallel** — no session file reads at this stage:
+Run **five calls in parallel** — no session file reads at this stage:
 
 1. **List sessions directory with timestamps:**
    ```bash
@@ -74,6 +74,12 @@ Run **four calls in parallel** — no session file reads at this stage:
 3. **Read `<marketplace_root>/.claude-plugin/marketplace.json`** (plugin type only — used in Step 3).
 
 4. **Read `<session_root>/_index.md`** (if it exists) — one pipe-delimited line per session: `<name> | @created-by | created-date | @updated-by | updated-date | status | title` (7 columns).
+
+5. **Read `<repo_root>/.claude/memory/MEMORY.md`** (if it exists):
+   ```bash
+   git rev-parse --show-toplevel
+   ```
+   If `<repo_root>/.claude/memory/MEMORY.md` exists, read it. Count entries = lines beginning with `- [`.
 
 **If `_index.md` is absent or missing entries for sessions found in step 1:** read the affected session `.md` files in parallel (one read per file) to extract: `updated-by:` (use as both created-by and updated-by if `created-by:` is absent), `updated:` frontmatter date (use as updated-date). For created-date, try git first:
 ```bash
@@ -94,6 +100,12 @@ Sessions in <slug>
 Show `@creator date` in "created" column; show `@updater date` in "last edit" column. When creator == updater AND dates differ, still show both columns. Always show both `in` and `out` counts (show `0` — never omit). When user types `all`, re-display including completed sessions.
 
 **`filter_mine` active** (user passed `mine` arg): filter index entries where `@created-by` or `@updated-by` matches the current user — no additional file reads needed. Show `[filtered to @<handle>]` on the header.
+
+If repo memory was found (call 5), add one line after the sessions table:
+```
+  Repo memory: N entries
+```
+Omit entirely if `.claude/memory/MEMORY.md` does not exist.
 
 If `session_root` does not exist or is empty, skip this section.
 

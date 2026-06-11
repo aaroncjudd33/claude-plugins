@@ -1,6 +1,6 @@
 ---
 name: migrate
-description: One-time migration — move session files from ~/.claude/memory/ into the project repo under .claude/sessions/ so they are git-tracked and shared across developers.
+description: One-time migration — move session files AND project memories from local ~/.claude into the repo under .claude/ so they are git-tracked and shared across developers.
 argument-hint: "[--force]"
 ---
 
@@ -29,14 +29,16 @@ git rev-parse --show-toplevel
 
 ### 2. Guard Against Re-Run
 
-Check whether `<repo_root>/.claude/sessions/` already exists.
+Check whether `<repo_root>/.claude/sessions/` and `<repo_root>/.claude/memory/` already exist.
 
-- **Exists (no `--force`):** stop —
+- **Both exist (no `--force`):** stop —
   ```
-  Already migrated — .claude/sessions/ exists.
+  Already fully migrated — .claude/sessions/ and .claude/memory/ both exist.
   Use --force to re-sync local → repo (overwrites repo copies with local files).
   ```
-- **Does not exist:** continue.
+- **`.claude/sessions/` exists, `.claude/memory/` does not (no `--force`):** skip Phase A (session files, Steps 3–11a), run Phase B (memory migration, Step 11b) only. Show: "Sessions already migrated — running memory migration only."
+- **Neither exists:** run Phase A (Steps 3–11a) then Phase B (Step 11b) as normal.
+- **`--force` flag present:** skip this guard entirely — redo everything.
 
 ### 3. Confirm Local Sessions Exist
 
@@ -191,42 +193,137 @@ BPT2-6377 | @ajudd | 2026-06-01 | @ajudd | 2026-06-09 | in-progress | Shopify Me
 session   | @ajudd | 2026-06-01 | @nivi  | 2026-06-11 | in-progress | —
 ```
 
+### 11b. Migrate Local Project Memories
+
+Find the local project memory path. The encoded path format is the full `projectRoot` path with path separators and special characters replaced by `-`. Search for it:
+
+```bash
+ls ~/.claude/projects/*/memory/MEMORY.md 2>/dev/null
+```
+
+If multiple matches, prefer the one whose directory name most closely corresponds to `projectRoot` (from `~/.claude/config/<slug>.json`).
+
+**If no local memory directory found:** skip silently — show "No local project memory found — skipping memory migration."
+
+**If found:** read the directory. Count `.md` files (excluding `MEMORY.md` and `.migrated-to-repo`).
+
+Show:
+```
+Local project memory: N files at ~/.claude/projects/<encoded>/memory/
+Repo memory:          .claude/memory/ [exists with M files / does not exist]
+```
+
+Determine what to do:
+- Files with same name already in `.claude/memory/`: K files → skip
+- Files not yet in `.claude/memory/`: J files → add
+
+Show plan:
+```
+Will add:  J file(s)
+Will skip: K file(s) — already present in repo
+```
+
+Confirm: "Proceed? (Yes / Skip)"
+
+**On confirm — execute:**
+
+1. Create `<repo_root>/.claude/memory/` if it does not exist.
+
+2. For each `*.md` file in local memory (not `MEMORY.md`, not `.migrated-to-repo`):
+   a. If `<repo_root>/.claude/memory/<filename>` already exists → skip.
+   b. If not present:
+      - Read local file.
+      - Add attribution to frontmatter (after the closing `---` of the existing metadata block, before the body). Insert these fields inside the frontmatter block (before its closing `---`):
+        ```
+        created-by: "@<handle>"
+        created-date: "<file mtime — YYYY-MM-DD format>"
+        updated-by: "@<handle>"
+        updated-date: "<file mtime — YYYY-MM-DD format>"
+        ```
+        Get mtime via: `python3 -c "import os,datetime; t=os.path.getmtime('<path>'); print(datetime.date.fromtimestamp(t))"`
+      - Write to `<repo_root>/.claude/memory/<filename>`.
+
+3. Regenerate `<repo_root>/.claude/memory/MEMORY.md` fresh from all files now present:
+   - Read all `*.md` files in `.claude/memory/` (not `MEMORY.md` itself, not `.migrated-to-repo`)
+   - For each, extract `name:` and `description:` from frontmatter
+   - Write `MEMORY.md`:
+     ```
+     # Memory Index
+
+     - [<name>](<filename>) — <description>
+     ```
+   - One line per file, sorted alphabetically by filename.
+
+4. Write local sentinel file:
+   ```
+   ~/.claude/projects/<encoded-path>/memory/.migrated-to-repo
+   ```
+   Content: `"Migrated to repo: <repo_root>/.claude/memory/ on <today>"`
+
+5. Create or update `<repo_root>/.claude/CLAUDE.md`:
+   - If file does not exist: create it with both entries below.
+   - If exists and `@.claude/memory/MEMORY.md` import is already present: skip the import line, but still add the Project Memory section if absent.
+   - If exists and import not present: append both entries.
+
+   Content to add:
+   ```
+   @.claude/memory/MEMORY.md
+
+   ## Project Memory
+   This repo uses `.claude/memory/` for shared project memory. When saving
+   project-level memories (feedback, project context, references), write to
+   `.claude/memory/<filename>.md` and update `.claude/memory/MEMORY.md` —
+   not the local `~/.claude/projects/` path.
+   ```
+
 ### 12. Confirm and Commit
 
 Show a summary:
 ```
 Ready to commit:
-  .claude/sessions/     — N session file(s), transformed (Next steps array, created-by/updated-by, @handle tags, path cleanup)
-  .claude/sessions/_index.md   — N sessions indexed (name | @created-by | @updated-by | date | status | title)
+  .claude/sessions/          — N session file(s), transformed (Next steps array, created-by/updated-by, @handle tags, path cleanup)
+  .claude/sessions/_index.md — N sessions indexed (name | @created-by | @updated-by | date | status | title)
   .claude/sessions/_history.md — N entries tagged @<handle>
   .claude/sessions/.gitignore  — includes *.approved-hash exclusion
-  .gitignore            — added .claude/config/ exclusion
+  .gitignore                 — added .claude/config/ exclusion
+  .claude/memory/            — J memory file(s) added (K skipped — already present)
+  .claude/memory/MEMORY.md   — index regenerated (N entries)
+  .claude/CLAUDE.md          — @import and write redirect added/updated
 
 Local only (not committed):
   ~/.claude/memory/sessions/<slug>/<name>.approved-hash — N files seeded
+  ~/.claude/projects/<encoded>/memory/.migrated-to-repo — sentinel written
   .git/hooks/pre-commit — session-commit-guard installed
 
 Commit and push? (Yes / Edit message / Cancel)
 ```
 
-Default commit message: `chore: add Claude Code session files (.claude/sessions/)`
+Omit the `.claude/memory/` and `.claude/CLAUDE.md` lines if Step 11b was skipped.
 
-- **Yes:** stage only `.claude/sessions/` and the `.gitignore` changes, commit, push.
+Default commit message: `chore: add Claude Code session files and project memory (.claude/)`
+
+- **Yes:** stage `.claude/sessions/`, `.claude/memory/`, `.claude/CLAUDE.md`, and `.gitignore` changes, commit, push.
 - **Edit message:** ask for preferred message, then commit and push.
 - **Cancel:** leave files in place but do not commit. User can commit manually.
 
 ### 13. Confirm Completion
 
 ```
-Migrated — session files are now repo-based.
+Migrated — session files and project memory are now repo-based.
 
   Local backup:  ~/.claude/memory/sessions/<slug>/  (preserved, no longer updated)
   Repo sessions: <repo_root>/.claude/sessions/
+  Repo memory:   <repo_root>/.claude/memory/  (N files)
+  Local memory:  ~/.claude/projects/<encoded>/memory/  (preserved as fallback — sentinel written)
   Local config:  ~/.claude/config/<slug>.json
 
 Going forward all session reads and writes use .claude/sessions/.
+Going forward project memory writes go to .claude/memory/ (enforced by .claude/CLAUDE.md).
+To revert memory: delete .claude/ folder — Claude falls back to local memory automatically.
 New developers who pull this repo will be prompted for their local path on first session start.
 ```
+
+Omit the Repo memory / Local memory lines if Step 11b was skipped.
 
 ---
 
