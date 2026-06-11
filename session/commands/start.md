@@ -78,7 +78,7 @@ Run **six calls in parallel** — no session file reads at this stage. **Issue a
    - **6-column (legacy):** `name | created-by | updated-by | date | status | title` — treat `date` as both created-date and updated-date; prepend `@` to creator/updater values if missing.
    Parse whichever format is present. **Do not read any session `.md` files during this step.**
 
-5. **Check for repo memory (single bash call):**
+5. **Check for repo memory — skip for plugin sessions.** Plugin marketplace directories are not work repos; this always returns `no-repo-memory`. For **plugin type**: omit this call entirely and omit the "Repo memory" line from the listing. For all other types:
    ```bash
    git rev-parse --show-toplevel 2>/dev/null && [ -f "<repo_root>/.claude/memory/MEMORY.md" ] && grep -c "^\- \[" "<repo_root>/.claude/memory/MEMORY.md" || echo "no-repo-memory"
    ```

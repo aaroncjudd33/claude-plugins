@@ -13,16 +13,16 @@ Loaded by `start.md` after the user makes their selection. Context already in sc
 
 **Resume existing** (`resume <n>` — plain `<n>` also accepted for backward compatibility):
 
-**Run these three reads in parallel:**
+**Run these reads in parallel:**
 - Read `<session_root>/<name>.md`
-- Read `<session_root>/_history.md` — count total entries and extract the most recent one for display.
+- Run `wc -l < "<session_root>/_history.md" && tail -n 1 "<session_root>/_history.md"` via Bash — first output is total line count (= entry count), second line is the most recent entry. Do not Read the full file.
 - Read the inbox file (`_inbox_<name>.md` for plugins, `_inbox.md` otherwise — from `session_root`) and collect all items (both in-progress and pending) for display.
 
 **Security check (repo sessions only):** If `session_root` is inside a repo (not `~/.claude/memory/sessions/`), run the approval-hash check before displaying any session content:
 
-1. Compute `hash_now = SHA-256(file content)`:
+1. Compute `hash_now`:
    ```bash
-   python3 -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" "<session_root>/<name>.md"
+   git hash-object "<session_root>/<name>.md"
    ```
 2. Read `~/.claude/memory/sessions/<slug>/<name>.approved-hash` (local, never in repo).
 3. **Hash file missing (first-time load):**
@@ -142,7 +142,7 @@ After loading and displaying the resume block, gather all items that need a deci
 
 **Plugin reviewed** (plugin type only) — check plugin.json version at this step:
 ```bash
-cat <plugin_root>/.claude-plugin/plugin.json | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('version','?'))"
+grep -o '"version": "[^"]*"' "<plugin_root>/.claude-plugin/plugin.json" | head -1
 ```
 Compare MAJOR.MINOR of `Plugin reviewed:` in session file vs. current version. If they differ (or `Plugin reviewed:` is missing/legacy), include:
 ```

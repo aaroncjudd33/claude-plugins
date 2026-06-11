@@ -258,14 +258,17 @@ updated: [today's date]
 
 **Backward compat:** If the existing session file has a `Project:` field, preserve it on write. Do not add it to new sessions. If the existing file has `- **Next step:** <text>` (scalar), re-write as `- **Next steps:**` array with the item tagged `[today @<handle>]`.
 
-**After writing — update approved-hash (repo sessions only):** If `session_root` is inside a repo, recompute the SHA-256 hash of the written file and overwrite `~/.claude/memory/sessions/<slug>/<name>.approved-hash`:
+**After writing — update approved-hash (repo sessions only):** If `session_root` is inside a repo, recompute the hash of the written file and overwrite `~/.claude/memory/sessions/<slug>/<name>.approved-hash`:
 ```bash
-python3 -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" "<session_root>/<name>.md" > ~/.claude/memory/sessions/<slug>/<name>.approved-hash
+git hash-object "<session_root>/<name>.md" > ~/.claude/memory/sessions/<slug>/<name>.approved-hash
 ```
 
 **Update `_index.md`:** Read `<session_root>/_index.md` — create with header `# Session Index — <slug>` + `# name | created-by | created-date | updated-by | updated-date | status | title` if it does not exist. Find the line for `<name>`: extract `@created-by` (col 2) and `created-date` (col 3) to preserve them; if no existing line, use `@<handle>` and `<today>` for both. Replace or append: `<name> | @<created-by> | <created-date> | @<handle> | <today> | in-progress | <title-or-dash>`.
 
-Print the summary to screen. After the summary block, display the last 5 entries from `_history.md` (all entries if fewer than 5):
+Print the summary to screen. After the summary block, display the last 5 entries from `_history.md` via Bash — **do not Read the full file:**
+```bash
+tail -n 5 "<session_root>/_history.md"
+```
 
 ```
 Recent history (<slug>):
@@ -276,7 +279,14 @@ Recent history (<slug>):
 
 ### 8. Work Log
 
-Append to `~/.claude/memory/worklog/<YYYY-MM-DD>.md` (create the file and `~/.claude/memory/worklog/` directory if they don't exist).
+Append to `~/.claude/memory/worklog/<YYYY-MM-DD>.md` via Bash — **do not Read the file first.** Worklog is append-only; existing content is never examined.
+
+```bash
+mkdir -p ~/.claude/memory/worklog
+cat >> ~/.claude/memory/worklog/<YYYY-MM-DD>.md << 'ENTRY'
+[entry content here]
+ENTRY
+```
 
 Use today's date for the filename. Use the current local time (HH:MM) for the entry header.
 
