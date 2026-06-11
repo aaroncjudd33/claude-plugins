@@ -100,14 +100,14 @@ Out-of-scope work detected — will be excluded from this checkpoint.
   Out-of-scope:
     - <file path>  (belongs in: <target slug> / <target session>)
 
-  [1] Route to target inbox now (via /session:inbox)
-  [2] Acknowledge only — I'll handle it manually
-  [3] Skip
+route    send to target inbox via /session:inbox
+note     acknowledge only — exclude from record, no handoff
+skip     continue without noting
 ```
 
-- **[1] Route:** Derive the target slug and session name from the file path, then invoke the `/session:inbox` flow with the out-of-scope item pre-populated as the content and target. The routing is never silent — the user sees and confirms it.
-- **[2] Acknowledge:** Note the excluded work in the session summary's Open items but do not write to any inbox.
-- **[3] Skip:** Continue without noting.
+- **route:** Derive the target slug and session name from the file path, then invoke the `/session:inbox` flow with the out-of-scope item pre-populated as the content and target. The routing is never silent — the user sees and confirms it.
+- **note:** Note the excluded work in the session summary's Open items but do not write to any inbox.
+- **skip:** Continue without noting.
 
 Continue with the checkpoint for in-scope work only.
 
@@ -164,9 +164,12 @@ Before writing, read the existing `Open items` from the session file. If there a
 
 ```
 Open items — any complete?
-  [1] <item>
-  [2] <item>
-  Mark done (enter numbers), or 'skip'
+  1  <item>
+  2  <item>
+
+done <n>    mark complete — remove from list
+done all    mark all complete
+skip        none done yet
 ```
 
 Remove confirmed-complete items from the Open items list before writing.
@@ -238,9 +241,12 @@ If either category has items, display them together and ask:
 
 ```
 In-progress inbox items — mark any done?
-  [1] [in-progress since YYYY-MM-DD] <description from ## header>
-  [2] [inbox legacy] <item text from Open items>
-  Mark done (numbers, 'all', or 'skip')
+  1  [in-progress since YYYY-MM-DD] <description from ## header>
+  2  [inbox legacy] <item text from Open items>
+
+done <n>    mark done — archive and remove
+done all    mark all done
+skip        keep all open
 ```
 
 For each **inbox-file item** (Step A) marked done:
@@ -259,13 +265,16 @@ If no in-progress or legacy items exist, skip silently.
 After handling in-progress items, check if any remaining pending items in the inbox were addressed this session without being formally picked up:
 
 ```
-Inbox — any pending items addressed this session (outside in-progress tracking)?
-  [1] [date] from <source> — <description>
-  Numbers, 'none', or 'skip'
+Inbox — any addressed this session outside in-progress tracking?
+  1  [date] from <source> — <description>
+
+done <n>     archive as complete
+picked <n>   mark as in-progress — carries to next session
+none / skip  nothing addressed
 ```
 
-- **Marked done:** archive with `[DONE YYYY-MM-DD]` stamp, remove from inbox. Rewrite inbox.
-- **Marked as picked up mid-session:** insert `[in-progress — <session-name>, YYYY-MM-DD]` in the inbox entry after the `## [date]...` header, add `[inbox] <item>` to Open items — will be handled at next checkpoint or finish.
+- **done <n>:** archive with `[DONE YYYY-MM-DD]` stamp, remove from inbox. Rewrite inbox.
+- **picked <n>:** insert `[in-progress — <session-name>, YYYY-MM-DD]` in the inbox entry after the `## [date]...` header, add `[inbox] <item>` to Open items — will be handled at next checkpoint or finish.
 
 If no pending items remain, skip silently.
 

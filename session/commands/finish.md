@@ -179,16 +179,14 @@ Cross-scope work detected — cannot close this session cleanly.
   Out-of-scope changes:
     - <file path>  (belongs in: <target slug> / <target session>)
 
-  [1] Route to target inbox and exclude from this record (via /session:inbox)
-  [2] Acknowledge as out-of-scope, exclude from record (no handoff)
-  [3] Cancel finish — I'll handle it manually
+route     route to target inbox, exclude from this record (via /session:inbox)
+note      acknowledge as out-of-scope, exclude — no handoff
+cancel    stop finish — I'll handle it manually
 ```
 
-**Option [1]:** Derive the target slug and session name from the file path, then invoke the `/session:inbox` flow with the out-of-scope item pre-populated. The routing is never silent — user sees and confirms before the inbox write happens.
-
-**Option [2]:** Note the excluded work in the session summary's Open items field. No inbox write.
-
-**Option [3]:** Stop. Do not write the Session Summary or Deactivate the session.
+- **route:** Derive the target slug and session name from the file path, then invoke the `/session:inbox` flow with the out-of-scope item pre-populated. The routing is never silent — user sees and confirms before the inbox write happens.
+- **note:** Note the excluded work in the session summary's Open items field. No inbox write.
+- **cancel:** Stop. Do not write the Session Summary or Deactivate the session.
 
 Only proceed to step 9 once all flagged items are resolved (or none were found).
 
@@ -205,9 +203,12 @@ If either category has items, display them and ask:
 
 ```
 In-progress inbox items — mark any done before closing?
-  [1] [in-progress since YYYY-MM-DD] <description from ## header>
-  [2] [inbox legacy] <item text from Open items>
-  Mark done (numbers, 'all') / Keep open
+  1  [in-progress since YYYY-MM-DD] <description from ## header>
+  2  [inbox legacy] <item text from Open items>
+
+done <n>    mark done — archive and remove
+done all    mark all done
+keep        keep open — carry to next session
 ```
 
 For each **inbox-file item** (Step A) marked done:
@@ -228,13 +229,16 @@ If no in-progress or legacy items, skip silently.
 After handling in-progress items, surface any remaining pending inbox items addressed this session:
 
 ```
-Inbox — any pending items addressed this session (outside in-progress tracking)?
-  [1] [date] from <source> — <description>
-  Numbers, 'none', or 'skip'
+Inbox — any addressed this session outside in-progress tracking?
+  1  [date] from <source> — <description>
+
+done <n>     archive as complete
+picked <n>   mark as in-progress — carries to next session
+none / skip  nothing addressed
 ```
 
-- **Marked done:** archive with `[DONE YYYY-MM-DD]`, remove from inbox. Rewrite inbox.
-- **Marked as picked up:** insert `[in-progress — <session-name>, YYYY-MM-DD]` in the entry after `## [date]...` header, add `[inbox] <item>` to Open items — will show in "Resuming in-progress" at next start.
+- **done <n>:** archive with `[DONE YYYY-MM-DD]`, remove from inbox. Rewrite inbox.
+- **picked <n>:** insert `[in-progress — <session-name>, YYYY-MM-DD]` in the entry after `## [date]...` header, add `[inbox] <item>` to Open items — will show in "Resuming in-progress" at next start.
 
 If no pending items, skip silently.
 
@@ -265,9 +269,12 @@ Before writing, read the existing `Open items` from the session file. If there a
 
 ```
 Open items — any complete?
-  [1] <item>
-  [2] <item>
-  Mark done (enter numbers), or 'skip'
+  1  <item>
+  2  <item>
+
+done <n>    mark complete — remove from list
+done all    mark all complete
+skip        none done this session
 ```
 
 Remove confirmed-complete items from the Open items list before writing.
