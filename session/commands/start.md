@@ -612,7 +612,7 @@ Any implementation work should be routed to this session's inbox for a coding se
 ```
 
 **Plugin — existing plugin:**
-1. **Read all of these files in parallel as a single batch:** `plugin.json`, all command `.md` files, `SKILL.md` if present, and all files under the skill's `references/` directory if it exists
+1. **Read in parallel:** `plugin.json`, `SKILL.md` (if present), and all files under the skill's `references/` directory. **Do not pre-read individual command `.md` files** — load them on demand when the user's task targets a specific command. SKILL.md provides sufficient orientation for session start; full command content is only needed when editing or debugging a specific command.
 2. Check `plugin_reviewed` in the session file. Read the current version from `plugin.json`. If `plugin_reviewed` is missing, a legacy `yes`/`no` value, or its `MAJOR.MINOR` differs from the current version's `MAJOR.MINOR`, show the warning:
    > "⚠ This plugin has not been reviewed yet." (if missing/legacy) or "⚠ This plugin has not been reviewed since v<stored> (current: v<current>)."
 
