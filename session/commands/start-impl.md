@@ -28,17 +28,9 @@ Loaded by `start.md` after the user makes their selection. Context already in sc
 3. **Hash file missing (first-time load):**
    - Show: `"First time loading this session file from the repo — reviewing before use."`
    - Display key fields: Type, Branch, Mode, Open items, Next steps, Notes.
-   - Use **AskUserQuestion** (ApproveSessionPrompt — see prompt-patterns.md):
-     ```yaml
-     question: "First-time load from repo — approve and load this session file?"
-     header: "Approval"
-     options:
-       - label: "Approve and load"
-         description: "Trust this session file — write the approval hash"
-       - label: "Skip teammate fields"
-         description: "Load with items from other handles quarantined for review"
-       - label: "Cancel"
-         description: "Abort — do not load this session"
+   - Output and wait (Pattern 6):
+     ```
+     Approve and load  ·  skip-teammate-fields  ·  cancel
      ```
      - **Approve and load** → write `hash_now` to `~/.claude/memory/sessions/<slug>/<name>.approved-hash`, load normally.
      - **Skip teammate fields** → quarantine items not tagged with current `@<handle>` (see Quarantine below), write hash.
@@ -48,17 +40,9 @@ Loaded by `start.md` after the user makes their selection. Context already in sc
    - Run: `git log -1 --format="%an — %ar" -- "<session_root>/<name>.md"` → who changed it, when.
    - Run: `git diff HEAD~1 HEAD -- "<session_root>/<name>.md"` → what changed. If file not yet in git history, show full content instead.
    - Display: `"Session file modified by @<committer> since you last approved it."` + diff output.
-   - Use **AskUserQuestion** (ReapproveSessionPrompt — see prompt-patterns.md):
-     ```yaml
-     question: "Session file changed since you last approved it — approve these changes?"
-     header: "Approval"
-     options:
-       - label: "Approve changes"
-         description: "Trust the updated file — overwrite approval hash"
-       - label: "Load quarantined"
-         description: "Load with changed fields shown as pending review — hash stays unapproved"
-       - label: "Cancel"
-         description: "Abort — do not load this session"
+   - Output and wait (Pattern 6):
+     ```
+     Approve changes  ·  load-quarantined  ·  cancel
      ```
      - **Approve changes** → overwrite approved-hash with `hash_now`, load normally.
      - **Load quarantined** → show changed fields as `[PENDING REVIEW — @handle, date]` in resume block; not added to active Open items routing. Hash still differs — approval required on next load too.
@@ -103,23 +87,6 @@ Loaded by `start.md` after the user makes their selection. Context already in sc
   - Old scalar `Next step: <text>` → treat as mine, re-write as array item on next checkpoint/finish.
   - If no teammate items exist, omit the "Teammate notes" and "Teammate next steps" blocks entirely.
 
-  **After displaying teammate next steps**, use **AskUserQuestion** (AdoptTeammatePrompt — see prompt-patterns.md):
-
-  ```yaml
-  question: "Adopt any teammate next steps as your own?"
-  header: "Teammate"
-  options:
-    - label: "Adopt all"
-      description: "Take ownership of all teammate suggestions"
-    - label: "Adopt (select)"
-      description: "Pick which ones to adopt — you'll give the numbers next"
-    - label: "Skip"
-      description: "Keep as reference only — not added to your active list"
-  ```
-
-  After **Adopt (select)** → ask: "Which items? (number or comma list)"
-
-  Adopted items re-tagged: `[YYYY-MM-DD @<handle>] <text> (via @<original-handle>)` and moved into your active Next steps. Declined items remain as FYI context only — not used for inbox routing or finish derivation.
 - For the `Post-deploy` line: count `- [ ]` items (pending) vs `- [x]` items (acknowledged) from the `Post-deployment checks:` field. Show "N pending" if any unchecked, "all acknowledged" if all checked, "none" if field is absent or empty.
 - **If the session file has a `linked_sessions` field**, load each linked session and append a context block immediately after the `History:` line in the resume block:
   ```
@@ -150,63 +117,70 @@ Loaded by `start.md` after the user makes their selection. Context already in sc
 - personal → `<name>.md`
 - general → `<name>.md`
 
-### 5. Check Inbox
+### 5. Inbox and Loading Questions
 
-**For all sessions**, check `<session_root>/_inbox_<name>.md` (e.g. `_inbox_release.md`, `_inbox_BPT2-6479.md`). This is the session-specific inbox where cross-scope work is routed via `/session:inbox`.
+After loading and displaying the resume block, gather all items that need a decision and present them as **one batched block**. Output and wait once (Pattern 2). **Do not use AskUserQuestion.**
 
-If the inbox file exists and has content beyond the header line, scan for two categories of items based on whether an `[in-progress — ...]` line appears immediately after the `## [date]...` entry header:
+**Build the batch block as follows. Omit the batch block entirely if there is nothing to decide (empty inbox, no teammate steps, no review flag).**
 
-**In-progress items** (already picked up by this or a prior unfinished session) — show first as a numbered list:
+**Check `<session_root>/_inbox_<name>.md`** (e.g. `_inbox_release.md`, `_inbox_BPT2-6479.md`). Scan for items:
+
+- **In-progress items** (have an `[in-progress — ...]` line immediately after the `## [date]...` header) — include as batch questions with default `keep`:
+  ```
+  (N) Inbox [in-progress]: "<description>"  →  keep / done
+  ```
+
+- **Pending items** (no in-progress marker) — include as batch questions with default `keep`:
+  ```
+  (N) Inbox: "<description>"  →  work / done / backlog / keep
+  ```
+
+**Teammate next steps** (if any displayed in resume block above) — include as batch questions with default `skip`:
 ```
-Resuming in-progress (N item(s)):
-  1  [in-progress since YYYY-MM-DD] <description from entry header>
-```
-
-Then use **AskUserQuestion** (single-select):
-```yaml
-question: "Mark any in-progress items done?"
-header: "Inbox"
-options:
-  - label: "done"
-    description: "Mark item(s) complete — you'll pick the number(s) or 'all' next"
-  - label: "keep"
-    description: "Keep working — no change"
-```
-After **done** → ask: "Which item(s)? (number, comma list, or 'all')"
-
-- **done:** strip the `[in-progress — ...]` line, archive with `[DONE YYYY-MM-DD]` stamp (see Archive files below), remove entry from inbox, remove matching `[inbox] <item>` from session Open items.
-- **keep:** no change — stays in inbox as in-progress, stays in Open items.
-
-**Pending items** (no in-progress marker) — show after in-progress items as a numbered list:
-```
-Inbox (N item(s)):
-  1  [date] from <source-slug> / <session-name> — <one-line summary>
-  2  [date] from <source-slug> / <session-name> — <one-line summary>
+(N) Adopt teammate step: "<text>" (via @<handle>)?  →  skip / adopt
 ```
 
-Then use **AskUserQuestion** (single-select):
-```yaml
-question: "What would you like to do with these items?"
-header: "Inbox"
-options:
-  - label: "work"
-    description: "Pick up — mark in-progress and add to Open items"
-  - label: "done"
-    description: "Mark complete — archive without picking up"
-  - label: "backlog"
-    description: "Defer to backlog for later"
-  - label: "keep"
-    description: "Leave as-is — no action"
+**Plugin reviewed** (plugin type only) — check plugin.json version at this step:
+```bash
+cat <plugin_root>/.claude-plugin/plugin.json | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('version','?'))"
 ```
-"Other" → describe what you want (e.g. "work 1, keep 2"). After selection → ask: "Which item(s)? (number, comma list, or 'all')"
+Compare MAJOR.MINOR of `Plugin reviewed:` in session file vs. current version. If they differ (or `Plugin reviewed:` is missing/legacy), include:
+```
+(N) Plugin reviewed? (last: v<stored>, current: v<current>)  →  skip / yes
+```
 
-- **work:** insert `[in-progress — <session-name>, YYYY-MM-DD]` on the line immediately after the `## [date]...` header in the inbox file. Do NOT archive yet — the item stays in the inbox until work is complete. Add `[inbox] <short description>` to session `Open items`. For items with significant depth, offer: "Create a work file for decisions/notes? (yes / skip)" — if yes, create `<session_root>/_work_<name>_YYYY-MM-DD-<short-slug>.md` with the original problem and a `## Notes` section; add `Work file: _work_<name>_YYYY-MM-DD-<short-slug>.md` to the inbox entry on a new line after the in-progress marker.
-- **done:** archive with `[DONE YYYY-MM-DD]` stamp (see Archive files), remove from inbox.
-- **backlog:** move to backlog file (`_backlog_<name>.md` for plugins, `_backlog.md` for others), remove from inbox. Create the backlog file if it doesn't exist with header `# Backlog — <name> plugin` (plugin) or `# Backlog — <slug>` (others). No archive — backlog items stay until explicitly deleted.
-- **keep:** leave as-is. Do NOT add to Open items.
-- When user responds "all" to the "Which item(s)?" follow-up, apply the action to all pending items at once.
+**Assemble the block:**
+```
+  (1) Inbox [in-progress]: "Fix prompt patterns UX"  →  keep / done
+  (2) Inbox: "Review DynamoDB schema"  →  work / done / backlog / keep
+  (3) Adopt teammate step: "Add test coverage" (via @nivi)?  →  skip / adopt
+  (4) Plugin reviewed? (last: v1.36, current: v1.40)  →  skip / yes
 
-If the file does not exist or contains only the header, skip silently.
+Reply with overrides or "go".
+```
+
+**Defaults shown inline.** "go" accepts all defaults. User may reply with any combination:
+`2 work`, `2 work 4 yes`, `1 done 3 adopt`, `go`, `all done`, etc.
+
+**Applying the answers:**
+
+For inbox items:
+- **done** (in-progress): strip the `[in-progress — ...]` line, archive with `[DONE YYYY-MM-DD]` stamp, remove entry from inbox, remove matching `[inbox] <item>` from session Open items.
+- **keep** (in-progress): no change — stays in inbox, stays in Open items.
+- **work** (pending): insert `[in-progress — <session-name>, YYYY-MM-DD]` on the line immediately after the `## [date]...` header. Do NOT archive yet. Add `[inbox] <short description>` to session Open items.
+- **done** (pending): archive with `[DONE YYYY-MM-DD]` stamp, remove from inbox.
+- **backlog**: move to `_backlog_<name>.md` (plugin) or `_backlog.md` (others), remove from inbox. Create file if needed.
+- **keep** (pending): leave as-is. Do NOT add to Open items.
+
+For work items with significant depth, after applying the answer, note: "Create a work file for decisions/notes? (yes / skip)" — this follow-up is the only additional stop acceptable here (new info — can't know if a work file is needed until the item is chosen). If yes: create `<session_root>/_work_<name>_YYYY-MM-DD-<short-slug>.md` with the original problem and a `## Notes` section.
+
+For teammate steps:
+- **adopt**: re-tag as `[YYYY-MM-DD @<handle>] <text> (via @<original-handle>)`, move to active Next steps.
+- **skip**: keep as FYI context only — not used for inbox routing or finish derivation.
+
+For plugin reviewed:
+- **yes**: update `Plugin reviewed: <current-version>` in the session file immediately.
+- **skip**: continue. Will show again at next session start if minor version still differs.
 
 **Archive files:**
 - All sessions: `<session_root>/_inbox_<name>_archive.md` — header: `# Inbox Archive — <name>`
@@ -219,11 +193,9 @@ Create the archive file if it does not exist. Archive entry format (append, blan
   [Work file: _work_<name>_YYYY-MM-DD-<slug>.md]   ← only if a work file was created
 ```
 
-All archived entries use `[DONE YYYY-MM-DD]`. The `[in-progress — ...]` marker is stripped before archiving — it is only meaningful while the work is active.
+**Auto-purge archive:** After handling inbox items, if the archive file exists, drop any entries whose `[DONE YYYY-MM-DD]` date is more than 30 days before today. Rewrite the file with only the retained entries (preserving the header line).
 
-**Auto-purge archive:** After handling inbox items, if the archive file exists, read it and drop any entries whose `[DONE YYYY-MM-DD]` date is more than 30 days before today. Rewrite the file with only the retained entries (preserving the header line).
-
-**Additionally**, check `<session_root>/_inbox.md` for global items (undirected notes, new plugin ideas, or spawned sessions without a named target). If it has content, show it separately. Flag `[spawn]` entries prominently — they are pre-loaded handoffs ready to start as a new session:
+**Global inbox (`_inbox.md`):** Check for global items (undirected notes, new plugin ideas, or spawned sessions without a named target). If it has content, show it separately after the batch block result (not folded in — it's separate from the session-specific inbox):
 
 ```
 Global inbox (<N> item(s)):
@@ -232,34 +204,25 @@ Global inbox (<N> item(s)):
   [date] from <source-slug>/<session-name> — <regular item description>
 ```
 
-- **`[spawn]` entries:** Picking one up (`work <n>`) runs the full new-session kickoff (Jira story, branch, etc.) with the spawn's linked context pre-loaded. Archive after Step 6 once the new session name is established, using stamp `[PICKED UP YYYY-MM-DD — <new-session-name>]`. Note: spawns are the only inbox entries that archive at pickup — the spawn's job is done once it routes into a new session. All other items use the in-progress marker and archive only when work is complete.
-- **Regular entries:** use the same AskUserQuestion pattern (work/done/backlog/keep) as the session-specific inbox above.
-
-Global inbox items are never auto-cleared. The same handling options apply, using `_inbox_archive.md` as the archive.
-
-**Backlog:** After all inbox handling, check `_backlog_<name>.md` (plugin) or `_backlog.md` (others) and count logical items (lines beginning with `[20` or `## `). If count > 0, show:
-
+Routing line for global inbox (if any items):
 ```
-Backlog: N items — type 'backlog' to review
+  work <n>  ·  done <n>  ·  backlog <n>  ·  keep
 ```
 
-If the user types 'backlog' to review it, display each item numbered and use **AskUserQuestion**:
+- **`[spawn]` entries:** Picking one up (`work <n>`) runs the full new-session kickoff with the spawn's linked context pre-loaded. Archive after Step 6 once the new session name is established, using stamp `[PICKED UP YYYY-MM-DD — <new-session-name>]`.
+- **Regular entries:** same dispositions as session inbox above; use `_inbox_archive.md` as archive.
 
-```yaml
-question: "What would you like to do with this backlog item?"
-header: "Backlog"
-options:
-  - label: "Pull into inbox"
-    description: "Move to inbox — enters normal inbox flow at next session start"
-  - label: "Delete"
-    description: "Remove permanently — no archive"
-  - label: "Keep"
-    description: "Leave in backlog"
+**Backlog notice:** After all inbox handling, check `_backlog_<name>.md` (plugin) or `_backlog.md` (others) and count logical items (lines beginning with `[20` or `## `). If count > 0, show:
 ```
-
-Ask once per item, or ask "Apply to all?" first if the user wants bulk action.
-
-If the backlog file does not exist or is empty, omit this line entirely.
+Backlog: N items — say 'backlog' to review
+```
+If the user later says `backlog`, display items numbered and use a plain routing line:
+```
+  pull <n>  ·  delete <n>  ·  keep  ·  all done
+```
+- **pull**: move to inbox — enters normal inbox flow at next session start.
+- **delete**: remove permanently — no archive.
+- **keep**: leave in backlog.
 
 ### 6. Establish Session Identity
 
@@ -277,33 +240,15 @@ For **personal**, no category prompt — and Teams chat is always `none` (no loo
 
 ### 6a. Session Mode
 
-Use **AskUserQuestion** with a single-select question:
+**Default: `coding`.** No stop needed.
 
+For **new sessions**: state the mode as a note at the end of the Step 6 output:
 ```
-question: "What mode?"
-header: "Mode"
-options:
-  - label: "coding"
-    description: "Full access — implement freely (default)"
-  - label: "planning"
-    description: "Read-only — design, analyze, write to inbox; no code edits or file writes"
-  - label: "both"
-    description: "Full access — planning and coding in the same session"
+Mode: coding  (say 'planning' or 'both' to change before we begin)
 ```
+If the user included a mode modifier in their start.md reply, apply it silently.
 
-For **resume**: the current mode is already shown in the resume block. Use AskUserQuestion with two options:
-
-```
-question: "Mode is [current] — keep it or change?"
-header: "Mode"
-options:
-  - label: "Keep [current]"
-    description: "Continue with the existing mode"
-  - label: "Change"
-    description: "Pick a different mode"
-```
-
-If the user selects "Change", present the three-option AskUserQuestion above.
+For **resume**: mode is shown in the resume block. If the user included `planning`, `both`, or `coding` in their start.md reply, apply it now and note the change: `Mode changed to <new>`. If no modifier was given, keep the existing mode.
 
 Store the result as `mode` for use in Step 8.
 
@@ -316,24 +261,17 @@ Match priority (case-insensitive):
 2. Match on any entry in the Aliases column (comma-separated; match each alias individually)
 3. Substring match on Topic
 
-When the user refers to a chat informally ("my team chat", "the group chat", "cab chat"), check Aliases before Topic. If matched via alias, confirm before proceeding: "Matched '[phrase]' → [Name]. Using that — ok?"
+When the user refers to a chat informally ("my team chat", "the group chat", "cab chat"), check Aliases before Topic.
 
-- **Found:** "Using Teams chat: [name]" — proceed, or offer to repoint if the user wants a different one
-- **Not found:** use **AskUserQuestion** (TeamsChatCreatePrompt — see prompt-patterns.md):
-  ```yaml
-  question: "No Teams chat found for '<teams_chat>' — what would you like to do?"
-  header: "Teams chat"
-  options:
-    - label: "Create it"
-      description: "Create a new Teams chat with default members"
-    - label: "Use different"
-      description: "Point to an existing chat — you'll name it next"
-    - label: "Skip"
-      description: "Set teams_chat to none — Teams steps will be skipped"
+- **Found:** "Using Teams chat: [name]" — proceed, or offer to repoint if the user wants a different one.
+- **Not found:** output and wait (plain text routing):
   ```
-  After **Use different** → ask: "Which existing chat should this session use?"
-  - **Create it:** create the chat via yl-msoffice MCP, add the entry to `known-chats.md`. Do **not** include `ajudd@youngliving.com` in the members array — the Graph API automatically adds the authenticated user; passing them explicitly causes a "Duplicate chat members" error.
-  - **Use different:** ask which existing chat to use, store that name instead.
+  No Teams chat found for '<teams_chat>':
+    create it  ·  use different  ·  skip
+  ```
+  After `use different` → ask: "Which existing chat should this session use?"
+  - **Create it:** create the chat via yl-msoffice MCP, add the entry to `known-chats.md`. Do **not** include `ajudd@youngliving.com` in the members array — the Graph API automatically adds the authenticated user.
+  - **Use different:** store the named chat instead.
   - **Skip:** set `teams_chat` to `none` — Teams steps in checkpoint will be skipped.
 
 ### 8. Write Session State
@@ -399,7 +337,7 @@ BPT2-1234
 ```
 Find the line starting with `<name> | ` and replace it; if not found, append. Write line:
 `<name> | @<handle> | <today> | @<handle> | <today> | in-progress | <title-or-dash>`
-Where `<title-or-dash>` = `Title:` field for story/cab; `—` for other types. (Both created-date and updated-date are `<today>` at creation — they diverge as others update the session.)
+Where `<title-or-dash>` = `Title:` field for story/cab; `—` for other types.
 
 ### 9. Route Based on Choice
 
@@ -410,76 +348,55 @@ Any implementation work should be routed to this session's inbox for a coding se
 ```
 
 **Plugin — existing plugin:**
-1. **Read in parallel:** `plugin.json`, `SKILL.md` (if present), and all files under the skill's `references/` directory. **Do not pre-read individual command `.md` files** — load them on demand when the user's task targets a specific command. SKILL.md provides sufficient orientation for session start; full command content is only needed when editing or debugging a specific command.
-2. Check `plugin_reviewed` in the session file. Read the current version from `plugin.json`. If `plugin_reviewed` is missing, a legacy `yes`/`no` value, or its `MAJOR.MINOR` differs from the current version's `MAJOR.MINOR`, show the warning:
-   > "⚠ This plugin has not been reviewed yet." (if missing/legacy) or "⚠ This plugin has not been reviewed since v<stored> (current: v<current>)."
-
-   Then use **AskUserQuestion** (PluginReviewedPrompt — see prompt-patterns.md):
-   ```yaml
-   question: "Mark as reviewed?"
-   header: "Review"
-   options:
-     - label: "Yes — reviewed"
-       description: "I've already run the code-reviewer — mark for this version"
-     - label: "No"
-       description: "Remind me later — will show again at next session start"
-   ```
-   - **Yes — reviewed:** update `plugin_reviewed: <current-version>` in the session file immediately.
-   - **No:** continue. Will show again at next session start if minor version still differs.
-   Patch bumps within the same `MAJOR.MINOR` do not trigger the reminder.
-3. Ask what needs to change if not already stated
-4. Confirm approach before making changes
+1. **Read in parallel:** `plugin.json`, `SKILL.md` (if present), and all files under the skill's `references/` directory. **Do not pre-read individual command `.md` files** — load them on demand when the user's task targets a specific command.
+2. The plugin reviewed check was already handled in Step 5. No additional review prompt here.
+3. Ask what needs to change if not already stated.
+4. Confirm approach before making changes.
 
 **Plugin — new plugin:**
-1. Ask for the plugin name and what it should do
-2. Create the folder structure and files
-3. Add entry to `marketplace.json`, commit, push, install
+1. Ask for the plugin name and what it should do.
+2. Create the folder structure and files.
+3. Add entry to `marketplace.json`, commit, push, install.
 
 **Story — resume:**
-1. `getJiraIssue` — verify status matches memory
-2. Check git branch — confirm it matches, offer to switch if not
+1. `getJiraIssue` — verify status matches memory.
+2. Check git branch — confirm it matches, offer to switch if not.
 3. If the session file has no `Epic` field: check the Jira issue data from step 1 for an Epic Link.
    - **Epic Link found in Jira:** set `Epic: <key>` in the session file. Follow the same load/create flow as new kickoff step 2.
-   - **No Epic Link in Jira:** skip silently — epic links are managed in Jira by the team lead; the session plugin reacts to them, it does not create them.
-   - If the session file already has an `Epic` field, skip this step (epic was loaded in Step 4).
-4. Summarize: what's done, what's open, what's next
+   - **No Epic Link in Jira:** skip silently.
+   - If the session file already has an `Epic` field, skip (epic was loaded in Step 4).
+4. Summarize: what's done, what's open, what's next.
 
 **Story — new kickoff:**
-1. `getJiraIssue` → transition to In Progress → create feature branch
+1. `getJiraIssue` → transition to In Progress → create feature branch.
 2. Check for Epic Link in the Jira issue. If an epic key is present:
-   - Check whether `~/.claude/memory/epics/<epic-key>.md` exists
-   - **Not found:** use **AskUserQuestion** (ConfirmPrompt — see prompt-patterns.md):
-     ```yaml
-     question: "No epic memory for <key> — create one?"
-     header: "Epic memory"
-     options:
-       - label: "Yes"
-         description: "Create epic memory with story map and architecture structure"
-       - label: "Skip"
-         description: "Continue without creating epic memory"
+   - Check whether `~/.claude/memory/epics/<epic-key>.md` exists.
+   - **Not found:** output and wait:
      ```
-     - **Yes:** create `~/.claude/memory/epics/<key>.md` with pre-populated structure: epic title from Jira, story map row for the current story. Use `references/epic-template.md` from the session skill as the structural template.
-   - **Found:** note "Epic memory loaded for <key>" — file is already in context
-   - Set `Epic: <key>` in the session file
-3. Investigate codebase, confirm Teams chat exists, check Confluence page
+     No epic memory for <key> — create one?  yes / skip
+     ```
+     - **yes:** create `~/.claude/memory/epics/<key>.md` with pre-populated structure: epic title from Jira, story map row for the current story. Use `references/epic-template.md` from the session skill as the structural template.
+   - **Found:** note "Epic memory loaded for <key>" — file is already in context.
+   - Set `Epic: <key>` in the session file.
+3. Investigate codebase, confirm Teams chat exists, check Confluence page.
 
 **CAB — new:**
-- Route to `/release:create-cab`
+- Route to `/release:create-cab`.
 
 **CAB — resume:**
-1. Read the CAB card from Jira
-2. Check release branch status
+1. Read the CAB card from Jira.
+2. Check release branch status.
 
 **Personal — resume:**
-1. Check git branch — confirm it matches the session file, offer to switch if not
-2. Summarize: what's done, what's open, what's next
+1. Check git branch — confirm it matches the session file, offer to switch if not.
+2. Summarize: what's done, what's open, what's next.
 
 **Personal — new:**
-1. Ask for the project name
-2. Check current git branch, record it in the session file
-3. Understand the task, confirm approach, proceed
+1. Ask for the project name.
+2. Check current git branch, record it in the session file.
+3. Understand the task, confirm approach, proceed.
 
 **General:**
-1. Ensure `~/.claude/memory/sessions/<slug>/<name>/` exists (create if not)
-2. Load any prior notes from that folder
-3. Understand the task, confirm approach, proceed
+1. Ensure `~/.claude/memory/sessions/<slug>/<name>/` exists (create if not).
+2. Load any prior notes from that folder.
+3. Understand the task, confirm approach, proceed.

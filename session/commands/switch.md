@@ -77,52 +77,23 @@ For all sessions: check `<session_root>/_inbox_<name>.md`.
 
 If the inbox file has content beyond the header, first scan for in-progress items, then handle pending items.
 
-**In-progress items** (entries with an `[in-progress — ...]` line) — show first as a numbered list, then use **AskUserQuestion** (InProgressInboxPrompt — see prompt-patterns.md):
+If the inbox file has content beyond the header, gather all items and present as a batched block. **Do not use AskUserQuestion.** Output and wait for one reply (Pattern 2):
 
 ```
-Resuming in-progress (<N> item(s)):
-  [1] [in-progress since YYYY-MM-DD] <description from entry header>
+  (1) Inbox [in-progress]: "<description>"    keep / done
+  (2) Inbox: "<description>"    work / done / backlog / keep
+
+Reply with overrides or "go".
 ```
 
-```yaml
-question: "Mark any in-progress items done?"
-header: "In-progress"
-options:
-  - label: "Done (all)"
-    description: "Mark all complete, archive, and remove from Open items"
-  - label: "Done (select)"
-    description: "Mark specific items done — you'll pick the numbers next"
-  - label: "Keep"
-    description: "Keep all in-progress — carry forward"
-```
+"go" accepts all defaults. Parse freely: `1 done`, `2 work`, `1 done 2 work`, etc.
 
-After **Done (select)** → ask: "Which items? (number or comma list, e.g. 1, 3)"
-
-- **Done:** strip the `[in-progress — ...]` line, archive with `[DONE YYYY-MM-DD]` stamp to `_inbox_<name>_archive.md` (plugin) or `_inbox_archive.md` (others), remove entry from inbox, remove matching `[inbox] <item>` from session Open items.
-- **Keep:** no change.
-
-**Pending items** (no in-progress marker) — show after as a numbered list, then use **AskUserQuestion** (InboxItemPrompt — see prompt-patterns.md):
-
-```yaml
-question: "What would you like to do with these items?"
-header: "Inbox"
-options:
-  - label: "work"
-    description: "Pick up — mark in-progress and add to Open items"
-  - label: "done"
-    description: "Mark complete — archive without picking up"
-  - label: "backlog"
-    description: "Defer to backlog for later"
-  - label: "keep"
-    description: "Leave as-is — no action"
-```
-
-After selection → ask: "Which item(s)? (number, comma list, or 'all')"
-
-- **work:** insert `[in-progress — <session-name>, YYYY-MM-DD]` after the `## [date]...` header in the inbox file. Do NOT archive. Add `[inbox] <item>` to session Open items.
-- **done:** archive with `[DONE YYYY-MM-DD]` stamp to `_inbox_<name>_archive.md` (plugin) or `_inbox_archive.md` (others), remove from inbox.
-- **backlog:** move to `_backlog_<name>.md` (plugin) or `_backlog.md` (others), remove from inbox.
-- **keep:** leave as-is. Do not add to Open items.
+- **done** (in-progress): strip `[in-progress — ...]`, archive with `[DONE YYYY-MM-DD]` to `_inbox_<name>_archive.md`, remove from inbox, remove `[inbox] <item>` from Open items.
+- **keep** (in-progress): no change.
+- **work** (pending): insert `[in-progress — <session-name>, YYYY-MM-DD]` after `## [date]...` header. Do NOT archive. Add `[inbox] <item>` to Open items.
+- **done** (pending): archive with `[DONE YYYY-MM-DD]`, remove from inbox.
+- **backlog**: move to `_backlog_<name>.md` (plugin) or `_backlog.md` (others), remove from inbox.
+- **keep** (pending): leave as-is. Do not add to Open items.
 
 Auto-purge archive entries with `[DONE]` dates older than 30 days after handling.
 

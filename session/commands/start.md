@@ -28,9 +28,9 @@ If arguments were passed to `/session:start`, attempt to resolve them before run
 2. If arg is `mine`: set `filter_mine = true`, fall through to Step 1 — full discovery with mine filter.
 3. Derive session type and target name from the arg (story key → type=story, name=BPT2-XXXX; plugin name → type=plugin, name=<plugin>; etc.).
 4. Check whether `<session_root>/<name>.md` exists:
-   - **Exists** → go directly to Step 4 (Resume existing) with that session.
-   - **Does not exist** → before Step 6, check `<session_root>/_inbox.md` for a `[spawn]` entry whose label matches the target name. If found, archive it immediately with stamp `[PICKED UP YYYY-MM-DD — <target-name>]` to `<session_root>/_inbox_archive.md` (creating the archive file if needed). Then go to Step 6 (Establish Session Identity) and continue through Steps 7–8 as normal before Step 9 routing.
-5. Skip Steps 2, 3 entirely — no session listing, no inbox counts, no menu.
+   - **Exists** → read start-impl.md, go directly to Step 4 (Resume existing) with that session.
+   - **Does not exist** → before Step 6, check `<session_root>/_inbox.md` for a `[spawn]` entry whose label matches the target name. If found, archive it immediately with stamp `[PICKED UP YYYY-MM-DD — <target-name>]` to `<session_root>/_inbox_archive.md` (creating the archive file if needed). Read start-impl.md, then go to Step 6.
+5. Skip Steps 2, 3 entirely — no session listing, no inbox counts, no routing block.
 
 **No argument or unrecognized argument:** fall through to Step 1 — run the full discovery flow as normal.
 
@@ -57,7 +57,7 @@ Resolve `session_root` and `handle` using Path Resolution (see Session Skill). I
 
 ### 2. Load Sessions
 
-Run **five calls in parallel** — no session file reads at this stage. **Issue all five as a single parallel batch before processing any result — do not wait for one to complete before issuing the next.**
+Run **six calls in parallel** — no session file reads at this stage. **Issue all six as a single parallel batch before processing any result — do not wait for one to complete before issuing the next.**
 
 1. **List sessions directory with timestamps:**
    ```bash
@@ -84,6 +84,12 @@ Run **five calls in parallel** — no session file reads at this stage. **Issue 
    ```
    If output is a number, that's the entry count. If `no-repo-memory`, skip the repo memory line.
 
+6. **Read `_active`:**
+   ```bash
+   cat <session_root>/_active 2>/dev/null
+   ```
+   Used to mark the currently active session with `←` in the table.
+
 **If `_index.md` is absent or missing entries for sessions found in call 1:** display the table immediately using only data from calls 1 and 4 — show `—` for any missing creator, created-date, or title columns. **Do not read session files or run git log at listing time.** Add a footer note below the table:
 ```
   (index missing or incomplete — type 'index' to build it)
@@ -100,7 +106,7 @@ Sessions in <slug>
   7 completed — type 'all' to show
 ```
 
-Show `@creator date` in "created" column; show `@updater date` in "last edit" column. When creator == updater AND dates differ, still show both columns. Always show both `in` and `out` counts (show `0` — never omit). When user types `all`, re-display including completed sessions.
+Show `@creator date` in "created" column; show `@updater date` in "last edit" column. When creator == updater AND dates differ, still show both columns. Always show both `in` and `out` counts (show `0` — never omit). When user types `all`, re-display including completed sessions. Mark the active session from call 6 with `←` on that row.
 
 **`filter_mine` active** (user passed `mine` arg): filter index entries where `@created-by` or `@updated-by` matches the current user — no additional file reads needed. Show `[filtered to @<handle>]` on the header.
 
@@ -112,104 +118,114 @@ Omit entirely if `.claude/memory/MEMORY.md` does not exist.
 
 If `session_root` does not exist or is empty, skip this section.
 
-### 3. Present Options
+### 3. Present Routing Block and Wait
 
-**Free-text and search:** Before showing the action picker, the user may type text to filter the sessions table (keywords `mine`, `all`, `backlog`, and `index` are handled directly — see above). If the user uses the "Other" field in the AskUserQuestion picker to type something, try it as a session filter first — match against name, title, handle, or status. Re-display the filtered table with `(filtered by '<query>')` and re-present the picker. If no sessions match, treat the input as free-form intent and proceed naturally.
+Output the routing block and wait for one free-text reply. **Do not use AskUserQuestion.**
 
-**Plugin project** — use the `marketplace.json` loaded in Step 2. List any plugins from `marketplace.json` not already in the sessions table as reference below the table:
+**Free-text and search:** If the user types text that doesn't match a routing action, try it as a session filter first — match against name, title, handle, or status. Re-display the filtered table with `(filtered by '<query>')` and re-show the routing line. If no sessions match, treat the input as free-form intent and proceed naturally. Keywords `mine`, `all`, `backlog`, `index` are handled directly (see Step 2).
+
+**Parse combinations freely.** A single reply may include multiple signals — session number, mode, modifiers, inbox dispositions. Examples: `1`, `resume 1`, `1 planning`, `resume session reviewed work 2`, `start release`, `2 yes 4 skip`. Infer intent; speak up only if genuinely ambiguous.
+
+---
+
+**Plugin project:**
+
+List any plugins from `marketplace.json` not already in the sessions table:
 ```
   · <plugin-name> — <one-phrase description>  (no session yet)
 ```
 
-Then use **AskUserQuestion** (single-select):
-```yaml
-question: "What would you like to do?"
-header: "Action"
-options:
-  - label: "resume"
-    description: "Resume an existing session — you'll pick the number next"
-  - label: "start"
-    description: "Start a session for a plugin — you'll give the name"
-  - label: "new plugin"
-    description: "Create a brand new plugin from scratch"
+If the active session (call 6) is in the table, append inline hints on the following line:
 ```
-"Other" is the free-text path — type anything and Claude will interpret it.
+  + planning / both → change mode  ·  reviewed → mark plugin reviewed  ·  work/done/backlog <n> → inbox items
+```
+(Omit hints that don't apply — e.g. omit the inbox hint if inbox count is 0.)
 
-After selection:
-- **resume** → ask immediately: "Which number?" — use it to load the session in Step 4.
-- **start** → ask immediately: "Which plugin?" — route to new or existing session.
-- **new plugin** → proceed to Step 6 new plugin flow.
-- **Other** → interpret the typed text as intent and proceed naturally.
+Then output the routing line:
+```
+  resume <n>  ·  start <plugin>  ·  new plugin
+```
+
+**Accepted inputs:**
+- Number or session name alone (`1`, `session`) → resume
+- `resume <n>` / `resume <name>` → resume
+- `start <plugin-name>` → start that plugin session (new or existing)
+- `new plugin` → new plugin creation flow
+- `all` → re-display including completed sessions, re-show routing
+- Mode modifier (`planning` / `both` / `coding`) → set mode after loading
+- `reviewed` → mark plugin reviewed after loading
+- `work <n>` / `done <n>` / `backlog <n>` / `keep` → inbox disposition after loading
+- Combinations: `resume 1 planning` / `1 reviewed work 2`
+
+If the user replies with just `start` (no plugin name), ask: "Which plugin?" as the only follow-up.
+
+---
 
 **Work project:**
 
-If `_inbox.md` has logical items, show them compactly after the sessions table and before the options. Flag `[spawn]` entries with ★ — they are ready-to-start handoffs, not just notes:
+If `_inbox.md` has logical items, show compactly before the routing line. Flag `[spawn]` entries with ★:
 ```
 Global inbox (N items):
   ★ [spawn] <label> — from <source>/<session>, ready to start as <type>
   [date] from <source-slug>/<session-name> — <one-line description>
-  ...
 ```
-Full handling (work/done/backlog/keep) happens at Step 5.
+Full inbox handling (work/done/backlog/keep) happens at Step 5.
 
-Use **AskUserQuestion** (single-select) after the inbox summary:
-```yaml
-question: "What would you like to do?"
-header: "Action"
-options:
-  - label: "resume"
-    description: "Resume an existing session — you'll pick the number next"
-  - label: "start story"
-    description: "Start a new story — you'll give a Jira key (BPT2-XXXX) or URL"
-  - label: "start cab"
-    description: "Start a CAB — you'll list the story keys"
+Then output the routing line:
 ```
-"Other" is the free-text path — type anything and Claude will interpret it.
-
-After selection:
-- **resume** → ask immediately: "Which number?" — use it to load the session in Step 4.
-- **start story** → ask immediately: "Story key or URL?"
-- **start cab** → ask immediately: "Story keys? (space-separated, e.g. BPT2-6499 BPT2-6500)"
-- **Other** → interpret the typed text as intent and proceed naturally.
-
-**Personal project** (path under `/c/claude/`):
-
-Same global inbox compact display as above if `_inbox.md` has items.
-
-Use **AskUserQuestion** (single-select):
-```yaml
-question: "What would you like to do?"
-header: "Action"
-options:
-  - label: "resume"
-    description: "Resume an existing session — you'll pick the number next"
-  - label: "start"
-    description: "Start a new personal session — you'll give it a name"
+  resume <n>  ·  start story  ·  start cab
 ```
-"Other" is the free-text path. After: **resume** → "Which number?"; **start** → "Session name?"; **Other** → proceed naturally.
+
+**Accepted inputs:**
+- Number or session name → resume
+- `resume <n>` → resume
+- `start story` → route to new story; if no key in reply, ask "Story key or URL?" as follow-up
+- `start story BPT2-XXXX` → route directly with that key
+- `start cab` → route to new CAB; if no keys in reply, ask "Story keys? (space-separated)" as follow-up
+- `work <n>` on a global inbox `[spawn]` item → route through spawn flow
+
+---
+
+**Personal project:**
+
+If `_inbox.md` has items, show compact summary before the routing line.
+
+Then output the routing line:
+```
+  resume <n>  ·  start
+```
+
+**Accepted inputs:**
+- Number or session name → resume
+- `resume <n>` → resume
+- `start` → route to new personal session; if no name in reply, ask "Session name?" as follow-up
+- `start <name>` → route directly with that name
+
+---
 
 **General / unknown project:**
 
-Same global inbox compact display as above if `_inbox.md` has items.
+If `_inbox.md` has items, show compact summary before the routing line.
 
-Use **AskUserQuestion** (single-select):
-```yaml
-question: "What would you like to do?"
-header: "Action"
-options:
-  - label: "resume"
-    description: "Resume an existing session — you'll pick the number next"
-  - label: "start"
-    description: "Start something new — you'll name it and pick a category"
+Then output the routing line:
 ```
-"Other" is the free-text path. After: **resume** → "Which number?"; **start** → "Name and category?"; **Other** → proceed naturally.
+  resume <n>  ·  start
+```
+
+**Accepted inputs:**
+- Number or session name → resume
+- `resume <n>` → resume
+- `start` → route to new session; if no name/context in reply, ask "Name and what you're working on?" as follow-up
+
+---
 
 ### 4. Handoff to Implementation
 
-Once the user has made their selection and answered any follow-up question (session number, story key, plugin name, etc.), **read `session/commands/start-impl.md` immediately** as the very next action. That file contains Steps 4–9: session load, security check, inbox processing, Teams setup, write state, and routing by type.
+Once the user replies (their reply may bundle session number, story key, plugin name, mode, and modifiers all at once), **read `session/commands/start-impl.md` immediately** as the very next action. That file contains Steps 4–9: session load, security check, inbox processing, Teams setup, write state, and routing by type.
+
+If a follow-up question is needed (story key, plugin name, session name) — ask it first, get the answer, then read start-impl.md.
 
 Do not proceed further until start-impl.md is loaded.
 
 ---
 <!-- Steps 4–9 are in start-impl.md — loaded on demand after user picks -->
-
