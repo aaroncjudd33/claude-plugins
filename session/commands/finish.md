@@ -171,7 +171,7 @@ If the scope value is relative (no leading `/`, `~`, or drive letter), resolve i
 
 Review file paths that were accessed or modified during this conversation (Read, Edit, Write, Bash file operations). Any path that does not begin with the resolved absolute scope is out-of-scope.
 
-If out-of-scope work is found, **hard block** — do not proceed to the Session Summary:
+If out-of-scope work is found, **hard block** — do not proceed to the Session Summary (unlike checkpoint/commit which warn but continue):
 
 ```
 Cross-scope work detected — cannot close this session cleanly.
