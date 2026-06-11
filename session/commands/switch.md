@@ -22,9 +22,9 @@ Run **three calls in parallel:**
    for f in "<session_root>/_inbox"*.md; do echo "=== FILE: $f ==="; cat "$f"; done
    ```
    Count logical items per named inbox file (lines beginning with `[20` or `## `). Also check `_outbox_<name>.md` files for outbox counts.
-3. **Read `<session_root>/_index.md`** — handle, status, and title data for all sessions. If absent, show `@—` for handles, `—` for status and title.
+3. **Read `<session_root>/_index.md`** — handle, status, and title data for all sessions.
 
-No session `.md` file reads at listing time.
+**If `_index.md` is absent or missing entries:** read the affected session `.md` files in parallel to extract `updated-by:`, `created-by:`, `updated:` date, `Status:`, `Title:`. Write `_index.md` now. Show: "`_index.md` built from N session files." Do NOT degrade to `@—` — always build before displaying.
 
 If an argument was passed to the command:
 - Argument is `mine`: set `filter_mine = true`, show filtered list — do not skip to step 3.
@@ -32,14 +32,15 @@ If an argument was passed to the command:
 
 If `filter_mine`, filter the session list to those where `@created-by` or `@updated-by` from `_index.md` matches `@<handle>`.
 
-Otherwise, print the numbered list and wait for selection. Show attribution from `_index.md`; append mine-filter hint if multiple developers are visible:
+Otherwise, print the numbered list and wait for selection. Always include a column header line:
 ```
 Sessions in <slug>   (type 'mine' to filter)
-  [1]  BPT2-6377  @ajudd           in-progress  inbox 1  Jun 09  Shopify Member Agreement Prompt
-  [2]  session    @ajudd→@nivi     paused       inbox 0  Jun 05  —
+  #    name         who              status        in  out  date   title
+  [1]  BPT2-6377    @ajudd           in-progress    1    0  Jun 09  Shopify Member Agreement Prompt
+  [2]  session      @ajudd→@nivi     paused         0    0  Jun 05  —
 ```
 
-Show `@creator→@updater` when they differ, `@creator` alone when same. Sort in-progress/paused first, completed at bottom.
+Show `@creator→@updater` when they differ, `@creator` alone when same. Always show both `in` and `out` counts (show `0` — never omit). Sort in-progress/paused first, completed at bottom.
 
 ### 3. Display Resume Block
 

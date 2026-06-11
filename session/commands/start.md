@@ -73,18 +73,21 @@ Run **four calls in parallel** — no session file reads at this stage:
 
 3. **Read `<marketplace_root>/.claude-plugin/marketplace.json`** (plugin type only — used in Step 3).
 
-4. **Read `<session_root>/_index.md`** (if it exists) — one pipe-delimited line per session: `<name> | @created-by | @updated-by | date | status | title`. If the file does not exist, show `@—` for handles, `—` for status and title. Do NOT read session files — `_index.md` is the only source of display data at listing time.
+4. **Read `<session_root>/_index.md`** (if it exists) — one pipe-delimited line per session: `<name> | @created-by | @updated-by | date | status | title`.
 
-If sessions exist, display in-progress and paused sessions first (sorted by modification date, newest first), completed sessions grouped at the bottom:
+**If `_index.md` is absent or missing entries for sessions found in step 1:** read the affected session `.md` files in parallel (one read per file) to extract: `updated-by:` (use as both created-by and updated-by if `created-by:` is absent), `updated:` frontmatter date, `Status:`, `Title:`. Write `_index.md` now with these entries so subsequent starts are fast. Show: "`_index.md` built from N session files." Do NOT degrade to `@—` — always build the index before displaying.
+
+If sessions exist, display in-progress and paused sessions first (sorted by modification date, newest first), completed sessions grouped at the bottom. Always include a column header line:
 ```
 Sessions in <slug>
-  [1]  BPT2-6377  @ajudd           in-progress  inbox 1  Jun 09  Shopify Member Agreement Prompt
-  [2]  session    @ajudd→@nivi     paused       inbox 0  Jun 05  —
+  #    name         who              status        in  out  date   title
+  [1]  BPT2-6377    @ajudd           in-progress    1    0  Jun 09  Shopify Member Agreement Prompt
+  [2]  session      @ajudd→@nivi     paused         0    0  Jun 05  —
 
   2 completed — type 'all' to show
 ```
 
-Show `@creator` when created-by == updated-by; show `@creator→@updater` when they differ. Show outbox count only when `_outbox_<name>.md` has entries — append `outbox N` after inbox count; omit when 0. If a session has no `_index.md` entry, show `@—` for handles, `—` for status and title. When user types `all`, re-display including completed sessions.
+Show `@creator` when created-by == updated-by; show `@creator→@updater` when they differ. Always show both `in` and `out` counts (show `0` when empty — never omit). When user types `all`, re-display including completed sessions.
 
 **`filter_mine` active** (user passed `mine` arg): filter index entries where `@created-by` or `@updated-by` matches the current user — no additional file reads needed. Show `[filtered to @<handle>]` on the header.
 
