@@ -39,9 +39,11 @@ Sessions in <slug>
   [1]  BPT2-6377    Shopify Member Agreement Pro...   in-progress    1    0   @ajudd Jun 01  @ajudd Jun 09
   [2]  session      —                                in-progress    0    0   @ajudd Jun 01  @nivi  Jun 11
 
-  mine   — show only your sessions
-  all    — include completed sessions
-  <text> — search by name or title
+  <n>              — switch to session by number
+  mine             — show only your sessions
+  all              — include completed sessions
+  status <value>   — filter by in-progress / paused / completed
+  <text>           — search name or title, or describe a filter (e.g. "has inbox", "updated by nivi")
 ```
 
 **Title truncation:** cap title at 32 characters. If longer, truncate and append `...`. If title is `—` (absent), show `—` with no padding.

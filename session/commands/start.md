@@ -124,7 +124,7 @@ If `session_root` does not exist or is empty, skip this section.
 
 Output the routing block and wait for one free-text reply. **Do not use AskUserQuestion.**
 
-**Free-text and search:** If the user types text that doesn't match a routing action, try it as a session filter first — match against name, title, handle, or status. Re-display the filtered table with `(filtered by '<query>')` and re-show the routing line. If no sessions match, treat the input as free-form intent and proceed naturally. Keywords `mine`, `all`, `backlog`, `index` are handled directly (see Step 2).
+**Free-text and search:** If the user types text that doesn't match a routing action, interpret it as a natural-language filter — match against name, title, handle, status, inbox count, or any session field. Accept plain descriptions like `has inbox`, `updated by nivi`, `created by me`, `paused`, `completed this week`. Re-display the filtered table with `(filtered by '<query>')` and re-show the routing block. If no sessions match and the text looks like intent rather than a filter, proceed naturally. Keywords `mine`, `all`, `backlog`, `index`, `status` are handled directly (see Step 2).
 
 **Parse combinations freely.** A single reply may include multiple signals — session number, mode, modifiers, inbox dispositions. Examples: `1`, `resume 1`, `1 planning`, `resume session reviewed work 2`, `start release`, `2 yes 4 skip`. Infer intent; speak up only if genuinely ambiguous.
 
@@ -143,13 +143,16 @@ If the active session (call 6) is in the table, append inline hints on the follo
 ```
 (Omit hints that don't apply — e.g. omit the inbox hint if inbox count is 0.)
 
-Then output the routing line:
+Then output the routing block:
 ```
-  resume <n>  ·  start <plugin>  ·  new plugin
+  resume <n>       — resume by number
+  start <plugin>   — start a session for a plugin
+  new plugin       — create a brand new plugin
 
-  mine   — show only your sessions
-  all    — include completed sessions
-  <text> — search by name or title
+  mine             — show only your sessions
+  all              — include completed sessions
+  status <value>   — filter by in-progress / paused / completed
+  <text>           — search name or title, or describe a filter (e.g. "has inbox", "updated by nivi")
 ```
 
 **Accepted inputs:**
@@ -157,11 +160,14 @@ Then output the routing line:
 - `resume <n>` / `resume <name>` → resume
 - `start <plugin-name>` → start that plugin session (new or existing)
 - `new plugin` → new plugin creation flow
+- `mine` → filter table to sessions where @created-by or @updated-by matches current user; re-display and re-show routing
 - `all` → re-display including completed sessions, re-show routing
+- `status <value>` → filter table to sessions matching that status; re-display and re-show routing
 - Mode modifier (`planning` / `both` / `coding`) → set mode after loading
 - `reviewed` → mark plugin reviewed after loading
 - `work <n>` / `done <n>` / `backlog <n>` / `keep` → inbox disposition after loading
 - Combinations: `resume 1 planning` / `1 reviewed work 2`
+- Any other text → natural-language filter; match against any field; re-display with `(filtered by '<query>')` and re-show routing
 
 If the user replies with just `start` (no plugin name), ask: "Which plugin?" as the only follow-up.
 
@@ -177,13 +183,16 @@ Global inbox (N items):
 ```
 Full inbox handling (work/done/backlog/keep) happens at Step 5.
 
-Then output the routing line:
+Then output the routing block:
 ```
-  resume <n>  ·  start story  ·  start cab
+  resume <n>       — resume by number (e.g. resume 2)
+  start story      — start a new story — you'll give a key or URL
+  start cab        — start a new CAB — you'll give story keys
 
-  mine   — show only your sessions
-  all    — include completed sessions
-  <text> — search by name or title
+  mine             — show only your sessions
+  all              — include completed sessions
+  status <value>   — filter by in-progress / paused / completed
+  <text>           — search name or title, or describe a filter (e.g. "has inbox", "updated by nivi")
 ```
 
 **Accepted inputs:**
@@ -193,9 +202,10 @@ Then output the routing line:
 - `start story BPT2-XXXX` → route directly with that key
 - `start cab` → route to new CAB; if no keys in reply, ask "Story keys? (space-separated)" as follow-up
 - `work <n>` on a global inbox `[spawn]` item → route through spawn flow
-- `mine` → filter table to sessions where @created-by or @updated-by matches current user; re-display filtered table and re-show routing
+- `mine` → filter table to sessions where @created-by or @updated-by matches current user; re-display and re-show routing
 - `all` → re-display including completed sessions and re-show routing
-- Any other text → treat as search filter; match against name, title, handle, or status; re-display with `(filtered by '<query>')` and re-show routing
+- `status <value>` → filter table to sessions matching that status; re-display and re-show routing
+- Any other text → natural-language filter; match against name, title, handle, status, inbox count, or any field; re-display with `(filtered by '<query>')` and re-show routing
 
 ---
 
@@ -203,13 +213,15 @@ Then output the routing line:
 
 If `_inbox.md` has items, show compact summary before the routing line.
 
-Then output the routing line:
+Then output the routing block:
 ```
-  resume <n>  ·  start
+  resume <n>       — resume by number
+  start            — start a new session — you'll give it a name
 
-  mine   — show only your sessions
-  all    — include completed sessions
-  <text> — search by name or title
+  mine             — show only your sessions
+  all              — include completed sessions
+  status <value>   — filter by in-progress / paused / completed
+  <text>           — search name or title, or describe a filter (e.g. "has inbox", "updated by nivi")
 ```
 
 **Accepted inputs:**
@@ -219,7 +231,8 @@ Then output the routing line:
 - `start <name>` → route directly with that name
 - `mine` → filter table to sessions where @created-by or @updated-by matches current user; re-display and re-show routing
 - `all` → re-display including completed sessions and re-show routing
-- Any other text → treat as search filter; match against name, title, handle, or status; re-display with `(filtered by '<query>')` and re-show routing
+- `status <value>` → filter table to sessions matching that status; re-display and re-show routing
+- Any other text → natural-language filter; match against name, title, handle, status, inbox count, or any field; re-display with `(filtered by '<query>')` and re-show routing
 
 ---
 
@@ -227,13 +240,15 @@ Then output the routing line:
 
 If `_inbox.md` has items, show compact summary before the routing line.
 
-Then output the routing line:
+Then output the routing block:
 ```
-  resume <n>  ·  start
+  resume <n>       — resume by number
+  start            — start a new session — you'll give a name and context
 
-  mine   — show only your sessions
-  all    — include completed sessions
-  <text> — search by name or title
+  mine             — show only your sessions
+  all              — include completed sessions
+  status <value>   — filter by in-progress / paused / completed
+  <text>           — search name or title, or describe a filter (e.g. "has inbox", "updated by nivi")
 ```
 
 **Accepted inputs:**
@@ -242,7 +257,8 @@ Then output the routing line:
 - `start` → route to new session; if no name/context in reply, ask "Name and what you're working on?" as follow-up
 - `mine` → filter table to sessions where @created-by or @updated-by matches current user; re-display and re-show routing
 - `all` → re-display including completed sessions and re-show routing
-- Any other text → treat as search filter; match against name, title, handle, or status; re-display with `(filtered by '<query>')` and re-show routing
+- `status <value>` → filter table to sessions matching that status; re-display and re-show routing
+- Any other text → natural-language filter; match against name, title, handle, status, inbox count, or any field; re-display with `(filtered by '<query>')` and re-show routing
 
 ---
 
