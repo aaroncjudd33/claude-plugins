@@ -111,17 +111,21 @@ Separate each result block with a blank line.
 
 If one or more **session files** matched:
 
-- If exactly one session file matched: offer directly —
+- If exactly one session file matched: use **AskUserQuestion** (SwitchOfferPrompt — see prompt-patterns.md):
+  ```yaml
+  question: "Switch to '<name>'?"
+  header: "Switch"
+  options:
+    - label: "Switch"
+      description: "Run /session:switch <name> now"
+    - label: "No"
+      description: "Stay in current session — results shown above"
   ```
-  Switch to "<name>"? (y/n)
-  ```
-  If yes: run `/session:switch <name>`.
+  If **Switch**: run `/session:switch <name>`.
 
-- If multiple session files matched: list them numbered and ask —
-  ```
-  Switch to one of these? (1 / 2 / 3 / n)
-  ```
-  If a number is chosen: run `/session:switch <name>`.
+- If 2–4 session files matched: use **AskUserQuestion** with each name as an option plus **None** as the last option. If a session is chosen: run `/session:switch <name>`.
+
+- If > 4 session files matched: display them numbered and ask as plain text: "Switch to one? (number or 'n')"
 
 If only worklog entries matched (no session files): no switch offer — just show results.
 

@@ -18,13 +18,17 @@ Run `pwd` and extract the repo slug. Resolve `session_root` using Path Resolutio
 Scan `~/.claude/memory/sessions/<slug>/` for any files matching `_resume_*`. Each file represents a session waiting to be resumed after a `/clear`.
 
 - **One found:** proceed automatically — no prompt needed.
-- **Multiple found:** show a numbered list and ask which to resume:
+- **Multiple found (≤ 4):** use **AskUserQuestion** (SessionPickerPrompt — see prompt-patterns.md):
+  ```yaml
+  question: "Multiple sessions waiting — which to resume?"
+  header: "Session"
+  options:
+    - label: "<session-name-1>"
+      description: "Last resume marker for this session"
+    - label: "<session-name-2>"
+      description: "..."
   ```
-  Multiple sessions waiting:
-    [1] <session-name-1>
-    [2] <session-name-2>
-  Which? (enter number)
-  ```
+- **Multiple found (> 4):** show a numbered list and ask as plain text: "Which session? (number)"
 - **None found:** fall back to `_active`. If `_active` exists, resume that session with a note: "No resume marker found — resuming last active session (`<name>`)." If neither exists, ask: "Which session to resume? (name or 'start' to run /session:start instead)"
 
 ### 2. Load Session File
@@ -64,12 +68,20 @@ Show a compact summary by default. If the user types `context`, display the full
 
 Delete the `_resume_<session-name>` marker file — it has been consumed.
 
-If `_context_<session-name>.md` was loaded, ask:
+If `_context_<session-name>.md` was loaded, use **AskUserQuestion** (ConfirmPrompt — see prompt-patterns.md):
+
+```yaml
+question: "Archive the pre-clear context file?"
+header: "Context file"
+options:
+  - label: "Yes, archive it"
+    description: "Delete _context_<name>.md — it's loaded into context and no longer needed"
+  - label: "Keep for reference"
+    description: "Leave it in place for this session"
 ```
-Archive the pre-clear context file? (Yes / Keep for reference)
-```
-- **Yes:** delete the file — it's been loaded into context, no longer needed.
-- **Keep:** leave it in place for this session; it will not be shown again automatically.
+
+- **Yes, archive it:** delete the file — it's been loaded into context, no longer needed.
+- **Keep for reference:** leave it in place for this session; it will not be shown again automatically.
 
 Update `Status` field in `<session_root>/<session-name>.md` back to `in-progress`.
 

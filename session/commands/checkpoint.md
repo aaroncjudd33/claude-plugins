@@ -70,12 +70,18 @@ Save what's missing. Report: "Saved: [list]" or "Memory: nothing new to save."
 
 ### 3a. yl-cdk Pattern Check *(story/cab only)*
 
-If a commit was just made or is about to be made, prompt:
+If a commit was just made or is about to be made, use **AskUserQuestion** (YlCdkCheckPrompt — see prompt-patterns.md):
 
-```
-yl-cdk check:
-  Were the yl-cdk-migration and yl-cdk-monitoring skills used to verify DynamoDB/CDK design patterns?
-  Yes / Not applicable / Remind me
+```yaml
+question: "Were the yl-cdk-migration and yl-cdk-monitoring skills used to verify DynamoDB/CDK design patterns?"
+header: "yl-cdk check"
+options:
+  - label: "Yes"
+    description: "Skills were run — proceed"
+  - label: "Not applicable"
+    description: "No CDK or DynamoDB changes this session"
+  - label: "Remind me"
+    description: "Surface a reminder but continue without blocking"
 ```
 
 - **Yes / Not applicable:** proceed silently.
@@ -92,22 +98,30 @@ If the scope value is relative (no leading `/`, `~`, or drive letter), resolve i
 
 Review file paths accessed or modified during this conversation. Any path not beginning with the resolved absolute scope is out-of-scope.
 
-If out-of-scope work is found, warn but do not block:
+If out-of-scope work is found, warn but do not block. Display the out-of-scope items, then use **AskUserQuestion** (ScopeActionPrompt — see prompt-patterns.md):
 
 ```
 Out-of-scope work detected — will be excluded from this checkpoint.
 
   Out-of-scope:
     - <file path>  (belongs in: <target slug> / <target session>)
-
-route    send to target inbox via /session:inbox
-note     acknowledge only — exclude from record, no handoff
-skip     continue without noting
 ```
 
-- **route:** Derive the target slug and session name from the file path, then invoke the `/session:inbox` flow with the out-of-scope item pre-populated as the content and target. The routing is never silent — the user sees and confirms it.
-- **note:** Note the excluded work in the session summary's Open items but do not write to any inbox.
-- **skip:** Continue without noting.
+```yaml
+question: "What would you like to do with the out-of-scope work?"
+header: "Scope"
+options:
+  - label: "Route"
+    description: "Send to target inbox — work is formally handed off"
+  - label: "Note"
+    description: "Acknowledge only — excluded from this record, no handoff"
+  - label: "Skip"
+    description: "Continue without noting"
+```
+
+- **Route:** Derive the target slug and session name from the file path, then invoke the `/session:inbox` flow with the out-of-scope item pre-populated as the content and target. The routing is never silent — the user sees and confirms it.
+- **Note:** Note the excluded work in the session summary's Open items but do not write to any inbox.
+- **Skip:** Continue without noting.
 
 Continue with the checkpoint for in-scope work only.
 
@@ -138,13 +152,19 @@ Before posting, check if the most recent Jira comment is from today and already 
 
 ### 5b. Epic Update *(story/cab only)*
 
-If the session file has an `Epic` field, read `~/.claude/memory/epics/<key>.md` and prompt:
+If the session file has an `Epic` field, read `~/.claude/memory/epics/<key>.md` and use **AskUserQuestion** (ConfirmPrompt — see prompt-patterns.md):
 
+```yaml
+question: "Epic update (<key>) — any cross-story decisions, resolved questions, or blockers to record?"
+header: "Epic update"
+options:
+  - label: "Yes"
+    description: "Describe what to record — you'll provide the content next"
+  - label: "No"
+    description: "Skip — no epic updates this checkpoint"
 ```
-Epic update (<key>):
-  Any cross-story decisions, resolved questions, or blockers to record?
-  Yes — describe / No
-```
+
+After **Yes** → ask: "What should be recorded? (decisions, resolved questions, or blockers)"
 
 - **Yes:** append to the epic file. For new decisions, add under `## Architecture Decisions` as `### [DECIDED] <title>` with a description and `- Source: <session-name> <date>`. For resolved Open Questions, move the row from the Open Questions table to `## Resolved` with the answer and `[YYYY-MM-DD <session-name>]` note.
 - **No:** skip silently.
@@ -153,24 +173,36 @@ Epic update (<key>):
 
 ### 6. Session Summary
 
-**Plugin type only — if `plugin_reviewed` is missing, a legacy `yes`/`no` value, or its `MAJOR.MINOR` < current plugin.json version's:** before writing, prompt:
+**Plugin type only — if `plugin_reviewed` is missing, a legacy `yes`/`no` value, or its `MAJOR.MINOR` < current plugin.json version's:** before writing, use **AskUserQuestion** (PluginReviewedPrompt — see prompt-patterns.md):
+
+```yaml
+question: "Plugin reviewed this session?"
+header: "Review"
+options:
+  - label: "Yes — reviewed"
+    description: "I ran the code-reviewer — mark as reviewed for this version"
+  - label: "No"
+    description: "Skip — reminder will fire at next session start"
 ```
-Plugin reviewed this session? (Yes — I ran the code-reviewer / No)
-```
-- **Yes:** set `plugin_reviewed: <current-plugin-version>` in the session file.
+
+- **Yes — reviewed:** set `plugin_reviewed: <current-plugin-version>` in the session file.
 - **No:** leave as-is — reminder fires at next session start if minor version still differs.
 
-Before writing, read the existing `Open items` from the session file. If there are any **non-`[inbox]`** items, display them and ask:
+Before writing, read the existing `Open items` from the session file. If there are any **non-`[inbox]`** items, display them as a numbered list, then use **AskUserQuestion** (MarkDonePrompt — see prompt-patterns.md):
 
+```yaml
+question: "Open items — mark any complete?"
+header: "Open items"
+options:
+  - label: "Done (all)"
+    description: "Mark all items complete and remove from list"
+  - label: "Done (select)"
+    description: "Mark specific items done — you'll pick the numbers next"
+  - label: "Skip"
+    description: "None done yet — keep all open"
 ```
-Open items — any complete?
-  1  <item>
-  2  <item>
 
-done <n>    mark complete — remove from list
-done all    mark all complete
-skip        none done yet
-```
+After **Done (select)** → ask: "Which items? (number or comma list, e.g. 1, 3)"
 
 Remove confirmed-complete items from the Open items list before writing.
 
@@ -237,17 +269,27 @@ For **all other sessions**: read `<session_root>/_inbox.md`.
 
 **Step B — Legacy [inbox] items:** Read session `Open items`. Any `[inbox]` tag that has no corresponding in-progress entry in the inbox file was picked up under the previous system and already archived — include it as a legacy item.
 
-If either category has items, display them together and ask:
+If either category has items, display them as a numbered list, then use **AskUserQuestion** (InProgressInboxPrompt — see prompt-patterns.md):
 
 ```
-In-progress inbox items — mark any done?
+In-progress inbox items:
   1  [in-progress since YYYY-MM-DD] <description from ## header>
   2  [inbox legacy] <item text from Open items>
-
-done <n>    mark done — archive and remove
-done all    mark all done
-skip        keep all open
 ```
+
+```yaml
+question: "Mark any in-progress items done?"
+header: "In-progress"
+options:
+  - label: "Done (all)"
+    description: "Mark all complete, archive, and remove from Open items"
+  - label: "Done (select)"
+    description: "Mark specific items done — you'll pick the numbers next"
+  - label: "Keep"
+    description: "Keep all in-progress — carry to next session"
+```
+
+After **Done (select)** → ask: "Which items? (number or comma list, e.g. 1, 3)"
 
 For each **inbox-file item** (Step A) marked done:
 1. Strip the `[in-progress — ...]` line from the entry.
@@ -262,19 +304,29 @@ If no in-progress or legacy items exist, skip silently.
 
 ### 7a. Pending Inbox Sweep
 
-After handling in-progress items, check if any remaining pending items in the inbox were addressed this session without being formally picked up:
+After handling in-progress items, check if any remaining pending items in the inbox were addressed this session without being formally picked up. Display the numbered pending items, then use **AskUserQuestion** (PendingSweepPrompt — see prompt-patterns.md):
 
 ```
-Inbox — any addressed this session outside in-progress tracking?
+Inbox pending items:
   1  [date] from <source> — <description>
-
-done <n>     archive as complete
-picked <n>   mark as in-progress — carries to next session
-none / skip  nothing addressed
 ```
 
-- **done <n>:** archive with `[DONE YYYY-MM-DD]` stamp, remove from inbox. Rewrite inbox.
-- **picked <n>:** insert `[in-progress — <session-name>, YYYY-MM-DD]` in the inbox entry after the `## [date]...` header, add `[inbox] <item>` to Open items — will be handled at next checkpoint or finish.
+```yaml
+question: "Any inbox items addressed this session outside in-progress tracking?"
+header: "Inbox sweep"
+options:
+  - label: "Done (select)"
+    description: "Archive as complete — you'll pick the numbers next"
+  - label: "Picked up (select)"
+    description: "Mark in-progress — you'll pick the numbers next"
+  - label: "Nothing"
+    description: "Nothing addressed — skip"
+```
+
+After **Done (select)** or **Picked up (select)** → ask: "Which items? (number or comma list)"
+
+- **Done (select):** archive with `[DONE YYYY-MM-DD]` stamp, remove from inbox. Rewrite inbox.
+- **Picked up (select):** insert `[in-progress — <session-name>, YYYY-MM-DD]` in the inbox entry after the `## [date]...` header, add `[inbox] <item>` to Open items — will be handled at next checkpoint or finish.
 
 If no pending items remain, skip silently.
 

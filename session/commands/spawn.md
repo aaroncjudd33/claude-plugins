@@ -19,21 +19,46 @@ Run `pwd` and extract the repo slug (last path component). Resolve `session_root
 
 ### 2. Determine Label and Type
 
-If the user provided a label (e.g. `/session:spawn shopify-fix`), use it. Otherwise ask:
+If the user provided a label (e.g. `/session:spawn shopify-fix`), use it. Otherwise ask: "Short label for this spawn? (e.g. shopify-fix, enrollment-investigation)"
 
+Then use **AskUserQuestion** (SpawnTypePrompt — see prompt-patterns.md) for the session type:
+
+```yaml
+question: "What type of work is this spawn?"
+header: "Type"
+options:
+  - label: "story"
+    description: "Jira story — BPT2-XXXX work in a work repo"
+  - label: "plugin"
+    description: "Plugin development in ajudd-claude-plugins"
+  - label: "personal"
+    description: "Personal project under ~/claude/"
+  - label: "general"
+    description: "General / research / other"
 ```
-Short label for this spawn? (e.g. shopify-fix, enrollment-investigation)
-What type of work? (story / cab / plugin / personal / general)
-```
+
+"Other" → free-text; also handles `cab` (two or more stories deploying together).
 
 No Jira story, branch, or CAB needs to exist yet — those are created at pickup time via `/session:start`.
 
 ### 3. Collect Handoff Context
 
-Ask: "What context should the new session inherit? (or 'auto' to derive from this conversation)"
+Use **AskUserQuestion** (ContextSourcePrompt — see prompt-patterns.md):
 
-- **auto:** Derive a handoff summary from the current conversation — key findings, decisions made, rejected options, open questions, concrete next step. Cap at ~10 bullets.
-- **Manual:** User provides a description; use as-is.
+```yaml
+question: "What context should the new session inherit?"
+header: "Context"
+options:
+  - label: "Auto-derive"
+    description: "Summarize key findings and decisions from this conversation"
+  - label: "I'll describe it"
+    description: "Provide the context manually — you'll enter it next"
+```
+
+After **I'll describe it** → ask: "Describe the context the spawned session should inherit:"
+
+- **Auto-derive:** Derive a handoff summary from the current conversation — key findings, decisions made, rejected options, open questions, concrete next step. Cap at ~10 bullets.
+- **I'll describe it:** Use the user's description as-is.
 
 ### 4. Write Spawn Entry to Inbox
 

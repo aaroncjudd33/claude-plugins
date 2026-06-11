@@ -70,12 +70,18 @@ Save what's missing. Report: "Saved: [list]" or "Memory: nothing new to save."
 
 ### 4. Jira Update
 
-**story/cab only — yl-cdk pattern check before updating Jira:**
+**story/cab only — yl-cdk pattern check before updating Jira.** Use **AskUserQuestion** (YlCdkCheckPrompt — see prompt-patterns.md):
 
-```
-yl-cdk check:
-  Were the yl-cdk-migration and yl-cdk-monitoring skills used to verify DynamoDB/CDK design patterns?
-  Yes / Not applicable / Remind me
+```yaml
+question: "Were the yl-cdk-migration and yl-cdk-monitoring skills used to verify DynamoDB/CDK design patterns?"
+header: "yl-cdk check"
+options:
+  - label: "Yes"
+    description: "Skills were run — proceed"
+  - label: "Not applicable"
+    description: "No CDK or DynamoDB changes this session"
+  - label: "Remind me"
+    description: "Surface a reminder but continue without blocking"
 ```
 
 - **Yes / Not applicable:** proceed silently.
@@ -85,13 +91,30 @@ yl-cdk check:
 **story:**
 - Is the story status current? Transition if needed.
 - Post a closing Jira comment: what was accomplished this session, what's next (testing, CAB, deployment). Business-readable — no file paths or class names. Check the most recent existing comment first; only post if it doesn't already cover this session's work.
-- **Epic memory update:** if the session file has an `Epic` field AND the story was just transitioned to Ready For Test, Approved for Release, or Done this session, prompt:
+- **Epic memory update:** if the session file has an `Epic` field AND the story was just transitioned to Ready For Test, Approved for Release, or Done this session, use **AskUserQuestion** (ConfirmPrompt — see prompt-patterns.md):
+
+  ```yaml
+  question: "Epic update (<key>) — mark this story complete in the Story Map and record final implementation notes?"
+  header: "Epic update"
+  options:
+    - label: "Yes"
+      description: "Update Story Map and record decisions/gotchas in epic memory"
+    - label: "Skip"
+      description: "No epic updates — continue"
   ```
-  Epic update — <key>
-    Mark this story complete in the Story Map and record final implementation notes?
-    Yes / Skip
-  ```
-  - **Yes:** read `~/.claude/memory/epics/<key>.md`. Update the Story Map row for this story (set status to Done/RFT with today's date). Append any final decisions or gotchas under the appropriate section. Save the file. Then: "Push epic update to linked Confluence architecture page? (Yes / Skip)" — only if the epic file contains a Confluence page link.
+
+  - **Yes:** read `~/.claude/memory/epics/<key>.md`. Update the Story Map row for this story (set status to Done/RFT with today's date). Append any final decisions or gotchas under the appropriate section. Save the file. Then use **AskUserQuestion** (only if the epic file contains a Confluence page link):
+
+    ```yaml
+    question: "Push epic update to linked Confluence architecture page?"
+    header: "Confluence"
+    options:
+      - label: "Yes"
+        description: "Sync the epic memory to the linked Confluence page now"
+      - label: "Skip"
+        description: "Skip Confluence sync"
+    ```
+
   - **Skip:** no changes to the epic file.
   - If the story did not move to a completion status this session, or the session has no `Epic` field, skip silently — no prompt.
 
@@ -99,24 +122,44 @@ yl-cdk check:
 - Are the CAB card fields up to date?
 - Is the release branch reflected correctly?
 - Post a closing comment to each story in `Related stories` (same format as story above).
-- **Epic validation:** for each story in `Related stories`, check if that story's session file has an `Epic` field and whether the epic's Story Map still shows the story as incomplete. If any are stale, prompt: "Epic memory for <key> may be out of date for <story> — update now? (Yes / Skip)"
+- **Epic validation:** for each story in `Related stories`, check if that story's session file has an `Epic` field and whether the epic's Story Map still shows the story as incomplete. If any are stale, use **AskUserQuestion**: `"Epic memory for <key> may be out of date for <story> — update now?"` with options **Yes** / **Skip**.
 
 **plugin / personal / general:** Skip (including the yl-cdk check above).
 
 ### 5. Teams Update
 
-**All types** — if `teams_chat` is not `none`:
-- Prompt: "Post a closing update to [teams_chat]?"
-- If yes: read `~/.claude/plugins/marketplaces/<pluginMarketplaceName>/comms/skills/comms/references/teams-html-guide.md` (derive `pluginMarketplaceName` from user-config), draft using the Standard Message Template, preview, wait for confirmation before sending
+**All types** — if `teams_chat` is not `none`, use **AskUserQuestion** (ConfirmPrompt — see prompt-patterns.md):
+
+```yaml
+question: "Post a closing update to [teams_chat]?"
+header: "Teams"
+options:
+  - label: "Yes"
+    description: "Draft and preview a closing update — you'll confirm before it sends"
+  - label: "Skip"
+    description: "Skip Teams update"
+```
+
+- If **Yes:** read `~/.claude/plugins/marketplaces/<pluginMarketplaceName>/comms/skills/comms/references/teams-html-guide.md` (derive `pluginMarketplaceName` from user-config), draft using the Standard Message Template, preview, wait for confirmation before sending.
 
 Story and cab: prompt automatically.
 Plugin, personal, and general: skip unless the user explicitly asks.
 
 ### 6. Confluence
 
-**story/cab only:** If a Confluence page was explicitly created and linked for this story, prompt: "Update the Confluence page? (Yes / Skip)"
+**story/cab only:** If a Confluence page was explicitly created and linked for this story, use **AskUserQuestion** (ConfirmPrompt — see prompt-patterns.md):
 
-If yes, update it as a clean implementation record:
+```yaml
+question: "Update the Confluence page for this story?"
+header: "Confluence"
+options:
+  - label: "Yes"
+    description: "Update as a clean implementation record — planning debris removed"
+  - label: "Skip"
+    description: "Skip Confluence update"
+```
+
+If **Yes**, update it as a clean implementation record:
 - What was built and how it works
 - Key decisions made and why
 - Gotchas and edge cases discovered
@@ -134,10 +177,29 @@ Read `paths.jiraStoriesDir` from `~/.claude/plugins/user-config.json`. If the fi
 
 Derive the doc path: `<jiraStoriesDir>/<jiraProject>/<session-name>-<slug>.md` where `<jiraProject>` is the Jira project key (e.g. `BPT2`) and `<slug>` is a short kebab-case description of the story (derive from the session Title field, or use the session name alone if Title is absent).
 
-Check if the file exists:
+Check if the file exists and use **AskUserQuestion** (ConfirmPrompt — see prompt-patterns.md):
 
-- **Exists:** prompt "Story doc exists — update it with today's changes? (Yes / Skip)"
-- **Does not exist:** prompt "No story doc found — create one? (Yes / Skip)"
+- **Exists:**
+  ```yaml
+  question: "Story doc exists — update it with today's changes?"
+  header: "Story doc"
+  options:
+    - label: "Yes"
+      description: "Update the doc with today's implementation details"
+    - label: "Skip"
+      description: "Leave the existing doc as-is"
+  ```
+
+- **Does not exist:**
+  ```yaml
+  question: "No story doc found — create one?"
+  header: "Story doc"
+  options:
+    - label: "Yes"
+      description: "Create a new personal reference doc for this story"
+    - label: "Skip"
+      description: "Skip — no story doc needed"
+  ```
 
 If **Yes:** write or update the file with:
 - Root cause / problem being solved
@@ -158,8 +220,17 @@ Check if `<voPlaywrightTestsDir>/.browser-ws.txt` exists.
   1. Read `<voPlaywrightTestsDir>/.browser-owner.txt` if present
   2. Compute current owner: `<slug>/<session-name>` (slug = last component of `pwd`; session name = the `<name>` resolved in Step 0)
   3. If owner file exists AND does not match current session → log "Browser running (owned by `<owner>`) — skipping close" and skip
-  4. If owner matches OR no owner file exists → prompt: "Browser still running on port [N] — stop it? (or run `/e2e:stop`)"
-     - If yes: run `npm run browser:stop` from `<voPlaywrightTestsDir>`, then delete `.browser-ws.txt` and `.browser-owner.txt`
+  4. If owner matches OR no owner file exists → use **AskUserQuestion** (ConfirmPrompt — see prompt-patterns.md):
+     ```yaml
+     question: "Browser still running on port [N] — stop it?"
+     header: "Browser"
+     options:
+       - label: "Stop it"
+         description: "Run browser:stop and clean up the socket file"
+       - label: "Skip"
+         description: "Leave it running — I'll stop it manually or via /e2e:stop"
+     ```
+     - If **Stop it:** run `npm run browser:stop` from `<voPlaywrightTestsDir>`, then delete `.browser-ws.txt` and `.browser-owner.txt`.
 
 **All other types:** Skip.
 
@@ -171,22 +242,30 @@ If the scope value is relative (no leading `/`, `~`, or drive letter), resolve i
 
 Review file paths that were accessed or modified during this conversation (Read, Edit, Write, Bash file operations). Any path that does not begin with the resolved absolute scope is out-of-scope.
 
-If out-of-scope work is found, **hard block** — do not proceed to the Session Summary (unlike checkpoint/commit which warn but continue):
+If out-of-scope work is found, **hard block** — do not proceed to the Session Summary (unlike checkpoint/commit which warn but continue). Display the out-of-scope items, then use **AskUserQuestion** (ScopeActionCancelPrompt — see prompt-patterns.md):
 
 ```
 Cross-scope work detected — cannot close this session cleanly.
 
   Out-of-scope changes:
     - <file path>  (belongs in: <target slug> / <target session>)
-
-route     route to target inbox, exclude from this record (via /session:inbox)
-note      acknowledge as out-of-scope, exclude — no handoff
-cancel    stop finish — I'll handle it manually
 ```
 
-- **route:** Derive the target slug and session name from the file path, then invoke the `/session:inbox` flow with the out-of-scope item pre-populated. The routing is never silent — user sees and confirms before the inbox write happens.
-- **note:** Note the excluded work in the session summary's Open items field. No inbox write.
-- **cancel:** Stop. Do not write the Session Summary or Deactivate the session.
+```yaml
+question: "What would you like to do with the out-of-scope work?"
+header: "Scope"
+options:
+  - label: "Route"
+    description: "Send to target inbox — work is formally handed off"
+  - label: "Note"
+    description: "Acknowledge as out-of-scope, exclude — no handoff"
+  - label: "Cancel finish"
+    description: "Stop — I'll handle the out-of-scope work manually before closing"
+```
+
+- **Route:** Derive the target slug and session name from the file path, then invoke the `/session:inbox` flow with the out-of-scope item pre-populated. The routing is never silent — user sees and confirms before the inbox write happens.
+- **Note:** Note the excluded work in the session summary's Open items field. No inbox write.
+- **Cancel finish:** Stop. Do not write the Session Summary or Deactivate the session.
 
 Only proceed to step 9 once all flagged items are resolved (or none were found).
 
@@ -199,17 +278,27 @@ For **all other sessions**: read `<session_root>/_inbox.md`.
 
 **Step B — Legacy [inbox] items:** Read session `Open items`. Any `[inbox]` tag with no corresponding in-progress entry in the inbox file was picked up under the previous system and already archived — include it as a legacy item.
 
-If either category has items, display them and ask:
+If either category has items, display them as a numbered list, then use **AskUserQuestion** (InProgressInboxPrompt — see prompt-patterns.md):
 
 ```
-In-progress inbox items — mark any done before closing?
+In-progress inbox items:
   1  [in-progress since YYYY-MM-DD] <description from ## header>
   2  [inbox legacy] <item text from Open items>
-
-done <n>    mark done — archive and remove
-done all    mark all done
-keep        keep open — carry to next session
 ```
+
+```yaml
+question: "Mark any in-progress items done before closing?"
+header: "In-progress"
+options:
+  - label: "Done (all)"
+    description: "Mark all complete, archive, and remove from Open items"
+  - label: "Done (select)"
+    description: "Mark specific items done — you'll pick the numbers next"
+  - label: "Keep"
+    description: "Keep all in-progress — carry to next session"
+```
+
+After **Done (select)** → ask: "Which items? (number or comma list, e.g. 1, 3)"
 
 For each **inbox-file item** (Step A) marked done:
 1. Strip the `[in-progress — ...]` line from the entry.
@@ -220,25 +309,35 @@ For each **inbox-file item** (Step A) marked done:
 For each **legacy item** (Step B) marked done:
 - Remove the `[inbox] <item>` from session `Open items`. No archive file changes needed.
 
-Items marked **Keep open** remain in inbox as in-progress and carry to the next session's "Resuming in-progress" block at session:start.
+Items marked **Keep** remain in inbox as in-progress and carry to the next session's "Resuming in-progress" block at session:start.
 
 If no in-progress or legacy items, skip silently.
 
 ### 9a. Pending Inbox Sweep
 
-After handling in-progress items, surface any remaining pending inbox items addressed this session:
+After handling in-progress items, surface any remaining pending inbox items addressed this session. Display them as a numbered list, then use **AskUserQuestion** (PendingSweepPrompt — see prompt-patterns.md):
 
 ```
-Inbox — any addressed this session outside in-progress tracking?
+Inbox pending items:
   1  [date] from <source> — <description>
-
-done <n>     archive as complete
-picked <n>   mark as in-progress — carries to next session
-none / skip  nothing addressed
 ```
 
-- **done <n>:** archive with `[DONE YYYY-MM-DD]`, remove from inbox. Rewrite inbox.
-- **picked <n>:** insert `[in-progress — <session-name>, YYYY-MM-DD]` in the entry after `## [date]...` header, add `[inbox] <item>` to Open items — will show in "Resuming in-progress" at next start.
+```yaml
+question: "Any inbox items addressed this session outside in-progress tracking?"
+header: "Inbox sweep"
+options:
+  - label: "Done (select)"
+    description: "Archive as complete — you'll pick the numbers next"
+  - label: "Picked up (select)"
+    description: "Mark in-progress — you'll pick the numbers next"
+  - label: "Nothing"
+    description: "Nothing addressed — skip"
+```
+
+After **Done (select)** or **Picked up (select)** → ask: "Which items? (number or comma list)"
+
+- **Done (select):** archive with `[DONE YYYY-MM-DD]`, remove from inbox. Rewrite inbox.
+- **Picked up (select):** insert `[in-progress — <session-name>, YYYY-MM-DD]` in the entry after `## [date]...` header, add `[inbox] <item>` to Open items — will show in "Resuming in-progress" at next start.
 
 If no pending items, skip silently.
 
@@ -258,24 +357,36 @@ This entry becomes the value for `Last worked on` in the session file.
 
 ### 11. Session Summary
 
-**Plugin type only — if `plugin_reviewed` is missing, a legacy `yes`/`no` value, or its `MAJOR.MINOR` < current plugin.json version's:** before writing, prompt:
+**Plugin type only — if `plugin_reviewed` is missing, a legacy `yes`/`no` value, or its `MAJOR.MINOR` < current plugin.json version's:** before writing, use **AskUserQuestion** (PluginReviewedPrompt — see prompt-patterns.md):
+
+```yaml
+question: "Plugin reviewed this session?"
+header: "Review"
+options:
+  - label: "Yes — reviewed"
+    description: "I ran the code-reviewer — mark as reviewed for this version"
+  - label: "No"
+    description: "Skip — reminder will fire at next session start"
 ```
-Plugin reviewed this session? (Yes — I ran the code-reviewer / No)
-```
-- **Yes:** set `plugin_reviewed: <current-plugin-version>` in the session file.
+
+- **Yes — reviewed:** set `plugin_reviewed: <current-plugin-version>` in the session file.
 - **No:** leave as-is — reminder fires at next session start if minor version still differs.
 
-Before writing, read the existing `Open items` from the session file. If there are any **non-`[inbox]`** items, display them and ask:
+Before writing, read the existing `Open items` from the session file. If there are any **non-`[inbox]`** items, display them as a numbered list, then use **AskUserQuestion** (MarkDonePrompt — see prompt-patterns.md):
 
+```yaml
+question: "Open items — mark any complete?"
+header: "Open items"
+options:
+  - label: "Done (all)"
+    description: "Mark all items complete and remove from list"
+  - label: "Done (select)"
+    description: "Mark specific items done — you'll pick the numbers next"
+  - label: "Skip"
+    description: "None done this session — keep all open"
 ```
-Open items — any complete?
-  1  <item>
-  2  <item>
 
-done <n>    mark complete — remove from list
-done all    mark all complete
-skip        none done this session
-```
+After **Done (select)** → ask: "Which items? (number or comma list, e.g. 1, 3)"
 
 Remove confirmed-complete items from the Open items list before writing.
 
@@ -347,15 +458,23 @@ Use only mine-tagged items (tagged `[YYYY-MM-DD @<handle>]` matching current use
 3. Story/CAB type → check Jira status and current branch state for a concrete action (e.g. "In review — waiting on QA approval", "Ready to deploy — CAB approved")
 4. Only if none of the above apply: ask the user "What's the first thing to pick up next time? (or 'skip')"
 
-After deriving (or asking), offer where to route a **new** item if the user wants to add one:
+After deriving (or asking), offer where to route a **new** item using **AskUserQuestion** (NextStepRoutePrompt — see prompt-patterns.md):
 
-```
-Add a new next-step item? (inbox — ready / backlog — defer / skip)
+```yaml
+question: "Add a new next-step item?"
+header: "Next step"
+options:
+  - label: "Inbox (ready)"
+    description: "Route to session inbox now — will surface at next start"
+  - label: "Backlog (defer)"
+    description: "Write to backlog — review when you choose to"
+  - label: "Skip"
+    description: "Keep the derived next-step as-is"
 ```
 
-- **inbox:** invoke `/session:inbox` flow targeting this same session. Add `[today @<handle>] See inbox — <description>` to `Next steps`.
-- **backlog:** write to `<session_root>/_backlog_<name>.md` (plugin) or `<session_root>/_backlog.md` (others). Set `Next steps` to `none`.
-- **skip:** keep the derived `Next steps` as-is.
+- **Inbox (ready):** invoke `/session:inbox` flow targeting this same session. Add `[today @<handle>] See inbox — <description>` to `Next steps`.
+- **Backlog (defer):** write to `<session_root>/_backlog_<name>.md` (plugin) or `<session_root>/_backlog.md` (others). Set `Next steps` to `none`.
+- **Skip:** keep the derived `Next steps` as-is.
 
 If the user says "same" or similar, carry forward the current `Next steps` value (preserve existing tags).
 

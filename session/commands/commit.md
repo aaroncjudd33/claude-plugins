@@ -62,17 +62,29 @@ If there are changes, continue to step 2.
 
 Scan the staged and unstaged changes (`git diff HEAD`) to understand what changed. Draft a concise commit message following the repo's style (seen in recent `git log --oneline -5`).
 
-Show the draft to the user:
+Show the drafted message, then use **AskUserQuestion** (CommitConfirmPrompt — see prompt-patterns.md):
 
 ```
 Commit message:
   <drafted message>
-
-Commit and push? (Yes / Edit / Cancel)
 ```
 
-- **Yes:** stage all changed files (`git add` the relevant files — not `git add -A` blindly; add the files that belong to this session's scope), then commit with the drafted message and push.
-- **Edit:** ask the user for their preferred message, then commit and push with that.
+```yaml
+question: "Commit and push with this message?"
+header: "Commit"
+options:
+  - label: "Commit and push"
+    description: "Stage, commit, and push with the drafted message"
+  - label: "Edit message"
+    description: "Use a different message — you'll provide it next"
+  - label: "Cancel"
+    description: "Stop — do not commit"
+```
+
+After **Edit message** → ask: "What message would you like to use?"
+
+- **Commit and push:** stage all changed files (add the files that belong to this session's scope — not `git add -A` blindly), then commit and push.
+- **Edit message:** use the user-provided message, then commit and push.
 - **Cancel:** stop here. Do not proceed to memory or session state steps.
 
 Commit format:
@@ -127,22 +139,30 @@ If the scope value is relative, resolve it as: `local_cfg.projectRoot + "/" + sc
 
 Review file paths accessed or modified during this conversation. Any path not beginning with the resolved absolute scope is out-of-scope.
 
-If out-of-scope work is found, warn but do not block:
+If out-of-scope work is found, warn but do not block. Display the out-of-scope items, then use **AskUserQuestion** (ScopeActionPrompt — see prompt-patterns.md):
 
 ```
 Out-of-scope work detected — will be excluded from this session record.
 
   Out-of-scope:
     - <file path>  (belongs in: <target slug> / <target session>)
-
-  [1] Route to target inbox now (via /session:inbox)
-  [2] Acknowledge only — I'll handle it manually
-  [3] Skip
 ```
 
-- **[1] Route:** Derive the target slug and session name from the file path, then invoke the `/session:inbox` flow with the out-of-scope item pre-populated. The routing is never silent.
-- **[2] Acknowledge:** Note in session summary Open items but do not write to any inbox.
-- **[3] Skip:** Continue without noting.
+```yaml
+question: "What would you like to do with the out-of-scope work?"
+header: "Scope"
+options:
+  - label: "Route"
+    description: "Send to target inbox — work is formally handed off"
+  - label: "Note"
+    description: "Acknowledge only — excluded from this record, no handoff"
+  - label: "Skip"
+    description: "Continue without noting"
+```
+
+- **Route:** Derive the target slug and session name from the file path, then invoke the `/session:inbox` flow with the out-of-scope item pre-populated. The routing is never silent.
+- **Note:** Note in session summary Open items but do not write to any inbox.
+- **Skip:** Continue without noting.
 
 ### 6. Session State
 

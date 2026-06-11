@@ -220,19 +220,41 @@ options:
 3. **Hash file missing (first-time load):**
    - Show: `"First time loading this session file from the repo — reviewing before use."`
    - Display key fields: Type, Branch, Mode, Open items, Next steps, Notes.
-   - Ask: `"Approve and load? (yes / skip teammate fields / cancel)"`
-     - **yes** → write `hash_now` to `~/.claude/memory/sessions/<slug>/<name>.approved-hash`, load normally.
-     - **skip teammate fields** → quarantine items not tagged with current `@<handle>` (see Quarantine below), write hash.
-     - **cancel** → abort session start.
+   - Use **AskUserQuestion** (ApproveSessionPrompt — see prompt-patterns.md):
+     ```yaml
+     question: "First-time load from repo — approve and load this session file?"
+     header: "Approval"
+     options:
+       - label: "Approve and load"
+         description: "Trust this session file — write the approval hash"
+       - label: "Skip teammate fields"
+         description: "Load with items from other handles quarantined for review"
+       - label: "Cancel"
+         description: "Abort — do not load this session"
+     ```
+     - **Approve and load** → write `hash_now` to `~/.claude/memory/sessions/<slug>/<name>.approved-hash`, load normally.
+     - **Skip teammate fields** → quarantine items not tagged with current `@<handle>` (see Quarantine below), write hash.
+     - **Cancel** → abort session start.
 4. **Hash matches** → load normally, no prompt.
 5. **Hash differs (changes since last approval):**
    - Run: `git log -1 --format="%an — %ar" -- "<session_root>/<name>.md"` → who changed it, when.
    - Run: `git diff HEAD~1 HEAD -- "<session_root>/<name>.md"` → what changed. If file not yet in git history, show full content instead.
    - Display: `"Session file modified by @<committer> since you last approved it."` + diff output.
-   - Ask: `"Approve these changes? (yes / load with changes quarantined / cancel)"`
-     - **yes** → overwrite approved-hash with `hash_now`, load normally.
-     - **quarantined** → show changed fields as `[PENDING REVIEW — @handle, date]` in resume block; not added to active Open items routing. Hash still differs — approval required on next load too.
-     - **cancel** → abort.
+   - Use **AskUserQuestion** (ReapproveSessionPrompt — see prompt-patterns.md):
+     ```yaml
+     question: "Session file changed since you last approved it — approve these changes?"
+     header: "Approval"
+     options:
+       - label: "Approve changes"
+         description: "Trust the updated file — overwrite approval hash"
+       - label: "Load quarantined"
+         description: "Load with changed fields shown as pending review — hash stays unapproved"
+       - label: "Cancel"
+         description: "Abort — do not load this session"
+     ```
+     - **Approve changes** → overwrite approved-hash with `hash_now`, load normally.
+     - **Load quarantined** → show changed fields as `[PENDING REVIEW — @handle, date]` in resume block; not added to active Open items routing. Hash still differs — approval required on next load too.
+     - **Cancel** → abort.
 
 **Quarantined field display:** Changed fields from teammates appear in the resume block as read-only, clearly marked:
 ```
@@ -273,14 +295,22 @@ options:
   - Old scalar `Next step: <text>` → treat as mine, re-write as array item on next checkpoint/finish.
   - If no teammate items exist, omit the "Teammate notes" and "Teammate next steps" blocks entirely.
 
-  **After displaying teammate next steps**, offer:
-  ```
-  Adopt teammate next steps?
+  **After displaying teammate next steps**, use **AskUserQuestion** (AdoptTeammatePrompt — see prompt-patterns.md):
 
-  adopt <n>    adopt item N as your own
-  adopt all    adopt all
-  skip         keep as reference only
+  ```yaml
+  question: "Adopt any teammate next steps as your own?"
+  header: "Teammate"
+  options:
+    - label: "Adopt all"
+      description: "Take ownership of all teammate suggestions"
+    - label: "Adopt (select)"
+      description: "Pick which ones to adopt — you'll give the numbers next"
+    - label: "Skip"
+      description: "Keep as reference only — not added to your active list"
   ```
+
+  After **Adopt (select)** → ask: "Which items? (number or comma list)"
+
   Adopted items re-tagged: `[YYYY-MM-DD @<handle>] <text> (via @<original-handle>)` and moved into your active Next steps. Declined items remain as FYI context only — not used for inbox routing or finish derivation.
 - For the `Post-deploy` line: count `- [ ]` items (pending) vs `- [x]` items (acknowledged) from the `Post-deployment checks:` field. Show "N pending" if any unchecked, "all acknowledged" if all checked, "none" if field is absent or empty.
 - **If the session file has a `linked_sessions` field**, load each linked session and append a context block immediately after the `History:` line in the resume block:
@@ -415,6 +445,22 @@ pull <n>    move into inbox (enters normal inbox flow next session)
 delete <n>  remove permanently — no archive
 ```
 
+If the user types 'backlog' to review it, display each item numbered and use **AskUserQuestion**:
+
+```yaml
+question: "What would you like to do with this backlog item?"
+header: "Backlog"
+options:
+  - label: "Pull into inbox"
+    description: "Move to inbox — enters normal inbox flow at next session start"
+  - label: "Delete"
+    description: "Remove permanently — no archive"
+  - label: "Keep"
+    description: "Leave in backlog"
+```
+
+Ask once per item, or ask "Apply to all?" first if the user wants bulk action.
+
 If the backlog file does not exist or is empty, omit this line entirely.
 
 ### 6. Establish Session Identity
@@ -475,10 +521,22 @@ Match priority (case-insensitive):
 When the user refers to a chat informally ("my team chat", "the group chat", "cab chat"), check Aliases before Topic. If matched via alias, confirm before proceeding: "Matched '[phrase]' → [Name]. Using that — ok?"
 
 - **Found:** "Using Teams chat: [name]" — proceed, or offer to repoint if the user wants a different one
-- **Not found:** "No chat found for `[teams_chat]`. Create it? (Yes / Skip / Use a different chat)"
-  - **Yes:** create the chat via yl-msoffice MCP, add the entry to `known-chats.md`. Do **not** include `ajudd@youngliving.com` in the members array — the Graph API automatically adds the authenticated user; passing them explicitly causes a "Duplicate chat members" error.
-  - **Skip:** set `teams_chat` to `none` — Teams steps in checkpoint will be skipped
-  - **Different:** ask which existing chat to use, store that name instead
+- **Not found:** use **AskUserQuestion** (TeamsChatCreatePrompt — see prompt-patterns.md):
+  ```yaml
+  question: "No Teams chat found for '<teams_chat>' — what would you like to do?"
+  header: "Teams chat"
+  options:
+    - label: "Create it"
+      description: "Create a new Teams chat with default members"
+    - label: "Use different"
+      description: "Point to an existing chat — you'll name it next"
+    - label: "Skip"
+      description: "Set teams_chat to none — Teams steps will be skipped"
+  ```
+  After **Use different** → ask: "Which existing chat should this session use?"
+  - **Create it:** create the chat via yl-msoffice MCP, add the entry to `known-chats.md`. Do **not** include `ajudd@youngliving.com` in the members array — the Graph API automatically adds the authenticated user; passing them explicitly causes a "Duplicate chat members" error.
+  - **Use different:** ask which existing chat to use, store that name instead.
+  - **Skip:** set `teams_chat` to `none` — Teams steps in checkpoint will be skipped.
 
 ### 8. Write Session State
 
@@ -555,10 +613,20 @@ Any implementation work should be routed to this session's inbox for a coding se
 
 **Plugin — existing plugin:**
 1. **Read all of these files in parallel as a single batch:** `plugin.json`, all command `.md` files, `SKILL.md` if present, and all files under the skill's `references/` directory if it exists
-2. Check `plugin_reviewed` in the session file. Read the current version from `plugin.json`. If `plugin_reviewed` is missing, a legacy `yes`/`no` value, or its `MAJOR.MINOR` differs from the current version's `MAJOR.MINOR`, show:
+2. Check `plugin_reviewed` in the session file. Read the current version from `plugin.json`. If `plugin_reviewed` is missing, a legacy `yes`/`no` value, or its `MAJOR.MINOR` differs from the current version's `MAJOR.MINOR`, show the warning:
    > "⚠ This plugin has not been reviewed yet." (if missing/legacy) or "⚠ This plugin has not been reviewed since v<stored> (current: v<current>)."
-   Follow immediately with: "Mark as reviewed? (Yes — I've already run it / No — remind me later)"
-   - **Yes:** update `plugin_reviewed: <current-version>` in the session file immediately. No further action needed.
+
+   Then use **AskUserQuestion** (PluginReviewedPrompt — see prompt-patterns.md):
+   ```yaml
+   question: "Mark as reviewed?"
+   header: "Review"
+   options:
+     - label: "Yes — reviewed"
+       description: "I've already run the code-reviewer — mark for this version"
+     - label: "No"
+       description: "Remind me later — will show again at next session start"
+   ```
+   - **Yes — reviewed:** update `plugin_reviewed: <current-version>` in the session file immediately.
    - **No:** continue. Will show again at next session start if minor version still differs.
    Patch bumps within the same `MAJOR.MINOR` do not trigger the reminder.
 3. Ask what needs to change if not already stated
@@ -582,7 +650,16 @@ Any implementation work should be routed to this session's inbox for a coding se
 1. `getJiraIssue` → transition to In Progress → create feature branch
 2. Check for Epic Link in the Jira issue. If an epic key is present:
    - Check whether `~/.claude/memory/epics/<epic-key>.md` exists
-   - **Not found:** "No epic memory for <key> — create one? (Yes / Skip)"
+   - **Not found:** use **AskUserQuestion** (ConfirmPrompt — see prompt-patterns.md):
+     ```yaml
+     question: "No epic memory for <key> — create one?"
+     header: "Epic memory"
+     options:
+       - label: "Yes"
+         description: "Create epic memory with story map and architecture structure"
+       - label: "Skip"
+         description: "Continue without creating epic memory"
+     ```
      - **Yes:** create `~/.claude/memory/epics/<key>.md` with pre-populated structure: epic title from Jira, story map row for the current story. Use `references/epic-template.md` from the session skill as the structural template.
    - **Found:** note "Epic memory loaded for <key>" — file is already in context
    - Set `Epic: <key>` in the session file

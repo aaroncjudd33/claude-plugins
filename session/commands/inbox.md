@@ -31,9 +31,16 @@ Compose a self-contained body block — enough context that the receiving sessio
 
 If an argument was passed (e.g., `/session:inbox release`), use it as the target session name and skip the prompt.
 
-If the target is clear from context (scope guard already identified the file path and owning plugin/session), use it and confirm:
-```
-Route to <target-name> inbox? (yes / pick a different target)
+If the target is clear from context (scope guard already identified the file path and owning plugin/session), use it and confirm with **AskUserQuestion** (InboxTargetConfirmPrompt — see prompt-patterns.md):
+
+```yaml
+question: "Route to <target-name> inbox?"
+header: "Route"
+options:
+  - label: "Yes, route there"
+    description: "Write to <target-name>'s inbox — will surface at their next session start"
+  - label: "Pick different"
+    description: "Choose a different target — you'll pick from the list next"
 ```
 
 Otherwise, list sessions and ask:
