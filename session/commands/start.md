@@ -57,33 +57,41 @@ Resolve `session_root` and `handle` using Path Resolution (see Session Skill). I
 
 ### 2. Load Sessions
 
-List all `.md` files in `session_root` (skip `_active`, `_inbox*`, `_history*`, and `_backlog*` files).
+Run **three calls in parallel** — no session file reads at this stage:
 
-**Read all session files in parallel** (one read call per file), then extract: `Name`, `Branch`, `Type`, `updated-by` (may be absent in older session files — treat as empty). **Read all inbox files in the same parallel batch as the session files.**
+1. **List sessions directory with timestamps:**
+   ```bash
+   ls -lt <session_root>/
+   ```
+   Extract session names from `.md` filenames, skipping files that start with `_`. Use the file modification date as last-active date for display. Note any `_outbox_<name>.md` files for outbox count detection.
 
-For **last worked on**: read `<session_root>/_history.md` and find the most recent entry whose session name matches. History entries have the format `[YYYY-MM-DD @handle] <session-name> — <description>` — the session name is the first token after `] ` and before ` —`. If `_history.md` does not exist or has no matching entry, fall back to the `Last worked on` field in the session file.
+2. **Read all inbox files in one shot:**
+   ```bash
+   for f in "<session_root>/_inbox"*.md; do echo "=== FILE: $f ==="; cat "$f"; done
+   ```
+   Count logical items per named inbox file (lines beginning with `[20` or `## `). Global inbox (`_inbox.md`) counted separately — surfaced in Step 3.
 
-For **all sessions**, check `<session_root>/_inbox_<name>.md` and count **logical items** — lines that begin with `[20` or `## ` (entry markers), not raw non-blank lines. Body text under an entry does not count as a separate item. Also check `<session_root>/_outbox_<name>.md` and count logical items (lines beginning with `## `). Note inbox and outbox counts for display.
+3. **Read `<marketplace_root>/.claude-plugin/marketplace.json`** (plugin type only — used in Step 3).
 
-For **global inbox** (`<session_root>/_inbox.md`): count logical items separately — these are truly undirected items and spawned sessions. Note this count — surfaced in Step 3.
+**Do not read session file contents, history, or outbox files here** — all of that loads in Step 4 after the user picks a session.
 
-If `filter_mine` is active, filter the session list to those where `updated-by` matches `@<handle>`.
-
-If sessions exist, print a numbered list. Always include `updated-by`, `inbox N`, and `outbox N` columns (use `0` when empty):
+If sessions exist, display sorted by modification date (newest first):
 ```
-Sessions in <slug>   [filtered to @<handle>]  ← omit if not filtering
-  [1]  <name>  |  <type>  |  <branch>  |  @<handle>  |  inbox 0  outbox 0  |  <last worked on>
-  [2]  <name>  |  <type>  |  <branch>  |  @<handle>  |  inbox 3  outbox 1  |  <last worked on>
+Sessions in <slug>
+  [1]  <name>  |  inbox N  outbox 0  |  <date>
+  [2]  <name>  |  inbox 0  outbox 0  |  <date>
 ```
 
-If multiple developers' sessions are visible (different `updated-by` values) and no `mine` filter is active, append: `(type 'mine' to filter to yours)`
+Outbox count: 0 unless `_outbox_<name>.md` appeared in the `ls` output, in which case count its `## ` lines.
+
+**`filter_mine` active** (user passed `mine` arg): read session files in a separate parallel batch just to extract `updated-by`, then filter. Show `[filtered to @<handle>]` on the header.
 
 If `session_root` does not exist or is empty, skip this section.
 
 ### 3. Present Options
 
-**Plugin project** — read `.claude-plugin/marketplace.json` and list each plugin. Always show the inbox count (use `inbox 0` when empty):
-- **[N] Resume <plugin-name>**  inbox N  — <last worked on>
+**Plugin project** — use the `marketplace.json` loaded in Step 2. Always show the inbox count (use `inbox 0` when empty):
+- **[N] Resume <plugin-name>**  inbox N  — <date>
 - **<plugin-name>** — <one-phrase description> *(one line per plugin in marketplace.json not already in sessions list)*
 - New plugin
 - Something else — describe it
