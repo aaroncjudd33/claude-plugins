@@ -455,7 +455,7 @@ Post-deployment checks — anything to add or update? (enter new checks, or 'ski
 Use only mine-tagged items (tagged `[YYYY-MM-DD @<handle>]` matching current user, or untagged). Check in order and use the first that applies:
 1. Remaining items in `<session_root>/_inbox_<name>.md` (pending or in-progress) → set first Next steps item to `[today @<handle>] See inbox — N items pending`
 2. Non-`[inbox]`-tagged Open items → use the first mine-tagged item's text as the next step
-3. Story/CAB type → check Jira status and current branch state for a concrete action (e.g. "In review — waiting on QA approval", "Ready to deploy — CAB approved")
+3. Story/CAB type → check Jira status and current branch state for a concrete action (e.g. "In review — waiting on QA approval", "Ready to deploy — CAB approved"). **Never suggest "create PR to master", "merge to master", or any variant** — even if the branch is ahead of master. If the story is otherwise complete, the next step is "Hand off to /release:create when ready to deploy." PRs to master are the exclusive domain of the release plugin.
 4. Only if none of the above apply: ask the user "What's the first thing to pick up next time? (or 'skip')"
 
 After deriving (or asking), offer where to route a **new** item using **AskUserQuestion** (NextStepRoutePrompt — see prompt-patterns.md):

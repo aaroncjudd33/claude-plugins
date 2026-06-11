@@ -144,7 +144,7 @@ Post a 1–2 sentence progress comment to the Jira story.
 - **story:** story key = session name (e.g. `BPT2-6258`)
 - **cab:** post to each story in `Related stories`
 
-Content: current status + what was just accomplished + what's next. Business-readable — no file paths, class names, or token names. Example: *"Extended filter validation: all three input types now show required errors immediately on Add/Apply click. Committed and deploying to env6 for QA review."*
+Content: current status + what was just accomplished + what's next. Business-readable — no file paths, class names, or token names. Example: *"Extended filter validation: all three input types now show required errors immediately on Add/Apply click. Committed and deploying to env6 for QA review."* **Never mention "create PR to master" or "merge to master" as what's next** — that belongs to the release plugin, not the session.
 
 Before posting, check if the most recent Jira comment is from today and already covers this milestone — if so, skip.
 
