@@ -63,29 +63,32 @@ Run **five calls in parallel** — no session file reads at this stage. **Issue 
    ```bash
    ls -lt <session_root>/
    ```
-   Extract session names from `.md` filenames, skipping files that start with `_`. Use the file modification date as the sort key and display date. Note any `_outbox_<name>.md` files.
+   Extract session names from `.md` filenames only. **Skip every file whose name starts with `_`** (e.g. `_history.md`, `_inbox.md`, `_index.md`, `_active`, `_inbox_archive.md`) and skip `*.approved-hash` files — do not read any of them. Use the file modification date as the sort key and display date.
 
 2. **Count inbox items — no content read:**
    ```bash
    for f in "<session_root>/_inbox"*.md; do printf "%s: " "$f"; grep -c "^## \|^\[20" "$f" 2>/dev/null || echo 0; done
    ```
-   Extract item count per named inbox file. Global inbox (`_inbox.md`) counted separately — surfaced in Step 3. **Do not read inbox file contents at listing time** — content is loaded in Step 5 only after the user selects a session.
+   Extract item count per named inbox file from the line counts. Global inbox (`_inbox.md`) counted separately — surfaced in Step 3. **Do not read any inbox file contents at listing time** — content is loaded in Step 5 only after the user selects a session.
 
 3. **Read `<marketplace_root>/.claude-plugin/marketplace.json`** (plugin type only — used in Step 3).
 
-4. **Read `<session_root>/_index.md`** (if it exists) — one pipe-delimited line per session: `<name> | @created-by | created-date | @updated-by | updated-date | status | title` (7 columns).
+4. **Read `<session_root>/_index.md`** (if it exists). Two supported formats — detect by counting `|`-delimited columns in the header:
+   - **7-column (current):** `name | @created-by | created-date | @updated-by | updated-date | status | title`
+   - **6-column (legacy):** `name | created-by | updated-by | date | status | title` — treat `date` as both created-date and updated-date; prepend `@` to creator/updater values if missing.
+   Parse whichever format is present. **Do not read any session `.md` files during this step.**
 
-5. **Read `<repo_root>/.claude/memory/MEMORY.md`** (if it exists):
+5. **Check for repo memory (single bash call):**
    ```bash
-   git rev-parse --show-toplevel
+   git rev-parse --show-toplevel 2>/dev/null && [ -f "<repo_root>/.claude/memory/MEMORY.md" ] && grep -c "^\- \[" "<repo_root>/.claude/memory/MEMORY.md" || echo "no-repo-memory"
    ```
-   If `<repo_root>/.claude/memory/MEMORY.md` exists, read it. Count entries = lines beginning with `- [`.
+   If output is a number, that's the entry count. If `no-repo-memory`, skip the repo memory line.
 
-**If `_index.md` is absent or missing entries for sessions found in step 1:** display the table immediately using only the data from calls 1 and 4 — show `—` for any missing creator, created-date, or title columns. **Do not read session files or run git log at listing time.** Add a footer note below the table:
+**If `_index.md` is absent or missing entries for sessions found in call 1:** display the table immediately using only data from calls 1 and 4 — show `—` for any missing creator, created-date, or title columns. **Do not read session files or run git log at listing time.** Add a footer note below the table:
 ```
   (index missing or incomplete — type 'index' to build it)
 ```
-The index is built lazily: Step 8 seeds an entry whenever a session is loaded or created. If the user types `index`, run a parallel read of all session `.md` files (no git log), extract `updated-by:`, `updated:`, `created-by:`, and `Title:` fields, write `_index.md`, and re-display the table.
+The index is built lazily: Step 8 seeds an entry whenever a session is loaded or created. If the user types `index`, run a parallel read of all session `.md` files (no git log), extract `updated-by:`, `updated:`, `created-by:`, and `Title:` fields, write `_index.md` in 7-column format, and re-display the table.
 
 If sessions exist, display in-progress and paused sessions first (sorted by updated-date, newest first), completed sessions grouped at the bottom. Always include a column header line:
 ```
