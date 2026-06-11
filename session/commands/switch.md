@@ -1,4 +1,4 @@
-﻿---
+---
 name: switch
 description: Switch to a different session without the full session:start overhead. Use mid-day to pivot between sessions.
 ---

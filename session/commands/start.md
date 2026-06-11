@@ -1,4 +1,4 @@
-﻿---
+---
 name: start
 description: Start a working session. Loads last session context and routes into the right workflow.
 ---
