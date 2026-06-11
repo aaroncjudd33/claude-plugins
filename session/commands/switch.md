@@ -35,12 +35,12 @@ If `filter_mine`, filter the session list to those where `@created-by` or `@upda
 Otherwise, print the numbered list and wait for selection. Always include a column header line:
 ```
 Sessions in <slug>   (type 'mine' to filter)
-  #    name         who              status        in  out  date   title
-  [1]  BPT2-6377    @ajudd           in-progress    1    0  Jun 09  Shopify Member Agreement Prompt
-  [2]  session      @ajudd→@nivi     paused         0    0  Jun 05  —
+  #    name         created              last edit            status        in  out  title
+  [1]  BPT2-6377    @ajudd  Jun 01       @ajudd  Jun 09       in-progress    1    0   Shopify Member Agreement Prompt
+  [2]  session      @ajudd  Jun 01       @nivi   Jun 11       in-progress    0    0   —
 ```
 
-Show `@creator→@updater` when they differ, `@creator` alone when same. Always show both `in` and `out` counts (show `0` — never omit). Sort in-progress/paused first, completed at bottom.
+Show `@creator created-date` in "created" column; `@updater updated-date` in "last edit" column. Always show both `in` and `out` counts (show `0` — never omit). Sort in-progress/paused first, completed at bottom.
 
 ### 3. Display Resume Block
 
@@ -109,7 +109,7 @@ Update `<session_root>/<name>.md`: set `updated` to today, set `updated-by: @<ha
 python3 -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" "<session_root>/<name>.md" > ~/.claude/memory/sessions/<slug>/<name>.approved-hash
 ```
 
-**Update `_index.md`:** Read `<session_root>/_index.md` — create with header if not exists. Find the line for `<name>`, extract `@created-by` from column 2 (or use `@<handle>` if no entry). Replace or append: `<name> | @<created-by> | @<handle> | <today> | <status> | <title-or-dash>`. Where `<status>` = the session's current `Status:` field; `<title-or-dash>` = `Title:` for story/cab, `—` for other types.
+**Update `_index.md`:** Read `<session_root>/_index.md` — create with header if not exists. Find the line for `<name>`: extract `@created-by` (col 2) and `created-date` (col 3) to preserve; if no existing line, use `@<handle>` and `<today>`. Replace or append: `<name> | @<created-by> | <created-date> | @<handle> | <today> | <status> | <title-or-dash>`. Where `<status>` = the session's current `Status:` field.
 
 **Note:** `switch` is not a save point — it does not write a `_history.md` entry or create a checkpoint. If you worked on the previous session before switching, run `/session:checkpoint` or `/session:commit` first so that work is captured.
 

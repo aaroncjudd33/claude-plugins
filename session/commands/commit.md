@@ -189,7 +189,7 @@ updated: [today's date]
 python3 -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" "<session_root>/<name>.md" > ~/.claude/memory/sessions/<slug>/<name>.approved-hash
 ```
 
-**Update `_index.md`:** Read `<session_root>/_index.md` — create with header if not exists. Find the line for `<name>`, extract `@created-by` from column 2 (or use `@<handle>` if no entry). Replace or append: `<name> | @<created-by> | @<handle> | <today> | in-progress | <title-or-dash>`. Where `<title-or-dash>` = `Title:` field for story/cab, `—` for other types.
+**Update `_index.md`:** Read `<session_root>/_index.md` — create with header if not exists. Find the line for `<name>`: extract `@created-by` (col 2) and `created-date` (col 3) to preserve; if no existing line, use `@<handle>` and `<today>`. Replace or append: `<name> | @<created-by> | <created-date> | @<handle> | <today> | in-progress | <title-or-dash>`.
 
 Print the summary to screen.
 

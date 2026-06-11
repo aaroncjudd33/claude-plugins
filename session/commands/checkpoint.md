@@ -214,7 +214,7 @@ updated: [today's date]
 python3 -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" "<session_root>/<name>.md" > ~/.claude/memory/sessions/<slug>/<name>.approved-hash
 ```
 
-**Update `_index.md`:** Read `<session_root>/_index.md` — create with header `# Session Index — <slug>` + `# name | created-by | updated-by | date | status | title` if it does not exist. Find the line starting with `<name> | ` and extract the `@created-by` value (second column); if no existing line for this session, use `@<handle>` as `created-by`. Replace the line (or append): `<name> | @<created-by> | @<handle> | <today> | in-progress | <title-or-dash>`. Where `<title-or-dash>` = `Title:` field for story/cab, `—` for other types.
+**Update `_index.md`:** Read `<session_root>/_index.md` — create with header `# Session Index — <slug>` + `# name | created-by | created-date | updated-by | updated-date | status | title` if it does not exist. Find the line for `<name>`: extract `@created-by` (col 2) and `created-date` (col 3) to preserve them; if no existing line, use `@<handle>` and `<today>` for both. Replace or append: `<name> | @<created-by> | <created-date> | @<handle> | <today> | in-progress | <title-or-dash>`.
 
 Print the summary to screen. After the summary block, display the last 5 entries from `_history.md` (all entries if fewer than 5):
 

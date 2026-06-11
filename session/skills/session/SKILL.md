@@ -33,8 +33,9 @@ Always local (never in repo, regardless of mode):
 
 Session index (in session_root — tracked with session files):
     _index.md      → <session_root>/_index.md
-                     One line per session: `name | @created-by | @updated-by | date | status | title`
-                     Written by: start (seed), checkpoint/finish/commit/switch (update), migrate (build)
+                     One line per session (7 cols): `name | @created-by | created-date | @updated-by | updated-date | status | title`
+                     Written by: start (seed on create; auto-build when missing), checkpoint/finish/commit/switch (update), migrate (build)
+                     created-date/updated-date are ISO dates (YYYY-MM-DD); created-date is never overwritten after first write
 ```
 
 **Scope resolution for the scope guard:** If the session file's `Scope:` value is relative (no leading `/`, `~`, or drive letter), resolve it as `local_cfg.projectRoot + "/" + scope_value`. If absolute (old format), use as-is.

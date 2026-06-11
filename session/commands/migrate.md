@@ -173,21 +173,22 @@ Construct the session index from all written session files. Enables fast, handle
 Write `<repo_root>/.claude/sessions/_index.md`:
 ```
 # Session Index — <slug>
-# name | created-by | updated-by | date | status | title
+# name | created-by | created-date | updated-by | updated-date | status | title
 ```
 
-For each `<name>.md` written in Step 6, append one line:
+For each `<name>.md` written in Step 6, append one line (7 columns):
 - `name` = filename without `.md`
 - `@created-by` = `created-by:` field from the written file (or `@<handle>` if absent)
+- `created-date` = from git: `git log --diff-filter=A --follow --format=%as -- "<session_root>/<name>.md" | tail -1`; fall back to `updated:` frontmatter date if git returns nothing
 - `@updated-by` = `updated-by:` field from the written file (or `@<handle>` if absent)
-- `date` = `updated:` value from the frontmatter
+- `updated-date` = `updated:` frontmatter value
 - `status` = `Status:` field value (e.g. `in-progress`, `completed`, `paused`)
 - `title` = `Title:` field for story/cab types; `—` for plugin, personal, and general
 
 Example:
 ```
-BPT2-6377 | @ajudd | @ajudd | 2026-06-09 | in-progress | Shopify Member Agreement Prompt
-session   | @ajudd | @ajudd | 2026-06-11 | in-progress | —
+BPT2-6377 | @ajudd | 2026-06-01 | @ajudd | 2026-06-09 | in-progress | Shopify Member Agreement Prompt
+session   | @ajudd | 2026-06-01 | @nivi  | 2026-06-11 | in-progress | —
 ```
 
 ### 12. Confirm and Commit

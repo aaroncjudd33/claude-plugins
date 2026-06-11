@@ -73,21 +73,25 @@ Run **four calls in parallel** — no session file reads at this stage:
 
 3. **Read `<marketplace_root>/.claude-plugin/marketplace.json`** (plugin type only — used in Step 3).
 
-4. **Read `<session_root>/_index.md`** (if it exists) — one pipe-delimited line per session: `<name> | @created-by | @updated-by | date | status | title`.
+4. **Read `<session_root>/_index.md`** (if it exists) — one pipe-delimited line per session: `<name> | @created-by | created-date | @updated-by | updated-date | status | title` (7 columns).
 
-**If `_index.md` is absent or missing entries for sessions found in step 1:** read the affected session `.md` files in parallel (one read per file) to extract: `updated-by:` (use as both created-by and updated-by if `created-by:` is absent), `updated:` frontmatter date, `Status:`, `Title:`. Write `_index.md` now with these entries so subsequent starts are fast. Show: "`_index.md` built from N session files." Do NOT degrade to `@—` — always build the index before displaying.
+**If `_index.md` is absent or missing entries for sessions found in step 1:** read the affected session `.md` files in parallel (one read per file) to extract: `updated-by:` (use as both created-by and updated-by if `created-by:` is absent), `updated:` frontmatter date (use as updated-date). For created-date, try git first:
+```bash
+git log --diff-filter=A --follow --format=%as -- "<session_root>/<name>.md" | tail -1
+```
+If git returns a date, use it as created-date; otherwise fall back to the `updated:` frontmatter date. Write `_index.md` now with these entries so subsequent starts are fast. Show: "`_index.md` built from N session files." Do NOT degrade to `@—` — always build the index before displaying.
 
-If sessions exist, display in-progress and paused sessions first (sorted by modification date, newest first), completed sessions grouped at the bottom. Always include a column header line:
+If sessions exist, display in-progress and paused sessions first (sorted by updated-date, newest first), completed sessions grouped at the bottom. Always include a column header line:
 ```
 Sessions in <slug>
-  #    name         who              status        in  out  date   title
-  [1]  BPT2-6377    @ajudd           in-progress    1    0  Jun 09  Shopify Member Agreement Prompt
-  [2]  session      @ajudd→@nivi     paused         0    0  Jun 05  —
+  #    name         created              last edit            status        in  out  title
+  [1]  CAB-9240     @ajudd  May 18       @ajudd  May 27       in-progress    0    0   BP2 - Downline Reports - SG Daily Reports Fix
+  [2]  BPT2-6377    @ajudd  Jun 01       @nivi   Jun 11       in-progress    1    0   Shopify Member Agreement Prompt
 
-  2 completed — type 'all' to show
+  7 completed — type 'all' to show
 ```
 
-Show `@creator` when created-by == updated-by; show `@creator→@updater` when they differ. Always show both `in` and `out` counts (show `0` when empty — never omit). When user types `all`, re-display including completed sessions.
+Show `@creator date` in "created" column; show `@updater date` in "last edit" column. When creator == updater AND dates differ, still show both columns. Always show both `in` and `out` counts (show `0` — never omit). When user types `all`, re-display including completed sessions.
 
 **`filter_mine` active** (user passed `mine` arg): filter index entries where `@created-by` or `@updated-by` matches the current user — no additional file reads needed. Show `[filtered to @<handle>]` on the header.
 
@@ -439,11 +443,11 @@ BPT2-1234
 **Seed `_index.md`:** Update `<session_root>/_index.md` — create with header if not exists:
 ```
 # Session Index — <slug>
-# name | created-by | updated-by | date | status | title
+# name | created-by | created-date | updated-by | updated-date | status | title
 ```
 Find the line starting with `<name> | ` and replace it; if not found, append. Write line:
-`<name> | @<handle> | @<handle> | <today> | in-progress | <title-or-dash>`
-Where `<title-or-dash>` = `Title:` field for story/cab; `—` for other types.
+`<name> | @<handle> | <today> | @<handle> | <today> | in-progress | <title-or-dash>`
+Where `<title-or-dash>` = `Title:` field for story/cab; `—` for other types. (Both created-date and updated-date are `<today>` at creation — they diverge as others update the session.)
 
 ### 9. Route Based on Choice
 
