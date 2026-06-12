@@ -101,7 +101,7 @@ Run **three calls in parallel** (four for plugin type). **Issue all calls in a s
 ```
 The index is built lazily: Step 8 seeds an entry whenever a session is loaded or created. If the user types `index`, run a parallel read of all session `.md` files (no git log), extract `updated-by:`, `updated:`, `created-by:`, and `Title:` fields, write `_index.md` in 7-column format, and re-display the table.
 
-If sessions exist, render the table with section headers for each status group. Show all in-progress and paused sessions; fill remaining slots up to 10 total with the most-recently-updated completed sessions. Column header appears once after the title line. Each status group gets its own label. Omit a group entirely if it has no sessions.
+If sessions exist, render the table with section headers per status group. **By default show only in-progress and paused sessions** — do not render completed rows unless the user types `all` or `status completed`. Column header appears once after the title line. Omit a section entirely if it has no sessions.
 
 **Column widths (pad with spaces to align):**
 - `#` — 4 chars, right-aligned
@@ -125,19 +125,14 @@ Sessions in virtual-office
   Paused
   3    BPT2-6100     Some paused story title...        paused          0      0  @ajudd May 10    @nivi  Jun 05
 
-  Completed
-  4    BPT2-6050     Another completed story...        completed       0      0  @ajudd Apr 01    @ajudd May 10
-
   2 in-progress · 1 paused · 8 completed
 ```
-
-If completed count exceeds the remaining slots (10 minus active count), add one line after the last completed row: `  (N more — type 'all' to show)`.
 
 **Title truncation:** cap title at 32 characters. If longer, truncate and append `...`. If title is `—` (absent), show `—` with no padding.
 
 Show `@creator date` in "created" column; show `@updater date` in "last edit" column. When creator == updater AND dates differ, still show both columns. Always show both `in` and `out` counts (show `0` — never omit). Mark the active session from call 6 with `←` at the end of that row.
 
-**Status summary line:** always show all three statuses in this exact format: `N in-progress · N paused · N completed`. Show `0` for any status with no sessions — never omit a status. When user types `all`, re-display all completed sessions.
+**Status summary line:** always show all three statuses: `N in-progress · N paused · N completed`. Show `0` for any status with no sessions — never omit a status. When user types `all`, re-display adding a Completed section with all completed sessions.
 
 **`filter_mine` active** (user passed `mine` arg): filter index entries where `@created-by` or `@updated-by` matches the current user — no additional file reads needed. Show `[filtered to @<handle>]` on the header.
 
