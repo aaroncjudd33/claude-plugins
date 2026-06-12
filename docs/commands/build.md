@@ -1,10 +1,10 @@
 ---
-name: init
+name: build
 description: Deep-discover a codebase and generate a full set of Confluence documentation pages
 argument-hint: "[space-key] [parent-page-title]"
 ---
 
-# /docs:init
+# /docs:build
 
 Perform a deep codebase discovery and generate the full standard set of Confluence documentation pages for this project. Run once when a project has never been documented.
 

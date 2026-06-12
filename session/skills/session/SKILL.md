@@ -1,6 +1,6 @@
 ---
 name: session
-description: "This skill governs session lifecycle across all project types. Load whenever the user invokes a session command (/session:start, /session:checkpoint, /session:commit, /session:finish, /session:switch, /session:search, /session:status, /session:spawn, /session:resume, /session:prepare-clear, /session:worklog, /session:migrate, /session:inbox), asks about session state, asks what they were working on, wants to save progress, wants to start or end a working session, or asks about their inbox, backlog, or open items. Provides path resolution logic, @handle tagging rules, epic context, context-recovery guidance, and Teams messaging rules used by all session commands."
+description: "This skill governs session lifecycle across all project types. Load whenever the user invokes a session command (/session:start, /session:checkpoint, /session:commit, /session:finish, /session:switch, /session:search, /session:in-flight, /session:spawn, /session:restore, /session:store, /session:worklog, /session:migrate, /session:inbox), asks about session state, asks what they were working on, wants to save progress, wants to start or end a working session, or asks about their inbox, backlog, or open items. Provides path resolution logic, @handle tagging rules, epic context, context-recovery guidance, and Teams messaging rules used by all session commands."
 ---
 
 # Session Skill
@@ -176,7 +176,7 @@ A `PreToolUse` hook (`session-file-guard.py`) scans repo session files and repo 
 - **Injection patterns** — free-form sections of non-`_` session files (as before).
 
 Three layers defend against secrets/PII reaching a tracked file, front line to backstop:
-1. **`session:prepare-clear`** (front line) — scrubs secrets/PII out of `_context_*.md` *before the file is written*, so the highest-risk artifact never contains them. Pointers ("see `reference_oracle_environments.md`") replace pasted values.
+1. **`session:store`** (front line) — scrubs secrets/PII out of `_context_*.md` *before the file is written*, so the highest-risk artifact never contains them. Pointers ("see `reference_oracle_environments.md`") replace pasted values.
 2. **`session:migrate` Step 5a** — scans every file before copying into the repo; per-file exclude/scrub/keep.
 3. **`session-commit-guard.py`** (backstop) — blocks the commit if a secret/PII pattern reaches staging anyway.
 
@@ -198,7 +198,7 @@ Project memories can be stored in the repo under `.claude/memory/` for team shar
 **No auto-load — on demand only.** Project memory is **never** loaded automatically. There is no `.claude/CLAUDE.md @import`. A developer who opens a migrated repo without invoking a command inherits zero context overhead — the `.claude/memory/` files are inert until a command reads them. This is deliberate: the **memory plugin** governs all loading, and it only reads when the user asks.
 
 - Even `MEMORY.md` is read on demand (by the memory plugin or a session command) — it is not forced into context at repo open.
-- Load individual memory files only via `/memory:load`, `/memory:scan`, `/memory:review`, or when a session command surfaces the session's recorded `Loaded memories:` and the user opts to reload.
+- Load individual memory files only via `/memory:load`, `/memory:scan`, `/memory:groom`, or when a session command surfaces the session's recorded `Loaded memories:` and the user opts to reload.
 - Never proactively read memory files at session start. Surfacing relevant memory happens through the memory plugin's scan offer (a prompt the user accepts or rejects) — never as a silent auto-read.
 
 **Global vs. project memory:** The on-demand rule applies to project memory (repo `.claude/memory/` and local `~/.claude/projects/<encoded>/memory/`). Global memory (`~/.claude/memory/`) contains behavioral guidelines — feedback, preferences, cross-project rules — and may load freely as needed.
@@ -222,7 +222,7 @@ Two session-file fields connect the session lifecycle to the **memory plugin** a
 - **Loaded memories:**
   - checkout-payment-validation  [feature:checkout/payment-validation]
 ```
-- **Written by:** the memory plugin. **Preserved by:** checkpoint/commit (carry forward unchanged). **Surfaced by:** start (resume block, with a `reload` option). **Validated by:** finish (the memory-validation batch item runs `/memory:review` against this list; deleted memories drop out).
+- **Written by:** the memory plugin. **Preserved by:** checkpoint/commit (carry forward unchanged). **Surfaced by:** start (resume block, with a `reload` option). **Validated by:** finish (the memory-validation batch item runs `/memory:groom` against this list; deleted memories drop out).
 - This is the anti-rot loop: a memory only lands here if it was loaded for real work, and everything here gets an accuracy check at finish. Memories never loaded stay inert.
 
 **`Commits:`** — running list of commits made during the session, written by `session:commit`. Format:
@@ -263,9 +263,9 @@ Example: working on BPT2-6382 (frontend) and need the wire format for `periodId`
 
 If the user asks "what was I working on", "did I work on BPT2-XXXX before", "find my session for X", or similar recall questions, suggest **`/session:search <query>`** — it searches session files and worklogs by story key or keyword without requiring an active session. For date-based review ("what did I do yesterday"), suggest **`/session:worklog`**.
 
-If the user runs `/clear` or mentions that context was lost, **immediately suggest running `/session:resume`** (fastest post-`/clear` path — skips the menu and restores context directly) or **`/session:start`** for the full flow:
+If the user runs `/clear` or mentions that context was lost, **immediately suggest running `/session:restore`** (fastest post-`/clear` path — skips the menu and restores context directly) or **`/session:start`** for the full flow:
 
-> "Context cleared — run `/session:resume` to restore context directly, or `/session:start` to pick up from the full session menu."
+> "Context cleared — run `/session:restore` to restore context directly, or `/session:start` to pick up from the full session menu."
 
 This is the primary recovery path. `/session:start` reads `_active` to identify the current session, then loads the session file and surfaces everything needed to resume. New developers especially should be nudged here — the workflow is not obvious without it.
 

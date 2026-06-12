@@ -1,9 +1,10 @@
 ---
+name: kill
 description: Stop the persistent Playwright test browser gracefully.
 allowed-tools: [Bash]
 ---
 
-# E2E Stop
+# E2E Kill
 
 Stop the persistent Playwright test browser.
 

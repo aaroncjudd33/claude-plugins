@@ -112,7 +112,7 @@ else                                    →  use ~/.claude/projects/<encoded>/me
 
 ## Staleness signal
 
-The `written:` date is the only staleness mechanism — no auto-expiry, no background pruning. `/memory:review` surfaces memories by age:
+The `written:` date is the only staleness mechanism — no auto-expiry, no background pruning. `/memory:groom` surfaces memories by age:
 
 - A memory whose `written:` date is more than ~6 months old is flagged for review on the next `review` run.
 - Review asks: still accurate? → confirm (no change), update (revise body, note the change + date in-line), or delete (no longer true).

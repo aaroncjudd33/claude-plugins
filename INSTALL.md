@@ -85,9 +85,9 @@ The onboarding command will offer to look up your Jira account ID and Teams user
 | `setup` | `/setup:onboarding`, `/setup:local`, `/setup:jira`, `/setup:confluence`, `/setup:calendar`, `/setup:aws` | Atlassian MCP, yl-msoffice MCP, AWS CLI | Morning dashboard. AWS section requires YL SSO. |
 | `release` | `/release:create`, `/release:cab-card`, `/release:cab-branch`, `/release:cab-link`, `/release:cab-review`, `/release:update`, `/release:deploy` | Atlassian MCP, `story`, `session` | Production CAB release workflow — YL-specific |
 | `comms` | `/comms:message`, `/comms:fetch`, `/comms:triage`, `/comms:sweep` | yl-msoffice MCP | Teams messaging + email triage |
-| `docs` | `/docs:init`, `/docs:update`, `/docs:archive`, `/docs:propose` | Atlassian MCP | Confluence project documentation |
+| `docs` | `/docs:build`, `/docs:update`, `/docs:archive`, `/docs:propose` | Atlassian MCP | Confluence project documentation |
 | `links` | `/links:open`, `/links:search`, `/links:link`, `/links:workspace`, `/links:prefix`, `/links:delete` | Edge browser | Named link registry + workspace management. Windows only. |
-| `e2e` | `/e2e:start`, `/e2e:stop` | Playwright | Persistent browser session with SSO auth |
+| `e2e` | `/e2e:start`, `/e2e:kill` | Playwright | Persistent browser session with SSO auth |
 
 ### Dependencies
 

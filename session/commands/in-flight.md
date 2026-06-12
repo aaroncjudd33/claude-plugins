@@ -1,9 +1,9 @@
 ---
-name: status
+name: in-flight
 description: Show everything in flight for the current project — all sessions with their status, branch, open item count, and any spawned sessions waiting to start. Read-only, works mid-session.
 ---
 
-# Session Status
+# Session In-Flight
 
 Read-only snapshot of all sessions for the current project. Use this mid-session to orient yourself or answer "what else is in flight?" without opening a new terminal or disrupting your current session.
 
@@ -40,7 +40,7 @@ Read `<session_root>/_inbox.md`. Count total logical items. Extract any entries 
 Print immediately — no prompts, no writes. Add mine-filter hint if multiple developers' sessions are visible:
 
 ```
-Sessions in <slug>   (type '/session:status mine' to filter to yours)
+Sessions in <slug>   (type '/session:in-flight mine' to filter to yours)
   <name>   @<handle>   <status>   branch: <branch>   open: N   inbox: N  outbox: N   <date>
   <name>   @<handle>   <status>   branch: <branch>   open: N   inbox: N  outbox: N   <date>
   ★ [spawn] <label>   ready to start — from <source-session>
@@ -51,7 +51,7 @@ Global inbox: N items
 Status values and display:
 - `in-progress` — currently being worked on
 - `paused` — started but not active right now
-- `prepare-clear` — waiting for /session:resume after a /clear
+- `prepare-clear` — waiting for /session:restore after a /clear
 - `completed` — finished (session:finish was run)
 - `spawned` — staged by /session:spawn, not yet started
 

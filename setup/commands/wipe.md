@@ -1,9 +1,9 @@
 ---
-name: clean
+name: wipe
 description: Plugin config teardown — removes user identity config and operational plugin files. Use before uninstalling plugins or handing off a machine. Memory files are never touched.
 ---
 
-# Setup: Clean
+# Setup: Wipe
 
 Removes plugin configuration files created by the plugin system — identity config, team registry, browser links, and story settings. After this command, the plugins are deconfigured and ready for a fresh `/setup:onboarding` run or uninstall.
 

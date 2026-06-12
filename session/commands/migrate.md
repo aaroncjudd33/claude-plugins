@@ -258,9 +258,9 @@ ls ~/.claude/projects/*/memory/MEMORY.md 2>/dev/null
 
 If multiple matches, prefer the one whose directory name most closely corresponds to `projectRoot` (from `~/.claude/config/<slug>.json`).
 
-**Migrate reads the local project tier ONLY — by design.** It does not scan the global tier (`~/.claude/memory/`). If project memories are stranded in global (legacy data from before the tier split, or a mis-resolved save), migrate cannot see them and they will be silently left behind. This is intentional: teaching migrate to reach into global would force it to guess which global files are project-scoped vs. genuine behavioral rules — a judgment that must have a human in the loop. That reconciliation lives in `/memory:doctor` instead.
+**Migrate reads the local project tier ONLY — by design.** It does not scan the global tier (`~/.claude/memory/`). If project memories are stranded in global (legacy data from before the tier split, or a mis-resolved save), migrate cannot see them and they will be silently left behind. This is intentional: teaching migrate to reach into global would force it to guess which global files are project-scoped vs. genuine behavioral rules — a judgment that must have a human in the loop. That reconciliation lives in `/memory:localize` instead.
 
-**If no local memory directory found:** skip — show "No local project memory found in the project tier — skipping memory migration. If you expected memories here, some may be stranded in the global tier; run `/memory:doctor` to find and relocate them, then re-run migrate."
+**If no local memory directory found:** skip — show "No local project memory found in the project tier — skipping memory migration. If you expected memories here, some may be stranded in the global tier; run `/memory:localize` to find and relocate them, then re-run migrate."
 
 **If found:** read the directory. Count `.md` files (excluding `MEMORY.md` and `.migrated-to-repo`).
 
@@ -335,7 +335,7 @@ Confirm: "Proceed? (Yes / Skip)"
 
 5. **Do NOT create or modify `<repo_root>/.claude/CLAUDE.md`.** Project memory is loaded **on demand only** by the memory plugin — never auto-loaded. Adding an `@.claude/memory/MEMORY.md` import to `CLAUDE.md` would force the index into every developer's context the moment they open the repo, without invoking any command, with real token cost — the exact overhead this design rejects.
 
-   Instead: the memory plugin resolves `.claude/memory/` via its own Path Resolution. It reads `MEMORY.md` and individual files only when the user runs `/memory:load`, `/memory:scan`, `/memory:review`, or a session command that surfaces them. It writes new memories to `.claude/memory/` via `/memory:save`. No `CLAUDE.md` redirect is needed — the plugin already knows the path.
+   Instead: the memory plugin resolves `.claude/memory/` via its own Path Resolution. It reads `MEMORY.md` and individual files only when the user runs `/memory:load`, `/memory:scan`, `/memory:groom`, or a session command that surfaces them. It writes new memories to `.claude/memory/` via `/memory:save`. No `CLAUDE.md` redirect is needed — the plugin already knows the path.
 
    If a `<repo_root>/.claude/CLAUDE.md` already exists for other reasons, leave it untouched. If it contains a stale `@.claude/memory/MEMORY.md` import from a previous version of this command, remove only that import line and report it: "Removed auto-load import from .claude/CLAUDE.md — project memory now loads on demand via the memory plugin."
 

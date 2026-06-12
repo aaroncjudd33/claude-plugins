@@ -1,6 +1,6 @@
 ---
 name: docs
-description: "Background skill — do not run directly. Use /docs:init, /docs:update, /docs:archive, or /docs:propose. Auto-loads when: those commands are actively running — not for general documentation requests."
+description: "Background skill — do not run directly. Use /docs:build, /docs:update, /docs:archive, or /docs:propose. Auto-loads when: those commands are actively running — not for general documentation requests."
 ---
 
 # Docs Skill

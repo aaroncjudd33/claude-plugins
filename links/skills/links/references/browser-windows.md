@@ -24,7 +24,7 @@ Each workspace in `browser-links.json` maps 1:1 to a named Edge browser window. 
 
 ## Testing Browser
 
-- **Virtual Office - Google Chrome for Testing** — VO app end-to-end testing. Managed by the `e2e` plugin (`/e2e:start`, `/e2e:stop`). Not an Edge window — uses Chrome for Testing.
+- **Virtual Office - Google Chrome for Testing** — VO app end-to-end testing. Managed by the `e2e` plugin (`/e2e:start`, `/e2e:kill`). Not an Edge window — uses Chrome for Testing.
 
 ## Script Reference
 

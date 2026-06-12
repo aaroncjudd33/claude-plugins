@@ -50,5 +50,5 @@ Refresh existing Confluence documentation to reflect the current state of the co
 ## Notes
 
 - Always fetch current page content before updating — never overwrite manually curated content
-- If a major restructure is needed, run `/docs:init` instead
+- If a major restructure is needed, run `/docs:build` instead
 - Proposed Work pages are intentionally excluded from all scope keywords including `all` — they are planning documents, not state-of-the-world docs. Edit them directly in Confluence or recreate via `/docs:propose`. When a feature ships, archive the page with `/docs:archive`

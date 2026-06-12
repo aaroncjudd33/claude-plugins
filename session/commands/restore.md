@@ -1,9 +1,9 @@
 ---
-name: resume
+name: restore
 description: Instantly restore session context after /clear — no navigation, no list if unambiguous. Reads _resume_* markers and the pre-clear context file.
 ---
 
-# Session Resume
+# Session Restore
 
 Fast context restoration after `/clear`. Reads `_resume_*` marker files to find which session(s) need restoring, loads the session file and pre-clear context dump, and drops you back in without navigation.
 

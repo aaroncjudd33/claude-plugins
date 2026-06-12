@@ -44,7 +44,7 @@ Body:
 Confirm? (go / edit label: <x> / edit name: <x> / edit desc: <x> / edit body: <text> / cancel)
 ```
 
-- Check for an existing memory with a matching label or near-identical name — if found, say so and offer to **update that one instead** (route to `/memory:review` on that file) rather than creating a duplicate.
+- Check for an existing memory with a matching label or near-identical name — if found, say so and offer to **update that one instead** (route to `/memory:groom` on that file) rather than creating a duplicate.
 - Keep the body tight. Link related memories with `[[other-name]]`.
 
 ### 4. Write

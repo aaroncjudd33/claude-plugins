@@ -1,10 +1,10 @@
 ---
-name: review
+name: groom
 description: Validate project memories for accuracy — confirm, update, or delete. Runs on loaded memories, a feature area, or aged entries.
 argument-hint: "[loaded | feature:area | stale | all]"
 ---
 
-# Memory Review
+# Memory Groom
 
 Check whether memories still hold and act on the answer. This is the anti-rot mechanism: a memory that influenced work gets validated at the point of relevance (session finish runs `review loaded`), and old untouched memories surface by age.
 

@@ -1,10 +1,10 @@
 ---
-name: doctor
+name: localize
 description: Find project memories stranded in the global tier and relocate them to the right project — explicit, confirmed per file. The only command that may read or move global memory.
 argument-hint: "[repo slug or path]"
 ---
 
-# Memory Doctor
+# Memory Localize
 
 Reconcile misplaced project memories. Legacy or mistaken saves can leave project-scoped facts sitting in the **global** behavioral tier (`~/.claude/memory/`), where `/session:migrate`, `/memory:load`, and `/memory:scan` will never find them — they resolve the project tier only. This command finds those stranded files and offers to move them home.
 
