@@ -163,7 +163,11 @@ A `PreToolUse` hook (`session-file-guard.py`) scans repo session files and repo 
 
 **Write-time:** After every session file write (checkpoint, finish, commit, switch), recompute and overwrite `<name>.approved-hash` so your own changes never trigger a spurious diff-review.
 
-**Pre-commit hook** (`session-commit-guard.py`): installed via `session:migrate` into `.git/hooks/pre-commit`. Scans staged `.claude/sessions/*.md` and `.claude/memory/*.md` files for the same patterns before the commit lands. Catches bad content at write time rather than read time.
+**Pre-commit hook** (`session-commit-guard.py`): installed via `session:migrate` into `.git/hooks/pre-commit`. Scans staged `.claude/sessions/*.md` and `.claude/memory/*.md` files before the commit lands, on two axes:
+- **Secrets / credentials / PII** — full content of **every** staged file, *including* `_`-prefixed ones (`_history.md`, `_context_*.md`, `_inbox*.md`). These are the highest-risk for stranded DB connection strings, API keys, private keys, and name↔custid PII, and they are exactly the files the injection scan skips. A secret match blocks the commit.
+- **Injection patterns** — free-form sections of non-`_` session files (as before).
+
+`session:migrate` Step 5a runs the same secrets/PII scan *before* copying files into the repo, so leaks are caught and excluded/scrubbed at migration time rather than only at commit time. The commit guard is the backstop; the migrate scan is the primary defense. Credentials should never be git-tracked — exclude the file or scrub the values.
 
 ---
 

@@ -78,6 +78,42 @@ Add to repo root `.gitignore` if `.claude/config/` is not already excluded:
 
 Read `handle` from `~/.claude/plugins/user-config.json` (`user.handle`). If absent, derive from `user.email` prefix.
 
+### 5a. Pre-Migration Secrets & PII Scan (BLOCKING)
+
+**Before copying anything into the repo, scan every candidate file for secrets and PII.** Migration git-tracks these files permanently — a credential committed here lives in the git history forever, even if removed later. The pre-commit guard (`session-commit-guard.py`) is the backstop, but catch it here first, where files can be excluded or scrubbed cleanly before they ever enter the tree.
+
+**Scan the full content of every file about to be migrated** — session `.md` files, `_history.md`, all `_inbox*.md`, **and especially `_context_*.md`** (pre-clear dumps capture raw working state — connection strings, query output, spoofed identities — and are the highest-risk). Also the project memory files from Step 11b.
+
+Flag:
+- **Secrets / credentials** — DB connection strings with passwords (e.g. `user/PASS@host:port`), `password=`/`pwd:` assignments, API keys, `AKIA…` AWS keys, JWTs, `-----BEGIN … PRIVATE KEY-----`. (Same patterns as `SECRET_PATTERNS` in the commit guard.)
+- **PII** — real person name ↔ member/custid pairings, `fedTaxNum`/`ssn`/`taxId` fields, addresses tied to a named individual. PII detection is fuzzy — surface anything plausible for the user to judge.
+
+For each flagged file, present a per-file disposition (never silent, never auto-decide):
+```
+⚠️  Secrets / PII found in files staged for migration:
+
+  _context_strongdm-oracle-setup.md
+    [secret] db-connection-credentials — cmsuser/…@oracln.yleo.us:1521  (×2)
+  _history.md
+    [PII] name↔custid — "Edie Wadsworth / 1443424"
+  BPT2-5558.md
+    [PII] name↔custid — "Edie Wadsworth / 1443424"
+
+Handle each before migrating:
+  exclude <file>   — don't copy it into the repo at all (safest for context dumps / pure-secret files)
+  scrub <file>     — copy it but redact the flagged values (placeholders: <REDACTED>, <test-member>)
+  keep <file>      — migrate as-is (NOT recommended — secrets/PII enter git history permanently)
+
+Reply per file, e.g. "exclude _context_*, scrub _history.md BPT2-5558.md".
+```
+
+Apply before the copy steps:
+- **exclude:** drop the file from the migration set entirely — skip it in Steps 6/8/9/11b. Note it in the final summary as "excluded (secrets/PII)".
+- **scrub:** copy it, but replace each flagged value with a placeholder (`<REDACTED>` for secrets, `<test-member>` / `<custid>` for PII) during the transform. Preserve surrounding context.
+- **keep:** migrate unchanged — only on explicit per-file confirmation; warn once more that it lands in git history.
+
+**Default bias:** recommend `exclude` for `_context_*.md` and any file whose value is purely a secret (e.g. a credentials dump); recommend `scrub` for session/history files that carry real record but happen to name a person. Do not proceed to Step 6 until every flagged file has a disposition.
+
 ### 6. Copy and Transform Session State Files
 
 For each `<name>.md` not starting with `_` in `~/.claude/memory/sessions/<slug>/`:
@@ -232,6 +268,7 @@ Confirm: "Proceed? (Yes / Skip)"
 1. Create `<repo_root>/.claude/memory/` if it does not exist.
 
 2. For each `*.md` file in local memory (not `MEMORY.md`, not `.migrated-to-repo`):
+   **Apply the Step 5a secrets/PII scan to these files too** (if 11b runs standalone via the guard path and 5a did not execute, run the scan here against the memory files before copying). Honor exclude/scrub/keep dispositions.
    a. If `<repo_root>/.claude/memory/<filename>` already exists → skip.
    b. If not present:
       - Read local file.
