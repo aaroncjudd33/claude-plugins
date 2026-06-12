@@ -65,7 +65,8 @@ Write `<repo_root>/.claude/sessions/.gitignore`:
 ```gitignore
 # Per-user state — never commit
 _active
-_resume_*
+_restore_*
+_resume_*  # legacy marker name (pre-rename) — keep ignored during transition
 *.approved-hash
 ```
 
@@ -163,7 +164,7 @@ Copy as-is (no handle tagging needed):
 
 Do **not** copy:
 - `_active` — per-user hint, excluded by `.gitignore`
-- `_resume_*` — transient per-user signal, excluded by `.gitignore`
+- `_restore_*` — transient per-user signal, excluded by `.gitignore`
 
 ### 10. Create Local Config
 

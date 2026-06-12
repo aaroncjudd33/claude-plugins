@@ -1,11 +1,11 @@
 ---
 name: restore
-description: Instantly restore session context after /clear — no navigation, no list if unambiguous. Reads _resume_* markers and the pre-clear context file.
+description: Instantly restore session context after /clear — no navigation, no list if unambiguous. Reads _restore_* markers and the pre-clear context file.
 ---
 
 # Session Restore
 
-Fast context restoration after `/clear`. Reads `_resume_*` marker files to find which session(s) need restoring, loads the session file and pre-clear context dump, and drops you back in without navigation.
+Fast context restoration after `/clear`. Reads `_restore_*` marker files to find which session(s) need restoring, loads the session file and pre-clear context dump, and drops you back in without navigation.
 
 **This is not session:start.** No inbox processing, no Teams setup, no options list (unless multiple sessions are waiting). Pure context restoration.
 
@@ -13,9 +13,9 @@ Fast context restoration after `/clear`. Reads `_resume_*` marker files to find 
 
 ### 1. Find Waiting Sessions
 
-Run `pwd` and extract the repo slug. Resolve `session_root` using Path Resolution (see Session Skill). `_resume_*` markers are always local — scan `~/.claude/memory/sessions/<slug>/`, not `session_root`.
+Run `pwd` and extract the repo slug. Resolve `session_root` using Path Resolution (see Session Skill). `_restore_*` markers are always local — scan `~/.claude/memory/sessions/<slug>/`, not `session_root`.
 
-Scan `~/.claude/memory/sessions/<slug>/` for any files matching `_resume_*`. Each file represents a session waiting to be resumed after a `/clear`.
+Scan `~/.claude/memory/sessions/<slug>/` for any files matching `_restore_*`. Each file represents a session waiting to be resumed after a `/clear`.
 
 - **One found:** proceed automatically — no prompt needed.
 - **Multiple found:** show a numbered list and wait for a plain-text reply — no widget:
@@ -63,7 +63,7 @@ Show a compact summary by default. If the user types `context`, display the full
 
 ### 5. Clean Up
 
-Delete the `_resume_<session-name>` marker file — it has been consumed.
+Delete the `_restore_<session-name>` marker file — it has been consumed.
 
 If `_context_<session-name>.md` was loaded, output and wait:
 

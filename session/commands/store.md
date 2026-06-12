@@ -5,7 +5,7 @@ description: Dump volatile in-session reasoning to a context file before running
 
 # Session Store
 
-Captures everything held in conversation that isn't in persistent files — reasoning chains, confirmed facts, decisions and why, rejected options, open questions, key code/values — into `_context_<session-name>.md`. Then writes a `_resume_<session-name>` marker so `/session:restore` can find this session immediately after `/clear`.
+Captures everything held in conversation that isn't in persistent files — reasoning chains, confirmed facts, decisions and why, rejected options, open questions, key code/values — into `_context_<session-name>.md`. Then writes a `_restore_<session-name>` marker so `/session:restore` can find this session immediately after `/clear`.
 
 Run this **before** `/clear`. After `/clear`, run `/session:restore` to restore.
 
@@ -74,13 +74,13 @@ This stops secrets at the source — they never reach disk in the context file, 
 
 ### 3. Write Resume Marker
 
-Write `~/.claude/memory/sessions/<slug>/_resume_<session-name>` (always local — never in repo; plain text, just the session name, no extension):
+Write `~/.claude/memory/sessions/<slug>/_restore_<session-name>` (always local — never in repo; plain text, just the session name, no extension):
 
 ```
 <session-name>
 ```
 
-This is the durable per-user signal that survives `/clear`. `/session:restore` scans `~/.claude/memory/sessions/<slug>/` for `_resume_*` files.
+This is the durable per-user signal that survives `/clear`. `/session:restore` scans `~/.claude/memory/sessions/<slug>/` for `_restore_*` files.
 
 ### 4. Update Session Status
 
@@ -95,7 +95,7 @@ Ready to /clear
 
   Session:    <name>
   Context:    _context_<name>.md — <N> sections captured
-  Marker:     _resume_<name> written
+  Marker:     _restore_<name> written
 
 Run /clear now. When you're back, run /session:restore to restore full context.
 ```

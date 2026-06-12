@@ -29,7 +29,7 @@ else:
 
 Always local (never in repo, regardless of mode):
     _active        → ~/.claude/memory/sessions/<slug>/_active
-    _resume_*      → ~/.claude/memory/sessions/<slug>/
+    _restore_*      → ~/.claude/memory/sessions/<slug>/
 
 Session index (in session_root — tracked with session files):
     _index.md      → <session_root>/_index.md
