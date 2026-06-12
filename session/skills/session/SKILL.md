@@ -167,7 +167,12 @@ A `PreToolUse` hook (`session-file-guard.py`) scans repo session files and repo 
 - **Secrets / credentials / PII** — full content of **every** staged file, *including* `_`-prefixed ones (`_history.md`, `_context_*.md`, `_inbox*.md`). These are the highest-risk for stranded DB connection strings, API keys, private keys, and name↔custid PII, and they are exactly the files the injection scan skips. A secret match blocks the commit.
 - **Injection patterns** — free-form sections of non-`_` session files (as before).
 
-`session:migrate` Step 5a runs the same secrets/PII scan *before* copying files into the repo, so leaks are caught and excluded/scrubbed at migration time rather than only at commit time. The commit guard is the backstop; the migrate scan is the primary defense. Credentials should never be git-tracked — exclude the file or scrub the values.
+Three layers defend against secrets/PII reaching a tracked file, front line to backstop:
+1. **`session:prepare-clear`** (front line) — scrubs secrets/PII out of `_context_*.md` *before the file is written*, so the highest-risk artifact never contains them. Pointers ("see `reference_oracle_environments.md`") replace pasted values.
+2. **`session:migrate` Step 5a** — scans every file before copying into the repo; per-file exclude/scrub/keep.
+3. **`session-commit-guard.py`** (backstop) — blocks the commit if a secret/PII pattern reaches staging anyway.
+
+Credentials should never be git-tracked — keep them in local-only global memory (e.g. `reference_oracle_environments.md`) and reference them by pointer.
 
 ---
 
