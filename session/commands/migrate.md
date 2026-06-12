@@ -185,24 +185,43 @@ python3 -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],'rb').read
 ```
 This seeds the approval baseline so the first `session:start` after migration loads cleanly without triggering a first-time review prompt.
 
-**Pre-commit hook:** Write the session content guard directly into `.git/hooks/pre-commit` (create or append). Read the script content from `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session-commit-guard.py` and embed it:
+**Pre-commit hook (shim, not a copy):** Install a thin shim into `.git/hooks/pre-commit` that **delegates** to the live plugin script. Do **not** copy the full script in — a frozen copy goes stale the moment the plugin is fixed, and there is no link back to propagate the update. The shim points at the **marketplace clone** (non-versioned path), so `claude plugin marketplace update` refreshes every migrated repo's guard automatically.
+
+Resolve `<marketplace>` from `~/.claude/plugins/user-config.json` → `pluginMarketplaceName`. The shim references the clone via `$HOME` (portable across machines/users), **not** `${CLAUDE_PLUGIN_ROOT}` (that resolves to the version-pinned cache dir, which is exactly what goes stale).
+
+The shim body to write:
 
 ```bash
-# Check if pre-commit hook already exists
-if [ -f "<repo_root>/.git/hooks/pre-commit" ]; then
-  # Append a call to session-commit-guard.py if not already present
-  grep -q "session-commit-guard" "<repo_root>/.git/hooks/pre-commit" || \
-    echo 'python3 ~/.claude/plugins/cache/ajudd-claude-plugins/session/*/hooks/scripts/session-commit-guard.py || exit 1' >> "<repo_root>/.git/hooks/pre-commit"
+#!/usr/bin/env bash
+# session-commit-guard shim — installed by session:migrate.
+# Delegates to the live plugin script so plugin updates propagate automatically.
+# Regenerate via session:migrate if the marketplace path changes.
+GUARD="$HOME/.claude/plugins/marketplaces/<marketplace>/session/hooks/scripts/session-commit-guard.py"
+if [ -f "$GUARD" ]; then
+  exec python3 "$GUARD" "$@"
+fi
+echo "session-commit-guard: plugin script not found at $GUARD — skipping (commit allowed)." >&2
+exit 0  # fail open: a missing guard must never block commits
+```
+
+Install logic:
+
+```bash
+HOOK="<repo_root>/.git/hooks/pre-commit"
+if [ -f "$HOOK" ] && ! grep -q "session-commit-guard" "$HOOK"; then
+  # Foreign pre-commit hook already present (husky, etc.) — append a guard call,
+  # do not clobber it.
+  printf '\npython3 "$HOME/.claude/plugins/marketplaces/<marketplace>/session/hooks/scripts/session-commit-guard.py" || exit 1\n' >> "$HOOK"
 else
-  # Write full script content directly — no path dependency on plugin cache
-  cp "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session-commit-guard.py" "<repo_root>/.git/hooks/pre-commit"
-  chmod +x "<repo_root>/.git/hooks/pre-commit"
+  # No hook, or a prior session shim — (re)write the shim fresh.
+  cat > "$HOOK" <<'SHIM'
+<shim body from above, with <marketplace> substituted>
+SHIM
+  chmod +x "$HOOK"
 fi
 ```
 
-**Preferred approach:** Write the full script content directly into `.git/hooks/pre-commit` rather than calling the plugin cache path. This avoids breakage if the plugin is updated or the cache is cleared. Read `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session-commit-guard.py` and write its content to `.git/hooks/pre-commit`, prepending `#!/usr/bin/env python3` if not already present.
-
-Note: `.git/hooks/` is local only — not committed. Each developer installs by running `session:migrate` once.
+Note: `.git/hooks/` is local only — not committed. Each developer installs by running `session:migrate` once. Because the shim delegates to the marketplace clone, a later plugin fix needs no re-migration and no per-repo copy — just `claude plugin marketplace update`.
 
 ### 11a. Build `_index.md`
 
@@ -337,7 +356,7 @@ Ready to commit:
 Local only (not committed):
   ~/.claude/memory/sessions/<slug>/<name>.approved-hash — N files seeded
   ~/.claude/projects/<encoded>/memory/.migrated-to-repo — sentinel written
-  .git/hooks/pre-commit — session-commit-guard installed
+  .git/hooks/pre-commit — session-commit-guard shim installed (delegates to live plugin; auto-updates)
 
 Commit and push? (Yes / Edit message / Cancel)
 ```
