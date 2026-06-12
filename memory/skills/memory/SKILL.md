@@ -46,12 +46,15 @@ else:
 
 ## On-Demand Loading Rule
 
-**Nothing loads automatically.** In migrated repos, `MEMORY.md` is the only project memory file that auto-loads (via the `.claude/CLAUDE.md @import`); the local tier has no such import, so even the index is read on demand there. Individual feature memory files are read only when:
+**Nothing loads automatically — including the index.** There is no `.claude/CLAUDE.md @import`; migration does not create one. `MEMORY.md` itself is read on demand (by a memory or session command), not forced into context when the repo is opened. A developer who opens a migrated repo without invoking a command inherits zero overhead — every file under `.claude/memory/` is inert until a command reads it.
 
-1. The user explicitly runs `/memory:load` or `/memory:scan`, or
-2. A session command (start on a returning session) replays the session's recorded `Loaded memories:` and the user opts to reload them.
+Memory enters context only when:
 
-Do **not** proactively read feature memory files at session start or speculatively during work. The index is sufficient to know what exists. This is the primary defense against context rot — a stale memory that is never loaded cannot mislead.
+1. The user explicitly runs `/memory:load`, `/memory:scan`, or `/memory:review`, or
+2. A session command surfaces the session's recorded `Loaded memories:` and the user opts to reload them, or
+3. The session-start scan offer presents candidates and the user accepts some (a prompt — never a silent read).
+
+Do **not** proactively read memory files at session start or speculatively during work. This is the primary defense against context rot: a stale memory that is never loaded cannot mislead anyone. Rot becomes inert, not infectious — an unmaintained file simply sits unused rather than corrupting a teammate's context.
 
 ---
 

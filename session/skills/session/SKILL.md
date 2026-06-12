@@ -176,17 +176,17 @@ Project memories can be stored in the repo under `.claude/memory/` for team shar
 - Local (`~/.claude/projects/<encoded>/memory/`) — machine-specific, auto-loaded by Claude Code
 - Repo (`.claude/memory/`) — git-tracked, shared; activated by running `/session:migrate`
 
-**Activation:** Run `/session:migrate` — creates `.claude/memory/`, writes attribution frontmatter on each migrated file, regenerates `MEMORY.md`, writes `.claude/CLAUDE.md` `@import` and write redirect.
+**Activation:** Run `/session:migrate` — creates `.claude/memory/`, writes attribution frontmatter and feature labels on each migrated file, regenerates `MEMORY.md`. It does **not** write `.claude/CLAUDE.md` — there is no auto-load import (see below).
 
-**Auto-load:** `.claude/CLAUDE.md` contains `@.claude/memory/MEMORY.md`. Any Claude Code session in the repo loads it automatically — no session plugin required. `session:start` shows "Repo memory: N entries" as confirmation.
+**No auto-load — on demand only.** Project memory is **never** loaded automatically. There is no `.claude/CLAUDE.md @import`. A developer who opens a migrated repo without invoking a command inherits zero context overhead — the `.claude/memory/` files are inert until a command reads them. This is deliberate: the **memory plugin** governs all loading, and it only reads when the user asks.
 
-**On-demand loading rule:** The MEMORY.md index is the only project memory file that auto-loads. **Do not proactively read individual project memory files at session start** — the index is sufficient to know what exists. Load individual project memory files only when: (1) the user explicitly says "load memory" or "load memory for [topic]", or (2) the user's current task directly and specifically maps to a topic described in a memory file's one-line description.
+- Even `MEMORY.md` is read on demand (by the memory plugin or a session command) — it is not forced into context at repo open.
+- Load individual memory files only via `/memory:load`, `/memory:scan`, `/memory:review`, or when a session command surfaces the session's recorded `Loaded memories:` and the user opts to reload.
+- Never proactively read memory files at session start. Surfacing relevant memory happens through the memory plugin's scan offer (a prompt the user accepts or rejects) — never as a silent auto-read.
 
-When the user says "load memory [topic]": scan MEMORY.md descriptions for relevance matches, read only the matching files (typically 1–5), and report what was loaded. If no topic is given, ask: "What are you working on? I'll load the relevant files." Never load all files speculatively — always filter by relevance first.
+**Global vs. project memory:** The on-demand rule applies to project memory (repo `.claude/memory/` and local `~/.claude/projects/<encoded>/memory/`). Global memory (`~/.claude/memory/`) contains behavioral guidelines — feedback, preferences, cross-project rules — and may load freely as needed.
 
-**Global vs. project memory:** This on-demand rule applies to project memory (repo `.claude/memory/` and local `~/.claude/projects/<encoded>/memory/`). Global memory (`~/.claude/memory/`) contains behavioral guidelines — feedback, preferences, cross-project rules — and may load freely as needed.
-
-**Write redirect:** `.claude/CLAUDE.md` also contains an instruction to write new project memories to `.claude/memory/` instead of the local `~/.claude/projects/` path. Travels with the repo — any developer who opens the repo gets the redirect automatically.
+**Writes:** New project memories are written to `.claude/memory/` by the memory plugin's `/memory:save` (it resolves the path itself — no `CLAUDE.md` redirect needed). The memory plugin owns the read and write paths; the session plugin only records which memories were loaded (`Loaded memories:` field).
 
 **Merge semantics:** Re-running `/session:migrate` is safe — adds files not yet in repo, skips files already present. Multiple developers can migrate independently; files merge together with no overwrites.
 

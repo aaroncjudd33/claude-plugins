@@ -121,7 +121,7 @@ Before assembling the batch, gather contextual data needed to build the batch it
 4. **Story doc path:** read `paths.jiraStoriesDir` from user-config. Derive doc path: `<jiraStoriesDir>/<jiraProject>/<session-name>-<slug>.md`. Check if it exists.
 5. **Browser:** if type is story, check `<voPlaywrightTestsDir>/.browser-ws.txt`. If it exists, read `<voPlaywrightTestsDir>/.browser-owner.txt` and compare owner to current `<slug>/<session-name>`. Include in batch only if owner matches or file is absent.
 6. **Teams guide pre-fetch:** if `teams_chat != "none"` and type is story/cab, read `~/.claude/plugins/marketplaces/<pluginMarketplaceName>/comms/skills/comms/references/teams-html-guide.md` now — it will be needed if the user answers yes to the Teams question. (O9)
-7. **Loaded memories:** read the session file's `- **Loaded memories:**` field. If it has entries, note them for the memory-validation batch item (A2). If the field is absent or empty, skip that item.
+7. **Loaded memories:** read the session file's `- **Loaded memories:**` field. If it has entries, note them for the validate-shape of batch item (A2). If absent or empty, (A2) takes its capture-only shape — it is always presented.
 
 ### 7. Finish Batch
 
@@ -134,10 +134,16 @@ Assemble the batch in this order (omit items that don't apply):
   (N) CDK/DynamoDB patterns verified?    not-applicable / yes / remind
 ```
 
-**(A2) Memory validation** — include if the session has loaded memories (from Step 6 item 7). This closes the context-rot loop: every memory that influenced this session's work gets an accuracy check at the point of relevance.
-```
-  (N) Validate N loaded memories for accuracy?    skip / review
-```
+**(A2) Memory validation + capture** — **always include this item** (for any session type). This closes the context-rot loop and provides the finish-time opportunity to record project knowledge. Two shapes:
+
+- **If the session has loaded memories** (from Step 6 item 7): every memory that influenced this session's work gets an accuracy check, plus the option to capture a new one.
+  ```
+  (N) Loaded memories (M) — validate for accuracy, and capture anything new?    skip / review / new / both
+  ```
+- **If no memories were loaded:** offer capture only — especially valuable when work touched an area with no memory yet.
+  ```
+  (N) Capture anything from this session as a project memory?    skip / new
+  ```
 
 **(B) Epic update** — story/cab only, if session file has an `Epic` field AND story moved to completion status this session:
 ```
@@ -227,9 +233,11 @@ Reply with overrides or "go".
 - **not-applicable / yes:** proceed silently.
 - **remind:** surface after batch: "Run `/yl-cdk-migration` and `/yl-cdk-monitoring` before closing this story."
 
-*(A2) Memory validation:*
-- **review:** after the batch is processed, run the memory plugin's review flow against the session's loaded memories — for each, show the body and ask `keep / update / delete` (batch the prompts; this is a justified follow-up since per-memory dispositions can't be known in advance). Apply per `/memory:review` Step 3. Any memory deleted is also dropped from the session's `Loaded memories:` field in Step 9. If the memory plugin is not installed, fall back to inline review: read each memory file, show it, and on `update`/`delete` edit or remove the file and its `MEMORY.md` line directly.
-- **skip:** leave loaded memories untouched. (They simply carried into the session — skipping means none needed revision.)
+*(A2) Memory validation + capture:* (run after the batch is processed — these are justified follow-ups since per-memory dispositions and new-memory content can't be known in advance)
+- **review:** run the memory plugin's review flow against the session's loaded memories — for each, show the body and ask `keep / update / delete` (batch the prompts). Apply per `/memory:review` Step 3. Any memory deleted is also dropped from the session's `Loaded memories:` field in Step 9. If the memory plugin is not installed, fall back to inline review: read each file, show it, and on `update`/`delete` edit or remove the file and its `MEMORY.md` line directly.
+- **new:** run the memory plugin's `/memory:save` flow — infer the feature area from this session's work, propose a `feature:X/Y` label + name + body, and on confirm write the file, update `MEMORY.md`, and add it to the session's `Loaded memories:` field. Offer to capture more than one if the session spanned distinct areas. If the memory plugin is not installed, fall back to writing the file inline using the `feature:X/Y` convention.
+- **both:** run review first, then capture.
+- **skip:** leave memories untouched. (Skipping review means nothing needed revision; skipping capture means nothing new to record.)
 
 *(B) Epic update:*
 - **yes:** after batch is processed, ask follow-up: "What should be recorded? (decisions, resolved questions, or final notes)" — justified stop (content couldn't be asked before). Append to epic file. Update Story Map row to Done/RFT with today's date.

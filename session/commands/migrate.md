@@ -275,21 +275,11 @@ Confirm: "Proceed? (Yes / Skip)"
    ```
    Content: `"Migrated to repo: <repo_root>/.claude/memory/ on <today>"`
 
-5. Create or update `<repo_root>/.claude/CLAUDE.md`:
-   - If file does not exist: create it with both entries below.
-   - If exists and `@.claude/memory/MEMORY.md` import is already present: skip the import line, but still add the Project Memory section if absent.
-   - If exists and import not present: append both entries.
+5. **Do NOT create or modify `<repo_root>/.claude/CLAUDE.md`.** Project memory is loaded **on demand only** by the memory plugin — never auto-loaded. Adding an `@.claude/memory/MEMORY.md` import to `CLAUDE.md` would force the index into every developer's context the moment they open the repo, without invoking any command, with real token cost — the exact overhead this design rejects.
 
-   Content to add:
-   ```
-   @.claude/memory/MEMORY.md
+   Instead: the memory plugin resolves `.claude/memory/` via its own Path Resolution. It reads `MEMORY.md` and individual files only when the user runs `/memory:load`, `/memory:scan`, `/memory:review`, or a session command that surfaces them. It writes new memories to `.claude/memory/` via `/memory:save`. No `CLAUDE.md` redirect is needed — the plugin already knows the path.
 
-   ## Project Memory
-   This repo uses `.claude/memory/` for shared project memory. When saving
-   project-level memories (feedback, project context, references), write to
-   `.claude/memory/<filename>.md` and update `.claude/memory/MEMORY.md` —
-   not the local `~/.claude/projects/` path.
-   ```
+   If a `<repo_root>/.claude/CLAUDE.md` already exists for other reasons, leave it untouched. If it contains a stale `@.claude/memory/MEMORY.md` import from a previous version of this command, remove only that import line and report it: "Removed auto-load import from .claude/CLAUDE.md — project memory now loads on demand via the memory plugin."
 
 ### 12. Confirm and Commit
 
@@ -301,9 +291,9 @@ Ready to commit:
   .claude/sessions/_history.md — N entries tagged @<handle>
   .claude/sessions/.gitignore  — includes *.approved-hash exclusion
   .gitignore                 — added .claude/config/ exclusion
-  .claude/memory/            — J memory file(s) added (K skipped — already present)
+  .claude/memory/            — J memory file(s) added (K skipped — already present), feature labels applied
   .claude/memory/MEMORY.md   — index regenerated (N entries)
-  .claude/CLAUDE.md          — @import and write redirect added/updated
+  (no .claude/CLAUDE.md — project memory loads on demand via the memory plugin, never auto-loaded)
 
 Local only (not committed):
   ~/.claude/memory/sessions/<slug>/<name>.approved-hash — N files seeded
@@ -313,11 +303,11 @@ Local only (not committed):
 Commit and push? (Yes / Edit message / Cancel)
 ```
 
-Omit the `.claude/memory/` and `.claude/CLAUDE.md` lines if Step 11b was skipped.
+Omit the `.claude/memory/` lines if Step 11b was skipped.
 
 Default commit message: `chore: add Claude Code session files and project memory (.claude/)`
 
-- **Yes:** stage `.claude/sessions/`, `.claude/memory/`, `.claude/CLAUDE.md`, and `.gitignore` changes, commit, push.
+- **Yes:** stage `.claude/sessions/`, `.claude/memory/`, and `.gitignore` changes, commit, push.
 - **Edit message:** ask for preferred message, then commit and push.
 - **Cancel:** leave files in place but do not commit. User can commit manually.
 
@@ -333,8 +323,11 @@ Migrated — session files and project memory are now repo-based.
   Local config:  ~/.claude/config/<slug>.json
 
 Going forward all session reads and writes use .claude/sessions/.
-Going forward project memory writes go to .claude/memory/ (enforced by .claude/CLAUDE.md).
-To revert memory: delete .claude/ folder — Claude falls back to local memory automatically.
+Project memory lives in .claude/memory/ and loads ONLY on demand via the memory plugin
+(/memory:load, :scan, :review) — nothing auto-loads, no .claude/CLAUDE.md import.
+A developer who opens this repo without invoking a plugin command inherits zero context
+overhead — the files are inert until a command reads them.
+To revert memory: delete .claude/memory/ — the memory plugin falls back to local memory automatically.
 New developers who pull this repo will be prompted for their local path on first session start.
 ```
 

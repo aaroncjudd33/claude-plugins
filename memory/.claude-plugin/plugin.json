@@ -1,6 +1,6 @@
 {
   "name": "memory",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Project and feature memory management — load, save, scan, and review git-tracked project memories by feature label. On-demand loading; nothing loads automatically.",
   "author": {
     "name": "Aaron Judd",
