@@ -103,27 +103,15 @@ The index is built lazily: Step 8 seeds an entry whenever a session is loaded or
 
 If sessions exist, render the table with section headers per status group. **By default show only in-progress and paused sessions** — do not render completed rows unless the user types `all` or `status completed`. Column header appears once after the title line. Omit a section entirely if it has no sessions.
 
-**Column widths (pad with spaces to align):**
-- `#` — 4 chars, right-aligned
-- `name` — 13 chars, left-aligned
-- `title` — 33 chars, left-aligned
-- `status` — 14 chars, left-aligned
-- `in` — 4 chars, right-aligned
-- `out` — 5 chars, right-aligned
-- `created` — 15 chars, left-aligned
-- `last edit` — remainder
+**Do not pad or align columns.** Output rows as plain tab-separated or loosely spaced text — no fixed widths, no character counting. Fast output is more important than alignment.
 
 ```
 Sessions in virtual-office
-
-  #    name          title                             status         in    out  created          last edit
+  #  name         title                          status       in  out  created        last edit
 
   In Progress
-  1    CAB-9240      BP2 - Downline Reports - SG...    in-progress     0      0  @ajudd May 18    @ajudd May 27  ←
-  2    BPT2-6377     Shopify Member Agreement Pro...   in-progress     1      0  @ajudd Jun 01    @nivi  Jun 11
-
-  Paused
-  3    BPT2-6100     Some paused story title...        paused          0      0  @ajudd May 10    @nivi  Jun 05
+  1  CAB-9240     BP2 - Downline Reports - SG... in-progress   0    0  @ajudd May 18  @ajudd May 27  ←
+  2  BPT2-6377    Shopify Member Agreement Pro.. in-progress   1    0  @ajudd Jun 01  @nivi Jun 11
 
   2 in-progress · 1 paused · 8 completed
 ```
