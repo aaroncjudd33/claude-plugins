@@ -101,7 +101,7 @@ Run **three calls in parallel** (four for plugin type). **Issue all calls in a s
 ```
 The index is built lazily: Step 8 seeds an entry whenever a session is loaded or created. If the user types `index`, run a parallel read of all session `.md` files (no git log), extract `updated-by:`, `updated:`, `created-by:`, and `Title:` fields, write `_index.md` in 7-column format, and re-display the table.
 
-If sessions exist, display in-progress and paused sessions first (sorted by updated-date, newest first), completed sessions grouped at the bottom. Always include a column header line:
+If sessions exist, display in-progress and paused sessions only by default (sorted by updated-date, newest first). **Do not show completed sessions unless the user types `all`.** Always include a column header line:
 ```
 Sessions in <slug>
   #    name         title                            status        in  out  created        last edit
