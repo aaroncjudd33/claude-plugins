@@ -73,7 +73,7 @@ Run **three calls in parallel** (four for plugin type). **Issue all calls in a s
    echo "---INBOX---"
    for f in "<session_root>/_inbox"*.md; do printf "%s: " "$f"; grep -c "^## \|^\[20" "$f" 2>/dev/null || echo 0; done
    echo "---ACTIVE---"
-   cat "<session_root>/_active" 2>/dev/null || true
+   cat "~/.claude/memory/sessions/<slug>/_active" 2>/dev/null || true
    ```
 
    **Non-plugin type:**
@@ -83,7 +83,7 @@ Run **three calls in parallel** (four for plugin type). **Issue all calls in a s
    echo "---REPO---"
    RTOP=$(git rev-parse --show-toplevel 2>/dev/null); if [ -n "$RTOP" ] && [ -f "$RTOP/.claude/memory/MEMORY.md" ]; then grep -c "^\- \[" "$RTOP/.claude/memory/MEMORY.md"; else echo "no-repo-memory"; fi
    echo "---ACTIVE---"
-   cat "<session_root>/_active" 2>/dev/null || true
+   cat "~/.claude/memory/sessions/<slug>/_active" 2>/dev/null || true
    ```
 
    Parse sections by `---X---` separator lines. Global inbox (`_inbox.md`) counted separately — surfaced in Step 3. **Do not read any inbox file contents at listing time.** Repo memory: if output is a number that's the entry count; `no-repo-memory` → omit the repo memory line.
@@ -107,24 +107,25 @@ If sessions exist, render the table with section headers per status group. **By 
 
 ```
 Sessions in virtual-office
-  #  name         title                          status       in  out  created        last edit
+  #  name  title  status  in  out  created  last edit
 
   In Progress
-  1  CAB-9240     BP2 - Downline Reports - SG... in-progress   0    0  @ajudd May 18  @ajudd May 27  ←
-  2  BPT2-6377    Shopify Member Agreement Pro.. in-progress   1    0  @ajudd Jun 01  @nivi Jun 11
+  1  CAB-9240  BP2 - Downline Reports - SG...  in-progress  0  0  @ajudd May 18  @ajudd May 27  ←
+  2  BPT2-6377  Shopify Member Agreement Pro..  in-progress  1  0  @ajudd Jun 01  @nivi Jun 11
 
   2 in-progress · 1 paused · 8 completed
 ```
+(Example rows are intentionally unaligned — do not add spacing to match column widths.)
 
 **Title truncation:** cap title at 32 characters. If longer, truncate and append `...`. If title is `—` (absent), show `—` with no padding.
 
-Show `@creator date` in "created" column; show `@updater date` in "last edit" column. When creator == updater AND dates differ, still show both columns. Always show both `in` and `out` counts (show `0` — never omit). Mark the active session from call 6 with `←` at the end of that row.
+Show `@creator date` in "created" column; show `@updater date` in "last edit" column. When creator == updater AND dates differ, still show both columns. Always show both `in` and `out` counts (show `0` — never omit). Mark the active session (from the `---ACTIVE---` result in call 2) with `←` at the end of that row.
 
 **Status summary line:** always show all three statuses: `N in-progress · N paused · N completed`. Show `0` for any status with no sessions — never omit a status. When user types `all`, re-display adding a Completed section with all completed sessions.
 
 **`filter_mine` active** (user passed `mine` arg): filter index entries where `@created-by` or `@updated-by` matches the current user — no additional file reads needed. Show `[filtered to @<handle>]` on the header.
 
-If repo memory was found (call 5), add one line after the sessions table:
+If repo memory was found (call 2, `---REPO---` section), add one line after the sessions table:
 ```
   Repo memory: N entries
 ```
@@ -296,6 +297,8 @@ Run **three reads in parallel:**
   wc -l < "<session_root>/_history.md" 2>/dev/null && tail -n 1 "<session_root>/_history.md" 2>/dev/null || echo "0"
   ```
 - Read `<session_root>/_inbox_<name>.md` (skip if file does not exist)
+
+**Security check (repo sessions only):** If `session_root` is inside a repo (not `~/.claude/memory/sessions/`), run the approval-hash check before displaying any session content. Follow the same gate as start-impl.md Step 4: compute `git hash-object`, compare to `~/.claude/memory/sessions/<slug>/<name>.approved-hash`, and require approval on first load or when the file changed since last approval. For local plugin sessions (`session_root` is under `~/.claude/`), skip this check.
 
 Display resume block:
 ```
