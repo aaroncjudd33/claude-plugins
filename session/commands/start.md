@@ -71,7 +71,7 @@ Run **three calls in parallel** (four for plugin type). **Issue all calls in a s
    **Plugin type:**
    ```bash
    echo "---INBOX---"
-   for f in "<session_root>/_inbox"*.md; do printf "%s: " "$f"; grep -c "^## \|^\[20" "$f" 2>/dev/null || echo 0; done
+   find "<session_root>" -maxdepth 1 -name '_inbox*.md' 2>/dev/null | while read -r f; do printf "%s: " "$f"; grep -c "^## \|^\[20" "$f" 2>/dev/null || echo 0; done
    echo "---ACTIVE---"
    cat "~/.claude/memory/sessions/<slug>/_active" 2>/dev/null || true
    ```
@@ -79,7 +79,7 @@ Run **three calls in parallel** (four for plugin type). **Issue all calls in a s
    **Non-plugin type:**
    ```bash
    echo "---INBOX---"
-   for f in "<session_root>/_inbox"*.md; do printf "%s: " "$f"; grep -c "^## \|^\[20" "$f" 2>/dev/null || echo 0; done
+   find "<session_root>" -maxdepth 1 -name '_inbox*.md' 2>/dev/null | while read -r f; do printf "%s: " "$f"; grep -c "^## \|^\[20" "$f" 2>/dev/null || echo 0; done
    echo "---REPO---"
    RTOP=$(git rev-parse --show-toplevel 2>/dev/null); if [ -n "$RTOP" ] && [ -f "$RTOP/.claude/memory/MEMORY.md" ]; then grep -c "^\- \[" "$RTOP/.claude/memory/MEMORY.md"; else echo "no-repo-memory"; fi
    echo "---ACTIVE---"

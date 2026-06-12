@@ -19,7 +19,7 @@ Run **three calls in parallel:**
 1. `ls -lt <session_root>/` — extract session names from `.md` filenames, skipping `_*` files. Use file modification date as sort key and display date.
 2. Inbox/outbox counts (batch shell loop):
    ```bash
-   for f in "<session_root>/_inbox"*.md; do echo "=== FILE: $f ==="; cat "$f"; done
+   find "<session_root>" -maxdepth 1 -name '_inbox*.md' 2>/dev/null | while read -r f; do echo "=== FILE: $f ==="; cat "$f"; done
    ```
    Count logical items per named inbox file (lines beginning with `[20` or `## `). Also check `_outbox_<name>.md` files for outbox counts.
 3. **Read `<session_root>/_index.md`** — handle, status, and title data for all sessions.

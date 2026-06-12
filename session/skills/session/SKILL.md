@@ -51,6 +51,8 @@ Session index (in session_root — tracked with session files):
 
 All cross-session routing goes through `/session:inbox` — scope guards invoke it rather than writing directly.
 
+**Shell portability (macOS/zsh):** Never iterate a bare filename glob that may match nothing — `for f in <dir>/_inbox*.md` aborts the whole command under zsh (macOS default shell) with "no matches found", which silently breaks listings. Always use a no-match-safe form: `find <dir> -maxdepth 1 -name '_inbox*.md' 2>/dev/null | while read -r f; do …; done`. Applies to every command that enumerates `_inbox*`, `_restore_*`, `*.approved-hash`, or `refinement-*` files.
+
 ### First-Run Auto-Config
 
 Triggered once per developer per repo-based project when `~/.claude/config/<slug>.json` is missing. **No prompt needed** — derive everything silently:

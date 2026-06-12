@@ -15,7 +15,7 @@ Fast context restoration after `/clear`. Reads `_restore_*` marker files to find
 
 Run `pwd` and extract the repo slug. Resolve `session_root` using Path Resolution (see Session Skill). `_restore_*` markers are always local — scan `~/.claude/memory/sessions/<slug>/`, not `session_root`.
 
-Scan `~/.claude/memory/sessions/<slug>/` for any files matching `_restore_*`. Each file represents a session waiting to be resumed after a `/clear`.
+Scan `~/.claude/memory/sessions/<slug>/` for any files matching `_restore_*`. Use a no-match-safe command (a bare `_restore_*` glob aborts under zsh on macOS) — e.g. `find ~/.claude/memory/sessions/<slug>/ -maxdepth 1 -name '_restore_*' 2>/dev/null`. Each file represents a session waiting to be resumed after a `/clear`.
 
 - **One found:** proceed automatically — no prompt needed.
 - **Multiple found:** show a numbered list and wait for a plain-text reply — no widget:
