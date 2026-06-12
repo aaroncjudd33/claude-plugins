@@ -35,8 +35,10 @@ SECRET_PATTERNS = [
     (r"\bAKIA[0-9A-Z]{16}\b", "aws-access-key-id"),
     (r"eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}", "jwt-token"),
     (r"-----BEGIN (?:RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY-----", "private-key"),
-    # Known PII field names that should never land in a shared repo
-    (r"(?i)\b(fedtaxnum|ssn|social[_-]?security|tax[_-]?id|nationalid)\b\s*[:=]?\s*\w", "pii-identity-field"),
+    # Known PII field names followed by an ID-shaped value (digit or mask char).
+    # Anchoring the value to [\dxX*] avoids prose false positives ("M2M tax-id
+    # dependency") while still catching space-separated numbers ("ssn 123456789").
+    (r"(?i)\b(fedtaxnum|ssn|social[_-]?security|tax[_-]?id|nationalid)\b\s*[:=]?\s*[\dxX*]", "pii-identity-field"),
 ]
 
 
