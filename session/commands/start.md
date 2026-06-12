@@ -28,7 +28,8 @@ If arguments were passed to `/session:start`, attempt to resolve them before run
 2. If arg is `mine`: set `filter_mine = true`, fall through to Step 1 — full discovery with mine filter.
 3. Derive session type and target name from the arg (story key → type=story, name=BPT2-XXXX; plugin name → type=plugin, name=<plugin>; etc.).
 4. Check whether `<session_root>/<name>.md` exists:
-   - **Exists** → read start-impl.md, go directly to Step 4 (Resume existing) with that session.
+   - **Exists + plugin session** → go directly to the Plugin session resume path in Step 4 (no start-impl.md read needed).
+   - **Exists + other type** → read start-impl.md, go directly to Step 4 (Resume existing) with that session.
    - **Does not exist** → before Step 6, check `<session_root>/_inbox.md` for a `[spawn]` entry whose label matches the target name. If found, archive it immediately with stamp `[PICKED UP YYYY-MM-DD — <target-name>]` to `<session_root>/_inbox_archive.md` (creating the archive file if needed). Read start-impl.md, then go to Step 6.
 5. Skip Steps 2, 3 entirely — no session listing, no inbox counts, no routing block.
 
@@ -57,7 +58,7 @@ Resolve `session_root` and `handle` using Path Resolution (see Session Skill). I
 
 ### 2. Load Sessions
 
-Run **six calls in parallel** — no session file reads at this stage. **Issue all six as a single parallel batch before processing any result — do not wait for one to complete before issuing the next.**
+Run **three calls in parallel** (four for plugin type). **Issue all calls in a single response — do not process any result before all calls are issued.**
 
 1. **List sessions directory with timestamps:**
    ```bash
@@ -65,30 +66,34 @@ Run **six calls in parallel** — no session file reads at this stage. **Issue a
    ```
    Extract session names from `.md` filenames only. **Skip every file whose name starts with `_`** (e.g. `_history.md`, `_inbox.md`, `_index.md`, `_active`, `_inbox_archive.md`) and skip `*.approved-hash` files — do not read any of them. Use the file modification date as the sort key and display date.
 
-2. **Count inbox items — no content read:**
+2. **Combined bash — inbox counts + active session + repo memory (non-plugin only). Issue as a single Bash call:**
+
+   **Plugin type:**
    ```bash
+   echo "---INBOX---"
    for f in "<session_root>/_inbox"*.md; do printf "%s: " "$f"; grep -c "^## \|^\[20" "$f" 2>/dev/null || echo 0; done
+   echo "---ACTIVE---"
+   cat "<session_root>/_active" 2>/dev/null || true
    ```
-   Extract item count per named inbox file from the line counts. Global inbox (`_inbox.md`) counted separately — surfaced in Step 3. **Do not read any inbox file contents at listing time** — content is loaded in Step 5 only after the user selects a session.
 
-3. **Read `<marketplace_root>/.claude-plugin/marketplace.json`** (plugin type only — used in Step 3).
+   **Non-plugin type:**
+   ```bash
+   echo "---INBOX---"
+   for f in "<session_root>/_inbox"*.md; do printf "%s: " "$f"; grep -c "^## \|^\[20" "$f" 2>/dev/null || echo 0; done
+   echo "---REPO---"
+   RTOP=$(git rev-parse --show-toplevel 2>/dev/null); if [ -n "$RTOP" ] && [ -f "$RTOP/.claude/memory/MEMORY.md" ]; then grep -c "^\- \[" "$RTOP/.claude/memory/MEMORY.md"; else echo "no-repo-memory"; fi
+   echo "---ACTIVE---"
+   cat "<session_root>/_active" 2>/dev/null || true
+   ```
 
-4. **Read `<session_root>/_index.md`** (if it exists). Two supported formats — detect by counting `|`-delimited columns in the header:
+   Parse sections by `---X---` separator lines. Global inbox (`_inbox.md`) counted separately — surfaced in Step 3. **Do not read any inbox file contents at listing time.** Repo memory: if output is a number that's the entry count; `no-repo-memory` → omit the repo memory line.
+
+3. **Read `<session_root>/_index.md`** (if it exists). Two supported formats — detect by counting `|`-delimited columns in the header:
    - **7-column (current):** `name | @created-by | created-date | @updated-by | updated-date | status | title`
    - **6-column (legacy):** `name | created-by | updated-by | date | status | title` — treat `date` as both created-date and updated-date; prepend `@` to creator/updater values if missing.
    Parse whichever format is present. **Do not read any session `.md` files during this step.**
 
-5. **Check for repo memory — skip for plugin sessions.** Plugin marketplace directories are not work repos; this always returns `no-repo-memory`. For **plugin type**: omit this call entirely and omit the "Repo memory" line from the listing. For all other types:
-   ```bash
-   git rev-parse --show-toplevel 2>/dev/null && [ -f "<repo_root>/.claude/memory/MEMORY.md" ] && grep -c "^\- \[" "<repo_root>/.claude/memory/MEMORY.md" || echo "no-repo-memory"
-   ```
-   If output is a number, that's the entry count. If `no-repo-memory`, skip the repo memory line.
-
-6. **Read `_active`:**
-   ```bash
-   cat <session_root>/_active 2>/dev/null
-   ```
-   Used to mark the currently active session with `←` in the table.
+4. **Read `<marketplace_root>/.claude-plugin/marketplace.json`** (plugin type only — used in Step 3). Omit for non-plugin types.
 
 **If `_index.md` is absent or missing entries for sessions found in call 1:** display the table immediately using only data from calls 1 and 4 — show `—` for any missing creator, created-date, or title columns. **Do not read session files or run git log at listing time.** Add a footer note below the table:
 ```
@@ -272,13 +277,72 @@ Then output the routing block:
 
 ---
 
-### 4. Handoff to Implementation
+### 4. Act on User's Reply
 
-Once the user replies (their reply may bundle session number, story key, plugin name, mode, and modifiers all at once), **read `session/commands/start-impl.md` immediately** as the very next action. That file contains Steps 4–9: session load, security check, inbox processing, Teams setup, write state, and routing by type.
-
-If a follow-up question is needed (story key, plugin name, session name) — ask it first, get the answer, then read start-impl.md.
-
-Do not proceed further until start-impl.md is loaded.
+Once the user replies, act immediately. **Do not read start-impl.md first** for the plugin resume path below.
 
 ---
-<!-- Steps 4–9 are in start-impl.md — loaded on demand after user picks -->
+
+**Plugin session — resume existing:**
+
+Run **three reads in parallel:**
+- Read `<session_root>/<name>.md`
+- ```bash
+  wc -l < "<session_root>/_history.md" 2>/dev/null && tail -n 1 "<session_root>/_history.md" 2>/dev/null || echo "0"
+  ```
+- Read `<session_root>/_inbox_<name>.md` (skip if file does not exist)
+
+Display resume block:
+```
+Resuming <name>
+  Branch:      [branch]
+  Updated by:  @<handle>
+  Mode:        [planning / coding / both]
+  Open items (mine, N):
+    - [date @handle] item
+  Inbox (N items):
+    1  [date] <description> — in-progress / pending
+  Next steps (mine, N):
+    - [date @handle] step
+  History:     N entries — last: [condensed one-liner]
+  Memory:      <N> global entries available — say 'load memory [topic]' to load relevant files
+```
+- Omit teammate sections if no items tagged with a different @handle.
+- If inbox empty: `Inbox: none`. If history file missing: `History: none`.
+- Count N by scanning `~/.claude/memory/MEMORY.md` lines starting with `- [` (already in context — no extra call).
+- Mine vs. teammate: item is mine if tagged `[YYYY-MM-DD @<handle>]` matching current user, or untagged.
+
+**Inbox + reviewed batch** (one stop — Pattern 2). Omit entirely if inbox is empty AND plugin version unchanged:
+```
+(1) Inbox [in-progress]: "<desc>"  →  keep / done
+(2) Inbox: "<desc>"  →  work / done / backlog / keep
+(3) Plugin reviewed? (last: v<stored>, current: v<current>)  →  skip / yes
+
+Reply with overrides or "go".
+```
+Plugin reviewed check: `grep -o '"version": "[^"]*"' "<plugin_root>/.claude-plugin/plugin.json" | head -1` — compare MAJOR.MINOR of `Plugin reviewed:` field vs current. Show only if they differ.
+
+Apply answers:
+- **in-progress done**: archive with `[DONE YYYY-MM-DD]` stamp, remove from inbox, remove matching `[inbox] <item>` from Open items.
+- **in-progress keep**: no change.
+- **pending work**: add `[in-progress — <session-name>, YYYY-MM-DD]` immediately after the `## [date]...` header; add `[inbox] <short desc>` to Open items.
+- **pending done**: archive with stamp.
+- **backlog**: move to `_backlog_<name>.md` (create if needed), remove from inbox.
+- **pending keep**: leave as-is.
+- **reviewed yes**: update `Plugin reviewed: <current-version>` in session file.
+
+Write state:
+- `<session_root>/<name>.md` — updated-by `@<handle>`, updated date = today, Status = in-progress, Open items = post-inbox state.
+- `~/.claude/memory/sessions/<slug>/_active` — session name (plain text).
+- `_index.md` — find line starting with `<name> | ` and replace (or append): `<name> | @<created-by> | <created-date> | @<handle> | <today> | in-progress | <title-or-dash>`.
+
+Read `<plugin_root>/.claude-plugin/plugin.json` and `<plugin_root>/skills/<plugin>/SKILL.md` in parallel. Apply any mode modifier from the user's reply. Ask what needs to change.
+
+---
+
+**All other cases** — read `session/commands/start-impl.md` immediately, then continue from Step 4 there:
+- New plugin session
+- Work / personal / general session (resume or new)
+- Any case requiring a follow-up question (story key, plugin name, session name)
+
+<!-- Steps 4–9 for new sessions and non-plugin types are in start-impl.md -->
