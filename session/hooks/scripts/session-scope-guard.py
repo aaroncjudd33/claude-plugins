@@ -47,6 +47,13 @@ def main():
     except Exception:
         sys.exit(0)
 
+    # Opt-in gate. Session enforcement is OFF by default — the plugin ships
+    # dormant. A fresh install (no flag, or sessionGate.enforce != true) never
+    # blocks an edit, so anyone can work their repos without the session
+    # workflow. Only users who deliberately set sessionGate.enforce = true opt in.
+    if not config.get("sessionGate", {}).get("enforce", False):
+        sys.exit(0)
+
     paths = config.get("paths", {})
     marketplace_name = paths.get("pluginMarketplaceName", "")
     work_repos_dir = paths.get("workReposDir", "")

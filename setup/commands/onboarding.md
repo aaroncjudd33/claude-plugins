@@ -256,7 +256,26 @@ For any field left blank or skipped: write an empty string. The relevant plugin 
 
 Note: Playwright test directories are configured per-project when you first run `/e2e:start` — not stored here.
 
-After the user confirms all values, proceed to Step 7.
+After the user confirms all values, proceed to Step 6a.
+
+### 6a. Session enforcement (opt-in, default OFF)
+
+Ask whether to turn on the hard session gate. Keep it one question with a clear default:
+
+```
+Session enforcement (optional, default OFF):
+
+  When ON, edits inside your work/personal repos and the plugin marketplace are
+  blocked unless you've started a session (/session:start). This keeps every change
+  attached to a tracked session — useful if you live in the session workflow.
+
+  When OFF (default), the session plugin stays out of your way entirely — you can
+  edit any repo normally without ever starting a session. You can flip this on later.
+
+  Turn session enforcement on?  (y / N)
+```
+
+Default to **OFF** (`enforce: false`) on anything other than an explicit "y". Record the answer for the Step 7 config write. This is the single most important default in onboarding: a fresh install must never block a user's edits.
 
 ### 7. Confirm and write user config
 
@@ -300,9 +319,14 @@ If yes, **read the existing `~/.claude/plugins/user-config.json` first** (if it 
     "pluginMarketplaceName": "<collected or preserved>",
     "workReposDir": "<collected or preserved or empty string>",
     "personalProjectsDir": "<collected or preserved or empty string>"
+  },
+  "sessionGate": {
+    "enforce": <true if the user opted in at Step 6a, else false — preserve existing value on a re-run>
   }
 }
 ```
+
+**`sessionGate.enforce` defaults to `false`.** This keeps the session plugin **dormant** on a fresh install: the `session-scope-guard.py` PreToolUse hook exits immediately and never blocks an edit, so the user can work any repo without starting a session. Only a user who explicitly opts in (Step 6a) gets `true`, which turns on the hard "no edits outside an active session" gate within their configured zones. Never default this to `true` — a plugin that blocks edits out of the box is hostile to anyone who just wants to try it.
 
 Confirm with the following message — display it exactly as shown:
 
