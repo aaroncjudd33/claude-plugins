@@ -196,6 +196,30 @@ When the user says "load memory [topic]": scan MEMORY.md descriptions for releva
 
 ---
 
+## Loaded Memories & Commit Tracking
+
+Two session-file fields connect the session lifecycle to the **memory plugin** and to git history. The session plugin owns the schema (writes them in checkpoint/finish/commit/start); their content is produced elsewhere.
+
+**`Loaded memories:`** — feature memories pulled into context during the session, recorded by the memory plugin (`/memory:load`, `/memory:scan`, `/memory:save`). Format:
+```
+- **Loaded memories:**
+  - checkout-payment-validation  [feature:checkout/payment-validation]
+```
+- **Written by:** the memory plugin. **Preserved by:** checkpoint/commit (carry forward unchanged). **Surfaced by:** start (resume block, with a `reload` option). **Validated by:** finish (the memory-validation batch item runs `/memory:review` against this list; deleted memories drop out).
+- This is the anti-rot loop: a memory only lands here if it was loaded for real work, and everything here gets an accuracy check at finish. Memories never loaded stay inert.
+
+**`Commits:`** — running list of commits made during the session, written by `session:commit`. Format:
+```
+- **Commits:**
+  - [2026-06-12] a1b2c3d — fix: validation error on empty cart  https://github.com/org/repo/commit/a1b2c3d
+```
+- **Written by:** session:commit (appends the short SHA + subject + GitHub link if a remote exists). **Preserved by:** checkpoint/finish/start. **Surfaced by:** start (resume block shows the most recent 3).
+- Joins the other session artifacts (story, CAB, PR, deploy links) so returning to a session surfaces everything that was produced in it.
+
+Both fields are **omitted entirely** when empty — older session files without them load fine (backward compatible). The memory plugin reads/writes `Loaded memories:` through this skill's Path Resolution to find the active session.
+
+---
+
 ## Epic Context — Cross-Story Research
 
 When the active session has an `Epic` field, the epic file (`~/.claude/memory/epics/<key>.md`) is the canonical source for anything that crosses story boundaries: architecture decisions, blockers, open questions, and the story map.

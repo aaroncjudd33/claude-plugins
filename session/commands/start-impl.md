@@ -73,6 +73,10 @@ Loaded by `start.md` after the user makes their selection. Context already in sc
       - [date @ajudd] next step one
     Teammate next steps (N):
       - [date @other] their suggestion
+    Loaded memories (N):
+      - <name>  [<label>]
+    Recent commits (N):
+      - [date] <sha> — <subject>
     Related CAB: [CAB-XXX]   ← story type only, omit if none
     Post-deploy: N pending / all acknowledged / none   ← story type only, omit if none
     Epic:        [BPT2-XXXX]   ← story type only, omit if none
@@ -80,6 +84,8 @@ Loaded by `start.md` after the user makes their selection. Context already in sc
     History:     N entries — last: [condensed one-liner of most recent _history.md entry]
     Memory:      <N global> entries available — say 'load memory [topic]' to load relevant files
   ```
+  - **Loaded memories:** read from the session file's `Loaded memories:` field. Omit the line if absent or empty. If present, append `— say 'reload' to load them back into context`; do not auto-read the files (on-demand rule). On `reload`, read each listed file from the resolved project memory root.
+  - **Recent commits:** read from the session file's `Commits:` field. Show the most recent 3; omit the line if absent or empty.
   For non-plugin sessions where Call 5 (repo memory) returned a count M, show `<N global> global / <M project> project entries` instead. For plugin sessions (Call 5 skipped), show global count only. Count N by scanning the global `~/.claude/memory/MEMORY.md` index already in context (lines starting with `- [`); no extra tool call needed.
 
   If inbox is empty: `Inbox: none`. If `_history.md` does not exist: `History: none`.
@@ -305,7 +311,11 @@ updated: [today's date]
 - **Branch:** [branch or "n/a"]
 - **Last worked on:** [will be updated at checkpoint]
 - **Open items:** [carried from previous session, or "none"]
-- **Next step:** [will be updated at checkpoint]
+- **Next steps:** [will be updated at checkpoint — array format; "none" for a new session]
+- **Loaded memories:**   ← preserve on resume; omit for a new session (none yet). Written by the memory plugin
+  - <name>  [<label>]
+- **Commits:**   ← preserve on resume; omit for a new session. Written by session:commit
+  - [YYYY-MM-DD] <short-sha> — <commit subject>
 - **Plugin reviewed:** <version>   ← plugin type only; write current plugin.json version when marking reviewed; omit for other types
 - **Related CAB:** [CAB-XXX or "none"]   ← story type only, omit for other types
 - **Epic:** [BPT2-XXXX]   ← story type only; omit if no Jira epic link; set from Jira Epic Link during new story kickoff
@@ -369,6 +379,7 @@ Any implementation work should be routed to this session's inbox for a coding se
    - **No Epic Link in Jira:** skip silently.
    - If the session file already has an `Epic` field, skip (epic was loaded in Step 4).
 4. Summarize: what's done, what's open, what's next.
+5. **Memory scan offer** — if project memory exists for this repo (a `MEMORY.md` at the resolved project memory root) and the session has no `Loaded memories:` yet, offer once: `Scan project memory for what's relevant to this work? (scan / skip)`. On `scan`, run the memory plugin's `/memory:scan` flow (infer feature area, present candidates, load picks, record to `Loaded memories:`). On `skip`, proceed. Do not auto-load.
 
 **Story — new kickoff:**
 1. `getJiraIssue` → transition to In Progress → create feature branch.
@@ -381,7 +392,8 @@ Any implementation work should be routed to this session's inbox for a coding se
      - **yes:** create `~/.claude/memory/epics/<key>.md` with pre-populated structure: epic title from Jira, story map row for the current story. Use `references/epic-template.md` from the session skill as the structural template.
    - **Found:** note "Epic memory loaded for <key>" — file is already in context.
    - Set `Epic: <key>` in the session file.
-3. Investigate codebase, confirm Teams chat exists, check Confluence page.
+3. **Memory scan offer** — if project memory exists for this repo (a `MEMORY.md` at the resolved project memory root), offer once: `Scan project memory for what's relevant to this story? (scan / skip)`. On `scan`, run the memory plugin's `/memory:scan` flow using the story title and branch as the feature-area signal, present candidates, load the user's picks, and record them to the session's `Loaded memories:` field. On `skip`, proceed. Never auto-load — this is the point-in-time where relevant memory is surfaced for a new story.
+4. Investigate codebase, confirm Teams chat exists, check Confluence page.
 
 **CAB — new:**
 - Route to `/release:create-cab`.

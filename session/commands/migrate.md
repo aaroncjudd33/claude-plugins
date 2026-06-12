@@ -243,6 +243,21 @@ Confirm: "Proceed? (Yes / Skip)"
         Get mtime via: `python3 -c "import os,datetime; t=os.path.getmtime('<path>'); print(datetime.date.fromtimestamp(t))"`
       - Write to `<repo_root>/.claude/memory/<filename>`.
 
+2a. **Label walk-through** — apply the memory plugin's feature-label convention to every file being added. Read `~/.claude/plugins/marketplaces/<pluginMarketplaceName>/memory/skills/memory/references/label-convention.md` first (derive `pluginMarketplaceName` from `~/.claude/plugins/user-config.json`). If the memory plugin is not installed, skip this sub-step silently and leave files unlabeled.
+
+   For each file being added that does not already have a `label:` field, read its content and propose a `feature:<area>/<subcategory>` label inferred from its `name`, `description`, and body. Present all proposals as one batch (do not prompt one file at a time):
+   ```
+   Suggested labels (edit any, then 'go'):
+     1  project-checkout-flow          → feature:checkout/order-flow
+     2  feedback-teams-html            → (behavioral — global, no feature label)
+     3  reference-oracle-environments  → feature:oracle-legacy/connections
+     ...
+   Reply: 'go' to accept all · '1 feature:cart/totals' to override · '2 skip' to leave unlabeled
+   ```
+   - Files that are clearly behavioral/global feedback (preferences, cross-project rules) should be proposed as `(behavioral — global, no feature label)` and left unlabeled — they are not feature-scoped.
+   - On `go` (with any overrides applied): add the chosen `label:` line and a `written: <created-date>` line to each file's frontmatter (use the mtime-derived created-date as `written`).
+   - This is the one-time relabel pass the memory plugin's `scan`/`load` depend on. Files left unlabeled remain findable by description but won't match label-based searches.
+
 3. Regenerate `<repo_root>/.claude/memory/MEMORY.md` fresh from all files now present:
    - Read all `*.md` files in `.claude/memory/` (not `MEMORY.md` itself, not `.migrated-to-repo`)
    - For each, extract `name:` and `description:` from frontmatter

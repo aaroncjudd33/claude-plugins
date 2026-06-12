@@ -247,6 +247,10 @@ updated: [today's date]
   - [YYYY-MM-DD @<handle>] <item text>   ← all items tagged; "none" if empty
 - **Next steps:**
   - [YYYY-MM-DD @<handle>] <next step>   ← array format; "none" if no next step
+- **Loaded memories:**   ← preserve existing entries exactly as-is; omit the field if not present. Written by the memory plugin
+  - <name>  [<label>]
+- **Commits:**   ← preserve existing entries exactly as-is; omit the field if not present. Written by session:commit
+  - [YYYY-MM-DD] <short-sha> — <commit subject>
 - **Plugin reviewed:** <version>   ← plugin type only; write current plugin.json version when marking reviewed; omit for other types
 - **Related CAB:** [CAB-XXX or "none"]   ← story type only, omit for other types
 - **Post-deployment checks:**   ← story type only; preserve existing value exactly as-is; omit if field not present
@@ -256,7 +260,7 @@ updated: [today's date]
 - **linked_sessions:** [<session-name>, ...]   ← preserve as-is; omit if not present
 ```
 
-**Backward compat:** If the existing session file has a `Project:` field, preserve it on write. Do not add it to new sessions. If the existing file has `- **Next step:** <text>` (scalar), re-write as `- **Next steps:**` array with the item tagged `[today @<handle>]`.
+**Backward compat:** If the existing session file has a `Project:` field, preserve it on write. Do not add it to new sessions. If the existing file has `- **Next step:** <text>` (scalar), re-write as `- **Next steps:**` array with the item tagged `[today @<handle>]`. `Loaded memories:` and `Commits:` are preserve-only here — checkpoint never authors them (the memory plugin and session:commit do); carry existing values forward unchanged.
 
 **After writing — update approved-hash (repo sessions only):** If `session_root` is inside a repo, recompute the hash of the written file and overwrite `~/.claude/memory/sessions/<slug>/<name>.approved-hash`:
 ```bash

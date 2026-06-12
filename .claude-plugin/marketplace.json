@@ -69,6 +69,13 @@
       "source": "./mapping",
       "category": "productivity",
       "keywords": ["mapping", "phrases", "natural language", "commands", "registry", "intent"]
+    },
+    {
+      "name": "memory",
+      "description": "Project and feature memory management — load, save, scan, and review git-tracked project memories by feature label. On-demand loading; nothing loads automatically.",
+      "source": "./memory",
+      "category": "productivity",
+      "keywords": ["memory", "project memory", "feature", "label", "load", "save", "scan", "review", "knowledge"]
     }
   ]
 }

@@ -107,6 +107,7 @@ If sessions exist, render the table with section headers per status group. **By 
 
 ```
 Sessions in virtual-office
+
   #  name  title  status  in  out  created  last edit
 
   In Progress
@@ -135,7 +136,7 @@ If `session_root` does not exist or is empty, skip this section.
 
 ### 3. Present Routing Block and Wait
 
-Output the routing block and wait for one free-text reply. **Do not use AskUserQuestion.**
+Output the routing block and wait for one free-text reply. **Do not use AskUserQuestion.** Output the routing block as plain text — do not wrap it in a fenced code block and do not add a separator line (`---`) before it.
 
 **Free-text and search:** If the user types text that doesn't match a routing action, interpret it as a natural-language filter — match against name, title, handle, status, inbox count, or any session field. Accept plain descriptions like `has inbox`, `updated by nivi`, `created by me`, `paused`, `completed this week`. Re-display the filtered table with `(filtered by '<query>')` and re-show the routing block. If no sessions match and the text looks like intent rather than a filter, proceed naturally. Keywords `mine`, `all`, `backlog`, `index`, `status` are handled directly (see Step 2).
 
@@ -312,12 +313,18 @@ Resuming <name>
     1  [date] <description> — in-progress / pending
   Next steps (mine, N):
     - [date @handle] step
+  Loaded memories (N):
+    - <name>  [<label>]
+  Recent commits (N):
+    - [date] <sha> — <subject>
   History:     N entries — last: [condensed one-liner]
   Memory:      <N> global entries available — say 'load memory [topic]' to load relevant files
 ```
 - Omit teammate sections if no items tagged with a different @handle.
 - If inbox empty: `Inbox: none`. If history file missing: `History: none`.
-- Count N by scanning `~/.claude/memory/MEMORY.md` lines starting with `- [` (already in context — no extra call).
+- **Loaded memories:** read from the session file's `Loaded memories:` field. Omit the line entirely if the field is absent or empty. If present, append the hint `— say 'reload' to load them back into context` (do not auto-read the files — on-demand rule). On `reload`, read each listed memory file from the resolved project memory root.
+- **Recent commits:** read from the session file's `Commits:` field. Show the most recent 3; omit the line entirely if the field is absent or empty.
+- Count global Memory N by scanning `~/.claude/memory/MEMORY.md` lines starting with `- [` (already in context — no extra call).
 - Mine vs. teammate: item is mine if tagged `[YYYY-MM-DD @<handle>]` matching current user, or untagged.
 
 **Inbox + reviewed batch** (one stop — Pattern 2). Omit entirely if inbox is empty AND plugin version unchanged:

@@ -121,6 +121,7 @@ Before assembling the batch, gather contextual data needed to build the batch it
 4. **Story doc path:** read `paths.jiraStoriesDir` from user-config. Derive doc path: `<jiraStoriesDir>/<jiraProject>/<session-name>-<slug>.md`. Check if it exists.
 5. **Browser:** if type is story, check `<voPlaywrightTestsDir>/.browser-ws.txt`. If it exists, read `<voPlaywrightTestsDir>/.browser-owner.txt` and compare owner to current `<slug>/<session-name>`. Include in batch only if owner matches or file is absent.
 6. **Teams guide pre-fetch:** if `teams_chat != "none"` and type is story/cab, read `~/.claude/plugins/marketplaces/<pluginMarketplaceName>/comms/skills/comms/references/teams-html-guide.md` now — it will be needed if the user answers yes to the Teams question. (O9)
+7. **Loaded memories:** read the session file's `- **Loaded memories:**` field. If it has entries, note them for the memory-validation batch item (A2). If the field is absent or empty, skip that item.
 
 ### 7. Finish Batch
 
@@ -131,6 +132,11 @@ Assemble the batch in this order (omit items that don't apply):
 **(A) CDK/DynamoDB check** — story/cab only:
 ```
   (N) CDK/DynamoDB patterns verified?    not-applicable / yes / remind
+```
+
+**(A2) Memory validation** — include if the session has loaded memories (from Step 6 item 7). This closes the context-rot loop: every memory that influenced this session's work gets an accuracy check at the point of relevance.
+```
+  (N) Validate N loaded memories for accuracy?    skip / review
 ```
 
 **(B) Epic update** — story/cab only, if session file has an `Epic` field AND story moved to completion status this session:
@@ -220,6 +226,10 @@ Reply with overrides or "go".
 *(A) CDK check:*
 - **not-applicable / yes:** proceed silently.
 - **remind:** surface after batch: "Run `/yl-cdk-migration` and `/yl-cdk-monitoring` before closing this story."
+
+*(A2) Memory validation:*
+- **review:** after the batch is processed, run the memory plugin's review flow against the session's loaded memories — for each, show the body and ask `keep / update / delete` (batch the prompts; this is a justified follow-up since per-memory dispositions can't be known in advance). Apply per `/memory:review` Step 3. Any memory deleted is also dropped from the session's `Loaded memories:` field in Step 9. If the memory plugin is not installed, fall back to inline review: read each memory file, show it, and on `update`/`delete` edit or remove the file and its `MEMORY.md` line directly.
+- **skip:** leave loaded memories untouched. (They simply carried into the session — skipping means none needed revision.)
 
 *(B) Epic update:*
 - **yes:** after batch is processed, ask follow-up: "What should be recorded? (decisions, resolved questions, or final notes)" — justified stop (content couldn't be asked before). Append to epic file. Update Story Map row to Done/RFT with today's date.
@@ -337,6 +347,10 @@ updated: [today's date]
   - [YYYY-MM-DD @<handle>] <item text>   ← all items tagged; "none" if empty
 - **Next steps:**
   - [YYYY-MM-DD @<handle>] <next step>   ← array format; "none" if no next step
+- **Loaded memories:**   ← preserve surviving entries (drop any deleted during Step 7 memory validation); omit the field if none
+  - <name>  [<label>]
+- **Commits:**   ← preserve existing entries exactly as-is; omit the field if not present. Written by session:commit
+  - [YYYY-MM-DD] <short-sha> — <commit subject>
 - **Plugin reviewed:** <version>   ← plugin type only; omit for other types
 - **Related CAB:** [CAB-XXX or "none"]   ← story type only, omit for other types
 - **Post-deployment checks:**   ← story type only; omit if field not present
@@ -346,7 +360,7 @@ updated: [today's date]
 - **linked_sessions:** [<session-name>, ...]   ← preserve as-is; omit if not present
 ```
 
-**Backward compat:** If the existing session file has a `Project:` field, preserve it. If `- **Next step:** <text>` (scalar), re-write as `- **Next steps:**` array tagged `[today @<handle>]`.
+**Backward compat:** If the existing session file has a `Project:` field, preserve it. If `- **Next step:** <text>` (scalar), re-write as `- **Next steps:**` array tagged `[today @<handle>]`. `Commits:` is preserve-only at finish (written by session:commit). `Loaded memories:` carries forward minus anything deleted during the Step 7 memory-validation item.
 
 **After writing — update approved-hash (repo sessions only):** Recompute hash and overwrite `~/.claude/memory/sessions/<slug>/<name>.approved-hash`:
 ```bash

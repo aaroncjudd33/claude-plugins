@@ -1,7 +1,7 @@
 {
   "name": "session",
-  "version": "1.41.4",
-  "description": "Session lifecycle commands \u00e2\u20ac\u201d start a session with intent, commit mid-session, checkpoint state, and finish at end of day.",
+  "version": "1.42.0",
+  "description": "Session lifecycle commands \u2014 start a session with intent, commit mid-session, checkpoint state, and finish at end of day.",
   "author": {
     "name": "Aaron Judd",
     "email": "aaroncjudd@gmail.com"

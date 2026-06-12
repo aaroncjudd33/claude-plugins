@@ -31,6 +31,8 @@ Read `<session_root>/<name>.md` and extract all fields. Minimally:
 - `related_stories` (cab only — may be absent)
 - `linked_sessions` (may be absent)
 - `plugin_reviewed` (plugin only — may be absent)
+- `loaded_memories` (may be absent — preserve as-is; written by the memory plugin)
+- `commits` (may be absent — preserve existing entries; this command appends to it)
 
 When writing the session file in Step 6, preserve all fields present in the existing file — do not drop any field that was read here.
 
@@ -85,6 +87,13 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 EOF
 )"
 ```
+
+**After committing — capture the commit reference** for the session record:
+```bash
+git rev-parse --short HEAD
+git config --get remote.origin.url
+```
+Record the short SHA + the first line of the commit message. If a GitHub remote exists, derive a commit link `https://github.com/<org>/<repo>/commit/<sha>` from the remote URL (strip `.git`, convert `git@github.com:` form to `https://github.com/`). This is written to the session file's `Commits:` field in Step 6.
 
 ### 2a. Jira Commit Comment *(story/cab only)*
 
@@ -172,6 +181,10 @@ updated: [today's date]
   - [YYYY-MM-DD @<handle>] <item text>   ← all items tagged; "none" if empty
 - **Next steps:**
   - [YYYY-MM-DD @<handle>] <next step>   ← array format; "none" if no next step
+- **Loaded memories:**   ← preserve existing entries; omit the field if none. Written by the memory plugin (/memory:load|scan|save)
+  - <name>  [<label>]
+- **Commits:**   ← append the commit captured in Step 2; preserve prior entries; omit the field if none
+  - [YYYY-MM-DD] <short-sha> — <commit subject>   ← append "  <link>" if a GitHub remote was derived
 - **Plugin reviewed:** <version>   ← plugin type only; write current plugin.json version when marking reviewed; omit for other types
 - **Related CAB:** [CAB-XXX or "none"]   ← story type only, omit for other types
 - **Post-deployment checks:**   ← story type only; preserve existing value exactly as-is; omit if field not present
@@ -182,6 +195,8 @@ updated: [today's date]
 ```
 
 **Backward compat:** If the existing session file has a `Project:` field, preserve it on write. If the existing file has `- **Next step:** <text>` (scalar), re-write as `- **Next steps:**` array with the item tagged `[today @<handle>]`.
+
+**`Commits:` field:** Append the commit captured in Step 2 as a new line under `- **Commits:**` (create the field if absent, positioned after `Next steps:`). Keep prior commit lines — this is an append-only running list for the session. Cap display at the most recent 10; if older entries exist, keep them in the file. If nothing was committed this run (clean tree), leave the field unchanged.
 
 **After writing — update approved-hash (repo sessions only):** If `session_root` is inside a repo, recompute and overwrite `~/.claude/memory/sessions/<slug>/<name>.approved-hash`:
 ```bash
