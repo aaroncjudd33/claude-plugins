@@ -1,6 +1,6 @@
 ---
 name: memory
-description: "Governs project and feature memory across all repos. Load whenever the user invokes a memory command (/memory:load, /memory:save, /memory:scan, /memory:review), asks to load/save/find project memories, asks what the project knows about a feature area, or when a session command needs to record or validate loaded memories. Provides the feature:X/Y label convention, project-memory path resolution, on-demand loading rules, and the session integration contract (Loaded memories field)."
+description: "Governs project and feature memory across all repos. Load whenever the user invokes a memory command (/memory:load, /memory:save, /memory:scan, /memory:review, /memory:doctor), asks to load/save/find project memories, asks what the project knows about a feature area, mentions memories stranded or misplaced in global, or when a session command needs to record or validate loaded memories. Provides the feature:X/Y label convention, project-memory path resolution, on-demand loading rules, and the session integration contract (Loaded memories field)."
 ---
 
 # Memory Skill
@@ -40,7 +40,9 @@ else:
 
 `MEMORY.md` is always the index at the root of `memory_root` — one line per memory file, `- [<name>](<file>) — <description>`.
 
-**Never touch global memory** (`~/.claude/memory/`) from memory commands — that tier is behavioral feedback managed by the auto-memory system.
+**Never touch global memory** (`~/.claude/memory/`) from memory commands — that tier is behavioral feedback managed by the auto-memory system. **The one and only exception is `/memory:doctor`**, which exists specifically to find project memories stranded in global and relocate them — and even it acts only on explicit invocation, with per-file confirmation, never silently. `save`, `load`, `scan`, and `review` must never read or write global.
+
+**Stranded-memory failure mode:** project memories that ended up in global (legacy data from before the tier split, or a save that resolved global by mistake) are invisible to `migrate`, `load`, and `scan` — all of which resolve the project tier only. The result is silent: a developer believes they shared project context but the files never left global. The defenses are (1) `save`'s hard guard against ever writing to global (its leak prevention), and (2) `/memory:doctor` to reconcile what's already stranded. `migrate` deliberately does **not** reach into global — that would force it to guess project-vs-behavioral classification; doctor carries that judgment with a human in the loop instead.
 
 ---
 

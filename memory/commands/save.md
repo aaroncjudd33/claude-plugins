@@ -14,7 +14,9 @@ Record a project/feature fact with a `feature:area/subcategory` label so it can 
 
 ### 1. Resolve Memory Root
 
-Resolve `memory_root` using Project Memory Path Resolution (see Memory Skill). Create the directory and a `MEMORY.md` (with `# Memory Index` header) if they do not exist.
+Resolve `memory_root` using Project Memory Path Resolution (see Memory Skill): repo tier (`<repo>/.claude/memory/`) if it exists, else local project tier (`~/.claude/projects/<encoded>/memory/`). Create the directory and a `MEMORY.md` (with `# Memory Index` header) if they do not exist.
+
+**Hard guard — never write to global.** `memory_root` must resolve to a repo or local-*project* tier path. It must **never** be `~/.claude/memory/` (the global behavioral tier). If resolution somehow lands there — e.g. `git rev-parse` failed and there is no project tier — stop and report: "Cannot resolve a project memory location here — `/memory:save` writes project memory, not global. Run from inside a project, or use the global auto-memory system for behavioral facts." This is the leak that previously stranded project memories in global; the resolved path must be a project tier or the command does not write.
 
 Read `references/label-convention.md` (see Memory Skill) before composing the label.
 

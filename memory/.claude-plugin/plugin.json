@@ -1,7 +1,7 @@
 {
   "name": "memory",
-  "version": "1.0.1",
-  "description": "Project and feature memory management — load, save, scan, and review git-tracked project memories by feature label. On-demand loading; nothing loads automatically.",
+  "version": "1.1.0",
+  "description": "Project and feature memory management — load, save, scan, review, and doctor git-tracked project memories by feature label. On-demand loading; nothing loads automatically.",
   "author": {
     "name": "Aaron Judd",
     "email": "aaroncjudd@gmail.com"
@@ -13,6 +13,7 @@
     "./commands/load.md",
     "./commands/save.md",
     "./commands/scan.md",
-    "./commands/review.md"
+    "./commands/review.md",
+    "./commands/doctor.md"
   ]
 }

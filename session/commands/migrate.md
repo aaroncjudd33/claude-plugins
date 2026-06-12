@@ -203,7 +203,9 @@ ls ~/.claude/projects/*/memory/MEMORY.md 2>/dev/null
 
 If multiple matches, prefer the one whose directory name most closely corresponds to `projectRoot` (from `~/.claude/config/<slug>.json`).
 
-**If no local memory directory found:** skip silently — show "No local project memory found — skipping memory migration."
+**Migrate reads the local project tier ONLY — by design.** It does not scan the global tier (`~/.claude/memory/`). If project memories are stranded in global (legacy data from before the tier split, or a mis-resolved save), migrate cannot see them and they will be silently left behind. This is intentional: teaching migrate to reach into global would force it to guess which global files are project-scoped vs. genuine behavioral rules — a judgment that must have a human in the loop. That reconciliation lives in `/memory:doctor` instead.
+
+**If no local memory directory found:** skip — show "No local project memory found in the project tier — skipping memory migration. If you expected memories here, some may be stranded in the global tier; run `/memory:doctor` to find and relocate them, then re-run migrate."
 
 **If found:** read the directory. Count `.md` files (excluding `MEMORY.md` and `.migrated-to-repo`).
 
