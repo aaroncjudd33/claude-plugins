@@ -101,7 +101,7 @@ Run **three calls in parallel** (four for plugin type). **Issue all calls in a s
 ```
 The index is built lazily: Step 8 seeds an entry whenever a session is loaded or created. If the user types `index`, run a parallel read of all session `.md` files (no git log), extract `updated-by:`, `updated:`, `created-by:`, and `Title:` fields, write `_index.md` in 7-column format, and re-display the table.
 
-If sessions exist, render the table with section headers per status group. **By default show only in-progress and paused sessions** — do not render completed rows unless the user types `all` or `status completed`. Column header appears once after the title line. Omit a section entirely if it has no sessions.
+If sessions exist, render the table with section headers per status group. **By default show only in-progress and paused sessions** — do not render completed rows unless the user types `all` or `status completed`. **Also exclude `refinement-*.md` files** (ephemeral refinement sessions) from the default listing — show them only when the user types `refinement` or `all`. Column header appears once after the title line. Omit a section entirely if it has no sessions.
 
 **Do not pad or align columns.** Output rows as plain tab-separated or loosely spaced text — no fixed widths, no character counting. Fast output is more important than alignment.
 

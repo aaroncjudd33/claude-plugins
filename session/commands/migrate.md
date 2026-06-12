@@ -42,7 +42,7 @@ Check whether `<repo_root>/.claude/sessions/` and `<repo_root>/.claude/memory/` 
 
 ### 3. Confirm Local Sessions Exist
 
-Check `~/.claude/memory/sessions/<slug>/`. List all `.md` files not starting with `_`.
+Check `~/.claude/memory/sessions/<slug>/`. List all `.md` files not starting with `_`. **Exclude `refinement-*.md`** — refinement sessions are ephemeral and must never be migrated into the repo.
 
 - **None found:** stop — "No local sessions found for `<slug>`. Nothing to migrate."
 - **Found:** show the list and confirm:

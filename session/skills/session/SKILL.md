@@ -1,11 +1,13 @@
 ---
 name: session
-description: "This skill governs session lifecycle across all project types. Load whenever the user invokes a session command (/session:start, /session:checkpoint, /session:commit, /session:finish, /session:switch, /session:search, /session:in-flight, /session:spawn, /session:restore, /session:store, /session:worklog, /session:migrate, /session:inbox), asks about session state, asks what they were working on, wants to save progress, wants to start or end a working session, or asks about their inbox, backlog, or open items. Provides path resolution logic, @handle tagging rules, epic context, context-recovery guidance, and Teams messaging rules used by all session commands."
+description: "This skill governs session lifecycle across all project types. Load whenever the user invokes a session command (/session:start, /session:checkpoint, /session:commit, /session:finish, /session:switch, /session:search, /session:in-flight, /session:spawn, /session:restore, /session:store, /session:refine, /session:worklog, /session:migrate, /session:inbox), asks about session state, asks what they were working on, wants to save progress, wants to start or end a working session, or asks about their inbox, backlog, or open items. Provides path resolution logic, @handle tagging rules, epic context, context-recovery guidance, and Teams messaging rules used by all session commands."
 ---
 
 # Session Skill
 
-Governs session lifecycle across all project types (plugin, story, cab, personal, general).
+Governs session lifecycle across all project types (plugin, story, cab, personal, general, refinement).
+
+**Refinement sessions** (`/session:refine`, `Type: refinement`) are a special ephemeral type for scoping a story before code is written. They run in `Mode: planning` (read-only), are stored only at `~/.claude/memory/sessions/<slug>/refinement-<topic>.md`, are **never migrated** to the repo (`session:migrate` skips `refinement-*.md`), and are **hidden** from the default `session:start` listing (shown only when the user types `refinement` or `all`). Their job ends when a Jira story is created from the refinement report; they do not become story sessions. Kept locally and auto-expired after 30 days.
 
 ---
 
