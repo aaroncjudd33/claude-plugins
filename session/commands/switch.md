@@ -32,12 +32,21 @@ If an argument was passed to the command:
 
 If `filter_mine`, filter the session list to those where `@created-by` or `@updated-by` from `_index.md` matches `@<handle>`.
 
-Otherwise, print the numbered list and wait for selection. Always include a column header line followed by a filter hint line:
+Otherwise, print the numbered list and wait for selection. Use the same grouped format as session:start (section headers per status group, column header once at top, fixed column widths, up to 10 total with active sessions prioritized):
+
 ```
 Sessions in <slug>
-  #    name         title                            status        in  out  created        last edit
-  [1]  BPT2-6377    Shopify Member Agreement Pro...   in-progress    1    0   @ajudd Jun 01  @ajudd Jun 09
-  [2]  session      —                                in-progress    0    0   @ajudd Jun 01  @nivi  Jun 11
+
+  #    name          title                             status         in    out  created          last edit
+
+  In Progress
+  [1]  BPT2-6377     Shopify Member Agreement Pro...   in-progress     1      0  @ajudd Jun 01    @ajudd Jun 09
+  [2]  session       —                                 in-progress     0      0  @ajudd Jun 01    @nivi  Jun 11
+
+  Completed
+  [3]  BPT2-6300     Some completed story...           completed       0      0  @ajudd Apr 01    @ajudd May 10
+
+  2 in-progress · 0 paused · 8 completed
 
   Start / Resume:
     <n>              — switch to session by number
@@ -51,7 +60,7 @@ Sessions in <slug>
 
 **Title truncation:** cap title at 32 characters. If longer, truncate and append `...`. If title is `—` (absent), show `—` with no padding.
 
-Show `@creator created-date` in "created" column; `@updater updated-date` in "last edit" column. Always show both `in` and `out` counts (show `0` — never omit). Sort in-progress/paused first, completed at bottom.
+Show `@creator created-date` in "created" column; `@updater updated-date` in "last edit" column. Always show both `in` and `out` counts (show `0` — never omit). Omit a status group entirely if it has no sessions. Mark active session with `←` at end of row.
 
 ### 3. Display Resume Block
 
