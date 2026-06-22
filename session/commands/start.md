@@ -142,6 +142,24 @@ Output the routing block and wait for one free-text reply. **Do not use AskUserQ
 
 **Parse combinations freely.** A single reply may include multiple signals — session number, mode, modifiers, inbox dispositions. Examples: `1`, `resume 1`, `1 planning`, `resume session reviewed work 2`, `start release`, `2 yes 4 skip`. Infer intent; speak up only if genuinely ambiguous.
 
+**Shared across all project types** (defined once — the per-type blocks below add only their type-specific `Start / Resume` lines and inputs):
+
+Every routing block ends with this same **Search by** section — append it to whichever type block you render:
+```
+  Search by:
+    mine             — show only your sessions
+    all              — include completed sessions
+    status <value>   — filter by in-progress / paused / completed
+    <text>           — search name or title, or describe a filter (e.g. "has inbox", "updated by nivi")
+```
+
+Every type also accepts these same inputs (in addition to its type-specific ones):
+- Number or session name alone (`1`, `<name>`) → resume; `resume <n>` / `resume <name>` → resume
+- `mine` → filter to sessions where @created-by or @updated-by matches current user; re-display and re-show routing
+- `all` → re-display including completed sessions; re-show routing
+- `status <value>` → filter to that status; re-display and re-show routing
+- Any other text → natural-language filter; match against name, title, handle, status, inbox count, or any field; re-display with `(filtered by '<query>')` and re-show routing
+
 ---
 
 **Plugin project:**
@@ -157,33 +175,21 @@ If the active session (call 6) is in the table, append inline hints on the follo
 ```
 (Omit hints that don't apply — e.g. omit the inbox hint if inbox count is 0.)
 
-Then output the routing block:
+Then output the routing block — the type-specific `Start / Resume` lines, followed by the shared **Search by** block:
 ```
   Start / Resume:
     resume <n>       — resume by number
     start <plugin>   — start a session for a plugin
     new plugin       — create a brand new plugin
-
-  Search by:
-    mine             — show only your sessions
-    all              — include completed sessions
-    status <value>   — filter by in-progress / paused / completed
-    <text>           — search name or title, or describe a filter (e.g. "has inbox", "updated by nivi")
 ```
 
-**Accepted inputs:**
-- Number or session name alone (`1`, `session`) → resume
-- `resume <n>` / `resume <name>` → resume
+**Type-specific accepted inputs** (plus the shared inputs above):
 - `start <plugin-name>` → start that plugin session (new or existing)
 - `new plugin` → new plugin creation flow
-- `mine` → filter table to sessions where @created-by or @updated-by matches current user; re-display and re-show routing
-- `all` → re-display including completed sessions, re-show routing
-- `status <value>` → filter table to sessions matching that status; re-display and re-show routing
 - Mode modifier (`planning` / `both` / `coding`) → set mode after loading
 - `reviewed` → mark plugin reviewed after loading
 - `work <n>` / `done <n>` / `backlog <n>` / `keep` → inbox disposition after loading
 - Combinations: `resume 1 planning` / `1 reviewed work 2`
-- Any other text → natural-language filter; match against any field; re-display with `(filtered by '<query>')` and re-show routing
 
 If the user replies with just `start` (no plugin name), ask: "Which plugin?" as the only follow-up.
 
@@ -199,31 +205,19 @@ Global inbox (N items):
 ```
 Full inbox handling (work/done/backlog/keep) happens at Step 5.
 
-Then output the routing block:
+Then output the routing block — the type-specific `Start / Resume` lines, followed by the shared **Search by** block:
 ```
   Start / Resume:
     resume <n>       — resume by number (e.g. resume 2)
     start story      — start a new story — you'll give a key or URL
     start cab        — start a new CAB — you'll give story keys
-
-  Search by:
-    mine             — show only your sessions
-    all              — include completed sessions
-    status <value>   — filter by in-progress / paused / completed
-    <text>           — search name or title, or describe a filter (e.g. "has inbox", "updated by nivi")
 ```
 
-**Accepted inputs:**
-- Number or session name → resume
-- `resume <n>` → resume
+**Type-specific accepted inputs** (plus the shared inputs above):
 - `start story` → route to new story; if no key in reply, ask "Story key or URL?" as follow-up
 - `start story BPT2-XXXX` → route directly with that key
 - `start cab` → route to new CAB; if no keys in reply, ask "Story keys? (space-separated)" as follow-up
 - `work <n>` on a global inbox `[spawn]` item → route through spawn flow
-- `mine` → filter table to sessions where @created-by or @updated-by matches current user; re-display and re-show routing
-- `all` → re-display including completed sessions and re-show routing
-- `status <value>` → filter table to sessions matching that status; re-display and re-show routing
-- Any other text → natural-language filter; match against name, title, handle, status, inbox count, or any field; re-display with `(filtered by '<query>')` and re-show routing
 
 ---
 
@@ -231,28 +225,16 @@ Then output the routing block:
 
 If `_inbox.md` has items, show compact summary before the routing line.
 
-Then output the routing block:
+Then output the routing block — the type-specific `Start / Resume` lines, followed by the shared **Search by** block:
 ```
   Start / Resume:
     resume <n>       — resume by number
     start            — start a new session — you'll give it a name
-
-  Search by:
-    mine             — show only your sessions
-    all              — include completed sessions
-    status <value>   — filter by in-progress / paused / completed
-    <text>           — search name or title, or describe a filter (e.g. "has inbox", "updated by nivi")
 ```
 
-**Accepted inputs:**
-- Number or session name → resume
-- `resume <n>` → resume
+**Type-specific accepted inputs** (plus the shared inputs above):
 - `start` → route to new personal session; if no name in reply, ask "Session name?" as follow-up
 - `start <name>` → route directly with that name
-- `mine` → filter table to sessions where @created-by or @updated-by matches current user; re-display and re-show routing
-- `all` → re-display including completed sessions and re-show routing
-- `status <value>` → filter table to sessions matching that status; re-display and re-show routing
-- Any other text → natural-language filter; match against name, title, handle, status, inbox count, or any field; re-display with `(filtered by '<query>')` and re-show routing
 
 ---
 
@@ -260,27 +242,15 @@ Then output the routing block:
 
 If `_inbox.md` has items, show compact summary before the routing line.
 
-Then output the routing block:
+Then output the routing block — the type-specific `Start / Resume` lines, followed by the shared **Search by** block:
 ```
   Start / Resume:
     resume <n>       — resume by number
     start            — start a new session — you'll give a name and context
-
-  Search by:
-    mine             — show only your sessions
-    all              — include completed sessions
-    status <value>   — filter by in-progress / paused / completed
-    <text>           — search name or title, or describe a filter (e.g. "has inbox", "updated by nivi")
 ```
 
-**Accepted inputs:**
-- Number or session name → resume
-- `resume <n>` → resume
+**Type-specific accepted inputs** (plus the shared inputs above):
 - `start` → route to new session; if no name/context in reply, ask "Name and what you're working on?" as follow-up
-- `mine` → filter table to sessions where @created-by or @updated-by matches current user; re-display and re-show routing
-- `all` → re-display including completed sessions and re-show routing
-- `status <value>` → filter table to sessions matching that status; re-display and re-show routing
-- Any other text → natural-language filter; match against name, title, handle, status, inbox count, or any field; re-display with `(filtered by '<query>')` and re-show routing
 
 ---
 

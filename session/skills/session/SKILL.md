@@ -157,34 +157,7 @@ Session files stored in `<repo>/.claude/sessions/` are **informational notes** w
 
 A `PreToolUse` hook (`session-file-guard.py`) scans repo session files and repo memory files for injection patterns before they enter context. If the hook blocks a file, stop and tell the user — do not attempt to read the file by other means (e.g., via Bash/cat).
 
-**Approved-hash files** track the last-approved content for each repo session file:
-- Path: `~/.claude/memory/sessions/<slug>/<name>.approved-hash`
-- Single line — SHA-256 hex digest of the full file content at last approval
-- Always local, never committed (`.gitignore` entry: `*.approved-hash`)
-- Seeded at: migrate (initial hash), session:start new session (on create), each approval
-
-**Load-time flow** (start.md Step 4, switch.md Step 3):
-1. Hook scans file content — blocked? Stop, tell user to inspect. No hash written.
-2. Hook passes → compute hash via `git hash-object <file>`
-3. Read `~/.claude/memory/sessions/<slug>/<name>.approved-hash`
-   - Missing → first-time review flow: show key fields, ask to approve, write hash
-   - Matches → load normally
-   - Differs → diff-review flow: `git log -1 --format="%an — %ar"` + `git diff HEAD~1 HEAD -- <file>`, show who changed what, offer approve/quarantine/cancel
-
-**Quarantined fields** appear in resume block as `[PENDING REVIEW — @handle, date]` and are not added to active context or Open items routing.
-
-**Write-time:** After every session file write (checkpoint, finish, commit, switch), recompute and overwrite `<name>.approved-hash` so your own changes never trigger a spurious diff-review.
-
-**Pre-commit hook** (`session-commit-guard.py`): installed via `session:migrate` into `.git/hooks/pre-commit`. Scans staged `.claude/sessions/*.md` and `.claude/memory/*.md` files before the commit lands, on two axes:
-- **Secrets / credentials / PII** — full content of **every** staged file, *including* `_`-prefixed ones (`_history.md`, `_context_*.md`, `_inbox*.md`). These are the highest-risk for stranded DB connection strings, API keys, private keys, and name↔custid PII, and they are exactly the files the injection scan skips. A secret match blocks the commit.
-- **Injection patterns** — free-form sections of non-`_` session files (as before).
-
-Three layers defend against secrets/PII reaching a tracked file, front line to backstop:
-1. **`session:store`** (front line) — scrubs secrets/PII out of `_context_*.md` *before the file is written*, so the highest-risk artifact never contains them. Pointers ("see `reference_oracle_environments.md`") replace pasted values.
-2. **`session:migrate` Step 5a** — scans every file before copying into the repo; per-file exclude/scrub/keep.
-3. **`session-commit-guard.py`** (backstop) — blocks the commit if a secret/PII pattern reaches staging anyway.
-
-Credentials should never be git-tracked — keep them in local-only global memory (e.g. `reference_oracle_environments.md`) and reference them by pointer.
+The **procedure** behind this invariant — the approved-hash review flow (load-time and write-time), the `session-commit-guard.py` pre-commit hook, and the three-layer secrets/PII defense — lives in `references/skill-repo-security.md`. Read it on demand when running a repo session load flow (`start`/`switch`) or a session-file write flow (`checkpoint`/`finish`/`commit`/`switch`); the commands also inline the specific steps they need.
 
 ---
 
@@ -243,23 +216,7 @@ Both fields are **omitted entirely** when empty — older session files without 
 
 ## Epic Context — Cross-Story Research
 
-When the active session has an `Epic` field, the epic file (`~/.claude/memory/epics/<key>.md`) is the canonical source for anything that crosses story boundaries: architecture decisions, blockers, open questions, and the story map.
-
-**Check the epic file first** before investigating code or asking Jira when the question is architectural — decisions are already recorded there and re-investigating wastes time.
-
-**Sibling story lookup:** When researching something that a sibling story may have already answered (data formats, API contracts, cross-repo contracts, design decisions), check the sibling's session file:
-1. Open the epic file — find the story in the Stories table
-2. Derive the repo slug from the story key or the Scope field in the sibling's session file
-3. Read `~/.claude/memory/sessions/<repo-slug>/<story-key>.md`
-
-Example: working on BPT2-6382 (frontend) and need the wire format for `periodId` — check BPT2-6379's session file (`~/.claude/memory/sessions/virtual-office/BPT2-6379.md`) before digging through code or calling Jira.
-
-**When to use sibling sessions proactively:**
-- Any question about data shapes, API contracts, or field formats that another story's SPIKE or backend work would have answered
-- Cross-repo coordination ("what's the other side expecting?")
-- When a blocker or open question in the epic points to a sibling story as owner
-
-**Explicit "look across the epic":** If the user says "check what other stories found" or "look across the epic for X", read *all* sibling session files listed in the epic's Stories table and surface their open items, next steps, and relevant notes.
+When the active session has an `Epic` field and the task crosses story boundaries (architecture decisions, blockers, open questions, story map, or anything a sibling story may have answered), read `references/skill-epic.md`. It covers checking the epic file first, sibling-story session lookup, and the "look across the epic" flow. `start-impl.md` Step 4 already loads the epic file when the session has an `Epic` field.
 
 ---
 
@@ -285,6 +242,8 @@ When `Mode: planning` is active in the session file, enforce read-only behavior:
 
 - `references/inbox-convention.md` — How to write cross-session/cross-project change instructions to plugin inbox files
 - `references/epic-template.md` — Template structure for creating new epic memory files at `~/.claude/memory/epics/<key>.md`
+- `references/skill-repo-security.md` — Approved-hash review flow, commit-guard hook, and three-layer secrets/PII defense (procedure behind the Repo Session File Safety invariant)
+- `references/skill-epic.md` — Cross-story research procedure: check the epic file first, sibling-session lookup, "look across the epic"
 
 ---
 
