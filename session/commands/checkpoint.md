@@ -90,46 +90,34 @@ printf "[YYYY-MM-DD @<handle>] <session-name> — <accomplished sentence>\n" >> 
 
 The composed entry is already in context and becomes the value for `Last worked on` in the session file — **do not re-read `_history.md` to retrieve it.**
 
-### 5a. Jira Progress Comment *(story/cab only)*
+### 5a / 5b. Jira Progress Comment + Epic Check *(story/cab only)*
 
-Post a 1–2 sentence progress comment to the Jira story.
+**plugin / personal / general:** Skip both — do not read the reference.
 
-- **story:** story key = session name (e.g. `BPT2-6258`)
-- **cab:** post to each story in `Related stories`
-
-Content: current status + what was just accomplished + what's next. Business-readable — no file paths, class names, or token names. Example: *"Extended filter validation: all three input types now show required errors immediately on Add/Apply click. Committed and deploying to env6 for QA review."* **Never mention "create PR to master" or "merge to master" as what's next** — that belongs to the release plugin, not the session.
-
-Before posting, check if the most recent Jira comment is from today and already covers this milestone — if so, skip.
-
-**plugin / personal / general:** Skip.
-
-### 5b. Epic Check *(story/cab only)*
-
-If the session file has an `Epic` field, read `~/.claude/memory/epics/<key>.md` (to have it in context for the batch block). Note whether the epic file exists and whether it has a Confluence link. This check is silent — the user question goes in Step 6.
+**story / cab:** Read `references/checkpoint-story-cab.md` and perform Step 5a (post the Jira progress comment) and Step 5b (silent epic check) per its instructions. (Loaded once here; it also supplies the Step 6 story/cab slot bodies — keep it in context for the rest of this checkpoint.)
 
 ### 6. Checkpoint Batch
 
 Gather all pending questions after silent work is done. If all items have forced defaults and no user input is possible, skip the batch block and proceed directly to Step 7. Otherwise, assemble and display the batch block, then wait for one reply. **Do not use AskUserQuestion.**
 
-**Build the batch block in this order (omit items that don't apply):**
+**Batch skeleton — canonical slot order.** Build the numbered list by walking these slots in order, omitting any whose condition isn't met, and assigning each surviving slot the next running number `(N)`. Universal slots (and the plugin-only D) are defined inline below; story/cab slot bodies live in `references/checkpoint-story-cab.md` (already loaded in Step 5a/5b for story/cab sessions). For plugin / personal / general sessions the story/cab slots are simply absent — never read the reference for them.
 
-**(A) CDK/DynamoDB check** — include if `type` is story or cab and a commit was just made or is about to be:
-```
-  (N) CDK/DynamoDB patterns verified?    not-applicable / yes / remind
-```
+| Slot | Item | Applies to | Body |
+|------|------|-----------|------|
+| A | CDK/DynamoDB check          | story/cab | `references/checkpoint-story-cab.md` |
+| B | Out-of-scope items          | all (with scope) | inline below |
+| C | Epic update (+C+1 Confluence) | story/cab | `references/checkpoint-story-cab.md` |
+| D | Plugin reviewed             | plugin    | inline below |
+| E | Open items                  | all       | inline below |
+| F | In-progress inbox items     | all       | inline below |
+| G | Legacy [inbox] Open items   | all       | inline below |
+| H | Pending inbox sweep         | all       | inline below |
+
+**Inline slot bodies (universal + plugin):**
 
 **(B) Out-of-scope items** — include one per item found in Step 4:
 ```
   (N) Out-of-scope: "<path>" → route to <target>?    skip / route / note
-```
-
-**(C) Epic update** — include if type is story/cab and session file has an `Epic` field:
-```
-  (N) Epic update (<key>) — decisions or blockers to record?    skip / yes
-```
-If the epic file has a Confluence link, include the next item immediately after:
-```
-  (N+1) Push epic update to linked Confluence page?    skip / yes
 ```
 
 **(D) Plugin reviewed** — include if type is plugin and `plugin_reviewed` is missing, a legacy value, or MAJOR.MINOR differs from current:
@@ -165,34 +153,26 @@ If the epic file has a Confluence link, include the next item immediately after:
   (1) CDK/DynamoDB patterns verified?    not-applicable / yes / remind
   (2) Out-of-scope: "release/commands/create.md" → route to release?    skip / route / note
   (3) Epic update (BPT2-6300) — decisions or blockers?    skip / yes
-  (4) Plugin reviewed? (last: v1.36, current: v1.40)    skip / yes
-  (5) Open items done?
+  (4) Open items done?
         1  Fix scope guard edge case
         2  Add test coverage for spawn flow
      skip / all / <number(s)>
-  (6) Inbox [in-progress]: "Update session tests"    keep / done
-  (7) Inbox pending: "Review DynamoDB schema" — addressed?    nothing / done / picked-up
+  (5) Inbox [in-progress]: "Update session tests"    keep / done
+  (6) Inbox pending: "Review DynamoDB schema" — addressed?    nothing / done / picked-up
 
 Reply with overrides or "go".
 ```
 
-**Parsing:** `go` accepts all defaults. Examples: `4 yes`, `5 all`, `5 1 2`, `6 done 4 yes`, `3 yes 4 yes`.
+**Parsing:** `go` accepts all defaults. Examples: `3 yes`, `4 all`, `4 1 2`, `5 done 3 yes`.
 
 **Applying answers:**
 
-*(A) CDK check:*
-- **not-applicable / yes:** proceed silently.
-- **remind:** surface note after the batch: "Run `/yl-cdk-migration` and `/yl-cdk-monitoring` before calling this story done."
+For **story/cab slots (A, C)** the apply-logic lives in `references/checkpoint-story-cab.md` (Step 6 sections) — already in context. The universal/plugin slots are applied here:
 
 *(B) Out-of-scope:*
 - **route:** invoke `/session:inbox` flow with the out-of-scope item pre-populated. The routing is never silent — user sees and confirms before inbox write.
 - **note:** record the excluded work in Open items but do not write to any inbox.
 - **skip:** continue without noting.
-
-*(C) Epic update:*
-- **yes:** after the batch is fully processed, ask as a follow-up: "What should be recorded? (decisions, resolved questions, or blockers)" — append to the epic file: new decisions under `## Architecture Decisions` as `### [DECIDED] <title>`; resolved questions moved to `## Resolved` with answer and `[YYYY-MM-DD <session-name>]` note. This follow-up stop is justified — content couldn't be asked before knowing the answer was "yes".
-- **skip:** no changes to epic file.
-- **Confluence sync (C+1):** only applies if epic update = yes. **yes** → push epic memory update to the linked Confluence page after applying epic changes. **skip** → no sync.
 
 *(D) Plugin reviewed:*
 - **yes:** update `Plugin reviewed: <current-version>` in the session file.

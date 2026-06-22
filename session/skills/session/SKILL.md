@@ -244,6 +244,8 @@ When `Mode: planning` is active in the session file, enforce read-only behavior:
 - `references/epic-template.md` — Template structure for creating new epic memory files at `~/.claude/memory/epics/<key>.md`
 - `references/skill-repo-security.md` — Approved-hash review flow, commit-guard hook, and three-layer secrets/PII defense (procedure behind the Repo Session File Safety invariant)
 - `references/skill-epic.md` — Cross-story research procedure: check the epic file first, sibling-session lookup, "look across the epic"
+- `references/finish-story-cab.md` — Story/cab-only bodies for `finish.md` (Jira close, epic, Confluence, story doc, browser, Teams, post-deploy checks). Loaded by finish.md only when type is story/cab; absent for plugin/personal/general
+- `references/checkpoint-story-cab.md` — Story/cab-only bodies for `checkpoint.md` (Jira progress comment, epic check + update). Loaded by checkpoint.md only when type is story/cab; absent for plugin/personal/general
 
 ---
 
