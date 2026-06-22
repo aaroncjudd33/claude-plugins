@@ -59,8 +59,7 @@ Loaded by `start.md` after the user makes their selection. Context already in sc
   ```
   Resuming <name>
     Branch:      [branch]
-    Updated by:  @<handle>   ← from updated-by field; confirms attribution
-    Mode:        [planning / coding / both]
+    Mode:        planning          ← show ONLY when Mode is planning; omit for coding/both/absent
     Open items (mine, N):
       - [date @ajudd] item one
       - [date @ajudd] item two
@@ -82,11 +81,12 @@ Loaded by `start.md` after the user makes their selection. Context already in sc
     Epic:        [BPT2-XXXX]   ← story type only, omit if none
     Related:     [BPT2-XXXX, ...]   ← cab type only, omit if none
     History:     N entries — last: [condensed one-liner of most recent _history.md entry]
-    Memory:      <N global> entries available — say 'load memory [topic]' to load relevant files
   ```
+  - **Mode:** show the line only when Mode is `planning` (read-only session — a behavior-changing signal). Omit for `coding`/`both`/absent.
+  - **Updated by** is intentionally not shown — it's already in the listing the user just saw.
+  - **Memory:** do not print a standalone global/project memory hint line. The on-demand `load memory [topic]` capability still applies; surface it only if the user asks.
   - **Loaded memories:** read from the session file's `Loaded memories:` field. Omit the line if absent or empty. If present, append `— say 'reload' to load them back into context`; do not auto-read the files (on-demand rule). On `reload`, read each listed file from the resolved project memory root.
   - **Recent commits:** read from the session file's `Commits:` field. Show the most recent 3; omit the line if absent or empty.
-  For non-plugin sessions where Call 5 (repo memory) returned a count M, show `<N global> global / <M project> project entries` instead. For plugin sessions (Call 5 skipped), show global count only. Count N by scanning the global `~/.claude/memory/MEMORY.md` index already in context (lines starting with `- [`); no extra tool call needed.
 
   If inbox is empty: `Inbox: none`. If `_history.md` does not exist: `History: none`.
 

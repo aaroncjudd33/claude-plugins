@@ -37,11 +37,11 @@ Otherwise, print the numbered list and wait for selection. Use the same grouped 
 ```
 Sessions in <slug>
 
-  #    name          title                             status         in    out  created          last edit
+  #    name          title                             status         in    last edit
 
   In Progress
-  [1]  BPT2-6377     Shopify Member Agreement Pro...   in-progress     1      0  @ajudd Jun 01    @ajudd Jun 09
-  [2]  session       —                                 in-progress     0      0  @ajudd Jun 01    @nivi  Jun 11
+  [1]  BPT2-6377     Shopify Member Agreement Pro...   in-progress     1     @ajudd Jun 09
+  [2]  session       —                                 in-progress     0     @nivi  Jun 11
 
   2 in-progress · 0 paused · 8 completed
 
@@ -51,13 +51,14 @@ Sessions in <slug>
   Search by:
     mine             — show only your sessions
     all              — include completed sessions
+    full             — show all columns (adds out count + created date)
     status <value>   — filter by in-progress / paused / completed
     <text>           — search name or title, or describe a filter (e.g. "has inbox", "updated by nivi")
 ```
 
 **Title truncation:** cap title at 32 characters. If longer, truncate and append `...`. If title is `—` (absent), show `—` with no padding.
 
-Show `@creator created-date` in "created" column; `@updater updated-date` in "last edit" column. Always show both `in` and `out` counts (show `0` — never omit). Omit a status group entirely if it has no sessions. Mark active session with `←` at end of row.
+**Default columns:** `# · name · title · status · in · last edit`. The `out` count and `created` date are hidden by default — on `full`, add `@creator created-date` in a "created" column and the `out` count. Always show the `in` count (`0` — never omit). `@updater updated-date` is the "last edit" column. Omit a status group entirely if it has no sessions. Mark active session with `←` at end of row.
 
 ### 3. Display Resume Block
 
@@ -74,7 +75,7 @@ Display:
 ```
 Switching to <name>
   Branch:      [branch]
-  Mode:        [planning / coding / both — omit if field absent]
+  Mode:        planning          ← show ONLY when Mode is planning; omit for coding/both/absent
   Open items (mine, N):
     - [date @handle] item
   Teammate notes (N — read-only):

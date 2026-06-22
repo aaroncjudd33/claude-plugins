@@ -102,7 +102,7 @@ Position: in the session file body after `Name:`, before `Teams chat:`.
 ```
 - **created-by:** @<handle>
 ```
-Position: immediately after `updated-by:`. On migrate: seeded from the migrating user's handle (best available approximation — original authorship cannot be determined from local files). The combination of `created-by` + `updated-by` enables attribution display in listings: show `@creator→@updater` when they differ, `@creator` alone when same.
+Position: immediately after `updated-by:`. On migrate: seeded from the migrating user's handle (best available approximation — original authorship cannot be determined from local files). The combination of `created-by` + `updated-by` enables attribution display in listings. The default listing shows only `@updater` (the "last edit" column — the recency signal); the `created` column (`@creator` + created-date) is hidden by default and appears when the user types `full`.
 
 ### "Mine" Filter
 

@@ -108,19 +108,21 @@ If sessions exist, render the table with section headers per status group. **By 
 ```
 Sessions in virtual-office
 
-  #  name  title  status  in  out  created  last edit
+  #  name  title  status  in  last edit
 
   In Progress
-  1  CAB-9240  BP2 - Downline Reports - SG...  in-progress  0  0  @ajudd May 18  @ajudd May 27  ←
-  2  BPT2-6377  Shopify Member Agreement Pro..  in-progress  1  0  @ajudd Jun 01  @nivi Jun 11
+  1  CAB-9240  BP2 - Downline Reports - SG...  in-progress  0  @ajudd May 27  ←
+  2  BPT2-6377  Shopify Member Agreement Pro..  in-progress  1  @nivi Jun 11
 
   2 in-progress · 1 paused · 8 completed
 ```
 (Example rows are intentionally unaligned — do not add spacing to match column widths.)
 
+**Default columns:** `# · name · title · status · in · last edit`. The `out` (outbox) count and `created` date are **hidden by default** — they're rarely the deciding factor. If the user types `full`, re-display the table with the full 8-column set (`# · name · title · status · in · out · created · last edit`).
+
 **Title truncation:** cap title at 32 characters. If longer, truncate and append `...`. If title is `—` (absent), show `—` with no padding.
 
-Show `@creator date` in "created" column; show `@updater date` in "last edit" column. When creator == updater AND dates differ, still show both columns. Always show both `in` and `out` counts (show `0` — never omit). Mark the active session (from the `---ACTIVE---` result in call 2) with `←` at the end of that row.
+Show `@updater date` in "last edit" column (this is the recency signal). On `full`, also show `@creator date` in a "created" column and the `out` count. Always show the `in` count (show `0` — never omit). Mark the active session (from the `---ACTIVE---` result in call 2) with `←` at the end of that row.
 
 **Status summary line:** always show all three statuses: `N in-progress · N paused · N completed`. Show `0` for any status with no sessions — never omit a status. When user types `all`, re-display adding a Completed section with all completed sessions.
 
@@ -149,6 +151,7 @@ Every routing block ends with this same **Search by** section — append it to w
   Search by:
     mine             — show only your sessions
     all              — include completed sessions
+    full             — show all columns (adds out count + created date)
     status <value>   — filter by in-progress / paused / completed
     <text>           — search name or title, or describe a filter (e.g. "has inbox", "updated by nivi")
 ```
@@ -157,6 +160,7 @@ Every type also accepts these same inputs (in addition to its type-specific ones
 - Number or session name alone (`1`, `<name>`) → resume; `resume <n>` / `resume <name>` → resume
 - `mine` → filter to sessions where @created-by or @updated-by matches current user; re-display and re-show routing
 - `all` → re-display including completed sessions; re-show routing
+- `full` → re-display the table with the full 8-column set (adds `out` count + `created` date); re-show routing
 - `status <value>` → filter to that status; re-display and re-show routing
 - Any other text → natural-language filter; match against name, title, handle, status, inbox count, or any field; re-display with `(filtered by '<query>')` and re-show routing
 
@@ -275,8 +279,7 @@ Display resume block:
 ```
 Resuming <name>
   Branch:      [branch]
-  Updated by:  @<handle>
-  Mode:        [planning / coding / both]
+  Mode:        planning          ← show this line ONLY when Mode is planning; omit for coding/both
   Open items (mine, N):
     - [date @handle] item
   Inbox (N items):
@@ -288,13 +291,14 @@ Resuming <name>
   Recent commits (N):
     - [date] <sha> — <subject>
   History:     N entries — last: [condensed one-liner]
-  Memory:      <N> global entries available — say 'load memory [topic]' to load relevant files
 ```
+- **Mode:** show the line only when Mode is `planning` (read-only session — a behavior-changing signal worth surfacing). Omit entirely for `coding`/`both`/absent.
+- **Updated by** is intentionally not shown here — it's already in the listing the user just saw.
+- **Memory:** do not print a standalone global-memory hint line. The on-demand `load memory [topic]` capability still applies; surface it only if the user asks.
 - Omit teammate sections if no items tagged with a different @handle.
 - If inbox empty: `Inbox: none`. If history file missing: `History: none`.
 - **Loaded memories:** read from the session file's `Loaded memories:` field. Omit the line entirely if the field is absent or empty. If present, append the hint `— say 'reload' to load them back into context` (do not auto-read the files — on-demand rule). On `reload`, read each listed memory file from the resolved project memory root.
 - **Recent commits:** read from the session file's `Commits:` field. Show the most recent 3; omit the line entirely if the field is absent or empty.
-- Count global Memory N by scanning `~/.claude/memory/MEMORY.md` lines starting with `- [` (already in context — no extra call).
 - Mine vs. teammate: item is mine if tagged `[YYYY-MM-DD @<handle>]` matching current user, or untagged.
 
 **Inbox + reviewed batch** (one stop — Pattern 2). Omit entirely if inbox is empty AND plugin version unchanged:
