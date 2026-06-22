@@ -58,77 +58,48 @@ Resolve `session_root` and `handle` using Path Resolution (see Session Skill). I
 
 ### 2. Load Sessions
 
-Run **three calls in parallel** (four for plugin type). **Issue all calls in a single response — do not process any result before all calls are issued.**
+The listing is rendered by a helper script so its deterministic formatting (grouping, title truncation, column widths, the active marker) is not generated token-by-token. **Issue the render call and the Step 3 input call(s) together in one response — do not process any result before all are issued.**
 
-1. **List sessions directory with timestamps:**
+1. **Render the listing — run the script and display its stdout verbatim:**
    ```bash
-   ls -lt <session_root>/
+   SL="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}/scripts/session-list.py"
+   if command -v python3 >/dev/null 2>&1 && [ -f "$SL" ]; then
+     python3 "$SL" --session-root "<session_root>" --slug "<slug>" --handle "<handle>"
+   fi
    ```
-   Extract session names from `.md` filenames only. **Skip every file whose name starts with `_`** (e.g. `_history.md`, `_inbox.md`, `_index.md`, `_active`, `_inbox_archive.md`) and skip `*.approved-hash` files — do not read any of them. Use the file modification date as the sort key and display date.
+   (`${CLAUDE_PLUGIN_ROOT}` is used when set; otherwise the script resolves from the marketplace clone — derive `<pluginMarketplaceName>` as in Step 1.) The script reads `_index.md` (7-col current / 6-col legacy), the per-session inbox files (`_inbox_<name>.md`, archives excluded), the `_active` marker, and the session `.md` filenames itself, then prints the finished, aligned, grouped table — default columns, with completed and `refinement-*` sessions hidden. **Display its stdout exactly as printed: do not re-align, re-order, restate, or wrap it in a code fence.**
 
-2. **Combined bash — inbox counts + active session + repo memory (non-plugin only). Issue as a single Bash call:**
+2. **Step 3 inputs (same parallel batch):**
+   - **Global inbox (all types):** read `<session_root>/_inbox.md` if it exists — Step 3's routing block lists its items and flags `[spawn]` entries with ★. (The script counts only per-session `_inbox_<name>.md` files; the global inbox is separate.)
+   - **Non-plugin type:** repo-memory count —
+     ```bash
+     RTOP=$(git rev-parse --show-toplevel 2>/dev/null); if [ -n "$RTOP" ] && [ -f "$RTOP/.claude/memory/MEMORY.md" ]; then grep -c "^\- \[" "$RTOP/.claude/memory/MEMORY.md"; else echo "no-repo-memory"; fi
+     ```
+   - **Plugin type:** read `<marketplace_root>/.claude-plugin/marketplace.json` (used in Step 3).
 
-   **Plugin type:**
-   ```bash
-   echo "---INBOX---"
-   find "<session_root>" -maxdepth 1 -name '_inbox*.md' 2>/dev/null | while read -r f; do printf "%s: " "$f"; grep -c "^## \|^\[20" "$f" 2>/dev/null || echo 0; done
-   echo "---ACTIVE---"
-   cat "~/.claude/memory/sessions/<slug>/_active" 2>/dev/null || true
-   ```
+**Filter flags** — when the user's reply is a deterministic filter, re-run the script with the matching flag and display the new stdout verbatim:
+`full` → `--full` · `all` → `--show all` · `refinement` → `--show refinement` · `status <value>` → `--status <value>` · `mine` → `--mine`
 
-   **Non-plugin type:**
-   ```bash
-   echo "---INBOX---"
-   find "<session_root>" -maxdepth 1 -name '_inbox*.md' 2>/dev/null | while read -r f; do printf "%s: " "$f"; grep -c "^## \|^\[20" "$f" 2>/dev/null || echo 0; done
-   echo "---REPO---"
-   RTOP=$(git rev-parse --show-toplevel 2>/dev/null); if [ -n "$RTOP" ] && [ -f "$RTOP/.claude/memory/MEMORY.md" ]; then grep -c "^\- \[" "$RTOP/.claude/memory/MEMORY.md"; else echo "no-repo-memory"; fi
-   echo "---ACTIVE---"
-   cat "~/.claude/memory/sessions/<slug>/_active" 2>/dev/null || true
-   ```
+**Free-text natural-language filters** (`has inbox`, `updated by nivi`, `paused this week`) are not deterministic — read `_index.md` yourself and render the filtered subset inline (the one case the model still formats), then re-show the routing block.
 
-   Parse sections by `---X---` separator lines. Global inbox (`_inbox.md`) counted separately — surfaced in Step 3. **Do not read any inbox file contents at listing time.** Repo memory: if output is a number that's the entry count; `no-repo-memory` → omit the repo memory line.
+**Index rebuild** — if the listing ends with `(index missing or incomplete …)` and the user types `index`, read all session `.md` files in parallel (no git log), extract `updated-by:`, `updated:`, `created-by:`, `Title:`, write `_index.md` in 7-column format, then re-run the script.
 
-3. **Read `<session_root>/_index.md`** (if it exists). Two supported formats — detect by counting `|`-delimited columns in the header:
-   - **7-column (current):** `name | @created-by | created-date | @updated-by | updated-date | status | title`
-   - **6-column (legacy):** `name | created-by | updated-by | date | status | title` — treat `date` as both created-date and updated-date; prepend `@` to creator/updater values if missing.
-   Parse whichever format is present. **Do not read any session `.md` files during this step.**
-
-4. **Read `<marketplace_root>/.claude-plugin/marketplace.json`** (plugin type only — used in Step 3). Omit for non-plugin types.
-
-**If `_index.md` is absent or missing entries for sessions found in call 1:** display the table immediately using only data from calls 1 and 4 — show `—` for any missing creator, created-date, or title columns. **Do not read session files or run git log at listing time.** Add a footer note below the table:
-```
-  (index missing or incomplete — type 'index' to build it)
-```
-The index is built lazily: Step 8 seeds an entry whenever a session is loaded or created. If the user types `index`, run a parallel read of all session `.md` files (no git log), extract `updated-by:`, `updated:`, `created-by:`, and `Title:` fields, write `_index.md` in 7-column format, and re-display the table.
-
-If sessions exist, render the table with section headers per status group. **By default show only in-progress and paused sessions** — do not render completed rows unless the user types `all` or `status completed`. **Also exclude `refinement-*.md` files** (ephemeral refinement sessions) from the default listing — show them only when the user types `refinement` or `all`. Column header appears once after the title line. Omit a section entirely if it has no sessions.
-
-**Do not pad or align columns.** Output rows as plain tab-separated or loosely spaced text — no fixed widths, no character counting. Fast output is more important than alignment.
-
+**Example of the script's output** (this is what the script prints — echo it as-is, do not regenerate):
 ```
 Sessions in virtual-office
 
-  #  name  title  status  in  last edit
+  #  name       title                            status       in  last edit
 
   In Progress
-  1  CAB-9240  BP2 - Downline Reports - SG...  in-progress  0  @ajudd May 27  ←
-  2  BPT2-6377  Shopify Member Agreement Pro..  in-progress  1  @nivi Jun 11
+  1  CAB-9240   BP2 - Downline Reports - SG...   in-progress  0   @ajudd May 27  ←
+  2  BPT2-6377  Shopify Member Agreement Pro...  in-progress  1   @nivi Jun 11
 
   2 in-progress · 1 paused · 8 completed
 ```
-(Example rows are intentionally unaligned — do not add spacing to match column widths.)
 
-**Default columns:** `# · name · title · status · in · last edit`. The `out` (outbox) count and `created` date are **hidden by default** — they're rarely the deciding factor. If the user types `full`, re-display the table with the full 8-column set (`# · name · title · status · in · out · created · last edit`).
+**Fallback (script unavailable)** — if `python3` is absent, the script exits non-zero, or stdout is empty, render the listing yourself: read `_index.md`; group by status (In Progress, Paused; Completed only on `all`); one row per session — `# · name · title (≤32 chars, "..." if longer) · status · in-count · @updater date` (add `out` + `@creator created-date` only on `full`); mark the `_active` session with `←`; skip `_`-prefixed files and `refinement-*` (unless `refinement`/`all`); end with `N in-progress · N paused · N completed`. Plain unaligned text is fine in the fallback.
 
-**Title truncation:** cap title at 32 characters. If longer, truncate and append `...`. If title is `—` (absent), show `—` with no padding.
-
-Show `@updater date` in "last edit" column (this is the recency signal). On `full`, also show `@creator date` in a "created" column and the `out` count. Always show the `in` count (show `0` — never omit). Mark the active session (from the `---ACTIVE---` result in call 2) with `←` at the end of that row.
-
-**Status summary line:** always show all three statuses: `N in-progress · N paused · N completed`. Show `0` for any status with no sessions — never omit a status. When user types `all`, re-display adding a Completed section with all completed sessions.
-
-**`filter_mine` active** (user passed `mine` arg): filter index entries where `@created-by` or `@updated-by` matches the current user — no additional file reads needed. Show `[filtered to @<handle>]` on the header.
-
-If repo memory was found (call 2, `---REPO---` section), add one line after the sessions table:
+If repo memory was found (Step 3 input above), add one line after the sessions table:
 ```
   Repo memory: N entries
 ```

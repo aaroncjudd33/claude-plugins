@@ -15,36 +15,20 @@ Run `pwd` and extract the last path component as the repo slug. Resolve `session
 
 ### 2. Load Session List
 
-Run **three calls in parallel:**
-1. `ls -lt <session_root>/` — extract session names from `.md` filenames, skipping `_*` files. Use file modification date as sort key and display date.
-2. Inbox/outbox counts (batch shell loop):
-   ```bash
-   find "<session_root>" -maxdepth 1 -name '_inbox*.md' 2>/dev/null | while read -r f; do echo "=== FILE: $f ==="; cat "$f"; done
-   ```
-   Count logical items per named inbox file (lines beginning with `[20` or `## `). Also check `_outbox_<name>.md` files for outbox counts.
-3. **Read `<session_root>/_index.md`** — handle, status, and title data for all sessions.
+**Argument handling first:**
+- arg `mine` → render the filtered list (pass `--mine` below).
+- any other arg (e.g. `/session:switch release`) → skip the list, jump directly to Step 3 with that name.
 
-**If `_index.md` is absent or missing entries:** read the affected session `.md` files in parallel to extract `updated-by:`, `created-by:`, `updated:` date, `Status:`, `Title:`. Write `_index.md` now. Show: "`_index.md` built from N session files." Do NOT degrade to `@—` — always build before displaying.
-
-If an argument was passed to the command:
-- Argument is `mine`: set `filter_mine = true`, show filtered list — do not skip to step 3.
-- Any other argument (e.g. `/session:switch release`): skip the list and jump directly to step 3 with that name.
-
-If `filter_mine`, filter the session list to those where `@created-by` or `@updated-by` from `_index.md` matches `@<handle>`.
-
-Otherwise, print the numbered list and wait for selection. Use the same grouped format as session:start (section headers per status group, column header once at top, fixed column widths, up to 10 total with active sessions prioritized):
+**Render the listing — run the helper script and display its stdout verbatim** (same renderer as session:start):
+```bash
+SL="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}/scripts/session-list.py"
+if command -v python3 >/dev/null 2>&1 && [ -f "$SL" ]; then
+  python3 "$SL" --session-root "<session_root>" --slug "<slug>" --handle "<handle>"   # add --mine when arg is mine
+fi
+```
+The script reads `_index.md` (7-col current / 6-col legacy), the per-session inbox files (`_inbox_<name>.md`, archives excluded), the `_active` marker, and the session `.md` filenames, and prints the finished, aligned, grouped table (default columns; completed + `refinement-*` hidden, active marked `←`). **Echo its stdout exactly — do not re-align or restate.** Then append the routing block:
 
 ```
-Sessions in <slug>
-
-  #    name          title                             status         in    last edit
-
-  In Progress
-  [1]  BPT2-6377     Shopify Member Agreement Pro...   in-progress     1     @ajudd Jun 09
-  [2]  session       —                                 in-progress     0     @nivi  Jun 11
-
-  2 in-progress · 0 paused · 8 completed
-
   Start / Resume:
     <n>              — switch to session by number
 
@@ -56,9 +40,13 @@ Sessions in <slug>
     <text>           — search name or title, or describe a filter (e.g. "has inbox", "updated by nivi")
 ```
 
-**Title truncation:** cap title at 32 characters. If longer, truncate and append `...`. If title is `—` (absent), show `—` with no padding.
+**Filter flags** — re-run the script with the matching flag, re-display, and re-append the routing block: `full`→`--full` · `all`→`--show all` · `status <value>`→`--status <value>` · `mine`→`--mine`. **Free-text** natural-language filters: read `_index.md` yourself and render the subset inline.
 
-**Default columns:** `# · name · title · status · in · last edit`. The `out` count and `created` date are hidden by default — on `full`, add `@creator created-date` in a "created" column and the `out` count. Always show the `in` count (`0` — never omit). `@updater updated-date` is the "last edit" column. Omit a status group entirely if it has no sessions. Mark active session with `←` at end of row.
+**Index rebuild (switch builds eagerly):** if the script output ends with `(index missing or incomplete …)`, read the affected session `.md` files in parallel, extract `updated-by:`/`created-by:`/`updated:`/`Status:`/`Title:`, write `_index.md` in 7-column format, then re-run the script — do not present a degraded table.
+
+**Fallback (script unavailable):** if `python3` is absent, the script exits non-zero, or stdout is empty, render the list yourself — group by status, one row per session `# · name · title (≤32, "..." if longer) · status · in · @updater date` (add `out` + `@creator created-date` only on `full`), mark `_active` with `←`, end with `N in-progress · N paused · N completed`.
+
+Then wait for selection.
 
 ### 3. Display Resume Block
 

@@ -1,2 +1,4 @@
 .claude/
 comms/skills/comms/references/known-chats.md
+__pycache__/
+*.pyc

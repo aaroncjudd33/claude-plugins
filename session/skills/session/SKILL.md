@@ -104,6 +104,10 @@ Position: in the session file body after `Name:`, before `Teams chat:`.
 ```
 Position: immediately after `updated-by:`. On migrate: seeded from the migrating user's handle (best available approximation — original authorship cannot be determined from local files). The combination of `created-by` + `updated-by` enables attribution display in listings. The default listing shows only `@updater` (the "last edit" column — the recency signal); the `created` column (`@creator` + created-date) is hidden by default and appears when the user types `full`.
 
+### Listing Renderer
+
+The session listing (session:start Step 2, session:switch) is rendered by `scripts/session-list.py`, not generated token-by-token by the model. The script reads `_index.md`, the per-session `_inbox_<name>.md` files, the `_active` marker, and the session `.md` filenames, then prints the finished, aligned, grouped table (default columns; `out`/`created` shown only on `full`; completed + `refinement-*` hidden by default; active marked `←`). Commands run it and **echo stdout verbatim**. Filter args: `--full`, `--show all|refinement`, `--status <value>`, `--mine`. It forces UTF-8 stdout (the `←` marker breaks Windows cp1252) and exits non-zero with empty stdout on any error so the command falls back to model rendering. **Do not re-inline listing formatting into the commands** — the script is the single source of truth; the in-command fallback is only for machines without python3.
+
 ### "Mine" Filter
 
 Any listing command (start, switch, status, search) supports filtering sessions to those where `updated-by` matches `@<handle>`.
