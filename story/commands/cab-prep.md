@@ -55,14 +55,14 @@ go = standard / low / skip
 
 Parse defaults from "go" or accept any combination: `emergency high "Revert PR #452"`, `standard medium`, etc.
 
-### 5. Write or update release inbox
+### 5. Write or update project session inbox
 
-Read `pluginMarketplaceName` from `~/.claude/plugins/user-config.json`
-(default: `ajudd-claude-plugins`).
+Resolve `session_root` for this repo: check `<git-repo-root>/.claude/sessions/`; if it exists
+use it, otherwise use `~/.claude/memory/sessions/<slug>/`.
 
-Target file: `~/.claude/memory/sessions/<pluginMarketplaceName>/_inbox_release.md`
+Target file: `<session_root>/_inbox.md`
 
-Create the file with header `# Inbox — release plugin` if it does not exist.
+Create the file with header `# Inbox — <slug>` if it does not exist.
 
 **Check for an existing entry:** scan for a line matching `## [...] from .* / <story-key> [cab-prep]`.
 

@@ -46,16 +46,14 @@ If a session file exists at `<session_root>/<story-key>.md`, update:
 
 ### 5. CAB handoff (optional)
 
-Read `pluginMarketplaceName` from `~/.claude/plugins/user-config.json`
-(default: `ajudd-claude-plugins`).
+Resolve `session_root` for this repo: check `<git-repo-root>/.claude/sessions/`; if it exists
+use it, otherwise use `~/.claude/memory/sessions/<slug>/`.
 
-Resolve the plugin marketplace session_root: check `<marketplace-repo-root>/.claude/sessions/` (where marketplace-repo-root is derived from `pluginMarketplaceName` path in user-config); if it exists use it, otherwise use `~/.claude/memory/sessions/<pluginMarketplaceName>/`.
-
-Check `<plugin_session_root>/_inbox_release.md` for an existing
-entry matching `## [...] from .* / <story-key> [cab-prep]`.
+Check `<session_root>/_inbox.md` for an existing entry matching
+`## [...] from .* / <story-key> [cab-prep]`.
 
 - **Entry exists:** "A cab-prep item already exists for <story-key> — update it? (yes / skip)"
-- **No entry:** "Send to release inbox for CAB? (yes / skip)"
+- **No entry:** "Send to project inbox for CAB handoff? (yes / skip)"
 
 If the user says yes (either case), run the `/story:cab-prep` steps (steps 1–5 of that
 command) using the story key already resolved. Skip steps 1–2 of cab-prep since the story
