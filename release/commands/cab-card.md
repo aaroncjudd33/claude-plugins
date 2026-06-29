@@ -19,10 +19,16 @@ Creates the CAB card in Jira and initializes the release session file. This phas
 
 Run `pwd` and extract the repo slug (last path component).
 
-Silently collect:
+Issue all of the following **in one parallel batch** — they have no dependencies on each other:
 - Story keys from command arguments (if any)
 - Memory files → active session, known story keys, BPT2 CAB key
-- Current git branch
+- Current git branch (`git branch --show-current`)
+- `~/.claude/plugins/team.json`
+- `~/.claude/plugins/user-config.json`
+- `~/.claude/browser-links.json`
+- `~/.claude/plugins/known-chats.md`
+
+Cache all results in context — later steps reference these without re-reading.
 
 ### 2. Check for BPT2 CAB
 
@@ -64,7 +70,7 @@ What's deploying:  [seeded from story summaries — confirm or refine]
 
 ### 5. Prompt configurable defaults
 
-Before displaying, read `~/.claude/plugins/team.json` to populate items 10 and 11:
+Use the already-loaded `team.json` to populate items 10 and 11:
 - Item 10: first member with role `code-review-approver` → use `name` field
 - Item 11: first member with role `qa-approver` → use `name` field
 
@@ -84,7 +90,7 @@ Before displaying, read `~/.claude/plugins/team.json` to populate items 10 and 1
 11. QA Approved By:             [from team.json → qa-approver]
 12. Date of Code Review:        [today]
 13. Date Tested in Clone/Stage: [today]
-14. Change Conductor:           {USER_NAME} (read from ~/.claude/plugins/user-config.json)
+14. Change Conductor:           {USER_NAME} (from already-loaded user-config.json)
 15. Dev Team:                   BP2
 16. Prioritization:             P3
 ```
@@ -99,7 +105,7 @@ Call `createJiraIssue` with summary and all non-ADF fields (option IDs, user IDs
 
 Store the returned CAB card key (e.g. `CAB-8994`).
 
-Open the CAB card in the browser. First read `~/.claude/browser-links.json` and look up `prefixDefaults["cab"]` to resolve the window name (default: `"Cab"` if not found):
+Open the CAB card in the browser. Look up `prefixDefaults["cab"]` in the already-loaded `browser-links.json` to resolve the window name (default: `"Cab"` if not found):
 ```bash
 powershell -ExecutionPolicy Bypass -File "~\.claude\scripts\Open-EdgeUrl.ps1" -Url "https://younglivingeo.atlassian.net/browse/<CAB-KEY>" -WindowName "<resolved-window-name>"
 ```
@@ -108,7 +114,7 @@ powershell -ExecutionPolicy Bypass -File "~\.claude\scripts\Open-EdgeUrl.ps1" -U
 
 If a BPT2 CAB key was identified in step 2, ensure it is properly set up as the tracking story:
 
-1. Call `editJiraIssue` to assign it to the current user (read `user.jiraAccountId` from `~/.claude/plugins/user-config.json`)
+1. Call `editJiraIssue` to assign it to the current user (`user.jiraAccountId` from already-loaded `user-config.json`)
 2. Call `transitionJiraIssue` with transition ID `181` to move it to **Ready For Work**
 
 Always use Ready For Work here — whether the story was just created or already existed. Do NOT move to In Progress unless the user explicitly asks.
@@ -127,7 +133,7 @@ If a BPT2 CAB key was identified in step 2, call `createIssueLink`:
 
 ### 9. Create the CAB Teams chat
 
-Read `~/.claude/plugins/team.json`. Filter members with the `story-chat` role and collect their `teamsUserId` fields. Do **not** include `ajudd@youngliving.com` — the authenticated user is added automatically.
+Using the already-loaded `team.json`, filter members with the `story-chat` role and collect their `teamsUserId` fields. Do **not** include `ajudd@youngliving.com` — the authenticated user is added automatically.
 
 Create the chat via yl-msoffice with:
 - **Topic:** `CAB-XXXX — [CAB card summary]`
@@ -135,7 +141,7 @@ Create the chat via yl-msoffice with:
 
 If creation fails, stop: "CAB Teams chat could not be created. Resolve this before continuing — the chat is required for release communications."
 
-Add the new chat to `~/.claude/plugins/known-chats.md` (Name, Chat ID, Active=yes, Members list, Topic).
+Add the new chat to `~/.claude/plugins/known-chats.md` (Name, Chat ID, Active=yes, Members list, Topic) — file was pre-loaded in Step 1.
 
 ### 10. Write session state
 
