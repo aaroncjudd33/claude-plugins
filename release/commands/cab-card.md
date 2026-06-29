@@ -39,13 +39,13 @@ Store the BPT2 CAB key if provided.
 
 ### 3. Fetch BPT2 stories
 
-Call `getJiraIssue` for all BPT2 story keys (from arguments, memory, or prompt) **in parallel**.
+Call `getJiraIssue` for all BPT2 story keys (from arguments, memory, cab-prep context, or prompt) **in parallel**.
 
 Extract: **Summary**, **Description/acceptance criteria**, **Status**, **Component/label**.
 
 Warn if any story is not in a deployable state (Done / Ready for Deploy). Ask the user to confirm before continuing.
 
-If no story keys are available, prompt:
+If no story keys are available (and none were pre-populated from a cab-prep item), prompt:
 ```
 Which BPT2 stories are being deployed? (e.g. BPT2-6258 BPT2-6333)
 ```
@@ -72,8 +72,8 @@ Before displaying, read `~/.claude/plugins/team.json` to populate items 10 and 1
 === Defaults (Enter to accept all, or type numbers to change) ===
 
  1. CAB Impact:                 Low
- 2. CAB Risk:                   Low
- 3. CAB Request Type:           Standard
+ 2. CAB Risk:                   Low              ← if cab-prep context available, pre-seed from cab-prep risk (low/medium/high)
+ 3. CAB Request Type:           Standard         ← if cab-prep context available, pre-seed from cab-prep urgency (standard → Standard, emergency → Emergency)
  4. Requires Outage Window:     No
  5. Can it be rolled back:      Yes
  6. Expenditures:               Opex

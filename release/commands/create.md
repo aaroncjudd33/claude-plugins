@@ -72,6 +72,25 @@ Ask: "Start Phase B — create CAB card and begin deploy workflow? (Yes / Stop)"
 
 #### Case C: No state — fresh start
 
+**Cab-prep check:** Before prompting for story keys, resolve `session_root` for the current repo: check `<git-repo-root>/.claude/sessions/`; if it exists use it, otherwise `~/.claude/memory/sessions/<slug>/`. Read `<session_root>/_inbox.md` and scan for entries matching `## [...] from .* \[cab-prep\]`.
+
+If one or more are found, surface them:
+```
+Found N pending cab-prep item(s) — use one?
+  1. BPT2-6481 — Create React Module  (risk: low · urgency: standard)
+  2. BPT2-6490 — Fix enrollment flow   (risk: medium · urgency: standard)
+  yes / 2 / no
+```
+(Single item: show just it and ask `yes / no`.)
+
+If the user picks an item:
+- Extract: **story key**, **PR title + URL**, **urgency**, **risk**, **rollback approach**, **post-deploy checks**
+- Archive the item: append `[PICKED UP <today> — release:create]` stamp + the full entry to `<session_root>/_inbox_archive.md`; remove the entry from `_inbox.md`
+- Store all extracted fields as **cab-prep context** — passed to cab-card.md (Steps 3 + 5) and carried forward to cab-link.md (Step 2)
+- Skip the "Which BPT2 stories" prompt below — story key is already known
+
+If no cab-prep entries found, or the user declines, proceed normally:
+
 If story keys were passed as arguments, use them. Otherwise prompt:
 ```
 Which BPT2 stories are being deployed? (e.g. BPT2-6258 BPT2-6333)
@@ -148,6 +167,7 @@ Find the lowest-numbered incomplete sub-phase. Read the corresponding command fi
 
 - **Phase 1 pending:** Read and follow `~/.claude/plugins/marketplaces/ajudd-claude-plugins/release/commands/cab-card.md`
   - If arriving from Phase A (Case B above): pass the bundle story key as the BPT2 CAB key (step 2 of cab-card.md), and the feature story keys as the story list (step 3 of cab-card.md) — no need to re-prompt for these.
+  - If arriving with cab-prep context (Case C, user picked a cab-prep item): pass the story key (step 3 — skip prompt), pre-seed CAB Risk + CAB Request Type from the cab-prep risk/urgency values (step 5 items 2 + 3), and carry the PR + rollback + post-deploy checks forward for use in Phase 3 (cab-link.md step 2).
 - **Phase 2 pending:** Read and follow `~/.claude/plugins/marketplaces/ajudd-claude-plugins/release/commands/cab-branch.md`
 - **Phase 3 pending:** Read and follow `~/.claude/plugins/marketplaces/ajudd-claude-plugins/release/commands/cab-link.md`
 - **Phase 4 pending:** Read and follow `~/.claude/plugins/marketplaces/ajudd-claude-plugins/release/commands/cab-review.md`

@@ -27,9 +27,9 @@ Call `editJiraIssue` to set all ADF fields in one call:
 - **Release Notes** (`customfield_10512`, ADF): Bullet list of BPT2 story summaries, one per story
 - **Deployment Plan** (`customfield_13142`, ADF): Project-specific template from SKILL.md
 - **Deployment Playbook** (`customfield_13143`, ADF): Same content as Deployment Plan
-- **Rollback Plan** (`customfield_13101`, ADF): Project-specific template from SKILL.md
+- **Rollback Plan** (`customfield_13101`, ADF): Project-specific template from SKILL.md — if cab-prep context is available, lead with the cab-prep rollback approach, then append the standard template steps
 - **Pre-Deployment Tests** (`customfield_13099`, ADF): VO: "Tested in env6" / CDK: "Tested in dev/stage"
-- **Post-Deployment Tests** (`customfield_13100`, ADF): "Tested in Prod"
+- **Post-Deployment Tests** (`customfield_13100`, ADF): if cab-prep context has post-deploy checks, list them first, then append "Tested in Prod"; otherwise just "Tested in Prod"
 - **Config/Settings Changes** (`customfield_13176`, ADF): As collected in Phase 1, or "None"
 - **Component Version(s)** (`customfield_13141`, ADF): Table — Repository / `release/CAB-XXXX` / PR link (omit PR column on first-deploy)
 - **PRs Deploying** (`customfield_14670`, ADF): `"<PR title> - Pull Request #<N> - <org>/<repo>"` with link (omit on first-deploy)
