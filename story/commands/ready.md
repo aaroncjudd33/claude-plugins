@@ -50,7 +50,7 @@ Request fields: `summary, status, assignee, priority, description`
 Compare results against cached stories:
 
 - **New** — key appears in results but not in cache → fetch full description via `getJiraIssue`, extract repo and featureArea, add to cache with `firstSeen` and `lastSeen` = today
-- **Picked up or moved** — key appears in cache but not in results → mark for removal, collect for diff display
+- **Picked up or moved** — key appears in cache but not in results → call `getJiraIssue` for each (in parallel) to fetch current assignee and status, mark for removal, collect for diff display
 - **Unchanged** — appears in both → update `lastSeen` = today, skip description fetch
 
 For new stories, run `getJiraIssue` in parallel batches of 10.
@@ -90,8 +90,9 @@ BPT2 — Ready For Work
 Last updated: <date>  |  <N> stories available
 
 CHANGES SINCE LAST RUN
-  + BPT2-XXXX  [new]      Summary here
-  - BPT2-XXXX  [picked up]  Summary here
+  + BPT2-XXXX  [new]                          Summary here
+  - BPT2-XXXX  [picked up — Assignee Name]   Summary here  (In Progress)
+  - BPT2-XXXX  [picked up — unassigned]      Summary here  (QA In-Progress)
 (omit this section entirely if no changes, or if this is the first run)
 
 <Feature Area> (<N>)
