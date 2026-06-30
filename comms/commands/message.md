@@ -20,15 +20,11 @@ Send a formatted Teams message based on the current conversation context.
    - `<p><b>Label</b></p>` for minor labels within a section — never bare `<b>` or `<h3>`
    - `<ul>`/`<li>` for bullets, nested `<ul>` for hierarchy
 
-4. **Enforce signature** — before showing any preview, verify the composed HTML ends with:
-   `<p><em>Posted by Claude Code on behalf of {USER_NAME}</em></p>`
-   If it is missing or malformed, add it now. Do not proceed to preview until it is present.
-
-5. **Show a preview in both formats:**
+4. **Show a preview in both formats:**
    - **Plain text** — readable prose so the user can verify content and tone
    - **HTML** — the exact markup that will be sent, so layout issues are visible before send
    Ask the user: "Ready to send, or would you like any changes?"
 
-6. **Wait for explicit approval** before calling `send_chat_message`.
+5. **Wait for explicit approval** before calling `send_chat_message`.
 
-7. **Send and confirm** — call `send_chat_message`, then call `confirm_action` with the returned `actionId`.
+6. **Send and confirm** — call `send_chat_message`, then call `confirm_action` with the returned `actionId`.

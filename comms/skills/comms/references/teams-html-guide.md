@@ -72,8 +72,6 @@ Use `<p>&nbsp;</p>` between every element that needs visual separation — betwe
 <p>&nbsp;</p>
 <p><b>Next Section Header</b></p>
 <p>Content here — no spacer between this header and the content above.</p>
-<p>&nbsp;</p>
-<p><em>Posted by Claude Code on behalf of {USER_NAME}</em></p>
 ```
 
 ---
@@ -163,8 +161,6 @@ When a table needs a legend, place `<em>` items immediately after `</table>` wit
 </table>
 <em>term = explanation</em><br/>
 <em>* = footnote</em>
-<p>&nbsp;</p>
-<p><em>Posted by Claude Code on behalf of {USER_NAME}</em></p>
 ```
 
 ---
@@ -189,16 +185,12 @@ When a table needs a legend, place `<em>` items immediately after `</table>` wit
     </ul>
   </li>
 </ul>
-<p>&nbsp;</p>
-<p><em>Posted by Claude Code on behalf of {USER_NAME}</em></p>
 ```
 
 ---
 
 ## Quick Rules
 
-0. **ALWAYS end every message with the Claude signature** — no exceptions, no matter how short the message:
-   `<p><em>Posted by Claude Code on behalf of {USER_NAME}</em></p>`
 1. No `<pre>`, no `<code>` — ever
 2. No `<h1>` (too large) and no `<h3>` (renders at body text size) — use `<h2>` for section headers
 3. No bare `<b>Section</b>` for minor labels — wrap in `<p><b>...</b></p>`

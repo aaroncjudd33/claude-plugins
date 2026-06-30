@@ -15,14 +15,12 @@ Governs all Microsoft 365 communication via the `yl-msoffice` MCP — Teams mess
 
 These apply to every Teams message, no exceptions:
 
-1. **ALWAYS end every message with the Claude signature.** No exceptions — single-line messages, tables, reference docs, all of it:
-   `<p><em>Posted by Claude Code on behalf of {USER_NAME}</em></p>`
-2. **Always preview before sending.** Show the full draft in BOTH formats and wait for explicit approval before calling `send_chat_message`. Never auto-confirm.
-3. **Always use HTML formatting.** The `yl-msoffice` `send_chat_message` body supports HTML and renders it properly.
-4. **Always open with an intro paragraph.** Before the first section, include a `<p>` that sets context — what this message is about and why you're sending it. Do NOT open with a greeting or self-introduction (see voice guide).
-5. **Follow the HTML guide.** See `references/teams-html-guide.md` for what renders well vs. poorly. The short version: no `<pre>`, no `<code>`, no `<h1>`, no `<h3>`, no `<th>`. Use `<h2>` for section headers, `<b>` for labels, `<ul>` for structure, nested `<ul>` for hierarchical content.
-6. **Apply Aaron's voice.** Read `references/aaron-voice.md` before drafting. Key rules: no greeting, paragraphs for conversational messages, brief on mistakes, "we/us" not "I", passive availability.
-7. **Self-correct on wrong-chat mismatches.** When the user reports that a message went to the wrong chat (e.g. "I meant the CAB chat, not the story chat" or "that's the wrong chat"), immediately: (a) identify what phrase was used and what Name it incorrectly resolved to, (b) add the phrase as an alias on the correct chat's row in `~/.claude/plugins/known-chats.md`, (c) if the phrase is ambiguous (matches multiple chats), also note it in a comment on the wrong chat's row so future sessions avoid the conflict, (d) save a feedback memory documenting the correction. Do not ask permission — do it immediately as part of acknowledging the correction.
+1. **Always preview before sending.** Show the full draft in BOTH formats and wait for explicit approval before calling `send_chat_message`. Never auto-confirm.
+2. **Always use HTML formatting.** The `yl-msoffice` `send_chat_message` body supports HTML and renders it properly.
+3. **Always open with an intro paragraph.** Before the first section, include a `<p>` that sets context — what this message is about and why you're sending it. Do NOT open with a greeting or self-introduction (see voice guide).
+4. **Follow the HTML guide.** See `references/teams-html-guide.md` for what renders well vs. poorly. The short version: no `<pre>`, no `<code>`, no `<h1>`, no `<h3>`, no `<th>`. Use `<h2>` for section headers, `<b>` for labels, `<ul>` for structure, nested `<ul>` for hierarchical content.
+5. **Apply Aaron's voice.** Read `references/aaron-voice.md` before drafting. Key rules: no greeting, paragraphs for conversational messages, brief on mistakes, "we/us" not "I", passive availability.
+6. **Self-correct on wrong-chat mismatches.** When the user reports that a message went to the wrong chat (e.g. "I meant the CAB chat, not the story chat" or "that's the wrong chat"), immediately: (a) identify what phrase was used and what Name it incorrectly resolved to, (b) add the phrase as an alias on the correct chat's row in `~/.claude/plugins/known-chats.md`, (c) if the phrase is ambiguous (matches multiple chats), also note it in a comment on the wrong chat's row so future sessions avoid the conflict, (d) save a feedback memory documenting the correction. Do not ask permission — do it immediately as part of acknowledging the correction.
 
 ### Standard Message Template
 
@@ -45,8 +43,6 @@ These apply to every Teams message, no exceptions:
     </ul>
   </li>
 </ul>
-<p>&nbsp;</p>
-<p><em>Posted by Claude Code on behalf of {USER_NAME}</em></p>
 ```
 
 ### Tables
@@ -151,7 +147,6 @@ The email commands (`fetch`, `triage`, `sweep`) work as a pipeline.
 **Key behavioral rules:**
 - **Cache contract.** All email commands read from / write to `C:\temp\email-cache.json`. If absent or stale, instruct the user to run `/comms:fetch` first.
 - **Rule-saving.** When the user creates a `rule/X` during interactive triage, immediately update the `## Sender Rules` table in `project_inbox_triage.md` and auto-resolve any remaining emails from that sender in the current loop.
-- **No signature in emails.** The "Posted by Claude Code on behalf of {USER_NAME}" signature is for Teams messages only — do not append it to email bodies.
 - **`mail.move` to `deleteditems` for deletes.** There is no `mail.delete` action — use `mail.move` with `folder=deleteditems` for all delete operations.
 
 ---
