@@ -48,15 +48,17 @@ Where should this go?
   [X] Cross-repo — different project
 ```
 
-- **Named session** → `<target_session_root>/_inbox_<target-name>.md`
-- **Global** → `<target_session_root>/_inbox.md` (for items with no known target session or truly cross-cutting items)
+- **Target type decides the file:**
+  - **plugin / personal target** → the slug's consolidated inbox `<target_session_root>/_inbox.md`. These types are item-driven: there is ONE inbox per slug, and `/session:start` `pick`s from it. Do NOT write a per-session `_inbox_<name>.md` for these — the new flow never reads it.
+  - **story / cab / general target** → per-session `<target_session_root>/_inbox_<target-name>.md` (route a handoff to a specific story/CAB, as today).
+- **Global** → `<target_session_root>/_inbox.md` (cross-cutting items with no specific target; for plugin/personal slugs this is the same file as a named target).
 - **Cross-repo** → ask for the target repo slug, then show that repo's sessions using the same prompt
 
 ### 3. Write Inbox Entry
 
 Determine target file:
-- Named session → `<target_session_root>/_inbox_<target-name>.md` (create with header `# Inbox — <target-name>` if needed)
-- Global → `<target_session_root>/_inbox.md` (create with header `# Inbox — <slug>` if needed)
+- plugin / personal target, or Global → `<target_session_root>/_inbox.md` (create with header `# Inbox — <slug>` if needed)
+- story / cab / general named session → `<target_session_root>/_inbox_<target-name>.md` (create with header `# Inbox — <target-name>` if needed)
 
 Append:
 ```markdown

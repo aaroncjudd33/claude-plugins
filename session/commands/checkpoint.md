@@ -211,9 +211,14 @@ For **story/cab slots (A, C)** the apply-logic lives in `references/checkpoint-s
 
 Write `<session_root>/<name>.md` with the current state:
 
+**Frontmatter:** for `plugin` and `personal` types, write `type:`, `mode:`, and `status:` keys alongside `updated:`, kept in sync with the body bullets — the scope-guard hook reads `mode:` from the frontmatter to gate Edit/Write. `status:` is `in-progress` at checkpoint. For `story` / `cab` / `general`, write only `updated:` (preserve any existing extra keys as-is).
+
 ```
 ---
 updated: [today's date]
+type: [type]            ← plugin/personal only
+mode: [planning / coding / both]   ← plugin/personal only; preserve from session file
+status: in-progress     ← plugin/personal only; always reset to in-progress at checkpoint
 ---
 
 # Session State — <name>

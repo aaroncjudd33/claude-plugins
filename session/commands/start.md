@@ -21,17 +21,18 @@ If arguments were passed to `/session:start`, attempt to resolve them before run
 | `BPT2-XXXX` (Jira story key) | `/session:start BPT2-6429` | story session |
 | `CAB-XXXX` (CAB key) | `/session:start CAB-9260` | cab session |
 | `cab BPT2-XXXX [...]` | `/session:start cab BPT2-6429 BPT2-6430` | new CAB for those stories |
-| Plugin name in marketplace | `/session:start release` | plugin session |
+| Existing session name | `/session:start release` | resume that session (any type, incl. legacy plugin-named + feature sessions) |
 
 **Fast-path flow:**
 1. Run `pwd`, extract slug, read `~/.claude/plugins/user-config.json` (same as Step 1). Resolve `session_root` and `handle` using Path Resolution (see Session Skill).
 2. If arg is `mine`: set `filter_mine = true`, fall through to Step 1 — full discovery with mine filter.
-3. Derive session type and target name from the arg (story key → type=story, name=BPT2-XXXX; plugin name → type=plugin, name=<plugin>; etc.).
+3. Derive session type and target name from the arg (story key → type=story, name=BPT2-XXXX; CAB key → type=cab; any other bare token → treat as a session NAME to resume).
 4. Check whether `<session_root>/<name>.md` exists:
    - **Exists + plugin session** → go directly to the Plugin session resume path in Step 4 (no start-impl.md read needed).
    - **Exists + other type** → read start-impl.md, go directly to Step 4 (Resume existing) with that session.
-   - **Does not exist** → before Step 6, check `<session_root>/_inbox.md` for a `[spawn]` entry whose label matches the target name. If found, archive it immediately with stamp `[PICKED UP YYYY-MM-DD — <target-name>]` to `<session_root>/_inbox_archive.md` (creating the archive file if needed). Read start-impl.md, then go to Step 6.
-5. Skip Steps 2, 3 entirely — no session listing, no inbox counts, no routing block.
+   - **Does not exist + story/cab** → new kickoff: before Step 6, check `<session_root>/_inbox.md` for a `[spawn]` entry whose label matches the target name. If found, archive it immediately with stamp `[PICKED UP YYYY-MM-DD — <target-name>]` to `<session_root>/_inbox_archive.md` (creating the archive file if needed). Read start-impl.md, then go to Step 6.
+   - **Does not exist + plugin/personal** → do NOT blank-create. These types are item-driven: fall through to Step 1 (full discovery + inbox flow) so the name can be picked from the inbox or started via `new <description>`.
+5. Skip Steps 2, 3 entirely — no session listing, no inbox counts, no routing block. (Plugin/personal "does not exist" falls through and does NOT skip — it runs the full flow.)
 
 **No argument or unrecognized argument:** fall through to Step 1 — run the full discovery flow as normal.
 
@@ -139,34 +140,31 @@ Every type also accepts these same inputs (in addition to its type-specific ones
 
 **Plugin project:**
 
-List any plugins from `marketplace.json` not already in the sessions table:
-```
-  · <plugin-name> — <one-phrase description>  (no session yet)
-```
+Sessions are **item-driven**: new work always starts from an inbox item — there are no blank or plugin-named sessions. The sessions table (above) lists in-progress feature sessions to `resume`; the consolidated inbox below is what you `pick` from.
 
-If the active session (call 6) is in the table, append inline hints on the following line:
+**Show the consolidated inbox.** The items were read in Step 2 from `<session_root>/_inbox.md` (the canonical inbox for this slug). List them numbered, before the routing block. Flag `[spawn]` entries with ★:
 ```
-  + planning / both → change mode  ·  reviewed → mark plugin reviewed  ·  work/done/backlog <n> → inbox items
+Inbox — pick up or describe new work (N):
+  1  [date] from <source> — <description>
+  2  ★ [spawn] <label> — from <source>/<session>, ready to start
 ```
-(Omit hints that don't apply — e.g. omit the inbox hint if inbox count is 0.)
+If the inbox is empty: `Inbox: none — describe new work with 'new <description>'`.
 
 Then output the routing block — the type-specific `Start / Resume` lines, followed by the shared **Search by** block:
 ```
   Start / Resume:
-    resume <n>       — resume by number
-    start <plugin>   — start a session for a plugin
-    new plugin       — create a brand new plugin
+    resume <n>        — resume an in-progress session (table number above)
+    pick <n>          — start a session from inbox item <n>
+    new <description> — start a session for new work (adds it to the inbox, then picks it up)
 ```
 
 **Type-specific accepted inputs** (plus the shared inputs above):
-- `start <plugin-name>` → start that plugin session (new or existing)
-- `new plugin` → new plugin creation flow
-- Mode modifier (`planning` / `both` / `coding`) → set mode after loading
-- `reviewed` → mark plugin reviewed after loading
-- `work <n>` / `done <n>` / `backlog <n>` / `keep` → inbox disposition after loading
-- Combinations: `resume 1 planning` / `1 reviewed work 2`
-
-If the user replies with just `start` (no plugin name), ask: "Which plugin?" as the only follow-up.
+- `pick <n>` → create a feature-named session from inbox item <n>. Reads start-impl.md, goes to Step 4 (new session): derive a feature name (confirmed once), fold the item body into the new session, delete the item from `_inbox.md`.
+- `new <description>` → append `<description>` as a new item to `<session_root>/_inbox.md`, then immediately run the same `pick` flow on it — one creation path, no separate ad-hoc branch. (Scaffolding a brand-new plugin is just `new build the <x> plugin`: it creates a feature session, and the plugin folder/marketplace work happens inside it.)
+- `resume <n>` / `<n>` / `<name>` → resume an existing in-progress session.
+- Mode modifier (`planning` / `both` / `coding`) → set the new/resumed session's mode.
+- `reviewed` → mark plugin reviewed after loading (when the resumed session targets a plugin).
+- Combinations: `pick 1 planning` / `resume 2 reviewed`.
 
 ---
 
@@ -198,18 +196,28 @@ Then output the routing block — the type-specific `Start / Resume` lines, foll
 
 **Personal project:**
 
-If `_inbox.md` has items, show compact summary before the routing line.
+Identical model to plugin (per design — plugin and personal behave the same). Sessions are item-driven: new work starts from an inbox item, never blank.
+
+**Show the consolidated inbox.** Items were read in Step 2 from `<session_root>/_inbox.md` (canonical inbox for this personal project's slug). List numbered, `[spawn]` flagged with ★:
+```
+Inbox — pick up or describe new work (N):
+  1  [date] from <source> — <description>
+```
+If empty: `Inbox: none — describe new work with 'new <description>'`.
 
 Then output the routing block — the type-specific `Start / Resume` lines, followed by the shared **Search by** block:
 ```
   Start / Resume:
-    resume <n>       — resume by number
-    start            — start a new session — you'll give it a name
+    resume <n>        — resume an in-progress session (table number above)
+    pick <n>          — start a session from inbox item <n>
+    new <description> — start a session for new work (adds it to the inbox, then picks it up)
 ```
 
 **Type-specific accepted inputs** (plus the shared inputs above):
-- `start` → route to new personal session; if no name in reply, ask "Session name?" as follow-up
-- `start <name>` → route directly with that name
+- `pick <n>` → create a feature-named session from inbox item <n> (same fold-then-delete flow as plugin: Step 4 → start-impl.md).
+- `new <description>` → append to `<session_root>/_inbox.md`, then run the same `pick` flow.
+- `resume <n>` / `<n>` / `<name>` → resume an existing in-progress session.
+- Mode modifier (`planning` / `both` / `coding`) → set the new/resumed session's mode.
 
 ---
 
@@ -300,9 +308,12 @@ Read `<plugin_root>/.claude-plugin/plugin.json` and `<plugin_root>/skills/<plugi
 
 ---
 
+**Plugin / personal — `pick <n>` or `new <description>`** (item-driven session creation):
+- `new <description>`: first append the description as a new item to `<session_root>/_inbox.md` using the standard header format (`## [YYYY-MM-DD @<handle>] from <slug>/start — <description>`), then treat it exactly like `pick` on that just-written item.
+- `pick <n>`: read `session/commands/start-impl.md` immediately and continue from Step 4 there (New session path). The picked inbox item's number maps to the inbox list shown in Step 3. start-impl.md derives the feature name, folds the item body into the new session, and deletes the item from `_inbox.md`.
+
 **All other cases** — read `session/commands/start-impl.md` immediately, then continue from Step 4 there:
-- New plugin session
-- Work / personal / general session (resume or new)
-- Any case requiring a follow-up question (story key, plugin name, session name)
+- Work / story / cab / general session (resume or new)
+- Any case requiring a follow-up question (story key, session name)
 
 <!-- Steps 4–9 for new sessions and non-plugin types are in start-impl.md -->

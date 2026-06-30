@@ -121,10 +121,34 @@ Loaded by `start.md` after the user makes their selection. Context already in sc
 
 **New story/plugin/personal/general — session filename:**
 - story → `BPT2-XXXX.md`
-- plugin → `<plugin-name>.md`
 - cab → `CAB-XXX.md`
-- personal → `<name>.md`
+- plugin → `<feature-name>.md`   ← derived from the picked inbox item (see Item Pickup below), NOT the plugin name
+- personal → `<feature-name>.md` ← derived from the picked inbox item (same flow as plugin)
 - general → `<name>.md`
+
+**Item Pickup (plugin / personal only — `pick <n>` / `new <description>`):**
+
+Plugin and personal sessions are created ONLY by picking up an inbox item — never blank, never named after the plugin/project. When the user chose `pick <n>` (or `new <description>`, which already appended the item in start.md Step 4), run this before Step 5:
+
+1. **Locate the item.** The picked item is entry `<n>` in `<session_root>/_inbox.md` (the canonical inbox for this slug). Read its full `## [date @handle] from <source> — <description>` header and body.
+
+2. **Derive a feature name.** Slugify into kebab-case:
+   - If the header's `<description>` is a usable short title, slugify it (e.g. "Item-driven sessions for plugin work" → `item-driven-sessions`). Keep it concise (2–4 words).
+   - Otherwise read the body and propose a name.
+   - **Collision check:** if `<session_root>/<feature-name>.md` already exists, append a disambiguator or pick a distinct name.
+   - **Confirm once** (the name is permanent — never silently guess): `Session name: <feature-name>  (reply 'ok' or give a different name)`. Apply any override.
+
+3. **Fold the item into the new session.** When writing the session file in Step 8, seed `Open items` from the item body, and add a provenance block preserving the original header verbatim:
+   ```
+   ## Picked up from inbox
+   <original ## [date @handle] from <source> — <description> header>
+   <original body>
+   ```
+   Place this in the session file body after the standard fields (it carries the full context so nothing is lost).
+
+4. **Delete the item from `_inbox.md`** — outright, no archive, no `[DONE]` stamp. The session file is now the paper trail, and `git`/file history on `_inbox.md` records what came in and when. Remove exactly the one picked item; leave all other items byte-identical.
+
+This fold-then-delete happens once, at creation. There is no per-session `_inbox_<name>.md` file for these new sessions — the consolidated `_inbox.md` is the only inbox.
 
 ### 5. Inbox and Loading Questions
 
@@ -291,9 +315,14 @@ Create `session_root` directory if it does not exist.
 
 Write `<session_root>/<name>.md`:
 
+**Frontmatter — for `plugin` and `personal` types, write `type:`, `mode:`, and `status:` keys alongside `updated:`.** The scope-guard hook (`session-scope-guard.py`) reads `mode:` from the frontmatter only (never the body bullets) to decide whether Edit/Write is allowed — so these keys must be present and accurate for plugin/personal sessions. For `story` / `cab` / `general` types, write only `updated:` as before (those zones use instruction-only Mode handling — no need to churn their frontmatter). The body bullets (`- **Type:**`, `- **Mode:**`, `- **Status:**`) stay for all types regardless.
+
 ```
 ---
 updated: [today's date]
+type: [type]            ← plugin/personal only — keep in sync with the Mode bullet
+mode: [planning / coding / both]
+status: in-progress
 ---
 
 # Session State — <name>
@@ -360,16 +389,16 @@ PLANNING MODE — No code edits this session.
 Any implementation work should be routed to this session's inbox for a coding session to pick up.
 ```
 
-**Plugin — existing plugin:**
-1. **Read in parallel:** `plugin.json`, `SKILL.md` (if present), and all files under the skill's `references/` directory. **Do not pre-read individual command `.md` files** — load them on demand when the user's task targets a specific command.
-2. The plugin reviewed check was already handled in Step 5. No additional review prompt here.
-3. Ask what needs to change if not already stated.
-4. Confirm approach before making changes.
+**Plugin — feature session (new, via `pick`/`new`):**
+1. **Determine the target plugin(s)** from the folded item body / feature scope. If the work targets one or more existing plugins, **read in parallel** their `plugin.json`, `SKILL.md` (if present), and all files under each skill's `references/` directory. **Do not pre-read individual command `.md` files** — load them on demand when the task targets a specific command. If the feature is scaffolding a brand-new plugin, skip this read; the folder/marketplace work happens within the session.
+2. **Memory scan offer** — if project memory exists for this slug (a `MEMORY.md` at the resolved project memory root) and the session has no `Loaded memories:` yet, offer once: `Scan project memory for what's relevant to this work? (scan / skip)`. On `scan`, run the memory plugin's `/memory:scan` flow using the feature name + folded item as the feature-area signal; present candidates, load picks, record to `Loaded memories:`. On `skip`, proceed. Never auto-load.
+3. Confirm approach before making changes.
 
-**Plugin — new plugin:**
-1. Ask for the plugin name and what it should do.
-2. Create the folder structure and files.
-3. Add entry to `marketplace.json`, commit, push, install.
+**Plugin — resume feature session:**
+1. **Read in parallel** the `plugin.json`/`SKILL.md`/`references/` for the plugin(s) the session's Scope targets.
+2. The plugin reviewed check was already handled in Step 5. No additional review prompt here.
+3. **Memory scan offer** — same as the new-session case (offer once if project memory exists and no `Loaded memories:` yet).
+4. Summarize what's open and next; ask what needs to change if not already stated.
 
 **Story — resume:**
 1. `getJiraIssue` — verify status matches memory.
@@ -402,14 +431,16 @@ Any implementation work should be routed to this session's inbox for a coding se
 1. Read the CAB card from Jira.
 2. Check release branch status.
 
-**Personal — resume:**
+**Personal — resume feature session:**
 1. Check git branch — confirm it matches the session file, offer to switch if not.
-2. Summarize: what's done, what's open, what's next.
+2. **Memory scan offer** — if project memory exists for this slug (a `MEMORY.md` at the resolved project memory root) and the session has no `Loaded memories:` yet, offer once: `Scan project memory for what's relevant to this work? (scan / skip)`. On `scan`, run `/memory:scan`; on `skip`, proceed. Never auto-load.
+3. Summarize: what's open, what's next.
 
-**Personal — new:**
-1. Ask for the project name.
+**Personal — feature session (new, via `pick`/`new`):**
+1. The session name and folded item come from Item Pickup (Step 4) — do NOT ask for a project name.
 2. Check current git branch, record it in the session file.
-3. Understand the task, confirm approach, proceed.
+3. **Memory scan offer** — same as resume (offer once if project memory exists and no `Loaded memories:` yet). This is the parity point with story work: project memory is surfaced at pickup so prior decisions inform the session.
+4. Understand the task, confirm approach, proceed.
 
 **General:**
 1. Ensure `~/.claude/memory/sessions/<slug>/<name>/` exists (create if not).

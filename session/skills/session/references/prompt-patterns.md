@@ -27,9 +27,9 @@ Show the table or list, then one instructional line. Claude outputs the block an
   <verb> <target>  ·  <verb> <target>  ·  <verb>
 ```
 
-**Plugin example:**
+**Plugin example** (item-driven — `pick` from the inbox, never blank/plugin-named):
 ```
-  resume <n>  ·  start <plugin>  ·  new plugin
+  resume <n>  ·  pick <n>  ·  new <description>
 ```
 
 **Work project example:**
@@ -83,11 +83,11 @@ Last active: <name>  ·  mode: <mode>  [·  ⚠ not reviewed since v<old> (curre
     1  <description> — pending
     2  <description> — pending
 
-  resume <n>  ·  start <plugin>  ·  new plugin
-  + planning / both → change mode  ·  reviewed → mark it  ·  work/done/backlog <n> → inbox
+  resume <n>  ·  pick <n>  ·  new <description>
+  + planning / both → change mode  ·  reviewed → mark it
 ```
 
-User types `resume 1 reviewed work 2` and Claude handles all of it.
+User types `pick 1 planning` or `resume 2 reviewed` and Claude handles all of it.
 
 ---
 

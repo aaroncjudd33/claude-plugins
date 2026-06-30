@@ -271,9 +271,14 @@ Route next step → inbox (ready) / backlog (defer) / skip (keep as-is)
 
 Write `<session_root>/<name>.md` with the final state:
 
+**Frontmatter:** for `plugin` and `personal` types, write `type:`, `mode:`, and `status:` keys alongside `updated:`. At finish, `status: completed` — this is what excludes the session from the default `/session:start` resumable listing (the file is never deleted). For `story` / `cab` / `general`, write only `updated:` (preserve any existing extra keys as-is).
+
 ```
 ---
 updated: [today's date]
+type: [type]            ← plugin/personal only
+mode: [planning / coding / both]   ← plugin/personal only; preserve from session file
+status: completed       ← plugin/personal only; marks the session done (file kept, hidden from default listing)
 ---
 
 # Session State — <name>

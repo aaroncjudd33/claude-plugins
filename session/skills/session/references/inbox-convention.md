@@ -4,27 +4,17 @@ How to leave cross-session or cross-project work items for a plugin or session y
 
 ## Location
 
-`~/.claude/memory/sessions/<repo-slug>/_inbox_<target>.md`
+**Canonical (current model): one consolidated inbox per slug.**
 
-The `<target>` segment identifies exactly what receives the item:
+`~/.claude/memory/sessions/<repo-slug>/_inbox.md`
 
-- **Multi-plugin repos** (e.g. `ajudd-claude-plugins`): one file per plugin — `_inbox_session.md`, `_inbox_release.md`, etc.
-- **Single-purpose repos**: use `_inbox.md` (no suffix needed).
+This single file is THE inbox for the slug. `/session:start` reads it and the plugin/personal flow `pick`s items from it — at pickup, the item body is folded into the new feature session and the item is deleted (no archive). For the plugin marketplace, slug = `ajudd-claude-plugins`; for a personal project, slug = that project's directory name. Plugin and personal behave identically.
 
-For `ajudd-claude-plugins`, the full set of inbox files:
+Routing a handoff to a **plugin or personal** slug always targets this consolidated `_inbox.md` (not a per-target file) — see `/session:inbox`. **story / cab** sessions still use a per-session file `_inbox_<key>.md` (e.g. `_inbox_BPT2-6479.md`), since each story/CAB is its own external unit of work.
 
-```
-_inbox_comms.md
-_inbox_docs.md
-_inbox_e2e.md
-_inbox_links.md
-_inbox_release.md
-_inbox_session.md
-_inbox_setup.md
-_inbox_story.md
-```
+**Legacy (historical, back-compat only — do not write new items here):**
 
-If a change touches two plugins, split it into two entries and cross-reference each.
+Before the item-driven-sessions overhaul, multi-plugin repos used one inbox file *per plugin* — `_inbox_session.md`, `_inbox_release.md`, `_inbox_comms.md`, `_inbox_docs.md`, `_inbox_e2e.md`, `_inbox_links.md`, `_inbox_setup.md`, `_inbox_story.md`. These files (and their `_archive`/`_backlog` siblings) are left in place as history. The listing renderer still reads them for legacy sessions, but the new flow never writes to them. New items always go to the consolidated `_inbox.md` above.
 
 ## Entry Format
 
