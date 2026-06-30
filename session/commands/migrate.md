@@ -373,26 +373,26 @@ If found, check `<e2eTestsDir>/tasks/`. If absent or empty, skip with note: "No 
 
 **Copy task files:**
 
-1. Create `<repo_root>/.claude/playwright/tasks/`.
+1. Create `<repo_root>/.claude/playwright/` if it does not exist.
 
 2. For each `*.ts` file in `<e2eTestsDir>/tasks/`, apply the PII scan before copying:
    - Task files often contain member IDs and spoofed identity comments (e.g. `TH_MEMBER = '4169062'`). Flag name↔memberId pairings as PII.
    - Recommend `scrub` (replace with `<test-member-id>` placeholder) unless the user explicitly keeps them.
-   - Apply exclude/scrub/keep dispositions, then copy to `<repo_root>/.claude/playwright/tasks/<name>.ts`.
+   - Apply exclude/scrub/keep dispositions, then copy to `<repo_root>/.claude/playwright/<name>.ts`.
 
 **Update the runner:**
 
 Rewrite `<e2eTestsDir>/scripts/run-checks.ts` — replace the block of `import '../tasks/<name>'` lines with imports pointing to the repo path. Use `git rev-parse --show-toplevel` (run from `<e2eTestsDir>`) to resolve `<repoRoot>`.
 
-Replace each `import '../tasks/<name>'` with `import '<repoRoot>/.claude/playwright/tasks/<name>'`.
+Replace each `import '../tasks/<name>'` with `import '<repoRoot>/.claude/playwright/<name>'`.
 
-If the runner uses a dynamic glob import over `tasks/*.ts`, update the glob path to `<repoRoot>/.claude/playwright/tasks/*.ts` instead.
+If the runner uses a dynamic glob import over `tasks/*.ts`, update the glob path to `<repoRoot>/.claude/playwright/*.ts` instead.
 
 **Write `.e2e.json`:**
 
 Read `<e2eTestsDir>/.e2e.json` if it exists, otherwise start with `{}`. Merge in the `tasksDir` key and write back:
 ```json
-{ "tabs": [...existing tabs if any...], "tasksDir": "<repoRoot>/.claude/playwright/tasks" }
+{ "tabs": [...existing tabs if any...], "tasksDir": "<repoRoot>/.claude/playwright" }
 ```
 
 **Update user-config.json:**
@@ -417,7 +417,7 @@ Ready to commit:
   .gitignore                 — added .claude/config/ exclusion
   .claude/memory/            — J memory file(s) added (K skipped — already present), feature labels applied
   .claude/memory/MEMORY.md   — index regenerated (N entries)
-  .claude/playwright/tasks/  — N task file(s) copied from <e2eTestsDir>/tasks/   ← omit if Step 11c skipped
+  .claude/playwright/        — N task file(s) copied from <e2eTestsDir>/tasks/   ← omit if Step 11c skipped
   (no .claude/CLAUDE.md — project memory loads on demand via the memory plugin, never auto-loaded)
 
 Local only (not committed):
@@ -474,7 +474,7 @@ Migrated — session files and project memory are now repo-based.
 
   Repo sessions: <repo_root>/.claude/sessions/  (N files)
   Repo memory:   <repo_root>/.claude/memory/  (N files)   ← omit if Step 11b skipped
-  Repo tasks:    <repo_root>/.claude/playwright/tasks/  (N files)   ← omit if Step 11c skipped
+  Repo tasks:    <repo_root>/.claude/playwright/  (N files)   ← omit if Step 11c skipped
   Local memory:  ~/.claude/projects/<encoded>/memory/  — TOMBSTONED (auto-load disabled)
   Local config:  ~/.claude/config/<slug>.json
 

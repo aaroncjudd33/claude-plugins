@@ -19,13 +19,13 @@ Convention: `<workReposDir>/<project-abbreviation>-playwright-tests/` as a sibli
 
 ## Task File Location (Post-Migration)
 
-After `/session:migrate` runs for a repo, task files move into the repo under `.claude/playwright/tasks/`. When writing a NEW task file, check first:
+After `/session:migrate` runs for a repo, task files move into the repo under `.claude/playwright/`. When writing a NEW task file, check first:
 
 ```bash
 git rev-parse --show-toplevel  # → <repoRoot>
 ```
 
-If `<repoRoot>/.claude/playwright/tasks/` exists → write the new task there (`<repoRoot>/.claude/playwright/tasks/<name>.ts`).
+If `<repoRoot>/.claude/playwright/` exists → write the new task there (`<repoRoot>/.claude/playwright/<name>.ts`).
 
 If it does not exist → write to the legacy external path (`<E2E_DIR>/tasks/<name>.ts`) as before.
 

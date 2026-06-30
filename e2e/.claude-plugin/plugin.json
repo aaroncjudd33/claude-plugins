@@ -1,6 +1,6 @@
 {
   "name": "e2e",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Launch and manage a persistent Playwright test browser for any project. Auto-scaffolds a test directory on first use — just install the plugin and run /e2e:start.",
   "author": {
     "name": "Aaron Judd",
