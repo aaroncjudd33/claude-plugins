@@ -20,20 +20,36 @@ Resolve `memory_root` using Project Memory Path Resolution (see Memory Skill). D
 - **`all`**: every memory file in `memory_root`.
 - **No argument, no session:** default to `stale`.
 
-### 2. Review Each
+### 2. Staleness Check + Review
 
-For each target memory, read it and present:
+**First — run the automated staleness check.** Read `references/staleness-check.md` and apply the algorithm against the target set (full mode — all files). This produces two buckets: `flagged` (unresolved code references found) and `clean`.
+
+**Flagged files lead the review.** Present them first with their specific findings:
 
 ```
 [1/3]  checkout-payment-validation   [feature:checkout/payment-validation]
-       written 2026-06-12 · loaded this session
+       written 2026-06-12 · ⚠ stale reference detected
+  ⚠  `src/checkout/PaymentForm.cs` — not found in repo
+  ⚠  `CheckoutApiController.cs` — not found (searched by name)
   ---
   <body>
   ---
   Still accurate?  keep / update / delete
 ```
 
-Batch the prompts when reviewing more than one — present all, accept combined replies (`1 keep 2 update 3 delete`), and handle `update`/`delete` follow-ups after the batch.
+**Clean files follow** with a lighter prompt — no body shown unless the memory is older than 6 months (by `written:` date):
+
+```
+[2/3]  cart-totals  [feature:cart/totals]
+       written 2026-05-01 · all references resolved
+  Confirm still accurate?  keep / delete  (default: keep)
+```
+
+If a clean file is older than 6 months (stale by age regardless of reference check): show the full body and use the same `keep / update / delete` prompt as flagged files.
+
+**If no flagged files and no aged files:** report "Memory: all N files pass staleness check — no review needed." and skip to Step 4.
+
+Batch all prompts — present all, accept combined replies (`1 keep 2 update 3 delete`). Handle `update`/`delete` follow-ups after the batch.
 
 ### 3. Apply
 
