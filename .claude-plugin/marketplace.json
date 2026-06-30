@@ -76,6 +76,13 @@
       "source": "./memory",
       "category": "productivity",
       "keywords": ["memory", "project memory", "feature", "label", "load", "save", "scan", "review", "knowledge"]
+    },
+    {
+      "name": "user",
+      "description": "Known customer lookup — store and search YL member accounts by custId, name, country, and notes. Global-only storage (PII); referenced by e2e and oracle-legacy for member-specific operations.",
+      "source": "./user",
+      "category": "productivity",
+      "keywords": ["user", "member", "custid", "customer", "lookup", "spoof", "persona", "search"]
     }
   ]
 }

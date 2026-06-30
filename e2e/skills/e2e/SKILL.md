@@ -31,6 +31,16 @@ If it does not exist → write to the legacy external path (`<E2E_DIR>/tasks/<na
 
 This check happens automatically at task-write time — no user action required.
 
+## Known Customer Lookup
+
+When running a task for a specific member and the user references them by name or nickname rather than custId, check `~/.claude/memory/known-users.json` before prompting:
+
+```bash
+cat ~/.claude/memory/known-users.json 2>/dev/null || echo "{}"
+```
+
+Match against `nickname` (exact) then `name` (case-insensitive). If found, use the resolved `custId` and confirm: "Using Edie Wadsworth (custId: 1443424)." If not found, ask for the custId and offer to save it via `/user:add`.
+
 ## Runner Scaffold
 
 The plugin ships a generic runner at `~/.claude/plugins/marketplaces/<pluginMarketplaceName>/e2e/runner/`. When a test directory is scaffolded, this template is copied to the target location and `npm install` is run automatically. The scaffold includes:
