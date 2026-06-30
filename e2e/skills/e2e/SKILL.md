@@ -17,6 +17,20 @@ Convention: `<workReposDir>/<project-abbreviation>-playwright-tests/` as a sibli
 - Example: `vo-playwright-tests/` next to `virtual-office-vp/`
 - Example: `glb-playwright-tests/` next to `gen-leadership-bonus/`
 
+## Task File Location (Post-Migration)
+
+After `/session:migrate` runs for a repo, task files move into the repo under `.claude/playwright/tasks/`. When writing a NEW task file, check first:
+
+```bash
+git rev-parse --show-toplevel  # → <repoRoot>
+```
+
+If `<repoRoot>/.claude/playwright/tasks/` exists → write the new task there (`<repoRoot>/.claude/playwright/tasks/<name>.ts`).
+
+If it does not exist → write to the legacy external path (`<E2E_DIR>/tasks/<name>.ts`) as before.
+
+This check happens automatically at task-write time — no user action required.
+
 ## Runner Scaffold
 
 The plugin ships a generic runner at `~/.claude/plugins/marketplaces/<pluginMarketplaceName>/e2e/runner/`. When a test directory is scaffolded, this template is copied to the target location and `npm install` is run automatically. The scaffold includes:

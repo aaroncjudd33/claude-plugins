@@ -265,6 +265,27 @@ If multiple matches, prefer the one whose directory name most closely correspond
 
 **If found:** read the directory. Count `.md` files (excluding `MEMORY.md` and `.migrated-to-repo`).
 
+**User-specific memory filter (runs before PII scan):**
+
+Scan the candidate list for files that are personal to the developer rather than project context. These should not be committed to a shared repo.
+
+Auto-flag as user-specific:
+- Any file matching `user_*.md` (e.g. `user_timezone.md`, `user_team_heber.md`)
+- Any file whose `description:` frontmatter contains first-person language ("my", "I") or personal identifiers
+
+If any are found, present as a batch — EXCLUDE is the default:
+```
+⚠️  User-specific memories (personal to this developer — not project context):
+
+  user_team_heber.md   — "Heber Iraheta — manager/lead, default approver"
+  user_timezone.md     — "User's timezone — Eastern time, convert for Jira/CAB"
+
+These will be EXCLUDED from the repo by default.
+Reply: 'go' to accept · 'keep user_timezone.md' to override individual files
+```
+
+Excluded files stay in local memory and keep working — they are not copied into the repo. This filter runs **before** the PII scan so excluded files are never scanned.
+
 Show:
 ```
 Local project memory: N files at ~/.claude/projects/<encoded>/memory/
@@ -340,6 +361,51 @@ Confirm: "Proceed? (Yes / Skip)"
 
    If a `<repo_root>/.claude/CLAUDE.md` already exists for other reasons, leave it untouched. If it contains a stale `@.claude/memory/MEMORY.md` import from a previous version of this command, remove only that import line and report it: "Removed auto-load import from .claude/CLAUDE.md — project memory now loads on demand via the memory plugin."
 
+### 11c. Migrate Playwright Tasks (Phase C)
+
+Detect the E2E tests directory. Check in order — stop at the first hit:
+1. `e2eTestsDir` field in the session file being migrated (e.g. `- **E2E tests dir:** /c/dev/vo-playwright-tests`)
+2. `paths.e2eTestsDir` in `~/.claude/plugins/user-config.json`
+3. `paths.voPlaywrightTestsDir` in `~/.claude/plugins/user-config.json` (VO legacy key)
+
+If no E2E tests dir found, skip this step silently.
+
+If found, check `<e2eTestsDir>/tasks/`. If absent or empty, skip with note: "No task files found in `<e2eTestsDir>/tasks/` — skipping Playwright migration."
+
+**Copy task files:**
+
+1. Create `<repo_root>/.claude/playwright/tasks/`.
+
+2. For each `*.ts` file in `<e2eTestsDir>/tasks/`, apply the PII scan before copying:
+   - Task files often contain member IDs and spoofed identity comments (e.g. `TH_MEMBER = '4169062'`). Flag name↔memberId pairings as PII.
+   - Recommend `scrub` (replace with `<test-member-id>` placeholder) unless the user explicitly keeps them.
+   - Apply exclude/scrub/keep dispositions, then copy to `<repo_root>/.claude/playwright/tasks/<name>.ts`.
+
+**Update the runner:**
+
+Rewrite `<e2eTestsDir>/scripts/run-checks.ts` — replace the block of `import '../tasks/<name>'` lines with imports pointing to the repo path. Use `git rev-parse --show-toplevel` (run from `<e2eTestsDir>`) to resolve `<repoRoot>`.
+
+Replace each `import '../tasks/<name>'` with `import '<repoRoot>/.claude/playwright/tasks/<name>'`.
+
+If the runner uses a dynamic glob import over `tasks/*.ts`, update the glob path to `<repoRoot>/.claude/playwright/tasks/*.ts` instead.
+
+**Write `.e2e.json`:**
+
+Read `<e2eTestsDir>/.e2e.json` if it exists, otherwise start with `{}`. Merge in the `tasksDir` key and write back:
+```json
+{ "tabs": [...existing tabs if any...], "tasksDir": "<repoRoot>/.claude/playwright/tasks" }
+```
+
+**Update user-config.json:**
+
+If `paths.e2eTestsDir` is not already set in `~/.claude/plugins/user-config.json`, write it:
+```json
+"paths": {
+  "e2eTestsDir": "<e2eTestsDir absolute path>"
+}
+```
+This makes the path available for future migrates on other repos without re-prompting.
+
 ### 12. Confirm and Commit
 
 Show a summary:
@@ -352,12 +418,16 @@ Ready to commit:
   .gitignore                 — added .claude/config/ exclusion
   .claude/memory/            — J memory file(s) added (K skipped — already present), feature labels applied
   .claude/memory/MEMORY.md   — index regenerated (N entries)
+  .claude/playwright/tasks/  — N task file(s) copied from <e2eTestsDir>/tasks/   ← omit if Step 11c skipped
   (no .claude/CLAUDE.md — project memory loads on demand via the memory plugin, never auto-loaded)
 
 Local only (not committed):
   ~/.claude/memory/sessions/<slug>/<name>.approved-hash — N files seeded
   ~/.claude/projects/<encoded>/memory/.migrated-to-repo — sentinel written
   .git/hooks/pre-commit — session-commit-guard shim installed (delegates to live plugin; auto-updates)
+  <e2eTestsDir>/scripts/run-checks.ts — imports updated to repo path   ← omit if Step 11c skipped
+  <e2eTestsDir>/.e2e.json — tasksDir written   ← omit if Step 11c skipped
+  ~/.claude/plugins/user-config.json — paths.e2eTestsDir set   ← omit if already present
 
 Commit and push? (Yes / Edit message / Cancel)
 ```
@@ -376,9 +446,10 @@ Default commit message: `chore: add Claude Code session files and project memory
 Migrated — session files and project memory are now repo-based.
 
   Local backup:  ~/.claude/memory/sessions/<slug>/  (preserved, no longer updated)
-  Repo sessions: <repo_root>/.claude/sessions/
-  Repo memory:   <repo_root>/.claude/memory/  (N files)
-  Local memory:  ~/.claude/projects/<encoded>/memory/  (preserved as fallback — sentinel written)
+  Repo sessions:    <repo_root>/.claude/sessions/
+  Repo memory:      <repo_root>/.claude/memory/  (N files)
+  Repo tasks:       <repo_root>/.claude/playwright/tasks/  (N files)   ← omit if Step 11c skipped
+  Local memory:     ~/.claude/projects/<encoded>/memory/  (preserved as fallback — sentinel written)
   Local config:  ~/.claude/config/<slug>.json
 
 Going forward all session reads and writes use .claude/sessions/.
