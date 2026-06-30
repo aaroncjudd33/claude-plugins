@@ -110,6 +110,7 @@ def main():
     # creating a session is never chicken-and-egg blocked by the gate below.
     always_allow = [
         normalize("~/.claude/memory/", home),
+        normalize("~/.claude/projects/", home),   # project memory tier — never gated
         normalize("~/.claude/scripts/", home),
         normalize("~/.claude/plugins/cache/", home),
     ]
