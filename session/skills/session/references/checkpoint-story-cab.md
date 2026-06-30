@@ -31,7 +31,7 @@ If the session file has an `Epic` field, read `~/.claude/memory/epics/<key>.md` 
 
 Each slot below corresponds to a row in checkpoint.md's Step 6 slot table. checkpoint.md assigns the running number `(N)`; the prompt template and apply-logic live here. Omit any slot whose condition isn't met.
 
-### Slot A — CDK/DynamoDB check *(story/cab, if a commit was just made or is about to be)*
+### Slot A — CDK/DynamoDB check *(story/cab + CDK detected in repo root — `cdk.json` or `cdk/` dir exists)*
 
 Prompt:
 ```

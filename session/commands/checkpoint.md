@@ -100,11 +100,18 @@ The composed entry is already in context and becomes the value for `Last worked 
 
 Gather all pending questions after silent work is done. If all items have forced defaults and no user input is possible, skip the batch block and proceed directly to Step 7. Otherwise, assemble and display the batch block, then wait for one reply. **Do not use AskUserQuestion.**
 
+**CDK detection (story/cab only — run once before building the batch):**
+```bash
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+CDK_PRESENT=""
+[ -n "$REPO_ROOT" ] && { [ -f "$REPO_ROOT/cdk.json" ] || [ -d "$REPO_ROOT/cdk" ]; } && CDK_PRESENT=true
+```
+
 **Batch skeleton — canonical slot order.** Build the numbered list by walking these slots in order, omitting any whose condition isn't met, and assigning each surviving slot the next running number `(N)`. Universal slots (and the plugin-only D) are defined inline below; story/cab slot bodies live in `references/checkpoint-story-cab.md` (already loaded in Step 5a/5b for story/cab sessions). For plugin / personal / general sessions the story/cab slots are simply absent — never read the reference for them.
 
 | Slot | Item | Applies to | Body |
 |------|------|-----------|------|
-| A | CDK/DynamoDB check          | story/cab | `references/checkpoint-story-cab.md` |
+| A | CDK/DynamoDB check          | story/cab + CDK_PRESENT | `references/checkpoint-story-cab.md` |
 | B | Out-of-scope items          | all (with scope) | inline below |
 | C | Epic update (+C+1 Confluence) | story/cab | `references/checkpoint-story-cab.md` |
 | D | Plugin reviewed             | plugin    | inline below |
