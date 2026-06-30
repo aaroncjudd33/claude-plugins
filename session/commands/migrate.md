@@ -443,27 +443,28 @@ Default commit message: `chore: add Claude Code session files and project memory
 
 The local project memory at `~/.claude/projects/<encoded>/memory/` is auto-loaded by Claude Code in every conversation. After migrate, that context should come from the repo only — on demand, not automatically. Tombstone the local directory so the auto-loader gets nothing.
 
-**Verify first:** confirm `<repo_root>/.claude/memory/MEMORY.md` exists and has at least one `- [` entry. If the repo copy looks empty or missing, stop — do not wipe local. Report: "Repo memory looks empty — skipping local wipe. Check .claude/memory/ before manually running cleanup."
+**Verify first:** confirm `<repo_root>/.claude/memory/MEMORY.md` exists and has at least one `- [` entry. If the repo copy looks empty or missing, stop — do not touch local. Report: "Repo memory looks empty — skipping tombstone. Check .claude/memory/ before manually running cleanup."
 
-**On success — three operations:**
+**On success — one operation only:**
 
-1. Delete all `*.md` files in `~/.claude/projects/<encoded>/memory/` except `MEMORY.md` and `.migrated-to-repo`.
+Overwrite `~/.claude/projects/<encoded>/memory/MEMORY.md` with a tombstone:
+```
+# Migrated — do not use
+Project memories for this repo have been migrated to the git repository.
+Repo path: <repo_root>/.claude/memory/
+Migrated: <today>
+All reads and writes now go to the repo path. This index is intentionally empty.
+```
 
-2. Overwrite `MEMORY.md` with a tombstone:
-   ```
-   # Migrated — do not use
-   Project memories for this repo have been migrated to the git repository.
-   Repo path: <repo_root>/.claude/memory/
-   Migrated: <today>
-   All reads and writes now go to the repo path. This file is intentionally empty.
-   ```
-   Claude Code's auto-loader reads this index and finds no entries — nothing auto-loads.
+Claude Code's auto-loader reads this index and finds no `- [name](file.md)` entries — nothing auto-loads. The individual `.md` files **stay in place** so the directory remains a valid source for a future re-run or `--force` sync.
 
-3. The `.migrated-to-repo` sentinel stays in place.
+**Do NOT delete the individual `.md` files.** Keeping them enables:
+- Re-running migrate on a second branch (migrate scans the directory, not MEMORY.md, so it finds the files)
+- Two branches migrating in parallel — each picks up from local, commits to their branch's `.claude/memory/`, and the two branches merge additively to master
 
 **Going forward:**
 - Reads: memory plugin resolves `.claude/memory/` in the repo — on demand only, never automatic
-- Writes: memory plugin writes to `.claude/memory/` — local directory is dead
+- Writes: memory plugin writes to `.claude/memory/` — local MEMORY.md index is inert
 - Fresh clone (no local config yet): developer runs `/session:migrate` once to seed their `~/.claude/config/<slug>.json`; memories load on demand from that point
 
 ### 13. Confirm Completion
