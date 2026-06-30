@@ -147,13 +147,33 @@ Adopted items re-tagged: `[YYYY-MM-DD @<handle>] <text> (via @<original-handle>)
 
 ---
 
-## Session Enforcement (opt-in — default OFF)
+## Session Types — the organizing principle
 
-The plugin ships a `PreToolUse` hook on `Edit`/`Write` (`session-scope-guard.py`) that can hard-block edits made outside an active session. **It is dormant by default.** The hook reads `~/.claude/plugins/user-config.json` and exits immediately (allowing the edit) unless `sessionGate.enforce` is exactly `true`. A fresh install — or any config without the flag — never blocks anything, so anyone can install the plugins and work their repos normally without the session workflow.
+Sessions are typed, and the type determines whether there's an **external system of record** — which in turn determines how sessions are created and how enforcement works. This is the distinction that drives everything below.
 
-When a user explicitly opts in (`sessionGate.enforce: true`, set via `setup:onboarding` Step 6a), the guard blocks `Edit`/`Write` to any file under the configured zones (`pluginMarketplaceName`, `workReposDir`, `personalProjectsDir`) when no `_active` session exists for that repo's slug, exiting code 2. `~/.claude/memory/`, `~/.claude/scripts/`, and the plugin cache are always allowed.
+| Type | System of record | Created how | Edit/Write enforcement |
+|------|------------------|-------------|------------------------|
+| **plugin** | none — the session *is* the record | item-driven only: `pick`/`new` an inbox item; named after the **feature** | hook-enforced, **always-on** (coding mode required) |
+| **personal** | none — the session *is* the record | item-driven only (identical to plugin) | hook-enforced, **always-on** (coding mode required) |
+| **story** | Jira story (BPT2-XXXX) | keyed to the story; `start story <key>` | instruction-gated; hook opt-in via `sessionGate.enforce` |
+| **cab** | CAB card (Jira) | keyed to the CAB; `start cab <keys>` | instruction-gated; hook opt-in via `sessionGate.enforce` |
+| **general** | none (lightweight) | named by the user | none |
 
-This is separate from any personal global CLAUDE.md "session enforcement" instruction — that is a soft, model-level rule a user may add for themselves; the hook is the hard, harness-level gate and is the only enforcement that travels with the plugin. **Never default `sessionGate.enforce` to `true`.** The injection/secrets content scans (below) stay on regardless of this flag — they protect file *content*, not the *workflow*.
+**Why plugin/personal differ from story/cab:** story and CAB work already have an authoritative external unit of work (the ticket) that says what's being done and tracks its lifecycle. Plugin and personal work have no such anchor — so the session itself becomes the unit of work: it can only exist by picking up an inbox item, it's named after the feature, and editing code requires it to be active and in coding mode. That guarantee is what makes "the session is the record" real rather than aspirational.
+
+All types support a working **Mode** (`planning` / `coding` / `both`). Planning sessions produce specs and inbox items; coding sessions consume them and ship code.
+
+## Session Enforcement (the scope guard)
+
+The plugin ships a `PreToolUse` hook on `Edit`/`Write` (`session-scope-guard.py`). It reads `~/.claude/plugins/user-config.json` and resolves the edited file into a zone. **Reads, searches, and read-only commands are never gated — investigation is always free, for every type.**
+
+**Plugin marketplace + personal-projects zones — ALWAYS-ON, mode-aware.** Editing a file under `pluginMarketplaceName` or `personalProjectsDir` requires an active session for that slug **in `coding` (or `both`) mode**. The hook blocks (exit 2) when there's no active session, the `_active` marker is stale (points at a missing file), or the active session's frontmatter `mode:` is `planning`. It allows `coding`/`both`. Missing `mode:` key → defaults to `coding` (back-compat with older session files); any parse error → fail-open (allow), never crash. This check is **NOT** behind `sessionGate.enforce` — for these two zones it is unconditional, because "you must have a coding session to edit" is the whole point of the item-driven model, and an opt-in flag defaulting off would silently neuter it.
+
+`mode:` is read from the session file's **YAML frontmatter only** (never the freeform body), so the hook never parses untrusted markdown. `~/.claude/memory/`, `~/.claude/projects/` (project memory tier), `~/.claude/scripts/`, and the plugin cache are always allowed — so session creation and project-memory writes are never chicken-and-egg blocked.
+
+**Work-repos zone (story/cab) — opt-in, unchanged.** Edits under `workReposDir` are gated only when the user sets `sessionGate.enforce: true` (via `setup:onboarding` Step 6a); the check is existence-only (no mode awareness — story/cab use instruction-level Mode handling). A fresh install with no flag never blocks work-repo edits. **Never default `sessionGate.enforce` to `true`.**
+
+This hook is separate from the personal global CLAUDE.md "Session Enforcement" instruction — that is a soft, model-level rule; the hook is the hard, harness-level gate that travels with the plugin. The injection/secrets content scans (below) stay on regardless of any flag — they protect file *content*, not the *workflow*.
 
 ## Repo Session File Safety
 
