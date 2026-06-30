@@ -265,26 +265,25 @@ If multiple matches, prefer the one whose directory name most closely correspond
 
 **If found:** read the directory. Count `.md` files (excluding `MEMORY.md` and `.migrated-to-repo`).
 
-**User-specific memory filter (runs before PII scan):**
+**User-specific memory scan (informational — all files migrate):**
 
-Scan the candidate list for files that are personal to the developer rather than project context. These should not be committed to a shared repo.
+After migrate commits, the local memory directory is tombstoned (see Step 12a). Files left behind there will not be auto-loaded again — they become inaccessible. For this reason, **everything migrates**. There is no EXCLUDE option.
+
+Before the PII scan, identify files that look personal so the user knows what is going in:
 
 Auto-flag as user-specific:
 - Any file matching `user_*.md` (e.g. `user_timezone.md`, `user_team_heber.md`)
 - Any file whose `description:` frontmatter contains first-person language ("my", "I") or personal identifiers
 
-If any are found, present as a batch — EXCLUDE is the default:
+If any are found, surface as an informational note only — they still proceed to the PII scan and are migrated like every other file:
 ```
-⚠️  User-specific memories (personal to this developer — not project context):
+ℹ️  These files look personal to this developer — they will be migrated and PII-scrubbed:
 
   user_team_heber.md   — "Heber Iraheta — manager/lead, default approver"
   user_timezone.md     — "User's timezone — Eastern time, convert for Jira/CAB"
 
-These will be EXCLUDED from the repo by default.
-Reply: 'go' to accept · 'keep user_timezone.md' to override individual files
+(They go in like everything else — the local copy is wiped after commit.)
 ```
-
-Excluded files stay in local memory and keep working — they are not copied into the repo. This filter runs **before** the PII scan so excluded files are never scanned.
 
 Show:
 ```
@@ -436,29 +435,57 @@ Omit the `.claude/memory/` lines if Step 11b was skipped.
 
 Default commit message: `chore: add Claude Code session files and project memory (.claude/)`
 
-- **Yes:** stage `.claude/sessions/`, `.claude/memory/`, and `.gitignore` changes, commit, push.
-- **Edit message:** ask for preferred message, then commit and push.
-- **Cancel:** leave files in place but do not commit. User can commit manually.
+- **Yes:** stage `.claude/sessions/`, `.claude/memory/`, and `.gitignore` changes, commit, push. → proceed to Step 12a.
+- **Edit message:** ask for preferred message, then commit and push. → proceed to Step 12a.
+- **Cancel:** leave files in place but do not commit. User can commit manually. **Do not run Step 12a** — do not tombstone until the commit has actually happened.
+
+### 12a. Tombstone Local Memory (runs only after successful commit)
+
+The local project memory at `~/.claude/projects/<encoded>/memory/` is auto-loaded by Claude Code in every conversation. After migrate, that context should come from the repo only — on demand, not automatically. Tombstone the local directory so the auto-loader gets nothing.
+
+**Verify first:** confirm `<repo_root>/.claude/memory/MEMORY.md` exists and has at least one `- [` entry. If the repo copy looks empty or missing, stop — do not wipe local. Report: "Repo memory looks empty — skipping local wipe. Check .claude/memory/ before manually running cleanup."
+
+**On success — three operations:**
+
+1. Delete all `*.md` files in `~/.claude/projects/<encoded>/memory/` except `MEMORY.md` and `.migrated-to-repo`.
+
+2. Overwrite `MEMORY.md` with a tombstone:
+   ```
+   # Migrated — do not use
+   Project memories for this repo have been migrated to the git repository.
+   Repo path: <repo_root>/.claude/memory/
+   Migrated: <today>
+   All reads and writes now go to the repo path. This file is intentionally empty.
+   ```
+   Claude Code's auto-loader reads this index and finds no entries — nothing auto-loads.
+
+3. The `.migrated-to-repo` sentinel stays in place.
+
+**Going forward:**
+- Reads: memory plugin resolves `.claude/memory/` in the repo — on demand only, never automatic
+- Writes: memory plugin writes to `.claude/memory/` — local directory is dead
+- Fresh clone (no local config yet): developer runs `/session:migrate` once to seed their `~/.claude/config/<slug>.json`; memories load on demand from that point
 
 ### 13. Confirm Completion
 
 ```
 Migrated — session files and project memory are now repo-based.
 
-  Local backup:  ~/.claude/memory/sessions/<slug>/  (preserved, no longer updated)
-  Repo sessions:    <repo_root>/.claude/sessions/
-  Repo memory:      <repo_root>/.claude/memory/  (N files)
-  Repo tasks:       <repo_root>/.claude/playwright/tasks/  (N files)   ← omit if Step 11c skipped
-  Local memory:     ~/.claude/projects/<encoded>/memory/  (preserved as fallback — sentinel written)
+  Repo sessions: <repo_root>/.claude/sessions/  (N files)
+  Repo memory:   <repo_root>/.claude/memory/  (N files)   ← omit if Step 11b skipped
+  Repo tasks:    <repo_root>/.claude/playwright/tasks/  (N files)   ← omit if Step 11c skipped
+  Local memory:  ~/.claude/projects/<encoded>/memory/  — TOMBSTONED (auto-load disabled)
   Local config:  ~/.claude/config/<slug>.json
 
-Going forward all session reads and writes use .claude/sessions/.
-Project memory lives in .claude/memory/ and loads ONLY on demand via the memory plugin
-(/memory:load, :scan, :review) — nothing auto-loads, no .claude/CLAUDE.md import.
-A developer who opens this repo without invoking a plugin command inherits zero context
-overhead — the files are inert until a command reads them.
-To revert memory: delete .claude/memory/ — the memory plugin falls back to local memory automatically.
-New developers who pull this repo will be prompted for their local path on first session start.
+Going forward:
+  Sessions — all reads and writes use .claude/sessions/ exclusively.
+  Memory — loads ONLY on demand via the memory plugin (/memory:load, :scan, :review).
+    Nothing auto-loads. No .claude/CLAUDE.md import. Zero context overhead on repo open.
+    Local project memory directory has been tombstoned — it will not be read or written.
+  Playwright tasks — new tasks written to .claude/playwright/tasks/ (e2e skill auto-detects).
+
+New developers who pull this repo run /session:migrate once to seed their local config.
+To revert: delete .claude/ from the repo. Claude falls back to a fresh local state.
 ```
 
 Omit the Repo memory / Local memory lines if Step 11b was skipped.
