@@ -59,7 +59,53 @@ If the user says yes (either case), run the `/story:cab-prep` steps (steps 1–5
 command) using the story key already resolved. Skip steps 1–2 of cab-prep since the story
 key and summary are already in hand.
 
-### 6. Report
+### 6. Commit session files (repo-based sessions only)
+
+Skip this step entirely if `session_root` is `~/.claude/memory/sessions/<slug>/` (local-only session — nothing to commit).
+
+Only run when `session_root` is `<git-repo-root>/.claude/sessions/`. Determine the case from git state:
+
+```bash
+git rev-parse --show-toplevel   # confirm we're in a repo
+git branch --show-current       # current branch
+git ls-remote --heads origin "feature/*<story-key>*"  # does feature branch exist on remote?
+```
+
+**Case A — currently on the feature branch:**
+Commit and push. Stay on the feature branch.
+```bash
+git add .claude/sessions/<story-key>.md .claude/sessions/_history.md .claude/sessions/_inbox.md
+git commit -m "<story-key>: Close session — update state and cab-prep handoff"
+git push
+```
+
+**Case B — not on feature branch, but it still exists on remote:**
+Switch to it, commit, push, open a new PR to develop. Stay on the feature branch.
+```bash
+git checkout feature/<branch-name>
+git add .claude/sessions/<story-key>.md .claude/sessions/_history.md .claude/sessions/_inbox.md
+git commit -m "<story-key>: Close session — update state and cab-prep handoff"
+git push
+gh pr create --base develop --title "<story-key>: Close session files" --body "Session state and cab-prep handoff after story close."
+```
+
+**Case C — feature branch deleted (not found on remote):**
+Create a cleanup branch from develop, commit, push, PR. Stay on the cleanup branch.
+```bash
+git checkout develop && git pull
+git checkout -b feature/<story-key>-session-close
+git add .claude/sessions/<story-key>.md .claude/sessions/_history.md .claude/sessions/_inbox.md
+git commit -m "<story-key>: Close session — update state and cab-prep handoff"
+git push -u origin feature/<story-key>-session-close
+gh pr create --base develop --title "<story-key>: Close session files" --body "Session state and cab-prep handoff after story close."
+```
+
+**Branching rules (non-negotiable):**
+- Never commit directly to `develop` or `master` — always via PR
+- Stay on the feature/cleanup branch when done — do not switch back to develop
+- No two open PRs to the same target branch at once
+
+### 7. Report
 
 ```
 /story:finish — <story-key>
@@ -68,4 +114,5 @@ key and summary are already in hand.
   Jira:        [status] → [new status]   ← or "unchanged"
   Session:     closed
   CAB handoff: ✓ written / ✓ updated / skipped
+  Committed:   Case A — pushed to feature/<branch>  ← or Case B/C detail, or "local session — skipped"
 ```
