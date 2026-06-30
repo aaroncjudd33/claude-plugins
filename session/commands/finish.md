@@ -112,6 +112,14 @@ Universal reads (all types):
 
 **story / cab only:** also issue the type-specific prep reads (epic file, story doc path, browser, Teams guide pre-fetch) from `references/finish-story-cab.md` (Step 6 section) in this same parallel batch.
 
+**CDK detection (story/cab only — run once before building the batch):**
+```bash
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+CDK_PRESENT=""
+[ -n "$REPO_ROOT" ] && { [ -f "$REPO_ROOT/cdk.json" ] || [ -d "$REPO_ROOT/cdk" ]; } && CDK_PRESENT=true
+```
+If `REPO_ROOT` can't be resolved, leave `CDK_PRESENT` unset and default to showing Slot A (no silent loss of the gate for real infra work).
+
 ### 7. Finish Batch
 
 Gather all pending questions and present as **one batched block**. Output and wait (Pattern 2). **Do not use AskUserQuestion.**
@@ -120,7 +128,7 @@ Gather all pending questions and present as **one batched block**. Output and wa
 
 | Slot | Item | Applies to | Body |
 |------|------|-----------|------|
-| A  | CDK/DynamoDB check            | story/cab | `references/finish-story-cab.md` |
+| A  | CDK/DynamoDB check            | story/cab + CDK_PRESENT | `references/finish-story-cab.md` |
 | A2 | Memory validation + capture   | **all**   | inline below |
 | B  | Epic update (+B+1 Confluence) | story/cab | `references/finish-story-cab.md` |
 | B2 | Epic validation for CAB       | cab       | `references/finish-story-cab.md` |

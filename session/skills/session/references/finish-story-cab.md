@@ -38,7 +38,7 @@ These supplement finish.md Step 6's universal reads (inbox, plugin version, load
 
 Each slot below corresponds to a row in finish.md's Step 7 slot table. finish.md assigns the running number `(N)`; the prompt template and apply-logic live here. Omit any slot whose condition isn't met.
 
-### Slot A — CDK/DynamoDB check *(story/cab)*
+### Slot A — CDK/DynamoDB check *(story/cab + CDK detected in repo root — `cdk.json` or `cdk/` dir exists)*
 
 Prompt:
 ```
