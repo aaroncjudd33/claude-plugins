@@ -1,7 +1,7 @@
 {
   "name": "user",
-  "version": "1.1.0",
-  "description": "Known customer lookup — store and search YL member accounts by custId, name, country, and notes. Global-only storage (PII); accessible to any plugin that needs to resolve a person to a custId.",
+  "version": "1.2.0",
+  "description": "Known customer lookup — store and search YL member accounts by custId, name, country, and notes. Supports global and per-system default users. Global-only storage (PII); accessible to any plugin that needs to resolve a person to a custId.",
   "author": {
     "name": "Aaron Judd",
     "email": "aaroncjudd@gmail.com"
@@ -10,6 +10,7 @@
   "commands": [
     "./commands/add.md",
     "./commands/find.md",
-    "./commands/remove.md"
+    "./commands/remove.md",
+    "./commands/default.md"
   ]
 }

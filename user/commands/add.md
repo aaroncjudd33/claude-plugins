@@ -20,11 +20,18 @@ Add a YL member account to `~/.claude/memory/known-users.json` for future lookup
 
 ### 1a. Auto-Populate from Oracle (custId provided)
 
-Run a targeted query against Oracle Clone (direct connection, no StrongDM needed):
+Run a targeted query against Oracle Clone (direct connection, no StrongDM needed).
 
-**Bash:**
+**Get the Clone connection string:**
 ```bash
-cat << 'SQLEOF' | /c/tools/sqlcl/sqlcl/bin/sql -S 'cmsuser/WychekEs8#Stasck@oracln.yleo.us:1521/ylcln.yleo.us'
+cat ~/.claude/memory/reference_oracle_environments.md
+```
+Extract the SQLcl pattern under `## Clone` — it will be:
+`sql -S 'cmsuser/<password>@oracln.yleo.us:1521/ylcln.yleo.us'`
+
+**Run the query (Bash):**
+```bash
+cat << 'SQLEOF' | /c/tools/sqlcl/sqlcl/bin/sql -S 'cmsuser/<CLONE_PASSWORD>@oracln.yleo.us:1521/ylcln.yleo.us'
 SET PAGESIZE 50
 SET LINESIZE 300
 SET TRIMOUT ON
@@ -44,7 +51,7 @@ exit
 SQLEOF
 ```
 
-**Replace `CUSTID_PLACEHOLDER` with the actual custId before running.**
+**Replace `<CLONE_PASSWORD>` with the value from the memory file and `CUSTID_PLACEHOLDER` with the actual custId before running.**
 
 If the query returns a row:
 - `NAME` = full display name (use this; fallback to `FIRSTNAME + ' ' + LASTNAME` if NAME is null/empty)

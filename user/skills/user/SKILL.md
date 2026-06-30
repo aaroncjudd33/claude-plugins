@@ -1,6 +1,6 @@
 ---
 name: user
-description: "Known customer lookup skill. Load whenever resolving a person to a custId, running member-specific operations in e2e or oracle-legacy, or managing the known-users store (/user:add, /user:find, /user:remove)."
+description: "Known customer lookup skill. Load whenever resolving a person to a custId, running member-specific operations in e2e or oracle-legacy, or managing the known-users store (/user:add, /user:find, /user:remove, /user:default)."
 ---
 
 # User Skill — Known Customer Lookup
@@ -19,10 +19,14 @@ Manages a local store of YL member accounts used for testing and reference. The 
 
 ## Schema
 
-The file is a JSON object keyed by `custId` (string). Every record:
+The file is a JSON object keyed by `custId` (string), plus one reserved key for defaults. Every customer record:
 
 ```json
 {
+  "_defaults": [
+    { "system": null, "custId": "1443424" },
+    { "system": "vo", "custId": "1443424" }
+  ],
   "1443424": {
     "nickname": "edie",
     "name": "Edie Wadsworth",
@@ -45,6 +49,11 @@ Fields:
 - `notes` — freeform; anything worth knowing (rank, downline, enrollment year, account quirks)
 - `nickname` — optional short alias for quick reference; not unique-enforced but should be
 
+`_defaults` — optional array of default-user assignments, managed via `/user:default`:
+- `system: null` — the global fallback, used when no other rule applies
+- `system: "<name>"` — a per-system override (e.g. `"vo"`), takes precedence over global when that system is in play
+- **At most one entry per `system` value, including at most one `null`/global entry** — `/user:default` enforces this when writing; don't hand-edit duplicates in.
+
 ---
 
 ## Lookup Pattern (for consumer plugins)
@@ -63,7 +72,12 @@ Match strategy (in order):
 
 If a match is found: use its `custId` and report to the user which record was resolved (e.g., "Using Edie Wadsworth (custId: 1443424)").
 
-If no match: ask the user for the custId directly, then offer to save it: "Add this person to known users? (y/n)"
+**If no specific person was named** (e.g. "sign in", "run this flow" with no name/nickname given), don't prompt — use `_defaults` instead:
+1. Look for a `_defaults` entry whose `system` matches the consuming plugin/app (e.g. `"vo"`)
+2. If none, fall back to the entry where `system` is `null` (global default)
+3. If neither exists, then ask the user which custId/nickname to use, and suggest setting one going forward: "No default set. Use `/user:default <name>` to avoid being asked each time."
+
+If no match by name/nickname and no usable default: ask the user for the custId directly, then offer to save it: "Add this person to known users? (y/n)"
 
 ---
 
@@ -83,3 +97,5 @@ Any plugin that performs member-specific operations should reference this skill 
 - **e2e** — resolving a member for Playwright spoofing / URL injection
 - **oracle-legacy** — customer-lookup queries (`/oracle-legacy:customer-lookup`)
 - Any plugin that constructs member-specific URLs or API calls
+
+When checking `_defaults`, pass your own plugin/app name as the `system` (e.g. VO-related flows check for a `"vo"` entry before falling back to global). Use a short, lowercase, stable identifier — it's the join key against what `/user:default` writes.

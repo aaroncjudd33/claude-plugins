@@ -31,6 +31,11 @@ Show the record and require confirmation:
 Remove Edie Wadsworth (custId: 1443424, US)?   yes / cancel
 ```
 
+If this custId appears in `_defaults` (global or any system), say so before confirming and remove the matching `_defaults` entries along with the record:
+```
+Edie Wadsworth is the global default and the default for 'vo'. Removing will clear both. Remove Edie Wadsworth (custId: 1443424, US)?   yes / cancel
+```
+
 ### 3. Write
 
 Remove the entry from the JSON object and write back the updated file.
