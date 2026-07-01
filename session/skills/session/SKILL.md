@@ -217,6 +217,20 @@ Project memories can be stored in the repo under `.claude/memory/` for team shar
 
 ---
 
+## Development Lifecycle — Polymorphic Commands
+
+`start` / `commit` / `finish` are the three stages of the development lifecycle, and they behave **polymorphically** across every environment: **start = pick something up · commit = iterate on it · finish = we're done.** The *shape* is identical in every zone; the *sources and functions* differ by session type. Same command, environment-appropriate behavior — it just works the same regardless of which project you're in.
+
+| Stage | plugin | story / cab | personal / general |
+|-------|--------|-------------|--------------------|
+| **start** (pick up) | pick/new an inbox item → feature session | Jira story/CAB kickoff | pick/new item (personal) or named session (general) |
+| **commit** (iterate) | **local commit only — never push** | commit **and push** + Jira comment | commit and push |
+| **finish** (done) | **the deploy** — bump version → push master → reinstall (live) | Jira close, CAB handoff, Confluence, Teams | close out; no deploy concept |
+
+**The plugin commit/finish split (why it exists):** for plugins, `master` **is** the deployed branch — reinstall pulls straight from it. So a mid-session `commit` must stay **local** (a private safety checkpoint); pushing unversioned WIP would let the marketplace pull half-finished work. The version bump + push + reinstall is a **deploy**, and a plugin deploys only when the work is *done* — i.e. exactly once, at `finish`, as its terminal action (after all state is settled — code lands last). This mirrors how story/cab already separate iterate (commit → push/Jira) from done (finish → CAB handoff). `commit` **never** bumps the version or reinstalls for any type.
+
+---
+
 ## Loaded Memories & Commit Tracking
 
 Two session-file fields connect the session lifecycle to the **memory plugin** and to git history. The session plugin owns the schema (writes them in checkpoint/finish/commit/start); their content is produced elsewhere.
@@ -234,7 +248,7 @@ Two session-file fields connect the session lifecycle to the **memory plugin** a
 - **Commits:**
   - [2026-06-12] a1b2c3d — fix: validation error on empty cart  https://github.com/org/repo/commit/a1b2c3d
 ```
-- **Written by:** session:commit (appends the short SHA + subject + GitHub link if a remote exists). **Preserved by:** checkpoint/finish/start. **Surfaced by:** start (resume block shows the most recent 3).
+- **Written by:** session:commit (appends the short SHA + subject; **GitHub link for non-plugin types only** — plugin commits are local/unpushed, so a commit URL would 404 until the finish deploy pushes it). The plugin **finish deploy (Step 12)** also appends its deploy commit here. **Preserved by:** checkpoint/finish/start. **Surfaced by:** start (resume block shows the most recent 3).
 - Joins the other session artifacts (story, CAB, PR, deploy links) so returning to a session surfaces everything that was produced in it.
 
 Both fields are **omitted entirely** when empty — older session files without them load fine (backward compatible). The memory plugin reads/writes `Loaded memories:` through this skill's Path Resolution to find the active session.

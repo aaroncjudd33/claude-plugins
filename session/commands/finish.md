@@ -54,9 +54,13 @@ Session Finish — <name> (<type>)
 - Unpushed commits (`git log --oneline @{u}..HEAD 2>/dev/null`)
 - Current branch name
 
-Report anything that could be lost. If uncommitted changes exist: "Want to commit before closing?"
+Report anything that could be lost.
 
-If clean: "Git: clean"
+**Non-plugin types:** if uncommitted changes exist, ask "Want to commit before closing?"
+
+**Plugin type:** do NOT prompt for a separate commit here. Uncommitted changes and unpushed local commits (from `session:commit`) are *expected* at plugin finish — they are the work being shipped, and the **deploy step (Step 12) commits, bumps, pushes, and reinstalls them as the terminal action**. Report them as informational only, e.g. "Uncommitted changes + N local commits — will ship in the deploy step," never as at-risk. This is the finish half of the polymorphic lifecycle: for plugins, finish = the deploy.
+
+If clean: "Git: clean" (for plugin, this means there is nothing to deploy — note that Step 12 will be a no-op).
 
 ### 3. Memory
 
@@ -124,6 +128,16 @@ If `REPO_ROOT` can't be resolved, leave `CDK_PRESENT` unset and default to showi
 
 Gather all pending questions and present as **one batched block**. Output and wait (Pattern 2). **Do not use AskUserQuestion.**
 
+**Plugin type — smart defaults (finish = done, ship it).** For a plugin session Aaron is planner + coder + tester + QA in one seat, so finish should NOT interrogate him slot-by-slot. Claude owns the routine judgment calls and only surfaces genuine exceptions; a bare `go` performs the full sensible close. This is the opposite of story/cab, whose batch stays prompt-heavy **by design** (external Jira/CAB/QA gates that Claude cannot decide). Concretely, for plugin type:
+
+- **Memory capture (A2):** do not ask `skip / new`. Claude reviews the session itself, decides whether there is project/session knowledge worth saving, and captures it — reporting the outcome (`Captured: <name>` or `Memory: nothing new`). Override honored ("capture X, this way"), but the default is "you assess and do it."
+- **Plugin reviewed (F):** when this finish is deploying (Step 12 will run), the review is **mandatory, not optional** — run it automatically rather than presenting `skip / yes`. A deploy without a review is not acceptable.
+- **Open items completed this session (G/H/I):** items that were *this session's* picked-up `[inbox]` work and got completed are **auto-marked done** (show the reasoning, e.g. "marking done — completed this session"), not left open and re-asked.
+- **Net:** a bare `go` runs capture-if-relevant (Claude's call) → review → mark completed items done → then the deploy (Step 12, last). Aaron overrides only exceptions.
+- **Empty batch → no stop.** After applying these defaults, if no slots remain that genuinely need a decision, do NOT present an empty batch and wait — report the auto-resolutions (captured memory, auto-done items, review result) as informational output and proceed straight through Steps 8–12. Only stop at the batch when at least one ambiguous slot survives.
+
+The slot bodies and apply-logic below note where this default changes behavior for plugin type. **Story / cab / personal / general are unchanged** — they keep their explicit prompts.
+
 **Batch skeleton — canonical slot order.** Assemble the numbered list by walking these slots in order, omitting any whose condition isn't met, and assigning each surviving slot the next running number `(N)`. Universal slots (and the plugin-only F) are defined inline below; story/cab slot bodies live in `references/finish-story-cab.md` (already loaded in Step 4 for story/cab sessions). For plugin / personal / general sessions the story/cab slots are simply absent — never read the reference for them.
 
 | Slot | Item | Applies to | Body |
@@ -155,10 +169,15 @@ Gather all pending questions and present as **one batched block**. Output and wa
   (N) Capture anything from this session as a project memory?    skip / new
   ```
 
-**(F) Plugin reviewed** — plugin type only, if `plugin_reviewed` is missing, a legacy value, or MAJOR.MINOR differs:
-```
+**Plugin type — A2 is not a batch question.** Do not present the `skip / review / new / both` (or `skip / new`) prompt in the batch. Instead, Claude assesses the session itself: validate any loaded memories for accuracy automatically (drop/update stale ones, per the apply-logic), and capture new project/session memory if warranted. Report the outcome outside the batch (`Captured: <name> [<label>]` / `Memory: nothing new`). If genuinely uncertain whether a specific capture is worth making, that single item may be surfaced — but the default is decide-and-do, not ask.
+
+**(F) Plugin reviewed** — plugin type only.
+
+- **If this finish is deploying** (there is work to ship, so Step 12 will run): the review is **mandatory — auto-run it, do not present a skip/yes prompt.** Run the plugin review automatically before the deploy and report the result. A deploy without a review is not acceptable.
+- **If this finish is NOT deploying** (clean tree, Step 12 is a no-op) and `plugin_reviewed` is missing, a legacy value, or MAJOR.MINOR differs, it may still be offered:
+  ```
   (N) Plugin reviewed? (last: v<stored>, current: v<current>)    skip / yes
-```
+  ```
 
 **(G) Open items** — if there are non-`[inbox]` Open items:
 ```
@@ -177,6 +196,14 @@ Gather all pending questions and present as **one batched block**. Output and wa
 ```
   (N) Open item [inbox legacy]: "<text>"    keep / done
 ```
+
+**Plugin type — auto-resolve this-session's completed work (G/H/I).** For plugin sessions, any G/H/I item that was **this session's picked-up work AND got completed** is marked done automatically — not presented as a question. Detection heuristic: `[inbox]`-tagged Open items (or in-progress inbox items) matching the work this session picked up, when the session actually produced the corresponding changes. Show the resolution with reasoning outside the question set, e.g.:
+```
+  Auto-resolved (completed this session):
+    ✓ [inbox] Make session:finish the plugin deploy — marking done
+    ✓ [inbox] session:commit = local checkpoint — marking done
+```
+Only items that are genuinely ambiguous (started but not clearly finished, or unrelated to the picked-up work) remain as batch questions. If uncertain, default to **done** for plugin type (finish = done) with an easy override — the user can reply `<n> keep` to reopen any auto-resolved item. Story/cab/personal/general keep the explicit `skip / all / keep / done` prompts unchanged.
 
 **(J) Pending inbox sweep** — one per pending inbox item (single-line provenance form — see `references/inbox-convention.md`):
 ```
@@ -313,7 +340,7 @@ status: completed       ← plugin/personal only; marks the session done (file k
 - **linked_sessions:** [<session-name>, ...]   ← preserve as-is; omit if not present
 ```
 
-**Backward compat:** If the existing session file has a `Project:` field, preserve it. If `- **Next step:** <text>` (scalar), re-write as `- **Next steps:**` array tagged `[today @<handle>]`. `Commits:` is preserve-only at finish (written by session:commit). `Loaded memories:` carries forward minus anything deleted during the Step 7 memory-validation item.
+**Backward compat:** If the existing session file has a `Project:` field, preserve it. If `- **Next step:** <text>` (scalar), re-write as `- **Next steps:**` array tagged `[today @<handle>]`. `Commits:` is preserve-only at this step (written by session:commit) — for plugin type, the deploy (Step 12) appends its deploy commit afterward. `Loaded memories:` carries forward minus anything deleted during the Step 7 memory-validation item.
 
 **After writing — update approved-hash (repo sessions only):** Recompute hash and overwrite `~/.claude/memory/sessions/<slug>/<name>.approved-hash`:
 ```bash
@@ -324,7 +351,7 @@ git hash-object "<session_root>/<name>.md" > ~/.claude/memory/sessions/<slug>/<n
 
 **General sessions only:** Also check `~/.claude/memory/sessions/<slug>/<name>/` — if notes, decisions, or outputs were produced today, ensure they are written there before closing.
 
-Print the summary to screen as the final output.
+Print the summary to screen. **For plugin type, this is not the final output** — the deploy (Step 12) runs after Steps 10–11 and its result is the true last line. For all other types, the summary is the final output.
 
 ### 10. Work Log
 
@@ -365,3 +392,53 @@ rm -f ~/.claude/memory/sessions/<slug>/_active
 ```
 
 On PowerShell use: `Remove-Item -ErrorAction SilentlyContinue ~/.claude/memory/sessions/<slug>/_active`
+
+### 12. Deploy — plugin type only (the terminal action)
+
+**Plugin finish IS the deploy.** This is where the session's work goes live. It runs **LAST — deliberately** — after the history entry (8), the session summary + mark-completed (9), the worklog (10), and deactivation (11). Everything else is settled state; the code lands last, mirroring the repo-based branch flow (state first, code last) and positioning for future repo-tracked session state shared across developers.
+
+**For story / cab / personal / general: skip this step entirely.** Those types push during `commit` and have no version/reinstall concept — their finish ended at Step 11.
+
+**No-op guard:** if the Step 2 git scan found nothing to ship (clean tree AND no unpushed local commits from `session:commit`), report `Nothing to deploy — finish complete.` and stop. Do not bump or push.
+
+Otherwise, present the deploy as the clearly-final, visually distinct step so it is obvious nothing runs after it:
+
+```
+────────────────────────────────────────────────
+FINAL STEP — DEPLOY  (bump → commit → push → reinstall → live)
+────────────────────────────────────────────────
+```
+
+**12a. Derive the target plugin(s) from changed paths** — not from the session name. Using the Step 2 git scan (uncommitted changes + unpushed local commits), map each changed file under the marketplace root to its top-level plugin directory (e.g. `session/commands/finish.md` → `session`). Collect the distinct set. A deploy may span multiple plugins; each affected plugin gets its own bump.
+
+**12b. Version bump — prompted, never silent.** For each affected plugin, read the current version from `<plugin>/.claude-plugin/plugin.json` and suggest a level + next version (one bump per plugin per feature):
+- **PATCH** — bug fixes only
+- **MINOR** — new command / feature / meaningful behavior addition
+- **MAJOR** — redesign or breaking change
+
+Show and wait (this is the one real decision in the deploy):
+```
+Deploy bump:
+  session   v1.53.0 → v1.54.0   (MINOR — finish now deploys; commit is local-only)
+go / <plugin> <level> / cancel
+```
+Apply the confirmed version to each affected `plugin.json`. On **cancel**, stop — nothing is committed, pushed, or reinstalled (the session is already closed; the deploy can be re-run later by re-opening).
+
+**12c. Commit + push to master.** Stage the plugin changes (edited files + bumped `plugin.json`), draft a commit message summarizing the shipped work in the repo's style (`git log --oneline -5`), commit, and **push to master**. Any unpushed local commits made via `session:commit` during the session ride along in the push. End the commit message with the Co-Authored-By trailer per the repo convention (see CLAUDE.md). Direct pushes to `master` on this repo are authorized — no PR.
+
+**12d. Reinstall — make it live, with the Windows fallback.** For each deployed plugin:
+```bash
+claude plugin update <plugin>@ajudd-claude-plugins
+```
+**Verify it took** — `claude plugin update` / marketplace update can fail silently on Windows. If the installed version does not match the new `plugin.json` version, fall back to the manual sequence:
+```bash
+cd ~/.claude/plugins/marketplaces/ajudd-claude-plugins && git pull
+claude plugin uninstall <plugin>
+claude plugin install <plugin>@ajudd-claude-plugins
+```
+A Claude Code restart may be required to load the new version — note this if so.
+
+**12e. Record + report.** Append the deploy commit to the session file's `Commits:` field (one-line append — SHA + subject; the file was written in Step 9). Then print the deploy result as the true final output:
+```
+Deployed: session v1.53.0 → v1.54.0 — pushed to master, reinstalled (live)
+```

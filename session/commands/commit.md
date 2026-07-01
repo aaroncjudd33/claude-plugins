@@ -1,11 +1,20 @@
 ---
 name: commit
-description: Commit and push current work, update memory, and save session state. Mid-session save with a real git commit — no Jira, no Teams, no session deactivation.
+description: Commit current work, update memory, and save session state. Mid-session save with a real git commit — no Jira, no Teams, no session deactivation. Pushes for story/cab/personal; plugin sessions commit locally only (the push is the finish deploy).
 ---
 
 # Session Commit
 
 Commit in-progress work, update memory, and save session state. Use this mid-session when you want your changes committed and context saved without closing out the session.
+
+**Commit is the "iterate" stage of the lifecycle** (start = pick up · commit = iterate · finish = done). What it does with the commit depends on the environment:
+
+| Type | Commit behavior |
+|------|-----------------|
+| story / cab / personal / general | Commit **and push** — the working branch is not the deployed artifact, so pushing WIP is safe and gives an off-machine backup. |
+| **plugin** | Commit **locally only — never push.** For plugins, `master` **is** the deployed branch (reinstall pulls straight from it), so pushing unversioned WIP would let the marketplace pull half-finished work. The push happens exactly once, at `finish` (the deploy). Commit here is a private safety checkpoint. |
+
+This is the polymorphic split: same command, environment-appropriate behavior. `commit` never bumps the version or reinstalls for any type — that is `finish`'s job for plugins.
 
 ## Instructions
 
@@ -64,6 +73,10 @@ If there are changes, continue to step 2.
 
 Scan the staged and unstaged changes (`git diff HEAD`) to understand what changed. Draft a concise commit message following the repo's style (seen in recent `git log --oneline -5`).
 
+**Determine push behavior from session type** (per the table above):
+- **plugin** → commit **locally only, no push**. Prompt reads `Commit locally?`.
+- **all other types** → commit **and push**. Prompt reads `Commit and push?`.
+
 Show the drafted message using Pattern 4 (Generated Content Approval) — output and wait:
 
 ```
@@ -71,11 +84,12 @@ Commit message draft:
 ---
 <drafted message>
 ---
-Commit and push? (go / edit: <your message> / cancel)
+Commit locally? (go / edit: <your message> / cancel)      ← plugin
+Commit and push? (go / edit: <your message> / cancel)     ← story/cab/personal/general
 ```
 
-- **go:** stage all changed files that belong to this session's scope (not `git add -A` blindly), then commit and push.
-- **edit: <message>:** use the user-provided message, then commit and push.
+- **go:** stage all changed files that belong to this session's scope (not `git add -A` blindly), then commit. **Push only for non-plugin types** — for plugin sessions, stop after the local commit (do NOT push).
+- **edit: <message>:** use the user-provided message, then commit (and push per type, as above).
 - **cancel:** stop here. Do not proceed to memory or session state steps.
 
 Commit format:
@@ -88,12 +102,14 @@ EOF
 )"
 ```
 
+For non-plugin types, push after the commit (`git push`). For plugin types, do not run `git push` — the working commit stays local until the finish deploy.
+
 **After committing — capture the commit reference** for the session record:
 ```bash
 git rev-parse --short HEAD
 git config --get remote.origin.url
 ```
-Record the short SHA + the first line of the commit message. If a GitHub remote exists, derive a commit link `https://github.com/<org>/<repo>/commit/<sha>` from the remote URL (strip `.git`, convert `git@github.com:` form to `https://github.com/`). This is written to the session file's `Commits:` field in Step 6.
+Record the short SHA + the first line of the commit message. **For non-plugin types**, if a GitHub remote exists, derive a commit link `https://github.com/<org>/<repo>/commit/<sha>` from the remote URL (strip `.git`, convert `git@github.com:` form to `https://github.com/`). **For plugin types, record the SHA + subject without a link** — the commit is local and unpushed, so a commit URL would 404 until the finish deploy pushes it. This is written to the session file's `Commits:` field in Step 6.
 
 ### 2a. Jira Commit Comment *(story/cab only)*
 
