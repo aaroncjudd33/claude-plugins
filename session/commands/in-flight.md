@@ -43,7 +43,7 @@ Print immediately — no prompts, no writes. Add mine-filter hint if multiple de
 Sessions in <slug>   (type '/session:in-flight mine' to filter to yours)
   <name>   @<handle>   <status>   branch: <branch>   open: N   inbox: N  outbox: N   <date>
   <name>   @<handle>   <status>   branch: <branch>   open: N   inbox: N  outbox: N   <date>
-  ★ [spawn] <label>   ready to start — from <source-session>
+  ★ [spawn] <label>   ready to start — from <source-slug> / <source-session> (<type>)
 
 Global inbox: N items
 ```

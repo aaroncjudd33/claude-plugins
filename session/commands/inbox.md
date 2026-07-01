@@ -16,6 +16,8 @@ Run `pwd`, extract slug, resolve `session_root` and `handle` using Path Resoluti
 
 Determine the current session name from conversation context (most recent "Resuming `<name>`" or "Switching to `<name>`" line). If no session is active, source attribution uses `from <slug>` only — warn: "No active session — routing from repo level. Run `/session:start` first for proper attribution."
 
+Also determine the **source session type** (`story` / `cab` / `plugin` / `personal` / `general`) for provenance — read the active session file's `type:` frontmatter (or the `- **Type:**` body bullet); fall back to the current repo's type from Path Resolution. This is the SOURCE type — recorded on the item so the receiving inbox shows where it came from. If no session is active, omit the `(<type>)` segment.
+
 ### 1. Determine Content
 
 If item content is already clear from context (e.g., the scope guard just detected a specific file or described a task), use it directly — do not ask.
@@ -60,11 +62,12 @@ Determine target file:
 - plugin / personal target, or Global → `<target_session_root>/_inbox.md` (create with header `# Inbox — <slug>` if needed)
 - story / cab / general named session → `<target_session_root>/_inbox_<target-name>.md` (create with header `# Inbox — <target-name>` if needed)
 
-Append:
+Append (record the **source** slug/session/type — not the target):
 ```markdown
-## [YYYY-MM-DD @<handle>] from <source-slug> / <source-session> — <description>
+## [YYYY-MM-DD @<handle>] from <source-slug> / <source-session> (<source-type>) — <description>
 <body>
 ```
+Omit the `(<source-type>)` segment only when no source session is active (repo-level routing). See Provenance Rendering in `references/inbox-convention.md` for how this header is later displayed.
 
 ### 4. Write Outbox Entry
 

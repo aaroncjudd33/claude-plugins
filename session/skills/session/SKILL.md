@@ -89,8 +89,11 @@ Every entry written to shared files (history, inbox, backlog) must carry the cur
 
 **Inbox/backlog entry header format** (new and going forward):
 ```
-## [YYYY-MM-DD @<handle>] from <slug> / <session-name> — <description>
+## [YYYY-MM-DD @<handle>] from <slug> / <session-name> (<type>) — <description>
 ```
+`<slug>` / `<session-name>` are the **source** repo slug and session (where the item came from — NOT the target inbox's slug). `<type>` is the source session type (`story` / `cab` / `plugin` / `personal` / `general`). Keep both repo AND session — never collapse to one. When writing, derive all three from the *source* session context (active session file frontmatter for type; `pwd` slug for the repo).
+
+**Provenance rendering (layout B)** — how inbox items are *displayed* for pickup (session:start routing block, session:switch), with a single-line variant for the finish/checkpoint sweeps. Full spec + parsing/back-compat rules in `references/inbox-convention.md`. In short: **description leads**, provenance dimmed on a second line `↳ <slug> / <session> (<type>) · MM-DD`; **drop `<slug>` when it equals the current repo slug** (only cross-repo origins show it); tolerate legacy headers — spaced or unspaced `/`, and a missing `(<type>)` or missing slug render gracefully.
 
 **`updated-by` field in session files** — written on every checkpoint/finish/commit/switch:
 ```

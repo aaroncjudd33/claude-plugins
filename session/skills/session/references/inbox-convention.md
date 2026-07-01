@@ -19,12 +19,46 @@ Before the item-driven-sessions overhaul, multi-plugin repos used one inbox file
 ## Entry Format
 
 ```markdown
-## [YYYY-MM-DD @<handle>] from <source-slug> / <session-name> — <short title>
+## [YYYY-MM-DD @<handle>] from <source-slug> / <session-name> (<type>) — <short title>
 
 <Context: what the item is, why it matters, what needs to happen.>
 ```
 
+- `<source-slug>` — the originating **repo** slug (where the request came from, e.g. `virtual-office`, `gen-leadership-bonus`, a personal project), **NOT** the target inbox's slug. This matters because plugin suggestions often route in from cross-repo work.
+- `<session-name>` — the originating session (e.g. `BPT2-6377`, a feature name).
+- `<type>` — the source session type: `story` / `cab` / `plugin` / `personal` / `general`.
+- **Keep both repo AND session — never collapse to one.** Derive all three from the *source* session context when routing.
+
 Keep it self-contained — the receiving session may pick this up weeks later with no memory of the source conversation.
+
+## Provenance Rendering (layout B)
+
+How inbox items are **displayed** for pickup. Applies to the session:start routing block and session:switch listing (two-line form), and to the finish/checkpoint inbox sweeps (single-line form). Parse the header before rendering.
+
+**Parsing the source (`from <slug> / <session> (<type>)`):**
+- Tolerate both spaced `slug / session` and unspaced `slug/session`.
+- `(<type>)` is **optional** — legacy items omit it. If absent, render without the `(<type>)` segment.
+- If only a bare `<source>` is present (oldest items, no `/`), treat it as the session with no slug.
+- Never break on a malformed header — degrade to showing whatever is present.
+
+**Two-line form (pick lists — the default):**
+```
+Inbox — pick up or describe new work (N):
+  1  <description>
+     ↳ <slug> / <session> (<type>) · MM-DD
+  2  ★ [spawn] <label>
+     ↳ <slug> / <session> (<type>) · MM-DD
+```
+- **Description leads** — it's the decision driver when picking.
+- **Same-repo dimming:** when `<slug>` equals the current repo slug, **drop it** — show `↳ <session> (<type>) · MM-DD`. Only genuinely cross-repo origins show the slug, so they stand out.
+- **Missing type:** omit the `(<type>)` segment; still show `↳ <slug> / <session> · MM-DD`.
+- **Stale source session:** render as-is — historical provenance stays valid, and the description-first line keeps it from looking orphaned.
+
+**Single-line form (finish/checkpoint sweeps — action prompts stay one line):** append the dim provenance after the quoted description, before the option list:
+```
+  (N) Inbox pending: "<description>"  ·  ↳ <session> (<type>)   nothing / done / picked-up
+```
+Drop the slug when same-repo (as above); include it (`↳ <slug> / <session> (<type>)`) for cross-repo items.
 
 ## Item Lifecycle
 
@@ -32,14 +66,14 @@ Items move through three states, all tracked inline in the inbox file:
 
 **Pending** — item has arrived, not yet picked up:
 ```markdown
-## [2026-05-13 @ajudd] from virtual-office / BPT2-6258 — Add /comms:pto command
+## [2026-05-13 @ajudd] from virtual-office / BPT2-6258 (story) — Add /comms:pto command
 
 Add a `/comms:pto` command...
 ```
 
 **In-progress** — session picked it up, work is underway. A marker is inserted after the `## [date]` header:
 ```markdown
-## [2026-05-13 @ajudd] from virtual-office / BPT2-6258 — Add /comms:pto command
+## [2026-05-13 @ajudd] from virtual-office / BPT2-6258 (story) — Add /comms:pto command
 [in-progress — session, 2026-06-04]
 [Work file: _work_session_2026-06-04-comms-pto.md]   ← optional, for deep items
 
@@ -51,7 +85,7 @@ The item stays in the inbox file until work is complete. A matching `[inbox] Add
 **Done** — work complete. Item is removed from inbox and appended to the archive file (`_inbox_<name>_archive.md` or `_inbox_archive.md`) with a `[DONE]` stamp:
 ```markdown
 [DONE 2026-06-05]
-## [2026-05-13 @ajudd] from virtual-office / BPT2-6258 — Add /comms:pto command
+## [2026-05-13 @ajudd] from virtual-office / BPT2-6258 (story) — Add /comms:pto command
 [Work file: _work_session_2026-06-05-comms-pto.md]   ← preserved if one was created
 ```
 

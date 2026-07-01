@@ -68,8 +68,9 @@ Switching to <name>
     - [date @handle] item
   Teammate notes (N — read-only):
     - [date @other] item
-  Inbox (N):
-    [1] [date] <description> — in-progress / pending
+  Inbox (N):          ← layout B; provenance dim below each item (see inbox-convention.md)
+    [1] <description> — in-progress / pending
+        ↳ <slug> / <session> (<type>) · MM-DD
   Next steps (mine, N):
     - [date @handle] next step
   History:     N entries — last: [condensed one-liner of most recent entry]

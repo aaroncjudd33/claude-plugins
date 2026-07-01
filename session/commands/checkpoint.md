@@ -150,10 +150,11 @@ CDK_PRESENT=""
   (N) Open item [inbox legacy]: "<text>"    keep / done
 ```
 
-**(H) Pending inbox sweep** — include one per pending (non-in-progress) inbox item if any were present:
+**(H) Pending inbox sweep** — include one per pending (non-in-progress) inbox item if any were present (single-line provenance form — see `references/inbox-convention.md`):
 ```
-  (N) Inbox pending: "<description from source/session>" — addressed this session?    nothing / done / picked-up
+  (N) Inbox pending: "<description>"  ·  ↳ <session> (<type>) — addressed this session?    nothing / done / picked-up
 ```
+Include `<slug>` in the `↳` when the item's source repo differs from the current slug; drop it when same-repo; omit `(<type>)` for legacy items.
 
 **Assembled block example:**
 ```
@@ -165,7 +166,7 @@ CDK_PRESENT=""
         2  Add test coverage for spawn flow
      skip / all / <number(s)>
   (5) Inbox [in-progress]: "Update session tests"    keep / done
-  (6) Inbox pending: "Review DynamoDB schema" — addressed?    nothing / done / picked-up
+  (6) Inbox pending: "Review DynamoDB schema"  ·  ↳ BPT2-6258 (story) — addressed?    nothing / done / picked-up
 
 Reply with overrides or "go".
 ```

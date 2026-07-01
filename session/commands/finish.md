@@ -178,10 +178,11 @@ Gather all pending questions and present as **one batched block**. Output and wa
   (N) Open item [inbox legacy]: "<text>"    keep / done
 ```
 
-**(J) Pending inbox sweep** — one per pending inbox item:
+**(J) Pending inbox sweep** — one per pending inbox item (single-line provenance form — see `references/inbox-convention.md`):
 ```
-  (N) Inbox pending: "<description>" — addressed this session?    nothing / done / picked-up
+  (N) Inbox pending: "<description>"  ·  ↳ <session> (<type>) — addressed this session?    nothing / done / picked-up
 ```
+Include `<slug>` in the `↳` when the item's source repo differs from the current slug; drop it when same-repo; omit `(<type>)` for legacy items.
 
 **Assembled block example (story type):**
 ```
@@ -195,7 +196,7 @@ Gather all pending questions and present as **one batched block**. Output and wa
         1  Fix scope guard edge case
      skip / all / 1
   (8) Inbox [in-progress]: "Update session tests"    keep / done
-  (9) Inbox pending: "Review DynamoDB schema" — addressed?    nothing / done / picked-up
+  (9) Inbox pending: "Review DynamoDB schema"  ·  ↳ BPT2-6258 (story) — addressed?    nothing / done / picked-up
   (10) Post closing update to BPT2-6258 — Shopify Member Agreement?    skip / yes
 
 Reply with overrides or "go".

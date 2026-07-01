@@ -49,7 +49,7 @@ If the spawn `Type` is `plugin` or if the `Label` matches an existing session na
 Otherwise (target session does not exist yet), append to `<session_root>/_inbox.md` (global — surfaces at the next `/session:start` for anyone to pick up; create if needed with header `# Inbox — <slug>`).
 
 ```markdown
-## [YYYY-MM-DD @<handle>] from <slug> / <current-session-name> [spawn] — <label>
+## [YYYY-MM-DD @<handle>] from <slug> / <current-session-name> (<current-type>) [spawn] — <label>
 - **Type:** <story / cab / plugin / personal / general>
 - **linked_sessions:** <current-session-name>
 - **Next step:** <concrete first action for the person picking this up>
@@ -58,6 +58,8 @@ Otherwise (target session does not exist yet), append to `<session_root>/_inbox.
   - <finding or decision bullet>
   - ...
 ```
+
+`<current-type>` in the header is the **source** (current) session's type — provenance for where the spawn came from. It may differ from the `- **Type:**` bullet, which is the type of the session to be *created*. Derive `<current-type>` from the current session's `type:` frontmatter / `- **Type:**` bullet.
 
 Do **not** write `_active` or modify the current session file in any way.
 

@@ -142,13 +142,15 @@ Every type also accepts these same inputs (in addition to its type-specific ones
 
 Sessions are **item-driven**: new work always starts from an inbox item — there are no blank or plugin-named sessions. The sessions table (above) lists in-progress feature sessions to `resume`; the consolidated inbox below is what you `pick` from.
 
-**Show the consolidated inbox.** The items were read in Step 2 from `<session_root>/_inbox.md` (the canonical inbox for this slug). List them numbered, before the routing block. Flag `[spawn]` entries with ★:
+**Show the consolidated inbox.** The items were read in Step 2 from `<session_root>/_inbox.md` (the canonical inbox for this slug). List them numbered, before the routing block, using **layout B** (description-first, provenance dim on a second line — full spec in `references/inbox-convention.md`). Flag `[spawn]` entries with ★:
 ```
 Inbox — pick up or describe new work (N):
-  1  [date] from <source> — <description>
-  2  ★ [spawn] <label> — from <source>/<session>, ready to start
+  1  <description>
+     ↳ <slug> / <session> (<type>) · MM-DD
+  2  ★ [spawn] <label>
+     ↳ <slug> / <session> (<type>) · MM-DD
 ```
-If the inbox is empty: `Inbox: none — describe new work with 'new <description>'`.
+Rendering rules: drop `<slug>` when it equals the current repo slug (only cross-repo origins show it); omit `(<type>)` for legacy items that lack it; tolerate spaced or unspaced `/` in the source. If the inbox is empty: `Inbox: none — describe new work with 'new <description>'`.
 
 Then output the routing block — the type-specific `Start / Resume` lines, followed by the shared **Search by** block:
 ```
@@ -170,13 +172,15 @@ Then output the routing block — the type-specific `Start / Resume` lines, foll
 
 **Work project:**
 
-If `_inbox.md` has logical items, show compactly before the routing line. Flag `[spawn]` entries with ★:
+If `_inbox.md` has logical items, show compactly before the routing line using **layout B** (description-first, provenance dim below — see `references/inbox-convention.md`). Flag `[spawn]` entries with ★:
 ```
 Global inbox (N items):
-  ★ [spawn] <label> — from <source>/<session>, ready to start as <type>
-  [date] from <source-slug>/<session-name> — <one-line description>
+  ★ [spawn] <label>
+     ↳ <slug> / <session> (<type>) · MM-DD — ready to start
+  1  <description>
+     ↳ <slug> / <session> (<type>) · MM-DD
 ```
-Full inbox handling (work/done/backlog/keep) happens at Step 5.
+Rendering rules: drop `<slug>` when it equals the current repo slug; omit `(<type>)` for legacy items; tolerate spaced/unspaced `/`. Full inbox handling (work/done/backlog/keep) happens at Step 5.
 
 Then output the routing block — the type-specific `Start / Resume` lines, followed by the shared **Search by** block:
 ```
@@ -198,12 +202,13 @@ Then output the routing block — the type-specific `Start / Resume` lines, foll
 
 Identical model to plugin (per design — plugin and personal behave the same). Sessions are item-driven: new work starts from an inbox item, never blank.
 
-**Show the consolidated inbox.** Items were read in Step 2 from `<session_root>/_inbox.md` (canonical inbox for this personal project's slug). List numbered, `[spawn]` flagged with ★:
+**Show the consolidated inbox.** Items were read in Step 2 from `<session_root>/_inbox.md` (canonical inbox for this personal project's slug). List numbered using **layout B** (description-first, provenance dim below — see `references/inbox-convention.md`), `[spawn]` flagged with ★:
 ```
 Inbox — pick up or describe new work (N):
-  1  [date] from <source> — <description>
+  1  <description>
+     ↳ <slug> / <session> (<type>) · MM-DD
 ```
-If empty: `Inbox: none — describe new work with 'new <description>'`.
+Rendering rules: drop `<slug>` when it equals the current repo slug; omit `(<type>)` for legacy items; tolerate spaced/unspaced `/`. If empty: `Inbox: none — describe new work with 'new <description>'`.
 
 Then output the routing block — the type-specific `Start / Resume` lines, followed by the shared **Search by** block:
 ```
@@ -261,8 +266,9 @@ Resuming <name>
   Mode:        planning          ← show this line ONLY when Mode is planning; omit for coding/both
   Open items (mine, N):
     - [date @handle] item
-  Inbox (N items):
-    1  [date] <description> — in-progress / pending
+  Inbox (N items):          ← layout B; provenance dim below each item (see inbox-convention.md)
+    1  <description> — in-progress / pending
+       ↳ <slug> / <session> (<type>) · MM-DD
   Next steps (mine, N):
     - [date @handle] step
   Loaded memories (N):
@@ -309,7 +315,7 @@ Read `<plugin_root>/.claude-plugin/plugin.json` and `<plugin_root>/skills/<plugi
 ---
 
 **Plugin / personal — `pick <n>` or `new <description>`** (item-driven session creation):
-- `new <description>`: first append the description as a new item to `<session_root>/_inbox.md` using the standard header format (`## [YYYY-MM-DD @<handle>] from <slug>/start — <description>`), then treat it exactly like `pick` on that just-written item.
+- `new <description>`: first append the description as a new item to `<session_root>/_inbox.md` using the standard header format (`## [YYYY-MM-DD @<handle>] from <slug>/start (<type>) — <description>`, where `<type>` is the current repo's session type), then treat it exactly like `pick` on that just-written item.
 - `pick <n>`: read `session/commands/start-impl.md` immediately and continue from Step 4 there (New session path). The picked inbox item's number maps to the inbox list shown in Step 3. start-impl.md derives the feature name, folds the item body into the new session, and deletes the item from `_inbox.md`.
 
 **All other cases** — read `session/commands/start-impl.md` immediately, then continue from Step 4 there:

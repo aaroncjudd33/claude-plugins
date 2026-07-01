@@ -65,9 +65,11 @@ Loaded by `start.md` after the user makes their selection. Context already in sc
       - [date @ajudd] item two
     Teammate notes (N — read-only):
       - [date @other] their item
-    Inbox (N):
-      1  [date] <description> — in-progress
-      2  [date] <description> — pending
+    Inbox (N):          ← layout B; provenance dim below each item (see inbox-convention.md)
+      1  <description> — in-progress
+         ↳ <slug> / <session> (<type>) · MM-DD
+      2  <description> — pending
+         ↳ <slug> / <session> (<type>) · MM-DD
     Next steps (mine, N):
       - [date @ajudd] next step one
     Teammate next steps (N):
@@ -130,7 +132,7 @@ Loaded by `start.md` after the user makes their selection. Context already in sc
 
 Plugin and personal sessions are created ONLY by picking up an inbox item — never blank, never named after the plugin/project. When the user chose `pick <n>` (or `new <description>`, which already appended the item in start.md Step 4), run this before Step 5:
 
-1. **Locate the item.** The picked item is entry `<n>` in `<session_root>/_inbox.md` (the canonical inbox for this slug). Read its full `## [date @handle] from <source> — <description>` header and body.
+1. **Locate the item.** The picked item is entry `<n>` in `<session_root>/_inbox.md` (the canonical inbox for this slug). Read its full `## [date @handle] from <slug> / <session> (<type>) — <description>` header and body (legacy items may lack `(<type>)` or the slug — read whatever is present).
 
 2. **Derive a feature name.** Slugify into kebab-case:
    - If the header's `<description>` is a usable short title, slugify it (e.g. "Item-driven sessions for plugin work" → `item-driven-sessions`). Keep it concise (2–4 words).
@@ -141,7 +143,7 @@ Plugin and personal sessions are created ONLY by picking up an inbox item — ne
 3. **Fold the item into the new session.** When writing the session file in Step 8, seed `Open items` from the item body, and add a provenance block preserving the original header verbatim:
    ```
    ## Picked up from inbox
-   <original ## [date @handle] from <source> — <description> header>
+   <original ## [date @handle] from <slug> / <session> (<type>) — <description> header, verbatim>
    <original body>
    ```
    Place this in the session file body after the standard fields (it carries the full context so nothing is lost).
@@ -231,11 +233,14 @@ Create the archive file if it does not exist. Archive entry format (append, blan
 **Global inbox (`_inbox.md`):** Check for global items (undirected notes, new plugin ideas, or spawned sessions without a named target). If it has content, show it separately after the batch block result (not folded in — it's separate from the session-specific inbox):
 
 ```
-Global inbox (<N> item(s)):
-  ★ [spawn] <label> — from <source-slug>/<session-name>, ready to start as <type>
+Global inbox (<N> item(s)):        ← layout B; provenance dim below (see inbox-convention.md)
+  ★ [spawn] <label>
+     ↳ <slug> / <session> (<type>) · MM-DD — ready to start as <type>
       Next step: <next step from spawn entry>
-  [date] from <source-slug>/<session-name> — <regular item description>
+  1  <regular item description>
+     ↳ <slug> / <session> (<type>) · MM-DD
 ```
+(Drop `<slug>` when same-repo; omit `(<type>)` for legacy items; tolerate spaced/unspaced `/`.)
 
 Routing line for global inbox (if any items):
 ```
