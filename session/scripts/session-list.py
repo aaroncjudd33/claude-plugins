@@ -12,6 +12,7 @@ Reads its own inputs (no data passed in beyond locating args):
   --full                show all 8 columns (adds out-count + created date)
   --status VALUE        restrict to a single status group
   --mine                restrict to sessions created or updated by --handle
+  --stale-days N        in-progress sessions not updated in > N days get a ⚠ nudge (default 14)
 
 On success prints the block and exits 0. On ANY error exits non-zero with nothing
 on stdout, so the caller falls back to model rendering. Never raises to the shell.
@@ -21,6 +22,10 @@ import glob
 import os
 import sys
 from datetime import datetime
+
+# In-progress sessions not updated in more than this many days get a ⚠ stale
+# marker + a trailing /session:finish nudge. Tune here or override with --stale-days.
+STALE_DAYS_DEFAULT = 14
 
 
 def fmt_date(iso):
@@ -133,6 +138,7 @@ def main():
     ap.add_argument("--full", action="store_true")
     ap.add_argument("--status", default="")
     ap.add_argument("--mine", action="store_true")
+    ap.add_argument("--stale-days", type=int, default=STALE_DAYS_DEFAULT)
     args = ap.parse_args()
 
     # Windows consoles default to cp1252; the active marker is U+2190. Force UTF-8.
@@ -160,6 +166,24 @@ def main():
 
     handle = args.handle.lstrip("@")
 
+    # Stale detection: an in-progress session whose updated-date is older than the
+    # threshold. Only flags in-progress (completed/paused/refinement never stale).
+    # Unparseable or missing dates are treated as not-stale (never a false alarm).
+    stale_days = args.stale_days
+    try:
+        today = datetime.now()
+    except Exception:
+        today = None
+
+    def is_stale(status, updated_date):
+        if today is None or status != "in-progress":
+            return False
+        try:
+            d = datetime.strptime((updated_date or "").strip(), "%Y-%m-%d")
+        except ValueError:
+            return False
+        return (today - d).days > stale_days
+
     rows = []
     for name in all_names:
         meta = idx.get(name, {})
@@ -177,6 +201,7 @@ def main():
             updated_date=meta.get("updated_date", "—"),
             refine=is_refine,
             active=(name == active),
+            stale=is_stale(status, meta.get("updated_date", "—")),
         ))
 
     # Filters
@@ -274,10 +299,10 @@ def main():
             matrix.append(row_cells(i, r))
     widths = [max(len(row[c]) for row in matrix) for c in range(len(header))]
 
-    def fmt_line(cells, marker=""):
+    def fmt_line(cells, trailing=""):
         parts = [cells[c].ljust(widths[c]) for c in range(len(cells))]
         line = "  " + "  ".join(parts).rstrip()
-        return (line + "  ←") if marker else line
+        return line + trailing
 
     slug = args.slug or os.path.basename(root.rstrip("/"))
     out = [f"Sessions in {slug}", ""]
@@ -288,10 +313,19 @@ def main():
             out.append("  " + payload)
         else:
             i, r = payload
-            out.append(fmt_line(row_cells(i, r), marker="←" if r["active"] else ""))
+            trailing = ""
+            if r["active"]:
+                trailing += "  ←"
+            if r["stale"]:
+                trailing += "  ⚠ stale"
+            out.append(fmt_line(row_cells(i, r), trailing))
     out.append("")
     out.append(f"  {summary['in-progress']} in-progress · {summary['paused']} paused · "
                f"{summary['completed']} completed")
+    stale_shown = sum(1 for r in rows if r["stale"])
+    if stale_shown:
+        out.append(f"  ⚠ {stale_shown} in-progress not updated in >{stale_days}d — "
+                   f"consider /session:finish")
     if index_incomplete:
         out.append("  (index missing or incomplete — type 'index' to build it)")
 
