@@ -66,17 +66,21 @@ Here's what I found:
   Email:    ajudd@youngliving.com   (from git config)
   Jira ID:  620147d91fec260068...   (looked up from Atlassian)
   Teams ID: 4a1b2c3d-...            (looked up from Microsoft 365)
+  Role:     (not set — optional)
 
   Jira Project:  BPT2               (default)
 ```
 
 **Handle** is the short @-tag used to attribute session history and inbox entries (e.g. `@ajudd`). It defaults to the email prefix — only change it if you want a different short identifier.
 
+**Role** is optional and **display-only** — it never gates or unlocks any capability. If set, plugins may declutter what they surface to match what that role typically does (e.g. `qa-requirements` sees the refine→record→done path front-and-center; `dev` also sees "continue into a build session"). Leave it unset to always see the full menu. Values: `dev` / `qa-requirements`. Anyone can set or change it freely — it is a UX convenience, not a permission, so nothing should ever check it as a boundary.
+
 For any field that is blank or wrong, the user can correct it now.
 
-Ask: "Does everything look right? Type a field name to change it (name / handle / email / jira / teams / project), or type 'go' to continue."
+Ask: "Does everything look right? Type a field name to change it (name / handle / email / jira / teams / role / project), or type 'go' to continue."
 
-- If they type a field name (e.g. "name", "handle", "email", "jira", "teams", "project"): prompt for that field, then re-display the screen.
+- If they type a field name (e.g. "name", "handle", "email", "jira", "teams", "role", "project"): prompt for that field, then re-display the screen.
+- If they type "role": prompt "Your role — `dev`, `qa-requirements`, or 'skip' to leave unset (display-only, never gates):" and store the choice (empty string if skipped).
 - If they type "go": proceed to step 5.
 
 For blank fields that were not auto-detected, prompt for them explicitly before allowing the user to proceed:
@@ -289,6 +293,7 @@ About to write ~/.claude/plugins/user-config.json:
   email:                   <value>
   jiraAccountId:           <value>
   teamsUserId:             <value or "(not set)">
+  role:                    <value or "(not set — display-only)">
   jiraProject:             <value>
   pluginMarketplaceName:   <value>
   workReposDir:            <value or "(not set)">
@@ -306,7 +311,8 @@ If yes, **read the existing `~/.claude/plugins/user-config.json` first** (if it 
     "handle": "<collected or preserved>",
     "email": "<collected or preserved>",
     "jiraAccountId": "<collected or preserved>",
-    "teamsUserId": "<collected or preserved or empty string>"
+    "teamsUserId": "<collected or preserved or empty string>",
+    "role": "<collected or preserved or empty string>"
   },
   "defaults": {
     "jiraProject": "<collected or preserved>",

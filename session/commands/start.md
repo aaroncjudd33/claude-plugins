@@ -18,6 +18,7 @@ If arguments were passed to `/session:start`, attempt to resolve them before run
 | Pattern | Example | Resolves to |
 |---------|---------|-------------|
 | `mine` | `/session:start mine` | full discovery flow with mine filter |
+| `refine [topic]` | `/session:start refine shopify refund` | refinement flow (Step 4 → Refine) |
 | `BPT2-XXXX` (Jira story key) | `/session:start BPT2-6429` | story session |
 | `CAB-XXXX` (CAB key) | `/session:start CAB-9260` | cab session |
 | `cab BPT2-XXXX [...]` | `/session:start cab BPT2-6429 BPT2-6430` | new CAB for those stories |
@@ -26,6 +27,7 @@ If arguments were passed to `/session:start`, attempt to resolve them before run
 **Fast-path flow:**
 1. Run `pwd`, extract slug, read `~/.claude/plugins/user-config.json` (same as Step 1). Resolve `session_root` and `handle` using Path Resolution (see Session Skill).
 2. If arg is `mine`: set `filter_mine = true`, fall through to Step 1 — full discovery with mine filter.
+2a. If arg is `refine` or `refine <topic>`: resolve `session_root`/`handle` (step 1 above), then go directly to Step 4 → **Refine — enter refinement flow**, passing any `<topic>` as the refine argument. Skip Steps 1–3.
 3. Derive session type and target name from the arg (story key → type=story, name=BPT2-XXXX; CAB key → type=cab; any other bare token → treat as a session NAME to resume).
 4. Check whether `<session_root>/<name>.md` exists:
    - **Exists + plugin session** → go directly to the Plugin session resume path in Step 4 (no start-impl.md read needed).
@@ -112,7 +114,7 @@ If `session_root` does not exist or is empty, skip this section.
 
 Output the routing block and wait for one free-text reply. **Do not use AskUserQuestion.** Output the routing block as plain text — do not wrap it in a fenced code block and do not add a separator line (`---`) before it.
 
-**Free-text and search:** If the user types text that doesn't match a routing action, interpret it as a natural-language filter — match against name, title, handle, status, inbox count, or any session field. Accept plain descriptions like `has inbox`, `updated by nivi`, `created by me`, `paused`, `completed this week`. Re-display the filtered table with `(filtered by '<query>')` and re-show the routing block. If no sessions match and the text looks like intent rather than a filter, proceed naturally. Keywords `mine`, `all`, `backlog`, `index`, `status` are handled directly (see Step 2).
+**Free-text and search:** If the user types text that doesn't match a routing action, interpret it as a natural-language filter — match against name, title, handle, status, inbox count, or any session field. Accept plain descriptions like `has inbox`, `updated by nivi`, `created by me`, `paused`, `completed this week`. Re-display the filtered table with `(filtered by '<query>')` and re-show the routing block. If no sessions match and the text looks like intent rather than a filter, proceed naturally. Keywords `mine`, `all`, `backlog`, `index`, `status`, `refine` are handled directly (see Step 2 and the refine entry in the shared inputs below).
 
 **Parse combinations freely.** A single reply may include multiple signals — session number, mode, modifiers, inbox dispositions. Examples: `1`, `resume 1`, `1 planning`, `resume session reviewed work 2`, `start release`, `2 yes 4 skip`. Infer intent; speak up only if genuinely ambiguous.
 
@@ -134,6 +136,7 @@ Every type also accepts these same inputs (in addition to its type-specific ones
 - `all` → re-display including completed sessions; re-show routing
 - `full` → re-display the table with the full 8-column set (adds `out` count + `created` date); re-show routing
 - `status <value>` → filter to that status; re-display and re-show routing
+- `refine [topic]` → enter the **refinement** flow (analyze-then-record; `commands/refine.md`). Applies to every type — `session:start` is the front door to refine. With a topic (`refine shopify refund window`) → start a new refinement session on it directly. Bare `refine` → first surface any in-progress `refinement-*` sessions for the slug as a resumable list (they're hidden from the default table), then resume one or start new. Direct `/session:refine` and this verb converge on the same flow. Graduation is **zone-aware** and never hardcodes the target: plugin/personal → inbox item (unambiguous); work repo → Jira story (project resolved-or-confirmed, not assumed `BPT2`); general → confirm target (Jira story w/ project, or inbox item). See Step 4 → **Refine — enter refinement flow**.
 - Any other text → natural-language filter; match against name, title, handle, status, inbox count, or any field; re-display with `(filtered by '<query>')` and re-show routing
 
 ---
@@ -158,6 +161,7 @@ Then output the routing block — the type-specific `Start / Resume` lines, foll
     resume <n>        — resume an in-progress session (table number above)
     pick <n>          — start a session from inbox item <n>
     new <description> — start a session for new work (adds it to the inbox, then picks it up)
+    refine [topic]    — scope work first (analyze-then-record → inbox item); lists resumable refinements
 ```
 
 **Type-specific accepted inputs** (plus the shared inputs above):
@@ -188,6 +192,7 @@ Then output the routing block — the type-specific `Start / Resume` lines, foll
     resume <n>       — resume by number (e.g. resume 2)
     start story      — start a new story — you'll give a key or URL
     start cab        — start a new CAB — you'll give story keys
+    refine [topic]   — scope work first (analyze-then-record → Jira story, project confirmed); lists resumable refinements
 ```
 
 **Type-specific accepted inputs** (plus the shared inputs above):
@@ -216,6 +221,7 @@ Then output the routing block — the type-specific `Start / Resume` lines, foll
     resume <n>        — resume an in-progress session (table number above)
     pick <n>          — start a session from inbox item <n>
     new <description> — start a session for new work (adds it to the inbox, then picks it up)
+    refine [topic]    — scope work first (analyze-then-record → inbox item); lists resumable refinements
 ```
 
 **Type-specific accepted inputs** (plus the shared inputs above):
@@ -235,6 +241,7 @@ Then output the routing block — the type-specific `Start / Resume` lines, foll
   Start / Resume:
     resume <n>       — resume by number
     start            — start a new session — you'll give a name and context
+    refine [topic]   — scope work first (analyze-then-record → Jira story or inbox item; confirmed); lists resumable refinements
 ```
 
 **Type-specific accepted inputs** (plus the shared inputs above):
@@ -245,6 +252,29 @@ Then output the routing block — the type-specific `Start / Resume` lines, foll
 ### 4. Act on User's Reply
 
 Once the user replies, act immediately. **Do not read start-impl.md first** for the plugin resume path below.
+
+---
+
+**Refine — enter refinement flow** (any type; triggered by `refine` / `refine <topic>`):
+
+The `session:start` refine verb and the direct `/session:refine` command converge — both run `commands/refine.md`, which owns the analyze-then-record flow and the zone-aware graduation. Handle the reply:
+
+- **`refine <topic>`** → start a new refinement session on `<topic>` directly: read `commands/refine.md` and run it from Step 0, passing `<topic>` as the argument.
+- **bare `refine`** → first surface resumable refinements for the slug, then route:
+  1. List in-progress `refinement-*` sessions (they're hidden from the default table). Enumerate them precisely with the glob (no-match-safe) — the default listing script mixes in non-refinement in-progress sessions, so don't use it here:
+     ```bash
+     find "<session_root>" -maxdepth 1 -name 'refinement-*.md' -printf '%f\t%TY-%Tm-%Td\n' 2>/dev/null | sort -rk2
+     ```
+     (On systems without `-printf`, fall back to `ls -1t <session_root>/refinement-*.md 2>/dev/null` and strip the path.)
+  2. Present a plain routing line (strip the `refinement-` prefix and `.md` for display):
+     ```
+     Refinements in progress:
+       1  refinement-<topic>   — last <date>
+     Resume one (resume <n> / <name>), or start new: refine <new topic>
+     ```
+  3. **`resume <n>` / `<name>`** → resume that refinement session: read its file, show the Refinement report, and continue from `refine.md` Step 4. **`refine <new topic>`** → start new as above. If there are no in-progress refinements, skip the list and ask the topic directly ("What are we refining? (a short topic)"), then start new.
+
+Either path lands in `commands/refine.md` — the front door and the direct command share one implementation.
 
 ---
 
