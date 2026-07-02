@@ -145,15 +145,15 @@ Every type also accepts these same inputs (in addition to its type-specific ones
 
 Sessions are **item-driven**: new work always starts from an inbox item — there are no blank or plugin-named sessions. The sessions table (above) lists in-progress feature sessions to `resume`; the consolidated inbox below is what you `pick` from.
 
-**Show the consolidated inbox.** The items were read in Step 2 from `<session_root>/_inbox.md` (the canonical inbox for this slug). List them numbered, before the routing block, using **layout B** (description-first, provenance dim on a second line — full spec in `references/inbox-convention.md`). Flag `[spawn]` entries with ★:
+**Show the consolidated inbox.** The items were read in Step 2 from `<session_root>/_inbox.md` (the canonical inbox for this slug). List them numbered, before the routing block, using **layout B** (description-first, provenance dim on a second line — full spec in `references/inbox-convention.md`). Show each item's stable `[<id>]` before its description; flag `[spawn]` entries with ★:
 ```
 Inbox — pick up or describe new work (N):
-  1  <description>
+  1  [acp-ajudd#7]  <description>
      ↳ <slug> / <session> (<type>) · MM-DD
-  2  ★ [spawn] <label>
+  2  [acp-ajudd#5]  ★ [spawn] <label>
      ↳ <slug> / <session> (<type>) · MM-DD
 ```
-Rendering rules: drop `<slug>` when it equals the current repo slug (only cross-repo origins show it); omit `(<type>)` for legacy items that lack it; tolerate spaced or unspaced `/` in the source. If the inbox is empty: `Inbox: none — describe new work with 'new <description>'`.
+Rendering rules: the leading `N` is the ephemeral in-view position (for `pick <n>`); `[<id>]` (parsed from the `## <id> · [date...]` header) is the permanent handle — reference items by ID, not position. `pick` accepts either. Omit `[<id>]` for legacy items without one. Drop `<slug>` when it equals the current repo slug (only cross-repo origins show it); omit `(<type>)` for legacy items that lack it; tolerate spaced or unspaced `/` in the source. If the inbox is empty: `Inbox: none — describe new work with 'new <description>'`.
 
 Then output the routing block — the type-specific `Start / Resume` lines, followed by the shared **Search by** block:
 ```
@@ -207,13 +207,13 @@ Then output the routing block — the type-specific `Start / Resume` lines, foll
 
 Identical model to plugin (per design — plugin and personal behave the same). Sessions are item-driven: new work starts from an inbox item, never blank.
 
-**Show the consolidated inbox.** Items were read in Step 2 from `<session_root>/_inbox.md` (canonical inbox for this personal project's slug). List numbered using **layout B** (description-first, provenance dim below — see `references/inbox-convention.md`), `[spawn]` flagged with ★:
+**Show the consolidated inbox.** Items were read in Step 2 from `<session_root>/_inbox.md` (canonical inbox for this personal project's slug). List numbered using **layout B** (description-first, provenance dim below — see `references/inbox-convention.md`), stable `[<id>]` before each description, `[spawn]` flagged with ★:
 ```
 Inbox — pick up or describe new work (N):
-  1  <description>
+  1  [<id>]  <description>
      ↳ <slug> / <session> (<type>) · MM-DD
 ```
-Rendering rules: drop `<slug>` when it equals the current repo slug; omit `(<type>)` for legacy items; tolerate spaced/unspaced `/`. If empty: `Inbox: none — describe new work with 'new <description>'`.
+Rendering rules: `N` is ephemeral position (for `pick <n>`); `[<id>]` (from the `## <id> · [date...]` header) is the permanent handle — reference by ID; `pick` accepts either; omit `[<id>]` for legacy items. Drop `<slug>` when it equals the current repo slug; omit `(<type>)` for legacy items; tolerate spaced/unspaced `/`. If empty: `Inbox: none — describe new work with 'new <description>'`.
 
 Then output the routing block — the type-specific `Start / Resume` lines, followed by the shared **Search by** block:
 ```
@@ -225,8 +225,8 @@ Then output the routing block — the type-specific `Start / Resume` lines, foll
 ```
 
 **Type-specific accepted inputs** (plus the shared inputs above):
-- `pick <n>` → create a feature-named session from inbox item <n> (same fold-then-delete flow as plugin: Step 4 → start-impl.md).
-- `new <description>` → append to `<session_root>/_inbox.md`, then run the same `pick` flow.
+- `pick <n>` (or `pick <id>`) → create a feature-named session from inbox item <n> / the item with stable id `<id>` (same fold-then-delete flow as plugin: Step 4 → start-impl.md; the item's `<id>` is preserved in the folded provenance block).
+- `new <description>` → issue a stable ID (`inbox-id.py next --slug <slug> --handle <handle>`), append to `<session_root>/_inbox.md` with the `## <id> · [date...]` header, then run the same `pick` flow.
 - `resume <n>` / `<n>` / `<name>` → resume an existing in-progress session.
 - Mode modifier (`planning` / `both` / `coding`) → set the new/resumed session's mode.
 
@@ -345,8 +345,13 @@ Read `<plugin_root>/.claude-plugin/plugin.json` and `<plugin_root>/skills/<plugi
 ---
 
 **Plugin / personal — `pick <n>` or `new <description>`** (item-driven session creation):
-- `new <description>`: first append the description as a new item to `<session_root>/_inbox.md` using the standard header format (`## [YYYY-MM-DD @<handle>] from <slug>/start (<type>) — <description>`, where `<type>` is the current repo's session type), then treat it exactly like `pick` on that just-written item.
-- `pick <n>`: read `session/commands/start-impl.md` immediately and continue from Step 4 there (New session path). The picked inbox item's number maps to the inbox list shown in Step 3. start-impl.md derives the feature name, folds the item body into the new session, and deletes the item from `_inbox.md`.
+- `new <description>`: first **issue a stable ID** (home slug = current slug, namespaced by handle), then append the description as a new item to `<session_root>/_inbox.md` using the standard header format (`## <id> · [YYYY-MM-DD @<handle>] from <slug>/start (<type>) — <description>`, where `<type>` is the current repo's session type), then treat it exactly like `pick` on that just-written item:
+  ```bash
+  IDT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}/scripts/inbox-id.py"
+  python3 "$IDT" next --slug "<slug>" --handle "<handle>"   # e.g. acp-ajudd#7, increments the counter
+  ```
+  (Fallback `<acronym>-<handle>#?` if python3/script unavailable — never block. See `references/inbox-convention.md` § Stable IDs.)
+- `pick <n>` (or `pick <id>`): read `session/commands/start-impl.md` immediately and continue from Step 4 there (New session path). `<n>` is the ephemeral list position shown in Step 3; `<id>` (e.g. `acp-ajudd#3`) is the stable handle — accept either. start-impl.md derives the feature name, folds the item body into the new session (preserving its `<id>` in the provenance block), and deletes the item from `_inbox.md`. The retired ID is never reused.
 
 **All other cases** — read `session/commands/start-impl.md` immediately, then continue from Step 4 there:
 - Work / story / cab / general session (resume or new)

@@ -65,10 +65,10 @@ Loaded by `start.md` after the user makes their selection. Context already in sc
       - [date @ajudd] item two
     Teammate notes (N — read-only):
       - [date @other] their item
-    Inbox (N):          ← layout B; provenance dim below each item (see inbox-convention.md)
-      1  <description> — in-progress
+    Inbox (N):          ← layout B; [<id>] + provenance dim below each item (see inbox-convention.md)
+      1  [<id>]  <description> — in-progress
          ↳ <slug> / <session> (<type>) · MM-DD
-      2  <description> — pending
+      2  [<id>]  <description> — pending
          ↳ <slug> / <session> (<type>) · MM-DD
     Next steps (mine, N):
       - [date @ajudd] next step one
@@ -132,7 +132,7 @@ Loaded by `start.md` after the user makes their selection. Context already in sc
 
 Plugin and personal sessions are created ONLY by picking up an inbox item — never blank, never named after the plugin/project. When the user chose `pick <n>` (or `new <description>`, which already appended the item in start.md Step 4), run this before Step 5:
 
-1. **Locate the item.** The picked item is entry `<n>` in `<session_root>/_inbox.md` (the canonical inbox for this slug). Read its full `## [date @handle] from <slug> / <session> (<type>) — <description>` header and body (legacy items may lack `(<type>)` or the slug — read whatever is present).
+1. **Locate the item.** The picked item is entry `<n>` (ephemeral list position) in `<session_root>/_inbox.md`, or the item whose stable id is `<id>` if the user picked by ID (`pick acp-ajudd#3`). Read its full `## <id> · [date @handle] from <slug> / <session> (<type>) — <description>` header and body (legacy items may lack the `<id> · ` prefix, the `(<type>)`, or the slug — read whatever is present). The `<id>` is preserved verbatim in the folded provenance block below (Step 3), so the retired handle stays discoverable in the session file.
 
 2. **Derive a feature name.** Slugify into kebab-case:
    - If the header's `<description>` is a usable short title, slugify it (e.g. "Item-driven sessions for plugin work" → `item-driven-sessions`). Keep it concise (2–4 words).
@@ -233,11 +233,11 @@ Create the archive file if it does not exist. Archive entry format (append, blan
 **Global inbox (`_inbox.md`):** Check for global items (undirected notes, new plugin ideas, or spawned sessions without a named target). If it has content, show it separately after the batch block result (not folded in — it's separate from the session-specific inbox):
 
 ```
-Global inbox (<N> item(s)):        ← layout B; provenance dim below (see inbox-convention.md)
-  ★ [spawn] <label>
+Global inbox (<N> item(s)):        ← layout B; [<id>] + provenance dim below (see inbox-convention.md)
+  [<id>]  ★ [spawn] <label>
      ↳ <slug> / <session> (<type>) · MM-DD — ready to start as <type>
       Next step: <next step from spawn entry>
-  1  <regular item description>
+  1  [<id>]  <regular item description>
      ↳ <slug> / <session> (<type>) · MM-DD
 ```
 (Drop `<slug>` when same-repo; omit `(<type>)` for legacy items; tolerate spaced/unspaced `/`.)

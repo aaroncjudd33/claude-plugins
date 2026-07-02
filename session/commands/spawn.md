@@ -48,8 +48,10 @@ If the spawn `Type` is `plugin` or if the `Label` matches an existing session na
 
 Otherwise (target session does not exist yet), append to `<session_root>/_inbox.md` (global — surfaces at the next `/session:start` for anyone to pick up; create if needed with header `# Inbox — <slug>`).
 
+**Issue a stable ID first** (home slug = the inbox's slug = current `<slug>`; namespaced by `<handle>`): `python3 <session>/scripts/inbox-id.py next --slug <slug> --handle <handle>` — prepend `<id> · ` to the header. Fallback `<acronym>-<handle>#?` if unavailable; never block. See `references/inbox-convention.md` § Stable IDs.
+
 ```markdown
-## [YYYY-MM-DD @<handle>] from <slug> / <current-session-name> (<current-type>) [spawn] — <label>
+## <id> · [YYYY-MM-DD @<handle>] from <slug> / <current-session-name> (<current-type>) [spawn] — <label>
 - **Type:** <story / cab / plugin / personal / general>
 - **linked_sessions:** <current-session-name>
 - **Next step:** <concrete first action for the person picking this up>

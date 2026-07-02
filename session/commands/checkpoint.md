@@ -142,7 +142,7 @@ CDK_PRESENT=""
 
 **(F) In-progress inbox items** — for plugin sessions: `_inbox_<name>.md`; others: `_inbox.md`. Include one per in-progress item:
 ```
-  (N) Inbox [in-progress]: "<description>"    keep / done
+  (N) [<id>] Inbox [in-progress]: "<description>"    keep / done
 ```
 
 **(G) Legacy [inbox] Open items** — any `[inbox]` tag in Open items with no corresponding in-progress inbox entry:
@@ -152,9 +152,9 @@ CDK_PRESENT=""
 
 **(H) Pending inbox sweep** — include one per pending (non-in-progress) inbox item if any were present (single-line provenance form — see `references/inbox-convention.md`):
 ```
-  (N) Inbox pending: "<description>"  ·  ↳ <session> (<type>) — addressed this session?    nothing / done / picked-up
+  (N) [<id>] Inbox pending: "<description>"  ·  ↳ <session> (<type>) — addressed this session?    nothing / done / picked-up
 ```
-Include `<slug>` in the `↳` when the item's source repo differs from the current slug; drop it when same-repo; omit `(<type>)` for legacy items.
+Lead with the item's stable `[<id>]` (omit for legacy items that have none). Include `<slug>` in the `↳` when the item's source repo differs from the current slug; drop it when same-repo; omit `(<type>)` for legacy items.
 
 **Assembled block example:**
 ```
@@ -165,8 +165,8 @@ Include `<slug>` in the `↳` when the item's source repo differs from the curre
         1  Fix scope guard edge case
         2  Add test coverage for spawn flow
      skip / all / <number(s)>
-  (5) Inbox [in-progress]: "Update session tests"    keep / done
-  (6) Inbox pending: "Review DynamoDB schema"  ·  ↳ BPT2-6258 (story) — addressed?    nothing / done / picked-up
+  (5) [vo-ajudd#4] Inbox [in-progress]: "Update session tests"    keep / done
+  (6) [vo-ajudd#12] Inbox pending: "Review DynamoDB schema"  ·  ↳ BPT2-6258 (story) — addressed?    nothing / done / picked-up
 
 Reply with overrides or "go".
 ```

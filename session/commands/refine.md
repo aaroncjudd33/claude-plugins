@@ -119,10 +119,10 @@ When the report is solid, create the record. The zone (Step 1) decides the outpu
 
 Offer: **"Write the inbox item now? (yes / not yet)"**
 
-On yes, append a self-contained item to `~/.claude/memory/sessions/<slug>/_inbox.md` (create with header `# Inbox — <slug>` if needed). **Use the exact same `_inbox.md` item format that `new` and `/session:inbox` write** — refine is the analyzed sibling of `new`, so its item must land as a normal, pickable inbox item (identical header + freeform body); the two commands stay separate but produce the same artifact. The consolidated inbox is the record of truth (git history is the trail):
+On yes, **issue a stable ID** (`python3 <session>/scripts/inbox-id.py next --slug <slug> --handle <handle>`), then append a self-contained item to `~/.claude/memory/sessions/<slug>/_inbox.md` (create with header `# Inbox — <slug>` if needed). **Use the exact same `_inbox.md` item format that `new` and `/session:inbox` write** — including the leading `<id> · ` on the header — refine is the analyzed sibling of `new`, so its item must land as a normal, pickable inbox item (identical header + freeform body); the two commands stay separate but produce the same artifact. The consolidated inbox is the record of truth (git history is the trail):
 
 ```markdown
-## [YYYY-MM-DD @<handle>] from <slug> / refinement-<topic> (refinement) — <Summary>
+## <id> · [YYYY-MM-DD @<handle>] from <slug> / refinement-<topic> (refinement) — <Summary>
 
 **Affected areas:** <from report>
 **Estimate:** <from report, with reasoning>

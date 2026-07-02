@@ -87,11 +87,12 @@ If the inbox file has content beyond the header, first scan for in-progress item
 If the inbox file has content beyond the header, gather all items and present as a batched block. **Do not use AskUserQuestion.** Output and wait for one reply (Pattern 2):
 
 ```
-  (1) Inbox [in-progress]: "<description>"    keep / done
-  (2) Inbox: "<description>"    work / done / backlog / keep
+  (1) [<id>] Inbox [in-progress]: "<description>"    keep / done
+  (2) [<id>] Inbox: "<description>"    work / done / backlog / keep
 
 Reply with overrides or "go".
 ```
+(Lead with the item's stable `[<id>]`; omit for legacy items that have none.)
 
 "go" accepts all defaults. Parse freely: `1 done`, `2 work`, `1 done 2 work`, etc.
 

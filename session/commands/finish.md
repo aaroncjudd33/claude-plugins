@@ -189,7 +189,7 @@ The slot bodies and apply-logic below note where this default changes behavior f
 
 **(H) In-progress inbox items** — one per item found in Step 6:
 ```
-  (N) Inbox [in-progress]: "<description>"    keep / done
+  (N) [<id>] Inbox [in-progress]: "<description>"    keep / done
 ```
 
 **(I) Legacy [inbox] Open items** — any `[inbox]` tag with no corresponding in-progress inbox entry:
@@ -207,9 +207,9 @@ Only items that are genuinely ambiguous (started but not clearly finished, or un
 
 **(J) Pending inbox sweep** — one per pending inbox item (single-line provenance form — see `references/inbox-convention.md`):
 ```
-  (N) Inbox pending: "<description>"  ·  ↳ <session> (<type>) — addressed this session?    nothing / done / picked-up
+  (N) [<id>] Inbox pending: "<description>"  ·  ↳ <session> (<type>) — addressed this session?    nothing / done / picked-up
 ```
-Include `<slug>` in the `↳` when the item's source repo differs from the current slug; drop it when same-repo; omit `(<type>)` for legacy items.
+Lead with the item's stable `[<id>]` (omit for legacy items that have none). Include `<slug>` in the `↳` when the item's source repo differs from the current slug; drop it when same-repo; omit `(<type>)` for legacy items.
 
 **Assembled block example (story type):**
 ```
@@ -222,8 +222,8 @@ Include `<slug>` in the `↳` when the item's source repo differs from the curre
   (7) Open items done?
         1  Fix scope guard edge case
      skip / all / 1
-  (8) Inbox [in-progress]: "Update session tests"    keep / done
-  (9) Inbox pending: "Review DynamoDB schema"  ·  ↳ BPT2-6258 (story) — addressed?    nothing / done / picked-up
+  (8) [vo-ajudd#4] Inbox [in-progress]: "Update session tests"    keep / done
+  (9) [vo-ajudd#12] Inbox pending: "Review DynamoDB schema"  ·  ↳ BPT2-6258 (story) — addressed?    nothing / done / picked-up
   (10) Post closing update to BPT2-6258 — Shopify Member Agreement?    skip / yes
 
 Reply with overrides or "go".

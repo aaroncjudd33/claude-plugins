@@ -19,17 +19,49 @@ Before the item-driven-sessions overhaul, multi-plugin repos used one inbox file
 ## Entry Format
 
 ```markdown
-## [YYYY-MM-DD @<handle>] from <source-slug> / <session-name> (<type>) — <short title>
+## <id> · [YYYY-MM-DD @<handle>] from <source-slug> / <session-name> (<type>) — <short title>
 
 <Context: what the item is, why it matters, what needs to happen.>
 ```
 
+- `<id>` — the item's **stable, permanent handle** (e.g. `acp-ajudd#14`). Issued once at creation and never changes, even as positions shift. Form: `<acronym>-<handle>#<n>` (see Stable IDs below). Reference items by this ID in conversation and recaps — never by their shifting list position.
 - `<source-slug>` — the originating **repo** slug (where the request came from, e.g. `virtual-office`, `gen-leadership-bonus`, a personal project), **NOT** the target inbox's slug. This matters because plugin suggestions often route in from cross-repo work.
 - `<session-name>` — the originating session (e.g. `BPT2-6377`, a feature name).
 - `<type>` — the source session type: `story` / `cab` / `plugin` / `personal` / `general`.
 - **Keep both repo AND session — never collapse to one.** Derive all three from the *source* session context when routing.
 
 Keep it self-contained — the receiving session may pick this up weeks later with no memory of the source conversation.
+
+## Stable IDs
+
+Every inbox item gets a **permanent, per-item handle** at creation, so it can be named consistently across its whole life instead of by a list position that shifts every time an item is added or folded. Applies to **all** project types (plugin / personal / work / general) — one universal scheme, no per-type branching.
+
+**Form:** `<acronym>-<handle>#<n>` — e.g. `acp-ajudd#14`, `glb-nivi#7`, `vo-ajudd#3`.
+
+- `<acronym>` — deterministic short code for the **home** slug (the repo whose inbox the item lives in — the target of a routed handoff, not the source). Derived by `scripts/inbox-id.py acronym --slug <slug>`: first letter of each token (split on `-`/`_`/camelCase), lowercased; single-token slugs use the first 3 chars. Same slug → same acronym on any machine, no config. So the number reflects that person's activity **in that repo**, and the ID reads as "who + what repo". The **session** lives on the provenance line, not in the ID — keeps the ID short and sayable.
+- `<handle>` — the authoring user's handle. This **namespaces the counter per user**: `acp-ajudd#*` and `acp-nivi#*` are disjoint, so two developers can never collide on a number without any coordination.
+- `<n>` — a monotonically-incrementing counter, per **(user, home-slug)**. Issued by `scripts/inbox-id.py next --slug <home-slug> --handle <handle>`, which increments and persists the counter.
+
+**Counter storage — local, never in a repo.** `~/.claude/config/inbox-seq.json` (`{ "<slug>": <n>, ... }`) on the author's machine. Because the counter is never in the shared repo and is namespaced per user, there is nothing shared to merge-conflict on — the only shared artifact is the item text, whose ID is already unique by construction.
+
+**Permanence.** An ID is assigned once and never reused or renumbered. Folding/deleting an item **retires** its ID; the counter never goes backward, so remaining items keep theirs and future items never reclaim a retired number.
+
+**Generating an ID at write time** (any inbox write site):
+```bash
+IDT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}/scripts/inbox-id.py"
+python3 "$IDT" next --slug "<home-slug>" --handle "<handle>"   # prints the ID and increments
+```
+Use `--peek` to preview the next ID without consuming it. If `python3` or the script is unavailable, fall back to `<acronym>-<handle>#?` and note that the counter could not be advanced (rare; degrade gracefully rather than block the write).
+
+**Parser tolerance (back-compat).** The `<id> · ` prefix is **optional** in the header. Items created before this scheme (and archived items) have no ID — parse them exactly as before. When rendering, show the ID if present; omit the segment if absent. Never break on a missing ID.
+
+**One-time migration.** Retro-assign IDs to a slug's current items in file (creation) order, then set the counter to the highest number issued:
+```bash
+python3 "$IDT" set --slug "<slug>" --value <highest-n>   # counter continues from here
+```
+Already-folded/archived items are not retro-assigned.
+
+**Deferred (refine later):** acronym collisions across two different repos, and multi-user migration (assigning IDs to another author's existing items — their counter lives on their machine). Neither affects local/single-user use.
 
 ## Provenance Rendering (layout B)
 
@@ -44,21 +76,22 @@ How inbox items are **displayed** for pickup. Applies to the session:start routi
 **Two-line form (pick lists — the default):**
 ```
 Inbox — pick up or describe new work (N):
-  1  <description>
+  1  [acp-ajudd#14]  <description>
      ↳ <slug> / <session> (<type>) · MM-DD
-  2  ★ [spawn] <label>
+  2  [acp-ajudd#9]  ★ [spawn] <label>
      ↳ <slug> / <session> (<type>) · MM-DD
 ```
 - **Description leads** — it's the decision driver when picking.
+- **Stable ID before the description**, in `[ ]`. The leading `N` is the **ephemeral in-view position** (for `pick <n>` convenience); the `[<id>]` is the **permanent handle** — use it in conversation and recaps so references don't shift. `pick` accepts either (`pick 1` or `pick acp-ajudd#14`). Omit the `[<id>]` segment entirely for legacy items that have none.
 - **Same-repo dimming:** when `<slug>` equals the current repo slug, **drop it** — show `↳ <session> (<type>) · MM-DD`. Only genuinely cross-repo origins show the slug, so they stand out.
 - **Missing type:** omit the `(<type>)` segment; still show `↳ <slug> / <session> · MM-DD`.
 - **Stale source session:** render as-is — historical provenance stays valid, and the description-first line keeps it from looking orphaned.
 
-**Single-line form (finish/checkpoint sweeps — action prompts stay one line):** append the dim provenance after the quoted description, before the option list:
+**Single-line form (finish/checkpoint sweeps — action prompts stay one line):** lead with the stable ID, then the quoted description and dim provenance, before the option list:
 ```
-  (N) Inbox pending: "<description>"  ·  ↳ <session> (<type>)   nothing / done / picked-up
+  [acp-ajudd#14] Inbox pending: "<description>"  ·  ↳ <session> (<type>)   nothing / done / picked-up
 ```
-Drop the slug when same-repo (as above); include it (`↳ <slug> / <session> (<type>)`) for cross-repo items.
+Drop the slug when same-repo (as above); include it (`↳ <slug> / <session> (<type>)`) for cross-repo items. Omit the `[<id>]` for legacy items with none.
 
 ## Item Lifecycle
 

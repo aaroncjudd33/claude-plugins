@@ -62,12 +62,19 @@ Determine target file:
 - plugin / personal target, or Global → `<target_session_root>/_inbox.md` (create with header `# Inbox — <slug>` if needed)
 - story / cab / general named session → `<target_session_root>/_inbox_<target-name>.md` (create with header `# Inbox — <target-name>` if needed)
 
-Append (record the **source** slug/session/type — not the target):
+**Issue a stable ID first.** The ID's home is the **target** slug (where the item will live and get its number), and it is namespaced by the **author's** handle. Determine `<target-slug>` — the slug that owns `<target_session_root>` (the current slug for same-repo, or the chosen repo slug for cross-repo):
+```bash
+IDT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}/scripts/inbox-id.py"
+python3 "$IDT" next --slug "<target-slug>" --handle "<handle>"   # prints e.g. acp-ajudd#7, increments the counter
+```
+If `python3`/script is unavailable, fall back to `<acronym>-<handle>#?` and note the counter wasn't advanced — never block the write. See `references/inbox-convention.md` § Stable IDs.
+
+Append (record the ID, then the **source** slug/session/type — not the target):
 ```markdown
-## [YYYY-MM-DD @<handle>] from <source-slug> / <source-session> (<source-type>) — <description>
+## <id> · [YYYY-MM-DD @<handle>] from <source-slug> / <source-session> (<source-type>) — <description>
 <body>
 ```
-Omit the `(<source-type>)` segment only when no source session is active (repo-level routing). See Provenance Rendering in `references/inbox-convention.md` for how this header is later displayed.
+Omit the `(<source-type>)` segment only when no source session is active (repo-level routing). The `<id>` is permanent — it never changes as the item moves through pending/in-progress/done. See Provenance Rendering in `references/inbox-convention.md` for how this header is later displayed.
 
 ### 4. Write Outbox Entry
 
