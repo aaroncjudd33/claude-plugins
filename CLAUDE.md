@@ -50,3 +50,17 @@ points the user at the fix instead of failing silently. Close every hidden step.
   work. Keep printed messages ASCII-only (Windows `python` fallback stdout may be
   cp1252 — a non-ASCII char raises `UnicodeEncodeError` and crashes the hook).
 - Preserve the `python3 → python` fallback in hook commands for Windows.
+- **Block via the JSON deny contract, not exit 2.** To block a `PreToolUse` call
+  *and* surface the reason to the assistant, print the documented JSON to stdout and
+  exit 0:
+  `{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "<why + how to fix>"}}`.
+  A bare `print(reason)` + `sys.exit(2)` still blocks, but this Claude Code version
+  frames exit-2 as a generic `hook error: No stderr output` and drops the reason — so
+  the "Fix: …" guidance never reaches the model. Keep fail-open as plain `sys.exit(0)`.
+  (comms Teams-HTML lint, v2.4.1.)
+- **The live hook runs from the installed CACHE, not the marketplace clone.**
+  `${CLAUDE_PLUGIN_ROOT}` resolves to `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`,
+  so editing the file under `.../marketplaces/…` has zero live effect until you commit,
+  push, and `claude plugin update <plugin>` (and restart if `hooks.json` — not just the
+  script — changed). To verify a hook change, deploy + reinstall first, or pipe a test
+  payload straight at the cache copy.
