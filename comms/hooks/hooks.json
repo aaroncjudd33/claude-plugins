@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "//": "Teams HTML lint — auto-discovered when comms is enabled (no settings.json edit). Matcher keys on the tool-name SUFFIX so an MCP namespace rehost (mcp__claude_ai_yl-msoffice__* -> mcp__plugin_yl-msoffice_yl-msoffice__*) cannot silently disable it. Scoped to the yl-msoffice server; the script further guards teams/channel for execute_action and skips send_email + all reads.",
+        "matcher": "yl-msoffice.*(send_chat_message|execute_action)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if command -v python3 >/dev/null 2>&1; then python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/teams-html-lint.py\"; else python \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/teams-html-lint.py\"; fi",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

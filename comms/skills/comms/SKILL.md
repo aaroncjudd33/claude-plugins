@@ -161,8 +161,28 @@ The email commands (`fetch`, `triage`, `sweep`) work as a pipeline.
 
 ---
 
+## Prerequisites (required for comms to function)
+
+comms is a thin layer over the **`yl-msoffice` MCP server**, which is a *separate* plugin from a *different* marketplace: **`yl-msoffice@youngliving-claude-plugins`**. Installing comms does **not** install it. On any machine, comms needs:
+
+1. **Identity** — run `/setup:onboarding` (writes `~/.claude/plugins/user-config.json`). Chat lookups and voice rules read it.
+2. **The yl-msoffice MCP** — install/enable `yl-msoffice@youngliving-claude-plugins`. Without it the `send_chat_message` / `list_chats` / `send_email` / `create_event` tools do not exist.
+
+**Self-check.** Before the first Teams / email / calendar action in a session, confirm the `yl-msoffice` tools are available and `user-config.json` exists. If either is missing, stop and point the user at the fix (`/setup:onboarding`, or installing the companion plugin) — never fail silently or improvise around a missing dependency. No comms behavior depends on `~/.claude/memory/*` — memory is personal and non-portable and must never gate how the plugin works.
+
+## Teams HTML Enforcement (shipped with this plugin)
+
+A `PreToolUse` hook — `hooks/scripts/teams-html-lint.py`, auto-discovered via `hooks/hooks.json` — blocks any Teams **write** whose HTML violates `references/teams-html-guide.md`: forbidden tags (`<pre>`, `<code>`, `<h1>`, `<h3>`, `<hr>`, `<th>`) or missing `<p>&nbsp;</p>` spacers when the body has 3+ paragraphs. It:
+
+- **ships with the plugin** — active only when comms is enabled, portable to any machine, no `~/.claude/settings.json` edit for anyone;
+- **routes by tool-name suffix** (`send_chat_message`, teams/channel `execute_action`) so a future MCP namespace rehost can't silently disable it, the way the old settings.json matcher was killed by the `claude_ai_*` → `plugin_*` rename;
+- **covers writes only** — never `send_email` (email HTML differs), never reads (`list_chats`, `list_chat_messages`, `search_teams_messages`).
+
+`references/teams-html-guide.md` is the **single source of truth** — when you change the guide, update the hook's `FORBIDDEN` list and spacer rule to match (the script carries a "Guide synced:" date marker).
+
 ## Reference Files
 
 - `~/.claude/plugins/known-chats.md` — maps friendly chat names to Teams chat IDs (global file, Active=yes/no toggle, alias lookup)
 - `references/teams-html-guide.md` — full HTML formatting rules for Teams messages
 - `references/aaron-voice.md` — Aaron's communication voice and tone — read before drafting any message
+- `hooks/scripts/teams-html-lint.py` — the PreToolUse enforcement hook (kept in sync with the HTML guide)
