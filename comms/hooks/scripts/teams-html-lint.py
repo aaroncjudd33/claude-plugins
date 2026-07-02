@@ -90,12 +90,24 @@ def main():
 
     errs = lint(body)
     if errs:
-        print(
+        # Block via the documented PreToolUse JSON contract (stdout + exit 0),
+        # NOT exit-2+stderr: on this Claude Code version an exit-2 hook is framed
+        # as a generic "hook error" and its stderr reason is not surfaced to the
+        # assistant ("No stderr output"). permissionDecision=deny both blocks the
+        # call AND feeds permissionDecisionReason back so the HTML can be fixed.
+        reason = (
             "BLOCKED: " + label + " failed the Teams HTML guide "
             "(comms/skills/comms/references/teams-html-guide.md). Fix: "
             + "; ".join(errs)
         )
-        sys.exit(2)
+        print(json.dumps({
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "deny",
+                "permissionDecisionReason": reason,
+            }
+        }))
+        sys.exit(0)
     sys.exit(0)
 
 
