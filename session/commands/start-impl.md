@@ -132,7 +132,9 @@ Loaded by `start.md` after the user makes their selection. Context already in sc
 
 Plugin and personal sessions are created ONLY by picking up an inbox item — never blank, never named after the plugin/project. When the user chose `pick <n>` (or `new <description>`, which already appended the item in start.md Step 4), run this before Step 5:
 
-1. **Locate the item.** The picked item is entry `<n>` (ephemeral list position) in `<session_root>/_inbox.md`, or the item whose stable id is `<id>` if the user picked by ID (`pick acp-ajudd#3`). Read its full `## <id> · [date @handle] from <slug> / <session> (<type>) — <description>` header and body (legacy items may lack the `<id> · ` prefix, the `(<type>)`, or the slug — read whatever is present). The `<id>` is preserved verbatim in the folded provenance block below (Step 3), so the retired handle stays discoverable in the session file.
+1. **Locate the item.** The picked item is entry `<n>` (ephemeral list position) in `<session_root>/_inbox.md`, or the item whose stable id is `<id>` if the user picked by ID (`pick acp-ajudd#3`). Read its full `## <id> · [date @handle] from <slug> / <session> (<source-type>) — <description>` header and body (legacy items may lack the `<id> · ` prefix, the `(<source-type>)`, or the slug — read whatever is present). The `<id>` is preserved verbatim in the folded provenance block below (Step 3), so the retired handle stays discoverable in the session file.
+
+   **Maturity guard.** Parse the item's `> [type: … · status: …]` line (missing line → `type: story · status: ready`; parse `type` and `status` independently). If **`status: refining`** — the item is still being scoped, not yet marked ready — **warn and confirm before folding**, keyed on the status value (not on where the item came from): `[<id>] is still refining (not yet marked ready) — pick it up anyway? (yes / leave it refining)`. On `leave it refining`, abort the pickup and leave the item untouched. A `ready` item (the default) is picked with no warning. `note`/`data` types have no maturity gate (their lifecycle is delivery, not maturity — acp-ajudd#10); pick proceeds normally.
 
 2. **Derive a feature name.** Slugify into kebab-case:
    - If the header's `<description>` is a usable short title, slugify it (e.g. "Item-driven sessions for plugin work" → `item-driven-sessions`). Keep it concise (2–4 words).
@@ -143,7 +145,7 @@ Plugin and personal sessions are created ONLY by picking up an inbox item — ne
 3. **Fold the item into the new session.** When writing the session file in Step 8, seed `Open items` from the item body, and add a provenance block preserving the original header verbatim:
    ```
    ## Picked up from inbox
-   <original ## [date @handle] from <slug> / <session> (<type>) — <description> header, verbatim>
+   <original ## [date @handle] from <slug> / <session> (<source-type>) — <description> header, verbatim (including its `> [type: … · status: …]` line, if any)>
    <original body>
    ```
    Place this in the session file body after the standard fields (it carries the full context so nothing is lost).

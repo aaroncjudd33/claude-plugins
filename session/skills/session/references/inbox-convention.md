@@ -19,7 +19,8 @@ Before the item-driven-sessions overhaul, multi-plugin repos used one inbox file
 ## Entry Format
 
 ```markdown
-## <id> · [YYYY-MM-DD @<handle>] from <source-slug> / <session-name> (<type>) — <short title>
+## <id> · [YYYY-MM-DD @<handle>] from <source-slug> / <session-name> (<source-type>) — <short title>
+> [type: story · status: ready]
 
 <Context: what the item is, why it matters, what needs to happen.>
 ```
@@ -27,10 +28,39 @@ Before the item-driven-sessions overhaul, multi-plugin repos used one inbox file
 - `<id>` — the item's **stable, permanent handle** (e.g. `acp-ajudd#14`). Issued once at creation and never changes, even as positions shift. Form: `<acronym>-<handle>#<n>` (see Stable IDs below). Reference items by this ID in conversation and recaps — never by their shifting list position.
 - `<source-slug>` — the originating **repo** slug (where the request came from, e.g. `virtual-office`, `gen-leadership-bonus`, a personal project), **NOT** the target inbox's slug. This matters because plugin suggestions often route in from cross-repo work.
 - `<session-name>` — the originating session (e.g. `BPT2-6377`, a feature name).
-- `<type>` — the source session type: `story` / `cab` / `plugin` / `personal` / `general`.
+- `<source-type>` — the **provenance** axis: the source session's type (`story` / `cab` / `plugin` / `personal` / `general`). This is the value that sits positionally inside `from … (<…>)`. It answers *where the item came from* — do **not** confuse it with the `type` field below (what the recipient does with it). It was previously called just "type"; it is relabeled `source-type` so the two never blur.
 - **Keep both repo AND session — never collapse to one.** Derive all three from the *source* session context when routing.
+- The `> [type: … · status: …]` line directly under the header carries the **message type** and **lifecycle status** (see Item Model below). It is optional for back-compat; when absent, defaults apply.
 
 Keep it self-contained — the receiving session may pick this up weeks later with no memory of the source conversation.
+
+## Item Model — three orthogonal axes
+
+Every inbox item is described by **three independent axes**. Keep them separate — never collapse two into one field. (Metaphor: an inbox item is to a plugin/personal repo what a Jira story is to a work repo — the same object is both the **work-in-progress store** *and* the **final deliverable**. You write into it, iterate, and mark it ready; an implementation session then picks it up. A session file is only ever created for *work being done*, never for scoping the item itself.)
+
+**1. `source-type` — provenance (where it came from).** The source session's type, tracked positionally in the header's `from <slug> / <session> (<source-type>)`. Values: `story` / `cab` / `plugin` / `personal` / `general`. Display-only; never gates behavior. (In-repo vs cross-repo is **derived** from `source-slug` vs the current slug — it is not a declared axis.)
+
+**2. `type` — message type (what the recipient does with it).** The primary NEW field, carried on the `> [type: …]` line. Values:
+- `story` *(default)* — actionable work; the Jira-story analog. Picked up and built/done. A **spawn** is a `story` tagged `[spawn]`, not its own type.
+- `note` — awareness / FYI / recorded decision for another session; no build expected.
+- `data` — a payload consumed as input to work (results, values, file refs, config).
+- `question` *(optional, add only if usage demands)* — asks for a decision/input; expects a reply.
+
+> **Scope note:** the `type` field and its values are declared here as the model. The **delivery behavior** of `note` / `data` (mid-session surfacing, consume-and-clear) is a separate pass (acp-ajudd#10) — until it lands, treat non-`story` items as documented-but-inert (they parse and display; no special surfacing yet).
+
+**3. `status` — lifecycle. Which lifecycle depends on `type`:**
+- **`story` → maturity lifecycle:** `refining` → `ready` → *(picked)* → done. `refining` = still being scoped/polished (the WIP-store phase); `ready` = matured enough for an implementation session to pick up. This mirrors a Jira story moving from *Gathering Requirements* → *Ready For Work*.
+- **`note` / `data` → delivery lifecycle:** `new` (a.k.a. `unread`) → `consumed` → cleared. Presence in the inbox IS the "sent/delivered" state; "ready" is implicit. (Mechanics owned by acp-ajudd#10.)
+
+**Creator defaults:**
+- `new <description>` quick-capture → `type: story · status: ready` (a captured task is immediately pickable).
+- `refine` → `type: story · status: refining` (written early, matured over sessions, flipped to `ready` at graduation).
+- `/session:inbox` handoff → `type: story · status: ready` unless the sender specifies `note`/`data`.
+- spawn → `type: story · status: ready`, plus the `[spawn]` tag.
+
+**Back-compat (verified against the existing inbox — no lockout):** the `> [type: … · status: …]` line is **optional**. A missing `type` defaults to `story`; a missing `status` defaults to `ready`. Items written before this model (no line at all) therefore read as `story` / `ready` — pickable exactly as before. Parse `type` and `status` independently: `> [status: refining]` alone is valid (type defaults to `story`), as is `> [type: note]` alone (status defaults per its lifecycle). Never break on an absent or partial line.
+
+**Picking a `refining` story is guarded.** Because a `story` doubles as its own WIP store, a half-scoped item must be distinguishable from a ready one — that is exactly what `refining` vs `ready` encodes. `pick` on a `refining` item **warns and confirms** ("still being refined — pick it up anyway?") before folding it into a coding session.
 
 ## Stable IDs
 
@@ -95,11 +125,12 @@ Drop the slug when same-repo (as above); include it (`↳ <slug> / <session> (<t
 
 ## Item Lifecycle
 
-Items move through three states, all tracked inline in the inbox file:
+Items move through three **pickup** states, all tracked inline in the inbox file. (These are orthogonal to the `type`/`status` axes above: pickup state = "has a session grabbed this yet"; maturity `status` = "is a `story` scoped enough to grab." A `refining` or `ready` story is both "pending" here; picking either one makes it in-progress. `refining` just means `pick` warns first.)
 
 **Pending** — item has arrived, not yet picked up:
 ```markdown
 ## [2026-05-13 @ajudd] from virtual-office / BPT2-6258 (story) — Add /comms:pto command
+> [type: story · status: ready]
 
 Add a `/comms:pto` command...
 ```

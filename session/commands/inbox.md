@@ -69,12 +69,19 @@ python3 "$IDT" next --slug "<target-slug>" --handle "<handle>"   # prints e.g. a
 ```
 If `python3`/script is unavailable, fall back to `<acronym>-<handle>#?` and note the counter wasn't advanced — never block the write. See `references/inbox-convention.md` § Stable IDs.
 
-Append (record the ID, then the **source** slug/session/type — not the target):
+Append (record the ID, then the **source** slug/session/type — not the target — followed by the `type`/`status` line):
 ```markdown
 ## <id> · [YYYY-MM-DD @<handle>] from <source-slug> / <source-session> (<source-type>) — <description>
+> [type: story · status: ready]
 <body>
 ```
-Omit the `(<source-type>)` segment only when no source session is active (repo-level routing). The `<id>` is permanent — it never changes as the item moves through pending/in-progress/done. See Provenance Rendering in `references/inbox-convention.md` for how this header is later displayed.
+Omit the `(<source-type>)` segment only when no source session is active (repo-level routing). The `<id>` is permanent — it never changes as the item moves through pending/in-progress/done.
+
+**The `> [type: … · status: …]` line** carries the two axes orthogonal to provenance (full model in `references/inbox-convention.md` § Item Model):
+- **`type`** — default **`story`** (actionable work the target picks up). A routed handoff is normally a `story`. Set `note` (an FYI / recorded decision, no build expected) or `data` (a payload consumed as input) only if the sender explicitly frames it that way. (`note`/`data` are declared in the model but their mid-session delivery behavior is a later pass — acp-ajudd#10 — so for now they simply parse and display.)
+- **`status`** — for a `story` handoff use **`ready`** (it's a delivered, pickable item — the sender has finished composing it). For `note`/`data`, use `new`.
+
+See Provenance Rendering in `references/inbox-convention.md` for how this header + line is later displayed.
 
 ### 4. Write Outbox Entry
 

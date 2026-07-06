@@ -136,7 +136,7 @@ Every type also accepts these same inputs (in addition to its type-specific ones
 - `all` → re-display including completed sessions; re-show routing
 - `full` → re-display the table with the full 8-column set (adds `out` count + `created` date); re-show routing
 - `status <value>` → filter to that status; re-display and re-show routing
-- `refine [topic]` → enter the **refinement** flow (analyze-then-record; `commands/refine.md`). Applies to every type — `session:start` is the front door to refine. With a topic (`refine shopify refund window`) → start a new refinement session on it directly. Bare `refine` → first surface any in-progress `refinement-*` sessions for the slug as a resumable list (they're hidden from the default table), then resume one or start new. Direct `/session:refine` and this verb converge on the same flow. Graduation is **zone-aware** and never hardcodes the target: plugin/personal → inbox item (unambiguous); work repo → Jira story (project resolved-or-confirmed, not assumed `BPT2`); general → confirm target (Jira story w/ project, or inbox item). See Step 4 → **Refine — enter refinement flow**.
+- `refine [topic]` → enter the **refinement** flow (analyze-then-record; `commands/refine.md`). Applies to every type — `session:start` is the front door to refine. Refine creates **no session file**; it writes the work directly into the record (an inbox item for plugin/personal, a Jira story for work repos). With a topic (`refine shopify refund window`) → scope new work directly. With an existing record reference (`refine acp-ajudd#12`, `refine BPT2-6429`) → resume refining that record in place. Bare `refine` → surface resumable **`refining` records** for the slug (for plugin/personal, the `refining` inbox items; for work repos, stories in *Gathering Requirements* via `/story:dashboard`), then resume one or start new. Direct `/session:refine` and this verb converge on the same flow. Graduation is **zone-aware** and never hardcodes the target: plugin/personal → inbox item (unambiguous); work repo → Jira story (project resolved-or-confirmed, not assumed `BPT2`); general → confirm target. Graduation = flipping the record to `ready` / *Ready For Work*. See Step 4 → **Refine — enter refinement flow**.
 - Any other text → natural-language filter; match against name, title, handle, status, inbox count, or any field; re-display with `(filtered by '<query>')` and re-show routing
 
 ---
@@ -149,11 +149,13 @@ Sessions are **item-driven**: new work always starts from an inbox item — ther
 ```
 Inbox — pick up or describe new work (N):
   1  [acp-ajudd#7]  <description>
-     ↳ <slug> / <session> (<type>) · MM-DD
-  2  [acp-ajudd#5]  ★ [spawn] <label>
-     ↳ <slug> / <session> (<type>) · MM-DD
+     ↳ <slug> / <session> (<source-type>) · MM-DD
+  2  [acp-ajudd#12]  <description>  · refining
+     ↳ <slug> / refine (<zone>) · MM-DD
+  3  [acp-ajudd#5]  ★ [spawn] <label>
+     ↳ <slug> / <session> (<source-type>) · MM-DD
 ```
-Rendering rules: the leading `N` is the ephemeral in-view position (for `pick <n>`); `[<id>]` (parsed from the `## <id> · [date...]` header) is the permanent handle — reference items by ID, not position. `pick` accepts either. Omit `[<id>]` for legacy items without one. Drop `<slug>` when it equals the current repo slug (only cross-repo origins show it); omit `(<type>)` for legacy items that lack it; tolerate spaced or unspaced `/` in the source. If the inbox is empty: `Inbox: none — describe new work with 'new <description>'`.
+Rendering rules: the leading `N` is the ephemeral in-view position (for `pick <n>`); `[<id>]` (parsed from the `## <id> · [date...]` header) is the permanent handle — reference items by ID, not position. `pick` accepts either. Omit `[<id>]` for legacy items without one. Drop `<slug>` when it equals the current repo slug (only cross-repo origins show it); omit `(<source-type>)` for legacy items that lack it; tolerate spaced or unspaced `/` in the source. **Status marker:** parse the `> [type: … · status: …]` line under each header (missing line → `type: story · status: ready`; parse `type` and `status` independently). Append `· refining` after the description for `status: refining` items, so still-being-scoped work is visually distinct from pickable `ready` work; `ready` items get no suffix (it's the default). `note`/`data` types are documented but inert for now (acp-ajudd#10) — render them plainly. If the inbox is empty: `Inbox: none — describe new work with 'new <description>'`.
 
 Then output the routing block — the type-specific `Start / Resume` lines, followed by the shared **Search by** block:
 ```
@@ -165,8 +167,8 @@ Then output the routing block — the type-specific `Start / Resume` lines, foll
 ```
 
 **Type-specific accepted inputs** (plus the shared inputs above):
-- `pick <n>` → create a feature-named session from inbox item <n>. Reads start-impl.md, goes to Step 4 (new session): derive a feature name (confirmed once), fold the item body into the new session, delete the item from `_inbox.md`.
-- `new <description>` → append `<description>` as a new item to `<session_root>/_inbox.md`, then immediately run the same `pick` flow on it — one creation path, no separate ad-hoc branch. (Scaffolding a brand-new plugin is just `new build the <x> plugin`: it creates a feature session, and the plugin folder/marketplace work happens inside it.)
+- `pick <n>` → create a feature-named session from inbox item <n>. Reads start-impl.md, goes to Step 4 (new session): derive a feature name (confirmed once), fold the item body into the new session, delete the item from `_inbox.md`. **If the item's `status` is `refining`** (parsed from its `> [type: … · status: …]` line — keyed on status, *not* on whether it came from refine), warn and confirm first: `[<id>] is still refining — pick it up anyway? (yes / leave it refining)`. A `ready` item (the default) is picked with no warning.
+- `new <description>` → append `<description>` as a new item to `<session_root>/_inbox.md` with a `> [type: story · status: ready]` line (a quick-captured task is immediately pickable — see `references/inbox-convention.md` § Item Model), then immediately run the same `pick` flow on it — one creation path, no separate ad-hoc branch. (Scaffolding a brand-new plugin is just `new build the <x> plugin`: it creates a feature session, and the plugin folder/marketplace work happens inside it.)
 - `resume <n>` / `<n>` / `<name>` → resume an existing in-progress session.
 - Mode modifier (`planning` / `both` / `coding`) → set the new/resumed session's mode.
 - `reviewed` → mark plugin reviewed after loading (when the resumed session targets a plugin).
@@ -211,9 +213,11 @@ Identical model to plugin (per design — plugin and personal behave the same). 
 ```
 Inbox — pick up or describe new work (N):
   1  [<id>]  <description>
-     ↳ <slug> / <session> (<type>) · MM-DD
+     ↳ <slug> / <session> (<source-type>) · MM-DD
+  2  [<id>]  <description>  · refining
+     ↳ <slug> / refine (<zone>) · MM-DD
 ```
-Rendering rules: `N` is ephemeral position (for `pick <n>`); `[<id>]` (from the `## <id> · [date...]` header) is the permanent handle — reference by ID; `pick` accepts either; omit `[<id>]` for legacy items. Drop `<slug>` when it equals the current repo slug; omit `(<type>)` for legacy items; tolerate spaced/unspaced `/`. If empty: `Inbox: none — describe new work with 'new <description>'`.
+Rendering rules: `N` is ephemeral position (for `pick <n>`); `[<id>]` (from the `## <id> · [date...]` header) is the permanent handle — reference by ID; `pick` accepts either; omit `[<id>]` for legacy items. Drop `<slug>` when it equals the current repo slug; omit `(<source-type>)` for legacy items; tolerate spaced/unspaced `/`. **Status marker:** parse the `> [type: … · status: …]` line under each header (missing → `type: story · status: ready`); append `· refining` for `status: refining` items; `ready` gets no suffix. See plugin block above for the full rule. If empty: `Inbox: none — describe new work with 'new <description>'`.
 
 Then output the routing block — the type-specific `Start / Resume` lines, followed by the shared **Search by** block:
 ```
@@ -225,8 +229,8 @@ Then output the routing block — the type-specific `Start / Resume` lines, foll
 ```
 
 **Type-specific accepted inputs** (plus the shared inputs above):
-- `pick <n>` (or `pick <id>`) → create a feature-named session from inbox item <n> / the item with stable id `<id>` (same fold-then-delete flow as plugin: Step 4 → start-impl.md; the item's `<id>` is preserved in the folded provenance block).
-- `new <description>` → issue a stable ID (`inbox-id.py next --slug <slug> --handle <handle>`), append to `<session_root>/_inbox.md` with the `## <id> · [date...]` header, then run the same `pick` flow.
+- `pick <n>` (or `pick <id>`) → create a feature-named session from inbox item <n> / the item with stable id `<id>` (same fold-then-delete flow as plugin: Step 4 → start-impl.md; the item's `<id>` is preserved in the folded provenance block). Same `refining` warn/confirm as plugin — keyed on the item's `status`, not its origin.
+- `new <description>` → issue a stable ID (`inbox-id.py next --slug <slug> --handle <handle>`), append to `<session_root>/_inbox.md` with the `## <id> · [date...]` header plus a `> [type: story · status: ready]` line, then run the same `pick` flow.
 - `resume <n>` / `<n>` / `<name>` → resume an existing in-progress session.
 - Mode modifier (`planning` / `both` / `coding`) → set the new/resumed session's mode.
 
@@ -257,22 +261,19 @@ Once the user replies, act immediately. **Do not read start-impl.md first** for 
 
 **Refine — enter refinement flow** (any type; triggered by `refine` / `refine <topic>`):
 
-The `session:start` refine verb and the direct `/session:refine` command converge — both run `commands/refine.md`, which owns the analyze-then-record flow and the zone-aware graduation. Handle the reply:
+The `session:start` refine verb and the direct `/session:refine` command converge — both run `commands/refine.md`, which owns the analyze-then-record flow and the zone-aware graduation. Refine creates **no session file** — the work-in-progress lives in the record it produces (a `refining` inbox item for plugin/personal, a *Gathering Requirements* Jira story for work repos), so "resumable refinements" are those `refining` records, not any `refinement-*.md` file. Handle the reply:
 
-- **`refine <topic>`** → start a new refinement session on `<topic>` directly: read `commands/refine.md` and run it from Step 0, passing `<topic>` as the argument.
-- **bare `refine`** → first surface resumable refinements for the slug, then route:
-  1. List in-progress `refinement-*` sessions (they're hidden from the default table). Enumerate them precisely with the glob (no-match-safe) — the default listing script mixes in non-refinement in-progress sessions, so don't use it here:
-     ```bash
-     find "<session_root>" -maxdepth 1 -name 'refinement-*.md' -printf '%f\t%TY-%Tm-%Td\n' 2>/dev/null | sort -rk2
+- **`refine <topic>`** → scope new work on `<topic>` directly: read `commands/refine.md` and run it from Step 1, passing `<topic>` as the argument.
+- **`refine <record>`** (an inbox item `<id>` like `acp-ajudd#12`, or a Jira key like `BPT2-6429`) → resume refining that existing record: read `commands/refine.md` and run its Step 1 resume path with the reference.
+- **bare `refine`** → first surface resumable `refining` records for the slug, then route:
+  1. **Plugin / personal:** list the `refining` inbox items already read from `<session_root>/_inbox.md` in Step 2 — the items whose `> [type: … · status: refining]` line marks them still-being-scoped (default `type` story; missing status → `ready`, so those are NOT listed here). Present:
      ```
-     (On systems without `-printf`, fall back to `ls -1t <session_root>/refinement-*.md 2>/dev/null` and strip the path.)
-  2. Present a plain routing line (strip the `refinement-` prefix and `.md` for display):
+     Refining (resumable):
+       1  [acp-ajudd#12]  <summary>   — last touched MM-DD
+     Resume one (refine <id> / <n>), or scope new: refine <new topic>
      ```
-     Refinements in progress:
-       1  refinement-<topic>   — last <date>
-     Resume one (resume <n> / <name>), or start new: refine <new topic>
-     ```
-  3. **`resume <n>` / `<name>`** → resume that refinement session: read its file, show the Refinement report, and continue from `refine.md` Step 4. **`refine <new topic>`** → start new as above. If there are no in-progress refinements, skip the list and ask the topic directly ("What are we refining? (a short topic)"), then start new.
+     **Work repo:** point at the story tooling instead — refining stories are Jira objects: "Your in-refinement stories are in *Gathering Requirements* — see `/story:dashboard`, or `refine BPT2-XXXX` to reopen one." 
+  2. **`refine <id>` / `<n>`** → resume that record (Step 1 resume path). **`refine <new topic>`** → scope new. If there are no `refining` records, skip the list and ask the topic directly ("What are we refining? (a short topic)"), then scope new.
 
 Either path lands in `commands/refine.md` — the front door and the direct command share one implementation.
 
