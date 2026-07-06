@@ -30,8 +30,8 @@ Both the **write-early** path ("scope some, come back later, keep polishing") an
 
 ## Key properties
 
-- **Read-only toward code.** Refine scopes; it does not implement. Writing/editing the *record* (an inbox item under `~/.claude/memory/`, or a Jira story) is not a code edit and is always allowed — the scope-guard hook never gates those paths. If asked to implement, graduate the record and pick it up as a coding session.
-- **No session file, no `_active` change.** Refine creates nothing under `<session_root>` and never touches `_active`. A coding session already active stays active *alongside* a refine — refining an item never locks editing. (This is what decoupled refine from the `_active` redesign.)
+- **Read-only toward code.** Refine scopes; it does not implement. Writing/editing the *record* (an inbox item under `~/.claude/memory/`, or a Jira story) is not a code edit — refine writes the record freely. If asked to implement, graduate the record and pick it up as a coding session. (Nothing hard-blocks a code edit either — acp-ajudd#1 removed edit-blocking — but refine's *job* is to scope, not build; keep it that way by convention.)
+- **No session file, no `_active` change.** Refine creates nothing under `<session_root>` and never touches `_active`. A coding session already active stays active *alongside* a refine, unaffected. (This is what decoupled refine from the `_active` redesign.)
 - **Nothing to expire or migrate.** With no session file there is no `refinement-*.md` to sweep, hide, or exclude from `session:migrate`. The record's own history (git for inbox items, Jira for stories) is the trail.
 - **Resumable through the record itself.** A `refining` inbox item shows up in `/session:start`'s inbox listing as resumable (marked `refining`); a work-repo story in *Gathering Requirements* is a first-class Jira object you reopen with `refine BPT2-XXXX` (or find via `/story:dashboard`).
 

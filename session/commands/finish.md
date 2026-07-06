@@ -16,7 +16,14 @@ Run `pwd` and extract the repo slug (last path component). Resolve `session_root
 Determine the session name from conversation context:
 1. Look back at the current conversation for the most recent "Resuming `<name>`" line (from session:start) OR "Switching to `<name>`" line (from session:switch). Use whichever is most recent.
 2. If neither is found in this conversation, fall back to reading `~/.claude/memory/sessions/<slug>/_active` as a hint.
-3. If neither is available, ask the user: "Which session are you finishing?"
+
+**Session guard (command-level enforcement — acp-ajudd#1).** `finish` closes the active session, so a session must exist. If neither the conversation context nor `~/.claude/memory/sessions/<slug>/_active` yields a session name, **stop cleanly** — do not ask, do not treat as a general session, do not proceed:
+
+```
+No session established for <slug>. Run /session:start first.
+```
+
+Editing files is never blocked; the session commands are what require a session. (`start` / `refine` and read-only views are exempt.)
 
 Read `<session_root>/<name>.md` and extract:
 - `type` (plugin / story / cab / personal / general)
@@ -24,8 +31,6 @@ Read `<session_root>/<name>.md` and extract:
 - `title` (story/cab only — may be absent in older session files; treat as empty string if missing)
 - `teams_chat`
 - `branch`
-
-If no session name can be determined and `_active` does not exist, treat as `type: general` with `teams_chat: none`.
 
 If the session name is determined but `<session_root>/<name>.md` does not exist, warn the user: "Session file for `<name>` not found — run `/session:start` to re-establish." and stop.
 
@@ -113,7 +118,7 @@ Universal reads (all types):
 1. **Inbox file — fresh read at close (acp-ajudd#6).** The recap must reflect the *live* inbox, not a snapshot taken at session start — a concurrent planning session or another terminal may have added items while this session ran.
    - **plugin / personal (item-driven):** read the **canonical `<session_root>/_inbox.md` fresh, now** — do NOT reuse a session-start snapshot, and do NOT look for a per-session `_inbox_<name>.md` (item-driven sessions are fold-then-delete; that file does not exist for them). **Exclude** any item this session folded at pickup or marked completed; **include** everything else currently in the file (so concurrently-added items appear).
    - **story / cab / general:** read the per-session `<session_root>/_inbox_<name>.md` (these are not item-driven — a per-session handoff file is correct). Same fresh-read discipline.
-   - **Parser (both):** count and list **by the `## <id> · [date…]` header lines**. **Skip the `> [type: … · status: …]` metadata line** under each header — it is item metadata (shipped v1.57.0, acp-ajudd#9), not a separate item and not body content; never miscount it. Tolerate legacy items with no `<id>` prefix and no metadata line. Categorize each surviving item as in-progress (has an `[in-progress — …]` marker) or pending.
+   - **Parser (both):** count and list **by the `## <id> · [date…]` header lines**. **Skip the `> [type: … · status: …]` metadata line** under each header — it is item metadata (shipped v1.57.0, acp-ajudd#9), not a separate item and not body content; never miscount it. Tolerate legacy items with no `<id>` prefix and no metadata line. **Exclude `type: note` / `type: data` mailbox items** from the pickup sweep (acp-ajudd#10) — they are not work to close out; they're read/archived only on request (§ Mailbox). Categorize each surviving **story** item as in-progress (has an `[in-progress — …]` marker) or pending.
 2. **Plugin version:** if type is plugin, read current version from `plugin.json`.
 3. **Loaded memories:** read the session file's `- **Loaded memories:**` field. If it has entries, note them for the validate-shape of batch item (A2). If absent or empty, (A2) takes its capture-only shape — it is always presented.
 
@@ -388,7 +393,7 @@ Multiple entries per day are expected — always append, never overwrite.
 
 ### 11. Deploy — plugin type only (runs before deactivation)
 
-**Plugin finish IS the deploy.** This is where the session's work goes live. It runs after the history entry (8), the session summary + mark-completed (9), and the worklog (10) — but **before deactivation (Step 12), deliberately.** The version bump in 11b is an Edit to a plugin-zone `plugin.json`, which `session-scope-guard.py` permits only while an active coding session exists (the hook reads `_active`). Deactivating first would remove `_active` and the bump Edit would be denied — so the active marker stays present through the *entire* deploy and is removed only as the true terminal action (Step 12). The code still lands last among the content steps, mirroring the repo-based branch flow (state first, code last) and positioning for future repo-tracked session state shared across developers.
+**Plugin finish IS the deploy.** This is where the session's work goes live. It runs after the history entry (8), the session summary + mark-completed (9), and the worklog (10) — but **before deactivation (Step 12), deliberately.** All session state is settled first; the code (version bump + push + reinstall) lands last among the content steps, mirroring the repo-based branch flow (state first, code last). Deactivation (removing `_active`) is the true terminal action, run only after the deploy fully completes — so the active session pointer stays present through the entire deploy and closes out last. (This ordering no longer has an edit-permission dependency — acp-ajudd#1 removed the edit-blocking hook — but keeping the deploy before deactivation is the clean lifecycle sequence and positions for future repo-tracked session state shared across developers.)
 
 **For story / cab / personal / general: skip this step entirely.** Those types push during `commit` and have no version/reinstall concept — Step 11 is skipped and their finish ends at deactivation (Step 12).
 

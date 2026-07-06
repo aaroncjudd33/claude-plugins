@@ -75,8 +75,9 @@ Append (record the ID, then the **source** slug/session/type — not the target 
 Omit the `(<source-type>)` segment only when no source session is active (repo-level routing). The `<id>` is permanent — it never changes as the item moves through pending/in-progress/done.
 
 **The `> [type: … · status: …]` line** carries the two axes orthogonal to provenance (full model in `references/inbox-convention.md` § Item Model):
-- **`type`** — default **`story`** (actionable work the target picks up). A routed handoff is normally a `story`. Set `note` (an FYI / recorded decision, no build expected) or `data` (a payload consumed as input) only if the sender explicitly frames it that way. (`note`/`data` are declared in the model but their mid-session delivery behavior is a later pass — acp-ajudd#10 — so for now they simply parse and display.)
-- **`status`** — for a `story` handoff use **`ready`** (it's a delivered, pickable item — the sender has finished composing it). For `note`/`data`, use `new`.
+- **`type`** — default **`story`** (actionable work the target picks up). A routed handoff is normally a `story`. Set `note` (an FYI / recorded decision, no build expected) or `data` (a payload consumed as input) when the sender frames it that way. `note`/`data` are the **mailbox** (acp-ajudd#10): they are delivered by this same free-rein write, then the target session reads → processes → archives them on request (never picked up as work, never auto-announced). See `references/inbox-convention.md` § Mailbox.
+  - **`data` payload:** inline in the body by default. For a large payload, write it to a file and add a `ref: <path>` line in the body instead (see § Mailbox for the shape).
+- **`status`** — for a `story` handoff use **`ready`** (it's a delivered, pickable item — the sender has finished composing it). For `note`/`data`, use **`new`** (the mailbox delivery state; flipped to consumed + archived when the target reads it).
 
 See Provenance Rendering in `references/inbox-convention.md` for how this header + line is later displayed.
 

@@ -157,31 +157,38 @@ Adopted items re-tagged: `[YYYY-MM-DD @<handle>] <text> (via @<original-handle>)
 
 ## Session Types — the organizing principle
 
-Sessions are typed, and the type determines whether there's an **external system of record** — which in turn determines how sessions are created and how enforcement works. This is the distinction that drives everything below.
+Sessions are typed, and the type determines whether there's an **external system of record** — which in turn determines how sessions are created. This is the distinction that drives everything below.
 
-| Type | System of record | Created how | Edit/Write enforcement |
+| Type | System of record | Created how | Session-command enforcement |
 |------|------------------|-------------|------------------------|
-| **plugin** | none — the session *is* the record | item-driven only: `pick`/`new` an inbox item; named after the **feature** | hook-enforced, **always-on** (coding mode required) |
-| **personal** | none — the session *is* the record | item-driven only (identical to plugin) | hook-enforced, **always-on** (coding mode required) |
-| **story** | Jira story (BPT2-XXXX) | keyed to the story; `start story <key>` | instruction-gated; hook opt-in via `sessionGate.enforce` |
-| **cab** | CAB card (Jira) | keyed to the CAB; `start cab <keys>` | instruction-gated; hook opt-in via `sessionGate.enforce` |
-| **general** | none (lightweight) | named by the user | none |
+| **plugin** | none — the session *is* the record | item-driven only: `pick`/`new` an inbox item; named after the **feature** | command-level: session commands require a session |
+| **personal** | none — the session *is* the record | item-driven only (identical to plugin) | command-level: session commands require a session |
+| **story** | Jira story (BPT2-XXXX) | keyed to the story; `start story <key>` | command-level: session commands require a session |
+| **cab** | CAB card (Jira) | keyed to the CAB; `start cab <keys>` | command-level: session commands require a session |
+| **general** | none (lightweight) | named by the user | command-level: session commands require a session |
 
-**Why plugin/personal differ from story/cab:** story and CAB work already have an authoritative external unit of work (the ticket) that says what's being done and tracks its lifecycle. Plugin and personal work have no such anchor — so the session itself becomes the unit of work: it can only exist by picking up an inbox item, it's named after the feature, and editing code requires it to be active and in coding mode. That guarantee is what makes "the session is the record" real rather than aspirational.
+**Why plugin/personal differ from story/cab:** story and CAB work already have an authoritative external unit of work (the ticket) that says what's being done and tracks its lifecycle. Plugin and personal work have no such anchor — so the session itself becomes the unit of work: it can only exist by picking up an inbox item, and it's named after the feature. That is what makes "the session is the record" real rather than aspirational. (The *creation path* differs by type; the *command-level enforcement* — session commands need a session — is uniform across all types.)
 
-All types support a working **Mode** (`planning` / `coding` / `both`). Planning sessions produce specs and inbox items; coding sessions consume them and ship code.
+All types support a working **Mode** (`planning` / `coding` / `both`). Planning sessions produce specs and inbox items; coding sessions consume them and ship code. Mode is a session attribute, not a hard edit gate (see below).
 
-## Session Enforcement (the scope guard)
+## Session Enforcement (command-level — acp-ajudd#1)
 
-The plugin ships a `PreToolUse` hook on `Edit`/`Write` (`session-scope-guard.py`). It reads `~/.claude/plugins/user-config.json` and resolves the edited file into a zone. **Reads, searches, and read-only commands are never gated — investigation is always free, for every type.**
+**Enforcement lives at the command level, not the file-edit level. Editing is never policed.** The plugins exist to *record work in sessions* — but you cannot actually stop anyone from editing code (anyone can open a plain Claude session in any repo and do whatever, and that is fine). So the thing worth enforcing is not "block edits"; it is: **if you engage the session workflow, a session has to exist.** That is enforced by the session commands themselves.
 
-**Plugin marketplace + personal-projects zones — ALWAYS-ON, mode-aware.** Editing a file under `pluginMarketplaceName` or `personalProjectsDir` requires an active session for that slug **in `coding` (or `both`) mode**. The hook blocks (exit 2) when there's no active session, the `_active` marker is stale (points at a missing file), or the active session's frontmatter `mode:` is `planning`. It allows `coding`/`both`. Missing `mode:` key → defaults to `coding` (back-compat with older session files); any parse error → fail-open (allow), never crash. This check is **NOT** behind `sessionGate.enforce` — for these two zones it is unconditional, because "you must have a coding session to edit" is the whole point of the item-driven model, and an opt-in flag defaulting off would silently neuter it.
+**The rule:** any command that operates on "the active session" fails gracefully at the top if none exists for the current slug — a clean stop with the fix, never a crash:
 
-`mode:` is read from the session file's **YAML frontmatter only** (never the freeform body), so the hook never parses untrusted markdown. `~/.claude/memory/`, `~/.claude/projects/` (project memory tier), `~/.claude/scripts/`, and the plugin cache are always allowed — so session creation and project-memory writes are never chicken-and-egg blocked.
+```
+No session established for <slug>. Run /session:start first.
+```
 
-**Work-repos zone (story/cab) — opt-in, unchanged.** Edits under `workReposDir` are gated only when the user sets `sessionGate.enforce: true` (via `setup:onboarding` Step 6a); the check is existence-only (no mode awareness — story/cab use instruction-level Mode handling). A fresh install with no flag never blocks work-repo edits. **Never default `sessionGate.enforce` to `true`.**
+- **Enforced (require a session):** `commit`, `finish`, `checkpoint`, `switch`, `spawn`, `store`, `restore`.
+- **Exempt (run without a session):** `start` (it creates one), `refine` (sessionless — writes directly into the record), and the read-only views `search` / `worklog` / `in-flight` (they just report "no active session" where relevant).
 
-This hook is separate from the personal global CLAUDE.md "Session Enforcement" instruction — that is a soft, model-level rule; the hook is the hard, harness-level gate that travels with the plugin. The injection/secrets content scans (below) stay on regardless of any flag — they protect file *content*, not the *workflow*.
+**No edit-blocking hook.** There is no `PreToolUse` hook on `Edit`/`Write` — the old `session-scope-guard.py` was deleted (acp-ajudd#1). Editing files, in any zone, is never blocked by the session plugin. `sessionGate.enforce` is retired along with it; a fresh install never blocks edits anywhere.
+
+**Reads, searches, and read-only commands are never gated — investigation is always free, for every type.** (This was true before and stays true.)
+
+The `session-file-guard.py` (Read-hook injection scan) and `session-commit-guard.py` (git pre-commit PII/secrets guard) are unrelated to workflow enforcement and remain in place — they protect file *content*, not the *workflow*. This command-level model is what the personal global CLAUDE.md "Session Enforcement" instruction now describes.
 
 ## Repo Session File Safety
 
@@ -278,15 +285,23 @@ This is the primary recovery path. `/session:start` reads `_active` to identify 
 
 ---
 
-## Planning Mode Enforcement
+## Planning Mode
 
-When `Mode: planning` is active in the session file, enforce read-only behavior: no code edits or file writes outside `~/.claude/memory/`. Implementation requests are routed to the session inbox instead. This is enforced via the global CLAUDE.md session check — the Mode field drives it.
+When `Mode: planning` is active in the session file, treat it as a **soft, instruction-level** convention: the session is for scoping, not building, so route implementation requests to the session inbox (or graduate a record via `refine`) rather than writing code in it. This is a behavioral cue, **not a hard gate** — there is no hook blocking edits (acp-ajudd#1 removed edit-blocking entirely). If real code work is needed, switch the session to `coding` (`/session:switch <name> coding`) or pick up a `ready` item into a fresh coding session. Reads and investigation are always free.
 
 ---
 
+## Inbox Mailbox (note/data) — human-driven
+
+The inbox is both a **to-do list** (`type: story` items you pick up and build) and a **mailbox** (`type: note` / `type: data` items — messages one session leaves another). The mailbox is **human-driven** (acp-ajudd#10): Claude never polls, monitors, or auto-announces mail.
+
+- **Send:** `/session:inbox` drops a `note`/`data` into a target slug's inbox — a free-rein write with a visible confirmation line in the sending session (per acp-ajudd#5). Nothing pings the recipient.
+- **Surface:** a single **"Messages: N waiting"** line at `session:start` (and in the switch/resume blocks) when any `note`/`data` has `status: new`. That is the only automatic surfacing — one glance, not monitoring. Messages **never** appear in the story pickup list or the checkpoint/finish sweeps.
+- **Read → process → archive (on request only):** when the user says "check messages" / "read the note from `<repo>`", read every `new` note/data in the slug inbox, process each (a `note` is acknowledged / its follow-up folded into work; a `data` payload — inline, or via a `ref:` file — is folded into the work that needs it), then **archive** each to `_inbox_archive.md` with a `[CONSUMED YYYY-MM-DD]` stamp and remove it from the live inbox (archived, never deleted). Full flow: `references/inbox-convention.md` § Mailbox.
+
 ## Reference Files
 
-- `references/inbox-convention.md` — How to write cross-session/cross-project change instructions to plugin inbox files
+- `references/inbox-convention.md` — How to write cross-session/cross-project change instructions to plugin inbox files; the item model (type/status axes); and the note/data **mailbox** delivery flow (§ Mailbox)
 - `references/epic-template.md` — Template structure for creating new epic memory files at `~/.claude/memory/epics/<key>.md`
 - `references/skill-repo-security.md` — Approved-hash review flow, commit-guard hook, and three-layer secrets/PII defense (procedure behind the Repo Session File Safety invariant)
 - `references/skill-epic.md` — Cross-story research procedure: check the epic file first, sibling-session lookup, "look across the epic"

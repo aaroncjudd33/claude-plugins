@@ -155,7 +155,13 @@ Inbox — pick up or describe new work (N):
   3  [acp-ajudd#5]  ★ [spawn] <label>
      ↳ <slug> / <session> (<source-type>) · MM-DD
 ```
-Rendering rules: the leading `N` is the ephemeral in-view position (for `pick <n>`); `[<id>]` (parsed from the `## <id> · [date...]` header) is the permanent handle — reference items by ID, not position. `pick` accepts either. Omit `[<id>]` for legacy items without one. Drop `<slug>` when it equals the current repo slug (only cross-repo origins show it); omit `(<source-type>)` for legacy items that lack it; tolerate spaced or unspaced `/` in the source. **Status marker:** parse the `> [type: … · status: …]` line under each header (missing line → `type: story · status: ready`; parse `type` and `status` independently). Append `· refining` after the description for `status: refining` items, so still-being-scoped work is visually distinct from pickable `ready` work; `ready` items get no suffix (it's the default). `note`/`data` types are documented but inert for now (acp-ajudd#10) — render them plainly. If the inbox is empty: `Inbox: none — describe new work with 'new <description>'`.
+Rendering rules: the leading `N` is the ephemeral in-view position (for `pick <n>`); `[<id>]` (parsed from the `## <id> · [date...]` header) is the permanent handle — reference items by ID, not position. `pick` accepts either. Omit `[<id>]` for legacy items without one. Drop `<slug>` when it equals the current repo slug (only cross-repo origins show it); omit `(<source-type>)` for legacy items that lack it; tolerate spaced or unspaced `/` in the source. **Status marker:** parse the `> [type: … · status: …]` line under each header (missing line → `type: story · status: ready`; parse `type` and `status` independently). Append `· refining` after the description for `status: refining` items, so still-being-scoped work is visually distinct from pickable `ready` work; `ready` items get no suffix (it's the default). **The pickup list shows only `type: story` items** (including spawns, which are stories). `type: note` / `type: data` items are the **mailbox** (acp-ajudd#10), not work to pick up — exclude them from this list; they surface via the Messages line below. If the story inbox is empty: `Inbox: none — describe new work with 'new <description>'`.
+
+**Messages line (mailbox glance — acp-ajudd#10).** From the same Step 2 `_inbox.md` read, count items with `type: note` or `type: data` and `status: new`. If any exist, show a single line right after the pickup list — one glance, not monitoring:
+```
+Messages: N waiting (note/data) — say "check messages" to read them
+```
+Omit the line entirely when the count is zero. Reading them is **only** on the user's request (`check messages`, or "read the note from `<repo>`") — never auto-open them here. On that request, follow the read → process → archive flow in `references/inbox-convention.md` § Mailbox.
 
 Then output the routing block — the type-specific `Start / Resume` lines, followed by the shared **Search by** block:
 ```
@@ -186,7 +192,9 @@ Global inbox (N items):
   1  <description>
      ↳ <slug> / <session> (<type>) · MM-DD
 ```
-Rendering rules: drop `<slug>` when it equals the current repo slug; omit `(<type>)` for legacy items; tolerate spaced/unspaced `/`. Full inbox handling (work/done/backlog/keep) happens at Step 5.
+Rendering rules: drop `<slug>` when it equals the current repo slug; omit `(<type>)` for legacy items; tolerate spaced/unspaced `/`. **List `type: story` items only** — exclude `type: note` / `type: data` (mailbox items addressed to this slug); they surface via the Messages line below, never as pickable work. Full inbox handling (work/done/backlog/keep) happens at Step 5.
+
+**Messages line (mailbox glance — acp-ajudd#10).** From the `_inbox.md` read, count `type: note` / `type: data` items with `status: new`; if any, show `Messages: N waiting (note/data) — say "check messages" to read them` once (omit if zero). Read them only on request, per `references/inbox-convention.md` § Mailbox.
 
 Then output the routing block — the type-specific `Start / Resume` lines, followed by the shared **Search by** block:
 ```
@@ -217,7 +225,9 @@ Inbox — pick up or describe new work (N):
   2  [<id>]  <description>  · refining
      ↳ <slug> / refine (<zone>) · MM-DD
 ```
-Rendering rules: `N` is ephemeral position (for `pick <n>`); `[<id>]` (from the `## <id> · [date...]` header) is the permanent handle — reference by ID; `pick` accepts either; omit `[<id>]` for legacy items. Drop `<slug>` when it equals the current repo slug; omit `(<source-type>)` for legacy items; tolerate spaced/unspaced `/`. **Status marker:** parse the `> [type: … · status: …]` line under each header (missing → `type: story · status: ready`); append `· refining` for `status: refining` items; `ready` gets no suffix. See plugin block above for the full rule. If empty: `Inbox: none — describe new work with 'new <description>'`.
+Rendering rules: `N` is ephemeral position (for `pick <n>`); `[<id>]` (from the `## <id> · [date...]` header) is the permanent handle — reference by ID; `pick` accepts either; omit `[<id>]` for legacy items. Drop `<slug>` when it equals the current repo slug; omit `(<source-type>)` for legacy items; tolerate spaced/unspaced `/`. **Status marker:** parse the `> [type: … · status: …]` line under each header (missing → `type: story · status: ready`); append `· refining` for `status: refining` items; `ready` gets no suffix. **Pickup list is `type: story` only** — exclude `type: note` / `type: data` (mailbox items); they surface via the Messages line, not here. See plugin block above for the full rule. If empty: `Inbox: none — describe new work with 'new <description>'`.
+
+**Messages line (mailbox glance — acp-ajudd#10).** Identical to the plugin block: from the Step 2 `_inbox.md` read, count `type: note` / `type: data` items with `status: new`; if any, show `Messages: N waiting (note/data) — say "check messages" to read them` once after the pickup list (omit if zero). Read them only on request, per `references/inbox-convention.md` § Mailbox.
 
 Then output the routing block — the type-specific `Start / Resume` lines, followed by the shared **Search by** block:
 ```
@@ -238,7 +248,7 @@ Then output the routing block — the type-specific `Start / Resume` lines, foll
 
 **General / unknown project:**
 
-If `_inbox.md` has items, show compact summary before the routing line.
+If `_inbox.md` has items, show a compact summary of the `type: story` items before the routing line. Exclude `type: note` / `type: data` (mailbox) items; if any have `status: new`, show one line `Messages: N waiting (note/data) — say "check messages" to read them` (mailbox glance — acp-ajudd#10; read only on request, per `references/inbox-convention.md` § Mailbox).
 
 Then output the routing block — the type-specific `Start / Resume` lines, followed by the shared **Search by** block:
 ```
@@ -286,7 +296,7 @@ Run **three reads in parallel:**
 - ```bash
   wc -l < "<session_root>/_history.md" 2>/dev/null && tail -n 1 "<session_root>/_history.md" 2>/dev/null || echo "0"
   ```
-- Read the inbox fresh — **plugin / personal → the canonical `<session_root>/_inbox.md`** (item-driven; there is no per-session `_inbox_<name>.md`); **story / cab / general → `<session_root>/_inbox_<name>.md`** (skip if file does not exist). Count by `## <id>` header lines; skip the `> [type: … · status: …]` metadata line.
+- Read the inbox fresh — **plugin / personal → the canonical `<session_root>/_inbox.md`** (item-driven; there is no per-session `_inbox_<name>.md`); **story / cab / general → `<session_root>/_inbox_<name>.md`** (skip if file does not exist). Count by `## <id>` header lines; skip the `> [type: … · status: …]` metadata line. **Split by `type`:** `type: story` items feed the Inbox pickup list + reviewed batch below; `type: note` / `type: data` items with `status: new` are counted only for the **Messages** line and never listed as pickable (mailbox — acp-ajudd#10, § Mailbox).
 
 **Security check (repo sessions only):** If `session_root` is inside a repo (not `~/.claude/memory/sessions/`), run the approval-hash check before displaying any session content. Follow the same gate as start-impl.md Step 4: compute `git hash-object`, compare to `~/.claude/memory/sessions/<slug>/<name>.approved-hash`, and require approval on first load or when the file changed since last approval. For local plugin sessions (`session_root` is under `~/.claude/`), skip this check.
 
@@ -297,9 +307,10 @@ Resuming <name>
   Mode:        planning          ← show this line ONLY when Mode is planning; omit for coding/both
   Open items (mine, N):
     - [date @handle] item
-  Inbox (N items):          ← layout B; provenance dim below each item (see inbox-convention.md)
+  Inbox (N items):          ← layout B; provenance dim below each item (see inbox-convention.md); type: story only
     1  <description> — in-progress / pending
        ↳ <slug> / <session> (<type>) · MM-DD
+  Messages: N waiting (note/data) — say "check messages" to read them   ← omit line if none; mailbox glance (acp-ajudd#10)
   Next steps (mine, N):
     - [date @handle] step
   Loaded memories (N):

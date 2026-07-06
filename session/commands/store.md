@@ -17,6 +17,14 @@ Read current session from conversation context (most recent `session:start` outp
 
 Run `pwd` and extract the repo slug (last path component). Resolve `session_root` using Path Resolution (see Session Skill).
 
+**Session guard (command-level enforcement — acp-ajudd#1).** `store` dumps the active session's working context, so a session must exist. If neither the conversation context nor `~/.claude/memory/sessions/<slug>/_active` yields a session name, **stop cleanly**:
+
+```
+No session established for <slug>. Run /session:start first.
+```
+
+Editing files is never blocked; the session commands are what require a session. (`start` / `refine` and read-only views are exempt.)
+
 ### 2. Dump Context File
 
 Write `<session_root>/_context_<session-name>.md` (goes to repo if repo-based — useful for teammates to see the pre-clear reasoning state):

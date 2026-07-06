@@ -16,7 +16,14 @@ Run `pwd` and extract the repo slug (last path component). Resolve `session_root
 Determine the session name from conversation context:
 1. Look back at the current conversation for the most recent "Resuming `<name>`" line (from session:start) OR "Switching to `<name>`" line (from session:switch). Use whichever is most recent.
 2. If neither is found in this conversation, fall back to reading `~/.claude/memory/sessions/<slug>/_active` as a hint.
-3. If neither is available, ask the user: "Which session are you checkpointing?"
+
+**Session guard (command-level enforcement — acp-ajudd#1).** `checkpoint` saves the active session, so a session must exist. If neither the conversation context nor `~/.claude/memory/sessions/<slug>/_active` yields a session name, **stop cleanly** — do not ask, do not treat as a general session, do not proceed:
+
+```
+No session established for <slug>. Run /session:start first.
+```
+
+Editing files is never blocked; the session commands are what require a session. (`start` / `refine` and read-only views are exempt.)
 
 Read `<session_root>/<name>.md` and extract:
 - `type` (plugin / story / cab / personal / general)
@@ -24,8 +31,6 @@ Read `<session_root>/<name>.md` and extract:
 - `title` (story/cab only — may be absent in older session files; treat as empty string if missing)
 - `teams_chat`
 - `branch`
-
-If no session name can be determined and `_active` does not exist, treat as `type: general` with `teams_chat: none`.
 
 If the session name is determined but `<session_root>/<name>.md` does not exist, warn the user: "Session file for `<name>` not found — run `/session:start` to re-establish." and stop.
 
@@ -140,7 +145,7 @@ CDK_PRESENT=""
      skip / all / <number(s)>
 ```
 
-**(F) In-progress inbox items** — **read the inbox fresh at checkpoint time (acp-ajudd#6), never a session-start snapshot.** File is type-aware: **plugin / personal → the canonical `_inbox.md`** (item-driven — there is no per-session `_inbox_<name>.md`); **story / cab / general → `_inbox_<name>.md`**. Count/list **by `## <id>` header lines** and **skip the `> [type: … · status: …]` metadata line** under each (v1.57.0 item metadata — never miscount it). Include one per in-progress item:
+**(F) In-progress inbox items** — **read the inbox fresh at checkpoint time (acp-ajudd#6), never a session-start snapshot.** File is type-aware: **plugin / personal → the canonical `_inbox.md`** (item-driven — there is no per-session `_inbox_<name>.md`); **story / cab / general → `_inbox_<name>.md`**. Count/list **by `## <id>` header lines** and **skip the `> [type: … · status: …]` metadata line** under each (v1.57.0 item metadata — never miscount it). **Exclude `type: note` / `type: data` mailbox items** (acp-ajudd#10) — they are not pickup work; they're read/archived only on request (§ Mailbox). Include one per in-progress **story** item:
 ```
   (N) [<id>] Inbox [in-progress]: "<description>"    keep / done
 ```
@@ -212,7 +217,7 @@ For **story/cab slots (A, C)** the apply-logic lives in `references/checkpoint-s
 
 Write `<session_root>/<name>.md` with the current state:
 
-**Frontmatter:** for `plugin` and `personal` types, write `type:`, `mode:`, and `status:` keys alongside `updated:`, kept in sync with the body bullets — the scope-guard hook reads `mode:` from the frontmatter to gate Edit/Write. `status:` is `in-progress` at checkpoint. For `story` / `cab` / `general`, write only `updated:` (preserve any existing extra keys as-is).
+**Frontmatter:** for `plugin` and `personal` types, write `type:`, `mode:`, and `status:` keys alongside `updated:`, kept in sync with the body bullets. `status:` (consumed by the listing renderer to hide completed sessions) is `in-progress` at checkpoint; `type:`/`mode:` record the session's kind and mode (soft convention — no hook reads `mode:` since acp-ajudd#1). For `story` / `cab` / `general`, write only `updated:` (preserve any existing extra keys as-is).
 
 ```
 ---

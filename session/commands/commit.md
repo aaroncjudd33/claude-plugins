@@ -25,7 +25,14 @@ Run `pwd` and extract the repo slug (last path component). Resolve `session_root
 Determine the session name from conversation context:
 1. Look for the most recent "Resuming `<name>`" line (from session:start) OR "Switching to `<name>`" line (from session:switch). Use whichever is most recent.
 2. Fall back to reading `~/.claude/memory/sessions/<slug>/_active` if not in context.
-3. If neither is available, ask the user: "Which session are you committing for?"
+
+**Session guard (command-level enforcement — acp-ajudd#1).** `commit` operates on the active session, so a session must exist. If neither the conversation context nor `~/.claude/memory/sessions/<slug>/_active` yields a session name, **stop cleanly** — do not ask, do not guess, do not proceed:
+
+```
+No session established for <slug>. Run /session:start first.
+```
+
+This is the whole enforcement model: editing files is never blocked, but the session commands refuse to run without a session. (`start` / `refine` and read-only views are exempt.)
 
 Read `<session_root>/<name>.md` and extract all fields. Minimally:
 - `type` (plugin / story / cab / personal / general)

@@ -13,9 +13,17 @@ Prepares a handoff for a new session by writing a `[spawn]` entry to the global 
 
 ### 1. Identify Current Session
 
-Read current session from conversation context (the most recent `session:start` output — "Resuming `<name>`"). Do NOT read `_active`.
+Read current session from conversation context (the most recent `session:start` output — "Resuming `<name>`"). Do NOT read `_active` to *select* the session (context is authoritative for which session is current).
 
 Run `pwd` and extract the repo slug (last path component). Resolve `session_root` and `handle` using Path Resolution (see Session Skill).
+
+**Session guard (command-level enforcement — acp-ajudd#1).** `spawn` stages a handoff *from* the current session, so a session must exist. If no current session is in the conversation context **and** `~/.claude/memory/sessions/<slug>/_active` does not exist, **stop cleanly** — there is no source session to spawn from:
+
+```
+No session established for <slug>. Run /session:start first.
+```
+
+(The `_active` check here is existence-only, for the guard — it does not override conversation context when a current session *is* present.) Editing files is never blocked; the session commands are what require a session. (`start` / `refine` and read-only views are exempt.)
 
 ### 2. Determine Label and Type
 

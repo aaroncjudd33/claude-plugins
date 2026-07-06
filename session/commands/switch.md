@@ -13,6 +13,14 @@ Lightweight context swap for mid-day pivots between sessions. Skips permission m
 
 Run `pwd` and extract the last path component as the repo slug. Resolve `session_root` and `handle` using Path Resolution (see Session Skill).
 
+**Session guard (command-level enforcement — acp-ajudd#1).** `switch` moves focus between existing sessions, so at least one session must exist for the slug. If `session_root` holds no session `.md` files (only `_`-prefixed infra files, or the directory is absent), **stop cleanly** — there is nothing to switch to:
+
+```
+No session established for <slug>. Run /session:start first.
+```
+
+Editing files is never blocked; the session commands are what require a session. (`start` / `refine` and read-only views are exempt.)
+
 ### 2. Load Session List
 
 **Argument handling first:**
@@ -54,7 +62,7 @@ Then wait for selection.
 
 Read `<session_root>/<name>.md`.
 Read `<session_root>/_history.md` — count total entries and extract the most recent one.
-Read the inbox file **fresh (acp-ajudd#6)** — **plugin / personal → the canonical `<session_root>/_inbox.md`** (item-driven; there is no per-session `_inbox_<name>.md`); **story / cab / general → `<session_root>/_inbox_<name>.md`** — and collect all items (in-progress and pending). Count **by `## <id>` header lines** and **skip the `> [type: … · status: …]` metadata line** under each (v1.57.0 item metadata — never miscount it).
+Read the inbox file **fresh (acp-ajudd#6)** — **plugin / personal → the canonical `<session_root>/_inbox.md`** (item-driven; there is no per-session `_inbox_<name>.md`); **story / cab / general → `<session_root>/_inbox_<name>.md`** — and collect all items (in-progress and pending). Count **by `## <id>` header lines** and **skip the `> [type: … · status: …]` metadata line** under each (v1.57.0 item metadata — never miscount it). **Split by `type`:** only `type: story` items are inbox work (listed + swept in Step 4); `type: note` / `type: data` items with `status: new` are **mailbox** items (acp-ajudd#10) — count them for the Messages line, never list or sweep them as pickable.
 
 **Security check (repo sessions only):** If `session_root` is inside a repo, run the approval-hash check using the same flow as `session:start` Step 4 — compute SHA-256, compare to `~/.claude/memory/sessions/<slug>/<name>.approved-hash`, handle missing/matching/differing cases with first-time review, normal load, or diff-review flow. See `references/skill-repo-security.md` for the full procedure.
 
@@ -68,9 +76,10 @@ Switching to <name>
     - [date @handle] item
   Teammate notes (N — read-only):
     - [date @other] item
-  Inbox (N):          ← layout B; provenance dim below each item (see inbox-convention.md)
+  Inbox (N):          ← layout B; provenance dim below each item (see inbox-convention.md); type: story only
     [1] <description> — in-progress / pending
         ↳ <slug> / <session> (<type>) · MM-DD
+  Messages: N waiting (note/data) — say "check messages" to read them   ← omit line if none; mailbox glance (acp-ajudd#10)
   Next steps (mine, N):
     - [date @handle] next step
   History:     N entries — last: [condensed one-liner of most recent entry]
@@ -80,7 +89,7 @@ If inbox is empty: `Inbox: none`. If no history: `History: none`. Omit Teammate 
 
 ### 4. Check Inbox
 
-Check the same fresh inbox read from Step 3 — **plugin / personal → the canonical `<session_root>/_inbox.md`**; **story / cab / general → `<session_root>/_inbox_<name>.md`**. (Do not fall back to a per-session file for item-driven types — it does not exist for them.)
+Check the same fresh inbox read from Step 3 — **plugin / personal → the canonical `<session_root>/_inbox.md`**; **story / cab / general → `<session_root>/_inbox_<name>.md`**. (Do not fall back to a per-session file for item-driven types — it does not exist for them.) **This batch handles `type: story` items only** — `type: note` / `type: data` mailbox items are excluded (they surfaced as the Messages line in Step 3 and are read/archived only on request, per `references/inbox-convention.md` § Mailbox).
 
 If the inbox file has content beyond the header, first scan for in-progress items, then handle pending items.
 
@@ -115,7 +124,7 @@ Update `<session_root>/<name>.md`: set `updated` to today, set `updated-by: @<ha
 
 **Preserve frontmatter keys.** For `plugin` / `personal` sessions, the frontmatter carries `type:`, `mode:`, and `status:` — these gate the scope guard. When updating `updated:`, leave `type:`/`mode:`/`status:` intact (do not strip them). If the session file has no frontmatter `mode:` yet (older file), add `type:`/`mode:`/`status:` to match the body bullets while you're writing.
 
-**Mode modifier (optional).** If the switch argument included a mode (`planning` / `coding` / `both` — e.g. `/session:switch release planning`), apply it now: update both the frontmatter `mode:` key and the `- **Mode:**` body bullet, and note `Mode changed to <new>`. Because the newly-active session's frontmatter `mode:` is what the scope guard reads, switching into a `planning` session immediately makes Edit/Write read-only for that zone — switching into a `coding` session restores edits.
+**Mode modifier (optional).** If the switch argument included a mode (`planning` / `coding` / `both` — e.g. `/session:switch release planning`), apply it now: update both the frontmatter `mode:` key and the `- **Mode:**` body bullet, and note `Mode changed to <new>`. Mode is a soft convention (acp-ajudd#1 removed edit-blocking — no hook reads it): switching into a `planning` session signals "scope, don't build," while `coding` signals normal build work. Nothing hard-blocks edits either way.
 
 **After writing — update approved-hash (repo sessions only):** Recompute and overwrite `~/.claude/memory/sessions/<slug>/<name>.approved-hash`:
 ```bash

@@ -324,7 +324,7 @@ Create `session_root` directory if it does not exist.
 
 Write `<session_root>/<name>.md`:
 
-**Frontmatter — for `plugin` and `personal` types, write `type:`, `mode:`, and `status:` keys alongside `updated:`.** The scope-guard hook (`session-scope-guard.py`) reads `mode:` from the frontmatter only (never the body bullets) to decide whether Edit/Write is allowed — so these keys must be present and accurate for plugin/personal sessions. For `story` / `cab` / `general` types, write only `updated:` as before (those zones use instruction-only Mode handling — no need to churn their frontmatter). The body bullets (`- **Type:**`, `- **Mode:**`, `- **Status:**`) stay for all types regardless.
+**Frontmatter — for `plugin` and `personal` types, write `type:`, `mode:`, and `status:` keys alongside `updated:`.** `status:` is consumed by the listing renderer (`completed` sessions are hidden from the default `/session:start` list); `type:` and `mode:` record the session's kind and working mode (mode is a soft convention since acp-ajudd#1 removed edit-blocking — no hook reads it). Keep these keys in sync with the body bullets. For `story` / `cab` / `general` types, write only `updated:` as before (no need to churn their frontmatter). The body bullets (`- **Type:**`, `- **Mode:**`, `- **Status:**`) stay for all types regardless.
 
 ```
 ---
@@ -368,7 +368,7 @@ status: in-progress
 - Story / cab / personal: `./` (whole repo) or a service subdirectory if the session targets one
 - General: omit the field entirely
 
-The scope guard resolves this to an absolute path at runtime: `local_cfg.projectRoot + "/" + scope_value` for repo-based sessions; absolute path as-is for legacy local sessions.
+The out-of-scope check (in checkpoint / commit / finish) resolves this to an absolute path at runtime: `local_cfg.projectRoot + "/" + scope_value` for repo-based sessions; absolute path as-is for legacy local sessions.
 
 **Backward compatibility:** When resuming an older session file that still has an absolute `Scope:` or a `Project:` field, preserve them as-is rather than rewriting. Rewrite only when the session is new or when the user explicitly runs `session:migrate`.
 
@@ -379,7 +379,7 @@ Write `~/.claude/memory/sessions/<slug>/_active` (always local — plain text, j
 BPT2-1234
 ```
 
-`_active` is a convenience hint for `session:start` resume suggestions only — it is not read by `session:checkpoint` or `session:finish` to determine session identity.
+`_active` is the durable session pointer for the slug: `session:start` uses it for resume suggestions, and the session commands (`commit` / `checkpoint` / `finish` / `switch` / `spawn` / `store` / `restore`) read it as the fallback when conversation context doesn't name a session — and its presence is the existence check behind the command-level session guard (acp-ajudd#1). Conversation context ("Resuming `<name>`" / "Switching to `<name>`") still takes precedence over `_active` for *which* session is current.
 
 **Seed `_index.md`:** Update `<session_root>/_index.md` — create with header if not exists:
 ```

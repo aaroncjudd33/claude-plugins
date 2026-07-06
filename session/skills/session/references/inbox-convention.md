@@ -44,13 +44,13 @@ Every inbox item is described by **three independent axes**. Keep them separate 
 - `story` *(default)* — actionable work; the Jira-story analog. Picked up and built/done. A **spawn** is a `story` tagged `[spawn]`, not its own type.
 - `note` — awareness / FYI / recorded decision for another session; no build expected.
 - `data` — a payload consumed as input to work (results, values, file refs, config).
-- `question` *(optional, add only if usage demands)* — asks for a decision/input; expects a reply.
+- `question` *(deferred — not built in v1)* — would ask for a decision/input and expect a reply. Until it lands, a question is just a `note` and a reply is just another `note`; there is no reply-expected lifecycle.
 
-> **Scope note:** the `type` field and its values are declared here as the model. The **delivery behavior** of `note` / `data` (mid-session surfacing, consume-and-clear) is a separate pass (acp-ajudd#10) — until it lands, treat non-`story` items as documented-but-inert (they parse and display; no special surfacing yet).
+> **`note` / `data` are live (acp-ajudd#10).** Their delivery behavior — the **mailbox** — is implemented: a session drops a `note`/`data` into another slug's inbox (free-rein write, visible confirmation), the human points the target session at it, and it reads → processes → **archives** on request. It is **human-driven**: Claude does NOT poll, monitor, or auto-announce mail; a single "N messages waiting" line at `session:start` is the only surfacing. Full flow in **§ Mailbox — note/data delivery** below.
 
 **3. `status` — lifecycle. Which lifecycle depends on `type`:**
 - **`story` → maturity lifecycle:** `refining` → `ready` → *(picked)* → done. `refining` = still being scoped/polished (the WIP-store phase); `ready` = matured enough for an implementation session to pick up. This mirrors a Jira story moving from *Gathering Requirements* → *Ready For Work*.
-- **`note` / `data` → delivery lifecycle:** `new` (a.k.a. `unread`) → `consumed` → cleared. Presence in the inbox IS the "sent/delivered" state; "ready" is implicit. (Mechanics owned by acp-ajudd#10.)
+- **`note` / `data` → delivery lifecycle:** `new` (a.k.a. `unread`) → `consumed` → archived. Presence in the inbox IS the "sent/delivered" state; "ready" is implicit. On read, the target processes the message and **archives** it to `_inbox_archive.md` (see § Mailbox). (Mechanics: acp-ajudd#10.)
 
 **Creator defaults:**
 - `new <description>` quick-capture → `type: story · status: ready` (a captured task is immediately pickable).
@@ -61,6 +61,43 @@ Every inbox item is described by **three independent axes**. Keep them separate 
 **Back-compat (verified against the existing inbox — no lockout):** the `> [type: … · status: …]` line is **optional**. A missing `type` defaults to `story`; a missing `status` defaults to `ready`. Items written before this model (no line at all) therefore read as `story` / `ready` — pickable exactly as before. Parse `type` and `status` independently: `> [status: refining]` alone is valid (type defaults to `story`), as is `> [type: note]` alone (status defaults per its lifecycle). Never break on an absent or partial line.
 
 **Picking a `refining` story is guarded.** Because a `story` doubles as its own WIP store, a half-scoped item must be distinguishable from a ready one — that is exactly what `refining` vs `ready` encodes. `pick` on a `refining` item **warns and confirms** ("still being refined — pick it up anyway?") before folding it into a coding session.
+
+## Mailbox — note/data delivery (acp-ajudd#10)
+
+The inbox does two jobs. The **to-do list** job is `type: story` items you pick up and build (above). The **mailbox** job is `type: note` / `type: data` items — inter-session messages one session drops for another: a `note` ("heads up, I changed X") or `data` ("here are the values you need"). This section is the mailbox.
+
+**The model: the human is the notifier.** Claude does **not** monitor, poll, or auto-announce mail. There is no hook watching the inbox and no mid-session "you have mail" surfacing. Mail moves only when a human coordinates it. Three phases:
+
+**1. Write (silent to the recipient, visible to the sender).** A session drops a `note`/`data` into another slug's inbox via `/session:inbox` — a **free-rein write** (no propose→approve, per acp-ajudd#5) that surfaces a visible confirmation line *in the sending session* (`Sent inbox item <id> to <target> inbox`). The receiving side is not interrupted — nothing pings the target session.
+
+**2. Coordinate (human).** The developer tells the target session where to look — "there's a note for you from `<repo>/<session>`, go read it," or just "check my inbox messages." Claude looks only when told. (The one automatic touch: a single **"N messages waiting"** count at `session:start` — see below — which is one read at a natural moment, not monitoring.)
+
+**3. Read → process → archive (on request).** When asked, the target session:
+   - reads every `type: note` / `type: data` item with `status: new` in its slug inbox (`_inbox.md` for plugin/personal; `_inbox.md` — the global slug inbox — for story/cab, *not* a per-session `_inbox_<name>.md`, since mail is addressed to the slug);
+   - **processes** each: a `note` is read/acknowledged (fold any actionable follow-up into the session's own work or a new `story` item); a `data` payload is folded into the work that needs it;
+   - **archives** each: append it to `_inbox_archive.md` with a `[CONSUMED YYYY-MM-DD]` stamp and remove it from the live inbox. Archiving behavior is unchanged from the existing `[DONE]` archive flow — same file, same auto-purge (>30d). Messages are **archived, never deleted.**
+   - surface a one-line summary of what was consumed, e.g. `Consumed 2 messages (1 note, 1 data) → archived.`
+
+**Addressing = to-slug (v1).** A message is addressed to a repo's inbox — whoever next works that slug — not to a specific named session. (`/session:inbox` already writes to the slug inbox for plugin/personal.)
+
+**`data` payload — inline by default, optional `ref:`.** Small payloads go inline in the item body. For a large payload, put it in a file and reference it:
+```markdown
+## <id> · [YYYY-MM-DD @ajudd] from virtual-office / BPT2-6258 (story) — enrollment test IDs
+> [type: data · status: new]
+ref: ~/.claude/memory/sessions/ajudd-claude-plugins/_data_enrollment-ids.md
+(inline summary: 12 member IDs for the reactivation smoke test — see ref for the full list)
+```
+When a `data` item has a `ref:`, the processing session reads the referenced file to get the payload. Inline is the default; `ref:` is only for payloads too big to sit in the inbox comfortably.
+
+**Out of the pickup backlog.** `note`/`data` messages **never appear in the `story` pickup list** — they are not work to grab. The `session:start` pickup list shows only `type: story` items. The mailbox count is separate: a single line
+
+```
+Messages: N waiting (note/data) — say "check messages" to read them
+```
+
+shown once at `session:start` when any `type: note`/`type: data` item has `status: new`. Omit the line entirely when there are none. This is the only place mail surfaces on its own — one glance, no monitoring.
+
+**`question` deferred.** Not built in v1. A note can carry a question; a reply is just another `note`. No reply-expected lifecycle yet.
 
 ## Writing records — free rein, never silent (acp-ajudd#5)
 
@@ -79,7 +116,7 @@ Records get written the way session files get written: **without asking.** An in
 
 Rule of thumb: **what repo am I in → that's my source of record → I write to it freely, because updating it IS the work.**
 
-**Two capabilities this enables:** (1) a single planning/refine session **creates and updates as many records as it needs** — no per-write approval, no cap; (2) **frictionless cross-repo capture from anywhere** — from any zone, fire an item into *another* repo's inbox with minimal ceremony (flagship: a plugin idea you had while working in a work repo → send it to the plugins inbox). This is already unblocked mechanically: a plugin/personal inbox lives under `~/.claude/memory/`, which the scope-guard hook always allows — no coding session needed to write one in.
+**Two capabilities this enables:** (1) a single planning/refine session **creates and updates as many records as it needs** — no per-write approval, no cap; (2) **frictionless cross-repo capture from anywhere** — from any zone, fire an item into *another* repo's inbox with minimal ceremony (flagship: a plugin idea you had while working in a work repo → send it to the plugins inbox). Nothing gates these writes: inbox items live under `~/.claude/memory/`, and there is no edit-blocking hook (acp-ajudd#1) — you can capture into any repo's inbox without an active session of any kind.
 
 **Where this shows up:** `session:inbox` (writes directly, then a `Sent inbox item <id> to <target> inbox` line), `refine` (writes early + on each edit, surfacing `Wrote/Updated <id>`), `new` (writes then immediately picks up — visible via the pickup), `spawn` (writes the `[spawn]` entry, confirms with `<id>`), and the `checkpoint`/`finish`/`commit` scope-routing handoffs (route through `session:inbox`, which surfaces the line). None of these gate the write; all of them surface it.
 

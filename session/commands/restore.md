@@ -26,7 +26,11 @@ Scan `~/.claude/memory/sessions/<slug>/` for any files matching `_restore_*`. Us
     ...
   Which? (number or name)
   ```
-- **None found:** fall back to `_active`. If `_active` exists, resume that session with a note: "No resume marker found — resuming last active session (`<name>`)." If neither exists, ask: "Which session to resume? (name or 'start' to run /session:start instead)"
+- **None found:** fall back to `_active`. If `_active` exists, resume that session with a note: "No resume marker found — resuming last active session (`<name>`)." If neither a `_restore_*` marker nor `_active` exists, **stop cleanly** (command-level enforcement — acp-ajudd#1) — there is no session to restore:
+  ```
+  No session established for <slug>. Run /session:start first.
+  ```
+  Editing files is never blocked; the session commands are what require a session. (`start` / `refine` and read-only views are exempt.)
 
 ### 2. Load Session File
 
