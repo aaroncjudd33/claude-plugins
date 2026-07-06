@@ -140,7 +140,7 @@ CDK_PRESENT=""
      skip / all / <number(s)>
 ```
 
-**(F) In-progress inbox items** — for plugin sessions: `_inbox_<name>.md`; others: `_inbox.md`. Include one per in-progress item:
+**(F) In-progress inbox items** — **read the inbox fresh at checkpoint time (acp-ajudd#6), never a session-start snapshot.** File is type-aware: **plugin / personal → the canonical `_inbox.md`** (item-driven — there is no per-session `_inbox_<name>.md`); **story / cab / general → `_inbox_<name>.md`**. Count/list **by `## <id>` header lines** and **skip the `> [type: … · status: …]` metadata line** under each (v1.57.0 item metadata — never miscount it). Include one per in-progress item:
 ```
   (N) [<id>] Inbox [in-progress]: "<description>"    keep / done
 ```
@@ -178,7 +178,7 @@ Reply with overrides or "go".
 For **story/cab slots (A, C)** the apply-logic lives in `references/checkpoint-story-cab.md` (Step 6 sections) — already in context. The universal/plugin slots are applied here:
 
 *(B) Out-of-scope:*
-- **route:** invoke `/session:inbox` flow with the out-of-scope item pre-populated. The routing is never silent — user sees and confirms before inbox write.
+- **route:** invoke `/session:inbox` flow with the out-of-scope item pre-populated. Choosing `route` IS the go-ahead — `/session:inbox` writes directly and surfaces the `Sent inbox item <id> to <target> inbox` line (free rein + visible, never silent — acp-ajudd#5; no separate pre-write approval).
 - **note:** record the excluded work in Open items but do not write to any inbox.
 - **skip:** continue without noting.
 
@@ -192,7 +192,7 @@ For **story/cab slots (A, C)** the apply-logic lives in `references/checkpoint-s
 - **skip:** keep all open.
 
 *(F) In-progress inbox items:*
-- **done:** strip the `[in-progress — ...]` line, archive with `[DONE YYYY-MM-DD]` stamp to `_inbox_<name>_archive.md` (create with header `# Inbox Archive — <name>` if needed). Remove entry from inbox. Remove matching `[inbox] <item>` from Open items.
+- **done:** strip the `[in-progress — ...]` line, archive with `[DONE YYYY-MM-DD]` stamp, remove entry from inbox, remove matching `[inbox] <item>` from Open items. **Archive file is type-aware:** `_inbox_archive.md` for plugin / personal (item-driven), `_inbox_<name>_archive.md` for story / cab / general (create with the matching `# Inbox Archive — …` header if needed).
 - **keep:** no change.
 
 *(G) Legacy [inbox] items:*

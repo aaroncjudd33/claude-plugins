@@ -54,7 +54,7 @@ Then wait for selection.
 
 Read `<session_root>/<name>.md`.
 Read `<session_root>/_history.md` — count total entries and extract the most recent one.
-Read the inbox file (`_inbox_<name>.md` for plugins, `_inbox.md` otherwise — from `session_root`) and collect all items (in-progress and pending).
+Read the inbox file **fresh (acp-ajudd#6)** — **plugin / personal → the canonical `<session_root>/_inbox.md`** (item-driven; there is no per-session `_inbox_<name>.md`); **story / cab / general → `<session_root>/_inbox_<name>.md`** — and collect all items (in-progress and pending). Count **by `## <id>` header lines** and **skip the `> [type: … · status: …]` metadata line** under each (v1.57.0 item metadata — never miscount it).
 
 **Security check (repo sessions only):** If `session_root` is inside a repo, run the approval-hash check using the same flow as `session:start` Step 4 — compute SHA-256, compare to `~/.claude/memory/sessions/<slug>/<name>.approved-hash`, handle missing/matching/differing cases with first-time review, normal load, or diff-review flow. See `references/skill-repo-security.md` for the full procedure.
 
@@ -80,7 +80,7 @@ If inbox is empty: `Inbox: none`. If no history: `History: none`. Omit Teammate 
 
 ### 4. Check Inbox
 
-For all sessions: check `<session_root>/_inbox_<name>.md`.
+Check the same fresh inbox read from Step 3 — **plugin / personal → the canonical `<session_root>/_inbox.md`**; **story / cab / general → `<session_root>/_inbox_<name>.md`**. (Do not fall back to a per-session file for item-driven types — it does not exist for them.)
 
 If the inbox file has content beyond the header, first scan for in-progress items, then handle pending items.
 
@@ -96,7 +96,7 @@ Reply with overrides or "go".
 
 "go" accepts all defaults. Parse freely: `1 done`, `2 work`, `1 done 2 work`, etc.
 
-- **done** (in-progress): strip `[in-progress — ...]`, archive with `[DONE YYYY-MM-DD]` to `_inbox_<name>_archive.md`, remove from inbox, remove `[inbox] <item>` from Open items.
+- **done** (in-progress): strip `[in-progress — ...]`, archive with `[DONE YYYY-MM-DD]` (archive file is type-aware: `_inbox_archive.md` for plugin / personal, `_inbox_<name>_archive.md` for story / cab / general), remove from inbox, remove `[inbox] <item>` from Open items.
 - **keep** (in-progress): no change.
 - **work** (pending): insert `[in-progress — <session-name>, YYYY-MM-DD]` after `## [date]...` header. Do NOT archive. Add `[inbox] <item>` to Open items.
 - **done** (pending): archive with `[DONE YYYY-MM-DD]`, remove from inbox.
@@ -105,7 +105,7 @@ Reply with overrides or "go".
 
 Auto-purge archive entries with `[DONE]` dates older than 30 days after handling.
 
-For plugin sessions, also check `~/.claude/memory/sessions/<slug>/_inbox.md` for global items. Display only — never auto-cleared.
+For **story / cab / general** sessions, also check `~/.claude/memory/sessions/<slug>/_inbox.md` for global (undirected) items. Display only — never auto-cleared. (Plugin / personal already read `_inbox.md` as their primary inbox above — there is no separate global file for them.)
 
 ### 5. Write _active and Update Session File
 

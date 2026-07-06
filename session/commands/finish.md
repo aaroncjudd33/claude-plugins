@@ -58,9 +58,9 @@ Report anything that could be lost.
 
 **Non-plugin types:** if uncommitted changes exist, ask "Want to commit before closing?"
 
-**Plugin type:** do NOT prompt for a separate commit here. Uncommitted changes and unpushed local commits (from `session:commit`) are *expected* at plugin finish — they are the work being shipped, and the **deploy step (Step 12) commits, bumps, pushes, and reinstalls them as the terminal action**. Report them as informational only, e.g. "Uncommitted changes + N local commits — will ship in the deploy step," never as at-risk. This is the finish half of the polymorphic lifecycle: for plugins, finish = the deploy.
+**Plugin type:** do NOT prompt for a separate commit here. Uncommitted changes and unpushed local commits (from `session:commit`) are *expected* at plugin finish — they are the work being shipped, and the **deploy step (Step 11) commits, bumps, pushes, and reinstalls them** (deactivation, Step 12, is the terminal action after it). Report them as informational only, e.g. "Uncommitted changes + N local commits — will ship in the deploy step," never as at-risk. This is the finish half of the polymorphic lifecycle: for plugins, finish = the deploy.
 
-If clean: "Git: clean" (for plugin, this means there is nothing to deploy — note that Step 12 will be a no-op).
+If clean: "Git: clean" (for plugin, this means there is nothing to deploy — note that Step 11 will be a no-op).
 
 ### 3. Memory
 
@@ -98,7 +98,7 @@ Resolve before closing:
   (1) Route to <target> inbox?    yes / note / cancel
 ```
 
-- **yes (route):** invoke `/session:inbox` flow with the out-of-scope item pre-populated. User sees and confirms before inbox write. Once resolved, continue to batch block.
+- **yes (route):** invoke `/session:inbox` flow with the out-of-scope item pre-populated. Choosing `route` IS the go-ahead — `/session:inbox` writes it directly and surfaces the `Sent inbox item <id> to <target> inbox` line (free rein + visible, never silent — acp-ajudd#5; no separate pre-write approval). Once routed, continue to batch block.
 - **note:** record excluded work in Open items, no inbox write. Continue.
 - **cancel:** stop. Do not write session summary or deactivate.
 
@@ -110,7 +110,10 @@ Before assembling the batch, gather contextual data needed to build the batch it
 
 Universal reads (all types):
 
-1. **Inbox file:** read `<session_root>/_inbox_<name>.md` (plugin) or `<session_root>/_inbox.md` (others). Categorize items as in-progress or pending.
+1. **Inbox file — fresh read at close (acp-ajudd#6).** The recap must reflect the *live* inbox, not a snapshot taken at session start — a concurrent planning session or another terminal may have added items while this session ran.
+   - **plugin / personal (item-driven):** read the **canonical `<session_root>/_inbox.md` fresh, now** — do NOT reuse a session-start snapshot, and do NOT look for a per-session `_inbox_<name>.md` (item-driven sessions are fold-then-delete; that file does not exist for them). **Exclude** any item this session folded at pickup or marked completed; **include** everything else currently in the file (so concurrently-added items appear).
+   - **story / cab / general:** read the per-session `<session_root>/_inbox_<name>.md` (these are not item-driven — a per-session handoff file is correct). Same fresh-read discipline.
+   - **Parser (both):** count and list **by the `## <id> · [date…]` header lines**. **Skip the `> [type: … · status: …]` metadata line** under each header — it is item metadata (shipped v1.57.0, acp-ajudd#9), not a separate item and not body content; never miscount it. Tolerate legacy items with no `<id>` prefix and no metadata line. Categorize each surviving item as in-progress (has an `[in-progress — …]` marker) or pending.
 2. **Plugin version:** if type is plugin, read current version from `plugin.json`.
 3. **Loaded memories:** read the session file's `- **Loaded memories:**` field. If it has entries, note them for the validate-shape of batch item (A2). If absent or empty, (A2) takes its capture-only shape — it is always presented.
 
@@ -131,9 +134,9 @@ Gather all pending questions and present as **one batched block**. Output and wa
 **Plugin type — smart defaults (finish = done, ship it).** For a plugin session Aaron is planner + coder + tester + QA in one seat, so finish should NOT interrogate him slot-by-slot. Claude owns the routine judgment calls and only surfaces genuine exceptions; a bare `go` performs the full sensible close. This is the opposite of story/cab, whose batch stays prompt-heavy **by design** (external Jira/CAB/QA gates that Claude cannot decide). Concretely, for plugin type:
 
 - **Memory capture (A2):** do not ask `skip / new`. Claude reviews the session itself, decides whether there is project/session knowledge worth saving, and captures it — reporting the outcome (`Captured: <name>` or `Memory: nothing new`). Override honored ("capture X, this way"), but the default is "you assess and do it."
-- **Plugin reviewed (F):** when this finish is deploying (Step 12 will run), the review is **mandatory, not optional** — run it automatically rather than presenting `skip / yes`. A deploy without a review is not acceptable.
+- **Plugin reviewed (F):** when this finish is deploying (Step 11 will run), the review is **mandatory, not optional** — run it automatically rather than presenting `skip / yes`. A deploy without a review is not acceptable.
 - **Open items completed this session (G/H/I):** items that were *this session's* picked-up `[inbox]` work and got completed are **auto-marked done** (show the reasoning, e.g. "marking done — completed this session"), not left open and re-asked.
-- **Net:** a bare `go` runs capture-if-relevant (Claude's call) → review → mark completed items done → then the deploy (Step 12, last). Aaron overrides only exceptions.
+- **Net:** a bare `go` runs capture-if-relevant (Claude's call) → review → mark completed items done → then the deploy (Step 11) → deactivation (Step 12). Aaron overrides only exceptions.
 - **Empty batch → no stop.** After applying these defaults, if no slots remain that genuinely need a decision, do NOT present an empty batch and wait — report the auto-resolutions (captured memory, auto-done items, review result) as informational output and proceed straight through Steps 8–12. Only stop at the batch when at least one ambiguous slot survives.
 
 The slot bodies and apply-logic below note where this default changes behavior for plugin type. **Story / cab / personal / general are unchanged** — they keep their explicit prompts.
@@ -173,8 +176,8 @@ The slot bodies and apply-logic below note where this default changes behavior f
 
 **(F) Plugin reviewed** — plugin type only.
 
-- **If this finish is deploying** (there is work to ship, so Step 12 will run): the review is **mandatory — auto-run it, do not present a skip/yes prompt.** Run the plugin review automatically before the deploy and report the result. A deploy without a review is not acceptable.
-- **If this finish is NOT deploying** (clean tree, Step 12 is a no-op) and `plugin_reviewed` is missing, a legacy value, or MAJOR.MINOR differs, it may still be offered:
+- **If this finish is deploying** (there is work to ship, so Step 11 will run): the review is **mandatory — auto-run it, do not present a skip/yes prompt.** Run the plugin review automatically before the deploy and report the result. A deploy without a review is not acceptable.
+- **If this finish is NOT deploying** (clean tree, Step 11 is a no-op) and `plugin_reviewed` is missing, a legacy value, or MAJOR.MINOR differs, it may still be offered:
   ```
   (N) Plugin reviewed? (last: v<stored>, current: v<current>)    skip / yes
   ```
@@ -251,7 +254,7 @@ For **story/cab slots (A, B, B2, C, D, E, K)** the apply-logic lives in `referen
 - **skip:** keep all open.
 
 *(H) In-progress inbox items:*
-- **done:** strip `[in-progress — ...]`, archive with `[DONE YYYY-MM-DD]` to `_inbox_<name>_archive.md`, remove from inbox, remove `[inbox] <item>` from Open items.
+- **done:** strip `[in-progress — ...]`, archive with `[DONE YYYY-MM-DD]`, remove from inbox, remove `[inbox] <item>` from Open items. **Archive file is type-aware:** `_inbox_archive.md` for plugin / personal (item-driven — the canonical inbox is `_inbox.md`), `_inbox_<name>_archive.md` for story / cab / general.
 - **keep:** no change. Will carry as in-progress to next session.
 
 *(I) Legacy [inbox] items:*
@@ -284,7 +287,7 @@ The composed entry is already in context and becomes the value for `Last worked 
 **Story type only — post-deployment checks:** Run the post-deployment-checks prompt from `references/finish-story-cab.md` (Step 9 section, already in context). Skip entirely for non-story types.
 
 **Derive `Next steps` — do not ask.** Use only mine-tagged items. Check in order:
-1. Remaining items in `<session_root>/_inbox_<name>.md` (pending or in-progress) → `[today @<handle>] See inbox — N items pending`
+1. Remaining items in the fresh inbox read from Step 6 (pending or in-progress) — **plugin / personal → the canonical `_inbox.md`**; **story / cab / general → `_inbox_<name>.md`** → `[today @<handle>] See inbox — N items pending` (N counted by `## <id>` header lines, not the metadata line)
 2. Non-`[inbox]`-tagged Open items → use the first mine-tagged item's text as the next step
 3. Story/CAB type → check Jira status and branch state for a concrete action. **Never suggest "create PR to master", "merge to master", or any variant.** If the story is otherwise complete: "Hand off to /release:create when ready to deploy."
 4. If none of the above apply → ask: "What's the first thing to pick up next time? (or 'skip')"
@@ -340,7 +343,7 @@ status: completed       ← plugin/personal only; marks the session done (file k
 - **linked_sessions:** [<session-name>, ...]   ← preserve as-is; omit if not present
 ```
 
-**Backward compat:** If the existing session file has a `Project:` field, preserve it. If `- **Next step:** <text>` (scalar), re-write as `- **Next steps:**` array tagged `[today @<handle>]`. `Commits:` is preserve-only at this step (written by session:commit) — for plugin type, the deploy (Step 12) appends its deploy commit afterward. `Loaded memories:` carries forward minus anything deleted during the Step 7 memory-validation item.
+**Backward compat:** If the existing session file has a `Project:` field, preserve it. If `- **Next step:** <text>` (scalar), re-write as `- **Next steps:**` array tagged `[today @<handle>]`. `Commits:` is preserve-only at this step (written by session:commit) — for plugin type, the deploy (Step 11) appends its deploy commit afterward. `Loaded memories:` carries forward minus anything deleted during the Step 7 memory-validation item.
 
 **After writing — update approved-hash (repo sessions only):** Recompute hash and overwrite `~/.claude/memory/sessions/<slug>/<name>.approved-hash`:
 ```bash
@@ -351,7 +354,7 @@ git hash-object "<session_root>/<name>.md" > ~/.claude/memory/sessions/<slug>/<n
 
 **General sessions only:** Also check `~/.claude/memory/sessions/<slug>/<name>/` — if notes, decisions, or outputs were produced today, ensure they are written there before closing.
 
-Print the summary to screen. **For plugin type, this is not the final output** — the deploy (Step 12) runs after Steps 10–11 and its result is the true last line. For all other types, the summary is the final output.
+Print the summary to screen. **For plugin type, this is not the final output** — the deploy (Step 11) runs after the worklog (Step 10) while the session is still active, then deactivation (Step 12) closes out silently, so the deploy's result is the true last line. For all other types, the summary is the final output.
 
 ### 10. Work Log
 
@@ -383,25 +386,15 @@ Entry format varies by type:
 
 Multiple entries per day are expected — always append, never overwrite.
 
-### 11. Deactivate Session
+### 11. Deploy — plugin type only (runs before deactivation)
 
-Remove the active marker so no future conversation inherits stale state. `_active` is always local — do not touch the repo session directory for this step:
+**Plugin finish IS the deploy.** This is where the session's work goes live. It runs after the history entry (8), the session summary + mark-completed (9), and the worklog (10) — but **before deactivation (Step 12), deliberately.** The version bump in 11b is an Edit to a plugin-zone `plugin.json`, which `session-scope-guard.py` permits only while an active coding session exists (the hook reads `_active`). Deactivating first would remove `_active` and the bump Edit would be denied — so the active marker stays present through the *entire* deploy and is removed only as the true terminal action (Step 12). The code still lands last among the content steps, mirroring the repo-based branch flow (state first, code last) and positioning for future repo-tracked session state shared across developers.
 
-```bash
-rm -f ~/.claude/memory/sessions/<slug>/_active
-```
-
-On PowerShell use: `Remove-Item -ErrorAction SilentlyContinue ~/.claude/memory/sessions/<slug>/_active`
-
-### 12. Deploy — plugin type only (the terminal action)
-
-**Plugin finish IS the deploy.** This is where the session's work goes live. It runs **LAST — deliberately** — after the history entry (8), the session summary + mark-completed (9), the worklog (10), and deactivation (11). Everything else is settled state; the code lands last, mirroring the repo-based branch flow (state first, code last) and positioning for future repo-tracked session state shared across developers.
-
-**For story / cab / personal / general: skip this step entirely.** Those types push during `commit` and have no version/reinstall concept — their finish ended at Step 11.
+**For story / cab / personal / general: skip this step entirely.** Those types push during `commit` and have no version/reinstall concept — Step 11 is skipped and their finish ends at deactivation (Step 12).
 
 **No-op guard:** if the Step 2 git scan found nothing to ship (clean tree AND no unpushed local commits from `session:commit`), report `Nothing to deploy — finish complete.` and stop. Do not bump or push.
 
-Otherwise, present the deploy as the clearly-final, visually distinct step so it is obvious nothing runs after it:
+Otherwise, present the deploy as the clearly-final, visually distinct step — the last thing the user sees (only the silent deactivation of Step 12 follows it):
 
 ```
 ────────────────────────────────────────────────
@@ -409,9 +402,9 @@ FINAL STEP — DEPLOY  (bump → commit → push → reinstall → live)
 ────────────────────────────────────────────────
 ```
 
-**12a. Derive the target plugin(s) from changed paths** — not from the session name. Using the Step 2 git scan (uncommitted changes + unpushed local commits), map each changed file under the marketplace root to its top-level plugin directory (e.g. `session/commands/finish.md` → `session`). Collect the distinct set. A deploy may span multiple plugins; each affected plugin gets its own bump.
+**11a. Derive the target plugin(s) from changed paths** — not from the session name. Using the Step 2 git scan (uncommitted changes + unpushed local commits), map each changed file under the marketplace root to its top-level plugin directory (e.g. `session/commands/finish.md` → `session`). Collect the distinct set. A deploy may span multiple plugins; each affected plugin gets its own bump.
 
-**12b. Version bump — prompted, never silent.** For each affected plugin, read the current version from `<plugin>/.claude-plugin/plugin.json` and suggest a level + next version (one bump per plugin per feature):
+**11b. Version bump — prompted, never silent.** For each affected plugin, read the current version from `<plugin>/.claude-plugin/plugin.json` and suggest a level + next version (one bump per plugin per feature):
 - **PATCH** — bug fixes only
 - **MINOR** — new command / feature / meaningful behavior addition
 - **MAJOR** — redesign or breaking change
@@ -424,9 +417,9 @@ go / <plugin> <level> / cancel
 ```
 Apply the confirmed version to each affected `plugin.json`. On **cancel**, stop — nothing is committed, pushed, or reinstalled (the session is already closed; the deploy can be re-run later by re-opening).
 
-**12c. Commit + push to master.** Stage the plugin changes (edited files + bumped `plugin.json`), draft a commit message summarizing the shipped work in the repo's style (`git log --oneline -5`), commit, and **push to master**. Any unpushed local commits made via `session:commit` during the session ride along in the push. End the commit message with the Co-Authored-By trailer per the repo convention (see CLAUDE.md). Direct pushes to `master` on this repo are authorized — no PR.
+**11c. Commit + push to master.** Stage the plugin changes (edited files + bumped `plugin.json`), draft a commit message summarizing the shipped work in the repo's style (`git log --oneline -5`), commit, and **push to master**. Any unpushed local commits made via `session:commit` during the session ride along in the push. End the commit message with the Co-Authored-By trailer per the repo convention (see CLAUDE.md). Direct pushes to `master` on this repo are authorized — no PR.
 
-**12d. Reinstall — make it live, with the Windows fallback.** For each deployed plugin:
+**11d. Reinstall — make it live, with the Windows fallback.** For each deployed plugin:
 ```bash
 claude plugin update <plugin>@ajudd-claude-plugins
 ```
@@ -438,7 +431,21 @@ claude plugin install <plugin>@ajudd-claude-plugins
 ```
 A Claude Code restart may be required to load the new version — note this if so.
 
-**12e. Record + report.** Append the deploy commit to the session file's `Commits:` field (one-line append — SHA + subject; the file was written in Step 9). Then print the deploy result as the true final output:
+**11e. Record + report.** Append the deploy commit to the session file's `Commits:` field (one-line append — SHA + subject; the file was written in Step 9). Then print the deploy result as the last visible output:
 ```
 Deployed: session v1.53.0 → v1.54.0 — pushed to master, reinstalled (live)
 ```
+
+### 12. Deactivate Session (terminal action)
+
+The true final action of finish — run **only after the deploy (Step 11) has fully completed** (for plugin type), so the version bump and any other plugin-file edits during the deploy were still authorized by an active coding session. For non-plugin types Step 11 is skipped, so deactivation follows the session summary directly. This step edits no plugin files — it only removes the marker — so it is always safe to run last.
+
+Remove the active marker so no future conversation inherits stale state. `_active` is always local — do not touch the repo session directory for this step:
+
+```bash
+rm -f ~/.claude/memory/sessions/<slug>/_active
+```
+
+On PowerShell use: `Remove-Item -ErrorAction SilentlyContinue ~/.claude/memory/sessions/<slug>/_active`
+
+Deactivation is silent — it produces no user-facing output, so for plugin type the Step 11 `Deployed: …` line remains the last thing on screen.

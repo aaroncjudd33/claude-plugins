@@ -286,7 +286,7 @@ Run **three reads in parallel:**
 - ```bash
   wc -l < "<session_root>/_history.md" 2>/dev/null && tail -n 1 "<session_root>/_history.md" 2>/dev/null || echo "0"
   ```
-- Read `<session_root>/_inbox_<name>.md` (skip if file does not exist)
+- Read the inbox fresh — **plugin / personal → the canonical `<session_root>/_inbox.md`** (item-driven; there is no per-session `_inbox_<name>.md`); **story / cab / general → `<session_root>/_inbox_<name>.md`** (skip if file does not exist). Count by `## <id>` header lines; skip the `> [type: … · status: …]` metadata line.
 
 **Security check (repo sessions only):** If `session_root` is inside a repo (not `~/.claude/memory/sessions/`), run the approval-hash check before displaying any session content. Follow the same gate as start-impl.md Step 4: compute `git hash-object`, compare to `~/.claude/memory/sessions/<slug>/<name>.approved-hash`, and require approval on first load or when the file changed since last approval. For local plugin sessions (`session_root` is under `~/.claude/`), skip this check.
 

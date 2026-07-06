@@ -164,7 +164,7 @@ Out-of-scope work detected — will be excluded from this session record.
   route  ·  note  ·  skip
 ```
 
-- **route:** invoke `/session:inbox` flow with the out-of-scope item pre-populated. The routing is never silent.
+- **route:** invoke `/session:inbox` flow with the out-of-scope item pre-populated. Choosing `route` IS the go-ahead — `/session:inbox` writes directly and surfaces the `Sent inbox item <id> to <target> inbox` line (free rein + visible, never silent — acp-ajudd#5; no separate pre-write approval).
 - **note:** note in session Open items but do not write to any inbox.
 - **skip:** continue without noting.
 

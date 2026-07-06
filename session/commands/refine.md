@@ -66,6 +66,12 @@ Invite the user to paste raw requirements, a bug report, notes, or questions —
 
 **After the first substantive pass** (enough to name the work and sketch its shape), **create the record immediately** in its "still scoping" state — do not wait for it to be perfect. This is the write-early principle: the record is the WIP store, so the WIP goes into it, where it survives `/clear` and is resumable. (On a **resume**, the record already exists — skip creation and edit it in place.)
 
+**Free rein, but never silent (acp-ajudd#5).** Writing the record is not gated by any propose→approve step — an inbox item / Jira story is captured requirements, not code, so you write it the way you'd write a session file: without asking. The one rule that survives is *visibility* — the instant you write it, **say so in the conversation** with a plain confirmation line so the user can read and validate the record after the fact:
+```
+Wrote inbox item <id> (refining) — <one-line summary>          ← plugin / personal
+Created <KEY> in Gathering Requirements — <one-line summary>   ← work repo (Jira)
+```
+
 **A. Plugin / personal → inbox item at `status: refining`.**
 
 Issue a stable ID (`python3 <session>/scripts/inbox-id.py next --slug <slug> --handle <handle>`), then append a self-contained item to `~/.claude/memory/sessions/<slug>/_inbox.md` (create with header `# Inbox — <slug>` if needed). Use the **exact `_inbox.md` format `new` / `/session:inbox` write** — same header, plus the `> [type: story · status: refining]` line and a freeform body carrying the refinement report. The provenance surrogate is the command itself (there is no originating session): `from <slug> / refine (<zone>)`, with `<zone>` as the `source-type`:
@@ -102,6 +108,8 @@ As the conversation continues, **keep editing the same record** — this is the 
 - **Inbox item** → edit the item body in `_inbox.md` (Affected areas, Estimate, Risks, Open questions, Acceptance criteria). Leave `status: refining` until graduation.
 - **Jira story** → `editJiraIssue` to update the description; leave it in *Gathering Requirements*.
 
+Update freely and as often as the refinement needs — no per-edit approval, no one-record cap (a single refine session may create/update several records). After each substantive edit, surface it plainly (`Updated <id> — <what changed>`) so the record write is never silent.
+
 Aim the report at: **Summary** (one line of what it delivers), **Affected areas** (concrete services/files/tables/endpoints/commands, named from the actual repo), **Estimate** (t-shirt or points *with reasoning*), **Risks / challenges** (the "looks small but isn't" flags), **Open questions / dependencies**, **Draft acceptance criteria** (checkable bullets).
 
 You can stop any time — the record holds everything. Resume later via `refine <id>` / `refine <KEY>` (Step 1 resume path) and keep polishing.
@@ -115,8 +123,8 @@ Mark ready for pickup?  ready  ·  not yet
 ```
 
 On `ready`:
-- **Inbox item** → change the item's line to `> [type: story · status: ready]`. Nothing else moves — it's already a normal, pickable inbox item.
-- **Jira story** → `transitionJiraIssue` to **Ready For Work** (add a short comment noting refinement is complete, per the story plugin's transition convention).
+- **Inbox item** → change the item's line to `> [type: story · status: ready]`. Nothing else moves — it's already a normal, pickable inbox item. Surface it: `Marked <id> ready for pickup.`
+- **Jira story** → `transitionJiraIssue` to **Ready For Work** (add a short comment noting refinement is complete, per the story plugin's transition convention). Surface it: `Transitioned <KEY> → Ready For Work.`
 
 On `not yet` → leave it `refining` / *Gathering Requirements*; it stays resumable.
 

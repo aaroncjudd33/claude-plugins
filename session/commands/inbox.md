@@ -8,6 +8,8 @@ argument-hint: "[target-session]"
 
 Route a work item to a target session's inbox and record it in the source session's outbox. All cross-session routing flows through here.
 
+**Free rein, never silent (acp-ajudd#5).** An inbox item is captured intent, not code — so routing one is like writing a session file: you do it **without a propose→approve ceremony.** There is no pre-write approval gate anywhere in this flow. The one rule that survives is *visibility*: every write **surfaces a confirmation line in the conversation as it happens** (Step 5), so the user can read the record and validate it after the fact. "Just do it, but say you did it."
+
 ## Instructions
 
 ### 0. Resolve Context
@@ -33,14 +35,9 @@ Compose a self-contained body block — enough context that the receiving sessio
 
 If an argument was passed (e.g., `/session:inbox release`), use it as the target session name and skip the prompt.
 
-If the target is clear from context (scope guard already identified the file path and owning plugin/session), use it and confirm with a plain routing line:
+If the target is clear from context (an argument was passed, or the scope guard already identified the file path and owning plugin/session), use it **directly — write the item, then report it.** Do not gate the write behind a "route to X? yes/no" prompt; the Step 5 confirmation line names the target so a wrong inference is immediately visible and the user can redirect. Free rein means routing is like writing a session file — done, then surfaced, not asked-first.
 
-```
-Route to <target-name> inbox?
-  yes  ·  pick different
-```
-
-Otherwise, list sessions and ask:
+Only when the target genuinely cannot be derived (no argument, no context signal), list sessions and ask — this is a routing necessity (there is no destination yet), not an approval gate:
 ```
 Where should this go?
   [1] <session-name> — <type> · inbox N · last <date>
@@ -94,8 +91,12 @@ If a source session is active, append to `<session_root>/_outbox_<source-name>.m
 
 Outbox is append-only — never modified or archived.
 
-### 5. Confirm
+### 5. Confirm — surface the write (the one guardrail)
+
+The write already happened in Step 3. Surface it as a plain feedback line so the record is visible and validatable — lead with the stable `<id>`:
 
 ```
-Routed to <target-name> inbox. Will surface when that session starts.
+Sent inbox item <id> to <target-name> inbox — surfaces when that session starts.
 ```
+
+This line is **feedback, not a gate.** It names the target so a wrong inference is obvious; if it went to the wrong place the user just says so and you re-route. Never skip it — a write the user never sees is the exact silent-auto-file failure this flow exists to prevent.

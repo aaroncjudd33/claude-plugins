@@ -253,7 +253,7 @@ Two session-file fields connect the session lifecycle to the **memory plugin** a
 - **Commits:**
   - [2026-06-12] a1b2c3d — fix: validation error on empty cart  https://github.com/org/repo/commit/a1b2c3d
 ```
-- **Written by:** session:commit (appends the short SHA + subject; **GitHub link for non-plugin types only** — plugin commits are local/unpushed, so a commit URL would 404 until the finish deploy pushes it). The plugin **finish deploy (Step 12)** also appends its deploy commit here. **Preserved by:** checkpoint/finish/start. **Surfaced by:** start (resume block shows the most recent 3).
+- **Written by:** session:commit (appends the short SHA + subject; **GitHub link for non-plugin types only** — plugin commits are local/unpushed, so a commit URL would 404 until the finish deploy pushes it). The plugin **finish deploy (Step 11)** also appends its deploy commit here. **Preserved by:** checkpoint/finish/start. **Surfaced by:** start (resume block shows the most recent 3).
 - Joins the other session artifacts (story, CAB, PR, deploy links) so returning to a session surfaces everything that was produced in it.
 
 Both fields are **omitted entirely** when empty — older session files without them load fine (backward compatible). The memory plugin reads/writes `Loaded memories:` through this skill's Path Resolution to find the active session.

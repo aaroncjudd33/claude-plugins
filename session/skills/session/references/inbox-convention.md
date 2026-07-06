@@ -62,6 +62,27 @@ Every inbox item is described by **three independent axes**. Keep them separate 
 
 **Picking a `refining` story is guarded.** Because a `story` doubles as its own WIP store, a half-scoped item must be distinguishable from a ready one — that is exactly what `refining` vs `ready` encodes. `pick` on a `refining` item **warns and confirms** ("still being refined — pick it up anyway?") before folding it into a coding session.
 
+## Writing records — free rein, never silent (acp-ajudd#5)
+
+Records get written the way session files get written: **without asking.** An inbox item (and its work-repo analog, a Jira story) is *captured requirements and ideas — not code.* So planning/refinement and cross-session handoffs write and update them with **free rein** — no propose→approve ceremony, no one-record-per-session cap. Validation is the user's job **after the fact**: they read the record (the inbox item / Jira story) or trust the conversation it came from. This **reverses** an earlier "draft → show → approve → place" gate, which was rejected as friction on low-stakes captured intent.
+
+**The one guardrail that survives — visible, not silent.** Every record write must **surface a confirmation line in the conversation as it happens**, exactly like a session-file write is visible. This is *not* an approval step; it is just "say you did it." The failure mode this prevents is the historical one where items were auto-filed at `finish` and never surfaced, so the user could not read them to validate. The rule is **"just do it, but say you did it"** — free rein plus a visible confirmation (leading with the item's `<id>`). A background write that never appears in the conversation is the one thing that is never allowed.
+
+**Source of record — per zone (what you write to):**
+
+| Zone (what repo am I in) | Source of record | Planning / refinement / handoff writes to |
+|---|---|---|
+| **Plugin marketplace** | inbox item (`_inbox.md` → file/git history) | the inbox item |
+| **Personal** (`personalProjectsDir`) | inbox item (`_inbox.md` → file/git history) | the inbox item |
+| **Work repo** (story/cab) | the **Jira story** | the Jira story |
+| **General** | none assumed | ask once, then that target |
+
+Rule of thumb: **what repo am I in → that's my source of record → I write to it freely, because updating it IS the work.**
+
+**Two capabilities this enables:** (1) a single planning/refine session **creates and updates as many records as it needs** — no per-write approval, no cap; (2) **frictionless cross-repo capture from anywhere** — from any zone, fire an item into *another* repo's inbox with minimal ceremony (flagship: a plugin idea you had while working in a work repo → send it to the plugins inbox). This is already unblocked mechanically: a plugin/personal inbox lives under `~/.claude/memory/`, which the scope-guard hook always allows — no coding session needed to write one in.
+
+**Where this shows up:** `session:inbox` (writes directly, then a `Sent inbox item <id> to <target> inbox` line), `refine` (writes early + on each edit, surfacing `Wrote/Updated <id>`), `new` (writes then immediately picks up — visible via the pickup), `spawn` (writes the `[spawn]` entry, confirms with `<id>`), and the `checkpoint`/`finish`/`commit` scope-routing handoffs (route through `session:inbox`, which surfaces the line). None of these gate the write; all of them surface it.
+
 ## Stable IDs
 
 Every inbox item gets a **permanent, per-item handle** at creation, so it can be named consistently across its whole life instead of by a list position that shifts every time an item is added or folded. Applies to **all** project types (plugin / personal / work / general) — one universal scheme, no per-type branching.

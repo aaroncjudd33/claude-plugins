@@ -16,7 +16,7 @@ Loaded by `start.md` after the user makes their selection. Context already in sc
 **Run these reads in parallel:**
 - Read `<session_root>/<name>.md`
 - Run `wc -l < "<session_root>/_history.md" && tail -n 1 "<session_root>/_history.md"` via Bash — first output is total line count (= entry count), second line is the most recent entry. Do not Read the full file.
-- Read the inbox file (`_inbox_<name>.md` for plugins, `_inbox.md` otherwise — from `session_root`) and collect all items (both in-progress and pending) for display.
+- Read the inbox file — **plugin / personal (item-driven) → the canonical `<session_root>/_inbox.md`** (there is no per-session `_inbox_<name>.md` for them); **story / cab / general → `<session_root>/_inbox_<name>.md`** — and collect all items (both in-progress and pending) for display. Count by `## <id>` header lines; skip the `> [type: … · status: …]` metadata line.
 
 **Security check (repo sessions only):** If `session_root` is inside a repo (not `~/.claude/memory/sessions/`), run the approval-hash check before displaying any session content:
 

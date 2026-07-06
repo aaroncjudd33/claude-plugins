@@ -44,9 +44,10 @@ Context:  auto-derive  ·  describe
 
 ### 4. Write Spawn Entry to Inbox
 
-If the spawn `Type` is `plugin` or if the `Label` matches an existing session name in `session_root`, write to `<session_root>/_inbox_<label>.md` (create if needed with header `# Inbox — <label>`).
+Pick the target inbox by zone — a spawn must land where `/session:start` will actually surface it:
 
-Otherwise (target session does not exist yet), append to `<session_root>/_inbox.md` (global — surfaces at the next `/session:start` for anyone to pick up; create if needed with header `# Inbox — <slug>`).
+- **plugin / personal (item-driven):** always the consolidated `<session_root>/_inbox.md` (create with header `# Inbox — <slug>` if needed). These slugs have exactly ONE inbox; `/session:start` reads it and flags `[spawn]` entries with ★. A per-label `_inbox_<label>.md` would never surface — do NOT write one for these types (there is no per-session inbox in the item-driven model).
+- **story / cab / general:** if the `Label` matches an existing session name in `session_root`, append to that session's `<session_root>/_inbox_<label>.md` (create with header `# Inbox — <label>`); otherwise (target session does not exist yet) append to the global `<session_root>/_inbox.md` (create with header `# Inbox — <slug>`).
 
 **Issue a stable ID first** (home slug = the inbox's slug = current `<slug>`; namespaced by `<handle>`): `python3 <session>/scripts/inbox-id.py next --slug <slug> --handle <handle>` — prepend `<id> · ` to the header. Fallback `<acronym>-<handle>#?` if unavailable; never block. See `references/inbox-convention.md` § Stable IDs.
 
@@ -70,16 +71,16 @@ Do **not** write `_active` or modify the current session file in any way.
 
 ### 5. Confirm to User
 
-Print:
+Surface the write (free rein, never silent — acp-ajudd#5): the spawn entry is written in Step 4 without any propose→approve step, then reported here. Lead with the stable `<id>`. Print:
 
 ```
-Spawned: <label>
+Spawned: [<id>] <label>
   Type:       <type>
   Links to:   <current-session-name>
   Next step:  <next step>
   Context:    <N bullets>
 
-Wrote to global inbox. The next /session:start on this project will surface it as ready to pick up.
+Wrote inbox item <id> to the <target> inbox (the consolidated <slug> inbox for plugin/personal; <label>'s inbox for a matching story/cab/general session). The next /session:start on this project will surface it as ready to pick up.
 Current session unchanged.
 ```
 
