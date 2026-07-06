@@ -266,7 +266,7 @@ If the user later says `backlog`, display items numbered and use a plain routing
 
 | Type | name | teams_chat |
 |------|------|------------|
-| plugin | plugin name (e.g. `office`) | `<Name> - Claude Plugin` |
+| plugin | plugin name (e.g. `office`) | `Plugin — Aaron Work` (consolidated — all plugin work) |
 | story | story key (e.g. `BPT2-1234`) | `BPT2-XXXX — <title>` (from Jira) |
 | cab | CAB number (e.g. `CAB-456`) | `CAB-XXX — <description>` (from Jira) |
 | personal | name the user provides | `none` |
@@ -291,6 +291,8 @@ For **resume**: mode is shown in the resume block. If the user included `plannin
 Store the result as `mode` for use in Step 8.
 
 ### 7. Teams Chat Setup
+
+**Plugin sessions default to the consolidated "Plugin — Aaron Work" chat** (`19:8bff4d4e8659475da4a8edbfca0d270a@thread.v2`) — the whole plugin suite is one house, so there are no per-plugin "<Name> - Claude Plugin" chats anymore (those are retired, `Active=no`). Resolve to the consolidated chat by default; the repoint-to-different option below still applies if the user wants a specific chat for a session.
 
 Look in `~/.claude/plugins/known-chats.md` for a chat whose Name, Aliases, or Topic matches the expected `teams_chat` value and has `Active=yes`. If the file does not exist, treat it as empty and proceed to the Not found branch.
 
