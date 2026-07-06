@@ -120,6 +120,26 @@ Rule of thumb: **what repo am I in → that's my source of record → I write to
 
 **Where this shows up:** `session:inbox` (writes directly, then a `Sent inbox item <id> to <target> inbox` line), `refine` (writes early + on each edit, surfacing `Wrote/Updated <id>`), `new` (writes then immediately picks up — visible via the pickup), `spawn` (writes the `[spawn]` entry, confirms with `<id>`), and the `checkpoint`/`finish`/`commit` scope-routing handoffs (route through `session:inbox`, which surfaces the line). None of these gate the write; all of them surface it.
 
+## Record-write boundary — planning edits in place, coding hands off (acp-ajudd#13)
+
+Free rein (above) governs *how* records get written — no approval ceremony. This section governs *who* may **edit an existing record's body in place** versus who must **hand off**. It is a **documented convention, instruction-only — there is no guard or hook** (a record-layer hook would reintroduce exactly the file-edit policing acp-ajudd#1 removed, and would gate the `~/.claude/memory/` tier we deliberately keep free; it would also be trivially bypassed by a plain session). The boundary holds by convention plus the sanctioned alternative below.
+
+The record layer = inbox items (their body / requirements / acceptance criteria) and their work-repo analog, Jira stories.
+
+**Planning / `refine` session — owns in-place requirement edits.** Creating a record and **editing its body/requirements/acceptance criteria in place** (reshape, re-scope, re-annotate) is the analyze-then-record job. `refine` writes the record early and iterates it in place, graduating by a status flip — that is exactly this.
+
+**Coding / implementation session — may:**
+- write/update its **own session file** (working state);
+- **post NEW inbox items** — cross-session handoffs (`/session:inbox`), spawns, and `note`/`data` mailbox messages;
+- **pick up** an inbox item (the fold-then-delete at pickup *consumes* the requirement to start building — that's fine).
+
+**Coding / implementation session — must NOT:**
+- **edit the body / requirements / acceptance criteria of an existing inbox item or Jira story.** The thing you picked up to build must not drift underneath you, and editing a *sibling* item you're not building leaks planning decisions into implementation commits.
+
+**The sanctioned alternative for a coding session** that notices a requirement needs changing: don't edit the record's body from the coding seat — **drop a `note`/`data` into the inbox** (the mailbox — acp-ajudd#10, below) or **hand off to a planning/`refine` pass**. That keeps the record a stable contract shaped in planning, not rewritten mid-implementation.
+
+Mirror already in the codebase: story lifecycle **locks the description once *In Progress*** (`/story:update`). Same principle — requirements are shaped in planning, not rewritten mid-implementation. (Note this is a *body/requirements* boundary: a `refining`→`ready` **status flip**, or the fold-then-delete on pickup, are not "editing the body" and remain fine.)
+
 ## Stable IDs
 
 Every inbox item gets a **permanent, per-item handle** at creation, so it can be named consistently across its whole life instead of by a list position that shifts every time an item is added or folded. Applies to **all** project types (plugin / personal / work / general) — one universal scheme, no per-type branching.

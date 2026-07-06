@@ -65,8 +65,8 @@ Write `<repo_root>/.claude/sessions/.gitignore`:
 ```gitignore
 # Per-user state — never commit
 _active
-_restore_*
-_resume_*  # legacy marker name (pre-rename) — keep ignored during transition
+_restore_*  # legacy resume marker (mechanism removed) — keep ignored so stale files never get committed
+_resume_*   # legacy marker name (pre-rename) — keep ignored during transition
 *.approved-hash
 ```
 
@@ -164,7 +164,7 @@ Copy as-is (no handle tagging needed):
 
 Do **not** copy:
 - `_active` — per-user hint, excluded by `.gitignore`
-- `_restore_*` — transient per-user signal, excluded by `.gitignore`
+- `_restore_*` — legacy resume marker (mechanism removed; restore is now an explicit named-file load). Any leftover files are stale — leave them behind, excluded by `.gitignore`.
 
 ### 10. Create Local Config
 

@@ -5,9 +5,9 @@ description: Dump volatile in-session reasoning to a context file before running
 
 # Session Store
 
-Captures everything held in conversation that isn't in persistent files — reasoning chains, confirmed facts, decisions and why, rejected options, open questions, key code/values — into `_context_<session-name>.md`. Then writes a `_restore_<session-name>` marker so `/session:restore` can find this session immediately after `/clear`.
+Captures everything held in conversation that isn't in persistent files — reasoning chains, confirmed facts, decisions and why, rejected options, open questions, key code/values — into a named `_context_<session-name>.md` file. That file **is** the handoff: `store` tells you its name and exactly how to pick it up on return, so restoring is an explicit named-file load — no hidden markers, no guessing which session was active.
 
-Run this **before** `/clear`. After `/clear`, run `/session:restore` to restore.
+Run this **before** `/clear`. After `/clear` (or from a fresh terminal), run `/session:restore <session-name>` to restore.
 
 ## Instructions
 
@@ -80,30 +80,23 @@ Scrubbed before writing context (kept out of _context_<name>.md):
 ```
 This stops secrets at the source — they never reach disk in the context file, so there is nothing for migrate or the commit guard to catch later. Those remain the backstops; this is the front line.
 
-### 3. Write Resume Marker
-
-Write `~/.claude/memory/sessions/<slug>/_restore_<session-name>` (always local — never in repo; plain text, just the session name, no extension):
-
-```
-<session-name>
-```
-
-This is the durable per-user signal that survives `/clear`. `/session:restore` scans `~/.claude/memory/sessions/<slug>/` for `_restore_*` files.
-
-### 4. Update Session Status
+### 3. Update Session Status
 
 In `<session_root>/<session-name>.md`, update the `Status` field to `prepare-clear`. If the field does not exist, add it after the `Branch` line.
 
-### 5. Confirm to User
+### 4. Confirm to User
+
+The context file name is the handoff — name it explicitly and tell the user exactly how to pick it up on return. No marker is written; restore is always by explicit name.
 
 Print:
 
 ```
-Ready to /clear
+Saved context to _context_<name>.md — <N> sections captured
 
-  Session:    <name>
-  Context:    _context_<name>.md — <N> sections captured
-  Marker:     _restore_<name> written
+When you're back (after /clear, or from a fresh terminal), run:
+  /session:restore <name>
 
-Run /clear now. When you're back, run /session:restore to restore full context.
+Run /clear now.
 ```
+
+The `/session:restore <name>` invocation is the pick-up instruction — it works identically after a `/clear` in this terminal or from a brand-new session later, because it loads the named `_context_<name>.md` + session file directly rather than relying on any transient marker or on `_active` still pointing at this session.

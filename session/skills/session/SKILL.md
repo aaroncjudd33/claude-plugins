@@ -36,7 +36,6 @@ else:
 
 Always local (never in repo, regardless of mode):
     _active        → ~/.claude/memory/sessions/<slug>/_active
-    _restore_*      → ~/.claude/memory/sessions/<slug>/
 
 Session index (in session_root — tracked with session files):
     _index.md      → <session_root>/_index.md
@@ -56,7 +55,7 @@ Session index (in session_root — tracked with session files):
 
 All cross-session routing goes through `/session:inbox` — scope guards invoke it rather than writing directly.
 
-**Shell portability (macOS/zsh):** Never iterate a bare filename glob that may match nothing — `for f in <dir>/_inbox*.md` aborts the whole command under zsh (macOS default shell) with "no matches found", which silently breaks listings. Always use a no-match-safe form: `find <dir> -maxdepth 1 -name '_inbox*.md' 2>/dev/null | while read -r f; do …; done`. Applies to every command that enumerates `_inbox*`, `_restore_*`, `*.approved-hash`, or `refinement-*` files.
+**Shell portability (macOS/zsh):** Never iterate a bare filename glob that may match nothing — `for f in <dir>/_inbox*.md` aborts the whole command under zsh (macOS default shell) with "no matches found", which silently breaks listings. Always use a no-match-safe form: `find <dir> -maxdepth 1 -name '_inbox*.md' 2>/dev/null | while read -r f; do …; done`. Applies to every command that enumerates `_inbox*`, `_context_*`, `*.approved-hash`, or `refinement-*` files.
 
 ### First-Run Auto-Config
 
@@ -277,17 +276,32 @@ When the active session has an `Epic` field and the task crosses story boundarie
 
 If the user asks "what was I working on", "did I work on BPT2-XXXX before", "find my session for X", or similar recall questions, suggest **`/session:search <query>`** — it searches session files and worklogs by story key or keyword without requiring an active session. For date-based review ("what did I do yesterday"), suggest **`/session:worklog`**.
 
-If the user runs `/clear` or mentions that context was lost, **immediately suggest running `/session:restore`** (fastest post-`/clear` path — skips the menu and restores context directly) or **`/session:start`** for the full flow:
+If the user runs `/clear` or mentions that context was lost, the recovery path depends on whether they ran `/session:store` first:
 
-> "Context cleared — run `/session:restore` to restore context directly, or `/session:start` to pick up from the full session menu."
+- **If a context file was stored** (`/session:store` before `/clear`), **suggest `/session:restore <name>`** — the fastest post-`/clear` path. It loads that named `_context_<name>.md` + session file directly, skipping the menu. Bare `/session:restore` (no name) lists the stored context files to pick from if they don't recall the name.
+- **Otherwise** (no stored context), suggest **`/session:start`** for the full flow.
 
-This is the primary recovery path. `/session:start` reads `_active` to identify the current session, then loads the session file and surfaces everything needed to resume. New developers especially should be nudged here — the workflow is not obvious without it.
+> "Context cleared — if you ran `/session:store` first, run `/session:restore <name>` to pick that context back up; otherwise `/session:start` to resume from the full session menu."
+
+`/session:start` reads `_active` to identify the current session, then loads the session file and surfaces everything needed to resume. `/session:restore` is explicit by design — it picks up a named context file rather than guessing from `_active`, so it works the same from a fresh terminal as right after a `/clear`. New developers especially should be nudged here — the workflow is not obvious without it.
 
 ---
 
 ## Planning Mode
 
 When `Mode: planning` is active in the session file, treat it as a **soft, instruction-level** convention: the session is for scoping, not building, so route implementation requests to the session inbox (or graduate a record via `refine`) rather than writing code in it. This is a behavioral cue, **not a hard gate** — there is no hook blocking edits (acp-ajudd#1 removed edit-blocking entirely). If real code work is needed, switch the session to `coding` (`/session:switch <name> coding`) or pick up a `ready` item into a fresh coding session. Reads and investigation are always free.
+
+---
+
+## Record-Write Boundary — planning edits requirements, coding hands off (acp-ajudd#13)
+
+A **coding/implementation session** and a **planning/`refine` session** have different write rights over the **record layer** (inbox item bodies / requirements / acceptance criteria, and their work-repo analog: Jira stories). This is a **documented convention, instruction-only — no guard or hook** (consistent with acp-ajudd#1's "editing is never policed"; a record-layer hook would re-police the memory tier we keep free and would be trivially bypassed anyway).
+
+- **Coding session — may:** edit its **own session file**; **post NEW inbox items** (handoffs via `/session:inbox`, spawns, `note`/`data` mailbox messages); **pick up** an item (fold-then-delete). **Must NOT:** edit the body/requirements/acceptance criteria of an **existing** inbox item or Jira story.
+- **Planning / `refine` session — owns** creating records and **editing requirement records in place** (that is what `refine` does).
+- **Sanctioned alternative** when a coding session notices a requirement needs changing: drop a `note`/`data` into the inbox (the mailbox — below) or hand off to a planning/`refine` pass. Never rewrite the record's body from the coding seat.
+
+A `refining`→`ready` **status flip** and the fold-then-delete on pickup are not "editing the body" — they remain fine. Mirror in the codebase: `/story:update` locks a story's description once *In Progress*. Full statement: `references/inbox-convention.md` § Record-write boundary.
 
 ---
 
