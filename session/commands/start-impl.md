@@ -379,7 +379,7 @@ Write `~/.claude/memory/sessions/<slug>/_active` (always local — plain text, j
 BPT2-1234
 ```
 
-`_active` is the durable session pointer for the slug: `session:start` uses it for resume suggestions, and the session commands (`commit` / `checkpoint` / `finish` / `switch` / `spawn` / `store` / `restore`) read it as the fallback when conversation context doesn't name a session — and its presence is the existence check behind the command-level session guard (acp-ajudd#1). Conversation context ("Resuming `<name>`" / "Switching to `<name>`") still takes precedence over `_active` for *which* session is current.
+`_active` is the durable session pointer for the slug: `session:start` reads it **only** to draw the `←` "last active" marker on the matching row of its listing — it never auto-loads or auto-resumes from `_active` (start lists in-progress/paused sessions and waits for the user to pick). The session commands (`commit` / `checkpoint` / `finish` / `switch` / `spawn` / `store` / `restore`) read it as the fallback when conversation context doesn't name a session — and its presence is the existence check behind the command-level session guard (acp-ajudd#1). Conversation context ("Resuming `<name>`" / "Switching to `<name>`") still takes precedence over `_active` for *which* session is current.
 
 **Seed `_index.md`:** Update `<session_root>/_index.md` — create with header if not exists:
 ```

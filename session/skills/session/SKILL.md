@@ -21,7 +21,13 @@ The maturity lifecycle (`refining` → `ready`) is the same mental model across 
 **All session commands use this logic.** Do not hardcode `~/.claude/memory/sessions/<slug>/` — check for repo-based sessions first.
 
 ```
-slug = last path component of pwd
+slug = basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+       ← the current repo's folder name (e.g. `ajudd-claude-plugins`).
+       Run this command and use its output VERBATIM. Do NOT use the dashed
+       project-directory name from your environment context / system reminders
+       (e.g. `C--Users-ajudd--claude-plugins-marketplaces-ajudd-claude-plugins`)
+       — that is Claude Code's mangled memory-path key, NOT the slug. It appears
+       in the memory path in every system reminder and is a strong distractor.
 
 repo_root = $(git rev-parse --show-toplevel 2>/dev/null) or pwd if not a git repo
 
@@ -283,7 +289,7 @@ If the user runs `/clear` or mentions that context was lost, the recovery path d
 
 > "Context cleared — if you ran `/session:store` first, run `/session:restore <name>` to pick that context back up; otherwise `/session:start` to resume from the full session menu."
 
-`/session:start` reads `_active` to identify the current session, then loads the session file and surfaces everything needed to resume. `/session:restore` is explicit by design — it picks up a named context file rather than guessing from `_active`, so it works the same from a fresh terminal as right after a `/clear`. New developers especially should be nudged here — the workflow is not obvious without it.
+`/session:start` (no argument) **lists the in-progress and paused sessions and waits for the user to pick one** (by number or name) — it does **not** auto-resume. Completed sessions are hidden by default (reachable via `all`). Given a story key, CAB key, or session name as an argument, it loads that session directly (the Step 0 fast-path). `_active` is **not** an auto-loader — it is a scalar "current session for this slug" pointer read by the session guard and used only to draw the `←` "last active" marker on the matching row in the listing; it never selects or loads a session. `/session:restore` is the explicit counterpart — it picks up a named context file (`_context_<name>.md`) directly rather than going through the menu, so it works the same from a fresh terminal as right after a `/clear`. New developers especially should be nudged toward `/session:restore` — the workflow is not obvious without it.
 
 ---
 

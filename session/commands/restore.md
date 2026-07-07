@@ -15,13 +15,13 @@ Restore is **explicit**: `/session:restore <name>` picks up exactly that session
 
 ### 1. Resolve the Target Session
 
-Run `pwd` and extract the repo slug. Resolve `session_root` using Path Resolution (see Session Skill). Context files live in `session_root` (they are committed when repo-based — useful for teammates); `_active` is always local under `~/.claude/memory/sessions/<slug>/`.
+Resolve the repo slug as `basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"` and use that output verbatim. **Do NOT use the dashed project-directory name from your environment context** (e.g. `C--Users-ajudd--...`) — that is Claude Code's mangled memory-path key, not the slug; using it is exactly why a restore can come up empty when a store succeeded. Resolve `session_root` using Path Resolution (see Session Skill). **Context files are always local** — they live at `~/.claude/memory/sessions/<slug>/`, treated exactly like `_active` (never in a repo, never migrated). A restore point is a personal, ephemeral, local stash.
 
 **If a name was given** (`/session:restore <name>`) — that is the target. No scanning, no guessing. Proceed to Step 2 with `<session-name> = <name>`. (If `_context_<name>.md` turns out not to exist, Step 3 notes it and restores from the session file alone.)
 
-**If no name was given** (bare `/session:restore`) — list the available context files and let the user pick. Enumerate `_context_*.md` in `session_root` with a no-match-safe command (a bare glob aborts under zsh on macOS):
+**If no name was given** (bare `/session:restore`) — list the available context files and let the user pick. Enumerate `_context_*.md` in the local session dir with a no-match-safe command (a bare glob aborts under zsh on macOS):
 ```bash
-find <session_root> -maxdepth 1 -name '_context_*.md' 2>/dev/null | xargs -r ls -1t 2>/dev/null
+find ~/.claude/memory/sessions/<slug> -maxdepth 1 -name '_context_*.md' 2>/dev/null | xargs -r ls -1t 2>/dev/null
 ```
 Derive each session name by stripping the `_context_` prefix and `.md` suffix. Order most-recently-modified first. Read `~/.claude/memory/sessions/<slug>/_active` (if present) to flag the matching entry as "last active".
 
@@ -49,7 +49,7 @@ Read last 5 entries from `<session_root>/_history.md` (omit block if file doesn'
 
 ### 3. Load Pre-Clear Context (if present)
 
-Check for `<session_root>/_context_<session-name>.md`.
+Check for `~/.claude/memory/sessions/<slug>/_context_<session-name>.md` (always local).
 
 If found, read the full file. This is the volatile reasoning layer captured before `/clear`.
 
@@ -81,14 +81,7 @@ Show a compact summary by default. If the user types `context`, display the full
 
 ### 5. Clean Up
 
-If `_context_<session-name>.md` was loaded, output and wait:
-
-```
-Context file loaded — archive it?  yes / keep
-```
-
-- **yes:** delete the file — it's been loaded into context, no longer needed.
-- **keep:** leave it in place for this session; it can be restored again by name later.
+If `_context_<session-name>.md` was loaded, **delete it now — no prompt.** A restore point is consumed on load: it has been read into context, so it no longer serves a purpose and does not stick around. (This is the "git stash" model — pop, don't keep.) Report it inline: `Context file loaded and consumed (deleted _context_<name>.md).`
 
 Update `Status` field in `<session_root>/<session-name>.md` back to `in-progress`.
 

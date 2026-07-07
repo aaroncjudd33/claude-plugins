@@ -15,7 +15,7 @@ Run this **before** `/clear`. After `/clear` (or from a fresh terminal), run `/s
 
 Read current session from conversation context (most recent `session:start` output — "Resuming `<name>`"). If not found in context, read `~/.claude/memory/sessions/<slug>/_active` as a fallback.
 
-Run `pwd` and extract the repo slug (last path component). Resolve `session_root` using Path Resolution (see Session Skill).
+Resolve the repo slug as `basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"` and use that output verbatim. **Do NOT use the dashed project-directory name from your environment context** (e.g. `C--Users-ajudd--...`) — that is Claude Code's mangled memory-path key, not the slug. Resolve `session_root` using Path Resolution (see Session Skill).
 
 **Session guard (command-level enforcement — acp-ajudd#1).** `store` dumps the active session's working context, so a session must exist. If neither the conversation context nor `~/.claude/memory/sessions/<slug>/_active` yields a session name, **stop cleanly**:
 
@@ -27,7 +27,7 @@ Editing files is never blocked; the session commands are what require a session.
 
 ### 2. Dump Context File
 
-Write `<session_root>/_context_<session-name>.md` (goes to repo if repo-based — useful for teammates to see the pre-clear reasoning state):
+Write the context file **always to the local path** `~/.claude/memory/sessions/<slug>/_context_<session-name>.md` — regardless of whether the session is repo-based or local. A restore point is a **personal, ephemeral, local stash** ("git stash for session context"), treated exactly like `_active`: never checked into a repo, never migrated, never shared. (This is why it is safe to hold raw pre-clear reasoning — it never travels.)
 
 ```markdown
 # Pre-Clear Context — <session-name>
@@ -62,7 +62,7 @@ Generated: <YYYY-MM-DD HH:MM>
 
 Focus on the volatile reasoning layer — things that are true NOW in this conversation that aren't captured in the session file, inbox, or memory. Do not repeat information already in those files.
 
-**Never write secrets or PII into the context file.** This file may be committed to the repo (when repo-based) and is copied verbatim by `/session:migrate` — it is the single highest-risk leak path. In the "Key Code / Values / Names" section especially: do **not** paste credentials, passwords, DB connection strings, API keys, tokens, private keys, or real-person PII (a person's name paired with a member/custid, `fedTaxNum`, SSN, addresses). Instead, write a **pointer** to where the value lives — e.g. "Oracle Clone/env6 creds: see global `reference_oracle_environments.md`" or "test member: custid in global accounts store". A pointer restores context just as well on resume, without writing the secret to a file that travels.
+**Never write secrets or PII into the context file.** The file is always local and never committed or migrated, so it does not travel — but keep it clean anyway: local session dumps are still the highest-density collection of raw working state on the machine, and pointers restore context just as well. In the "Key Code / Values / Names" section especially: do **not** paste credentials, passwords, DB connection strings, API keys, tokens, private keys, or real-person PII (a person's name paired with a member/custid, `fedTaxNum`, SSN, addresses). Instead, write a **pointer** to where the value lives — e.g. "Oracle Clone/env6 creds: see global `reference_oracle_environments.md`" or "test member: custid in global accounts store". A pointer restores context just as well on resume, without writing the secret to a file that travels.
 
 ### 2a. Secrets & PII Guard (before write — BLOCKING)
 
@@ -78,7 +78,7 @@ Scrubbed before writing context (kept out of _context_<name>.md):
   - db-connection-credentials ×2 → replaced with pointer to reference_oracle_environments.md
   - name↔custid "Edie Wadsworth / 1443424" → <test-member>
 ```
-This stops secrets at the source — they never reach disk in the context file, so there is nothing for migrate or the commit guard to catch later. Those remain the backstops; this is the front line.
+This stops secrets at the source — they never reach disk in the context file. The context file is local-only (never committed or migrated), so this write-time scan is its **only** line of defense — the commit guard and migrate scan never see it. That is exactly why the scan here is BLOCKING.
 
 ### 3. Update Session Status
 

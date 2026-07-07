@@ -65,8 +65,7 @@ Write `<repo_root>/.claude/sessions/.gitignore`:
 ```gitignore
 # Per-user state — never commit
 _active
-_restore_*  # legacy resume marker (mechanism removed) — keep ignored so stale files never get committed
-_resume_*   # legacy marker name (pre-rename) — keep ignored during transition
+_context_*  # per-user pre-clear restore stash — always local; ignore defensively so a stray one never gets committed
 *.approved-hash
 ```
 
@@ -83,7 +82,7 @@ Read `handle` from `~/.claude/plugins/user-config.json` (`user.handle`). If abse
 
 **Before copying anything into the repo, scan every candidate file for secrets and PII.** Migration git-tracks these files permanently — a credential committed here lives in the git history forever, even if removed later. The pre-commit guard (`session-commit-guard.py`) is the backstop, but catch it here first, where files can be excluded or scrubbed cleanly before they ever enter the tree.
 
-**Scan the full content of every file about to be migrated** — session `.md` files, `_history.md`, all `_inbox*.md`, **and especially `_context_*.md`** (pre-clear dumps capture raw working state — connection strings, query output, spoofed identities — and are the highest-risk). Also the project memory files from Step 11b.
+**Scan the full content of every file about to be migrated** — session `.md` files, `_history.md`, all `_inbox*.md`, and the project memory files from Step 11b. (`_context_*.md` pre-clear dumps are **never migrated** — they are always-local personal stashes, out of migrate scope entirely — so they never need scanning here.)
 
 Flag:
 - **Secrets / credentials** — DB connection strings with passwords (e.g. `user/PASS@host:port`), `password=`/`pwd:` assignments, API keys, `AKIA…` AWS keys, JWTs, `-----BEGIN … PRIVATE KEY-----`. (Same patterns as `SECRET_PATTERNS` in the commit guard.)
@@ -93,19 +92,18 @@ For each flagged file, present a per-file disposition (never silent, never auto-
 ```
 ⚠️  Secrets / PII found in files staged for migration:
 
-  _context_strongdm-oracle-setup.md
-    [secret] db-connection-credentials — cmsuser/…@oracln.yleo.us:1521  (×2)
   _history.md
+    [secret] db-connection-credentials — cmsuser/…@oracln.yleo.us:1521  (×2)
     [PII] name↔custid — "Edie Wadsworth / 1443424"
   BPT2-5558.md
     [PII] name↔custid — "Edie Wadsworth / 1443424"
 
 Handle each before migrating:
-  exclude <file>   — don't copy it into the repo at all (safest for context dumps / pure-secret files)
+  exclude <file>   — don't copy it into the repo at all (safest for pure-secret files)
   scrub <file>     — copy it but redact the flagged values (placeholders: <REDACTED>, <test-member>)
   keep <file>      — migrate as-is (NOT recommended — secrets/PII enter git history permanently)
 
-Reply per file, e.g. "exclude _context_*, scrub _history.md BPT2-5558.md".
+Reply per file, e.g. "scrub _history.md BPT2-5558.md".
 ```
 
 Apply before the copy steps:
@@ -113,7 +111,7 @@ Apply before the copy steps:
 - **scrub:** copy it, but replace each flagged value with a placeholder (`<REDACTED>` for secrets, `<test-member>` / `<custid>` for PII) during the transform. Preserve surrounding context.
 - **keep:** migrate unchanged — only on explicit per-file confirmation; warn once more that it lands in git history.
 
-**Default bias:** recommend `exclude` for `_context_*.md` and any file whose value is purely a secret (e.g. a credentials dump); recommend `scrub` for session/history files that carry real record but happen to name a person. Do not proceed to Step 6 until every flagged file has a disposition.
+**Default bias:** recommend `exclude` for any file whose value is purely a secret (e.g. a credentials dump); recommend `scrub` for session/history files that carry real record but happen to name a person. Do not proceed to Step 6 until every flagged file has a disposition.
 
 ### 6. Copy and Transform Session State Files
 
@@ -154,17 +152,16 @@ For each file matching `_inbox*.md`, `_backlog*.md` in `~/.claude/memory/session
 2. For each entry header line matching `## [YYYY-MM-DD] from` (no handle present):
    - Rewrite as `## [YYYY-MM-DD @<handle>] from`
 
-### 9. Copy Context, Archive, and Work Files
+### 9. Copy Archive and Work Files
 
 Copy as-is (no handle tagging needed):
 - `_inbox_*_archive.md`
 - `_backlog_*_archive.md` (if any)
-- `_context_*.md` (pre-clear dumps — useful for teammates)
 - `_work_*.md` (work notes created during inbox processing — carry the decisions forward)
 
 Do **not** copy:
 - `_active` — per-user hint, excluded by `.gitignore`
-- `_restore_*` — legacy resume marker (mechanism removed; restore is now an explicit named-file load). Any leftover files are stale — leave them behind, excluded by `.gitignore`.
+- `_context_*.md` — pre-clear restore stashes are **always local, ephemeral, personal** (treated like `_active`): never migrated, never committed. Any present are left behind, excluded by `.gitignore`.
 
 ### 10. Create Local Config
 
