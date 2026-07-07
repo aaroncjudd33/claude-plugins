@@ -67,7 +67,7 @@ capture  ──(promote)──▶  refining  ──▶  ready  ──▶  [picke
 **Creator defaults** (the model — the command wiring lands in acp-ajudd#22/#23):
 - `/session:inbox` handoff / any cross-repo capture → `status: capture` (+ optional `intent:` hint from the sender). This one path replaces the old note/data *and* story/ready handoff defaults — everything arrives as a capture.
 - `refine` → creates/promotes at `status: refining` (written early, matured over sessions, flipped to `ready` at graduation). Refine is also where an existing `capture` gets **promoted**.
-- `new <description>` quick-capture → a capture picked up in the same gesture; because pickup is warn-not-block, an unscoped `new` is expected to be scoped-while-built.
+- `new <description>` → a **promote-and-start** gesture: typing it *is* the promote decision ("this is real work"), so it writes `status: ready` and picks up **clean, no warn** — past `capture` (which is for deferred / intent-unknown inbound). Scope any remaining detail as you build.
 - spawn → `status: ready`, plus the `[spawn]` tag (a spawn stages a follow-on coding session, so it's inherently promoted work).
 
 **Picking a not-yet-`ready` capture is guarded, not blocked.** Because a promoted capture doubles as its own WIP store, a half-scoped item must be distinguishable from a ready one — that is what `capture`/`refining` vs `ready` encodes. `pick` on a `capture` or `refining` item **warns and confirms** ("not fully scoped — you'll scope *and* build; refine first if it's big") before folding it into a coding session. It **never blocks** — a capable coding session decides based on size. A `ready` item picks clean.

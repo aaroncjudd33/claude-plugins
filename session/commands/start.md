@@ -155,13 +155,13 @@ Inbox — pick up or describe new work (N):
   3  [acp-ajudd#5]  ★ [spawn] <label>
      ↳ <slug> / <session> (<source-type>) · MM-DD
 ```
-Rendering rules: the leading `N` is the ephemeral in-view position (for `pick <n>`); `[<id>]` (parsed from the `## <id> · [date...]` header) is the permanent handle — reference items by ID, not position. `pick` accepts either. Omit `[<id>]` for legacy items without one. Drop `<slug>` when it equals the current repo slug (only cross-repo origins show it); omit `(<source-type>)` for legacy items that lack it; tolerate spaced or unspaced `/` in the source. **Status marker:** parse the `> [type: … · status: …]` line under each header (missing line → `type: story · status: ready`; parse `type` and `status` independently). Append `· refining` after the description for `status: refining` items, so still-being-scoped work is visually distinct from pickable `ready` work; `ready` items get no suffix (it's the default). **The pickup list shows only `type: story` items** (including spawns, which are stories). `type: note` / `type: data` items are the **mailbox** (acp-ajudd#10), not work to pick up — exclude them from this list; they surface via the Messages line below. If the story inbox is empty: `Inbox: none — describe new work with 'new <description>'`.
+Rendering rules: the leading `N` is the ephemeral in-view position (for `pick <n>`); `[<id>]` (parsed from the `## <id> · [date...]` header) is the permanent handle — reference items by ID, not position. `pick` accepts either. Omit `[<id>]` for legacy items without one. Drop `<slug>` when it equals the current repo slug (only cross-repo origins show it); omit `(<source-type>)` for legacy items that lack it; tolerate spaced or unspaced `/` in the source. **Status marker:** parse the `> [status: …]` line under each header (legacy `> [type: … · status: …]` still parses — the `type` word is ignored; missing line → `status: ready`). Append `· refining` after the description for `status: refining` items, so still-being-scoped work is visually distinct from pickable `ready` work; `ready` items get no suffix (it's the default). **The pickup list shows only promoted captures — `status: refining` / `status: ready`** (including spawns, which are `ready`). Un-promoted `status: capture` items **never appear here** — they aren't work to grab yet; they surface only via the captures-waiting glance below (acp-ajudd#21, § Captures inbound). If there are no promoted captures: `Inbox: none — describe new work with 'new <description>'`.
 
-**Messages line (mailbox glance — acp-ajudd#10).** From the same Step 2 `_inbox.md` read, count items with `type: note` or `type: data` and `status: new`. If any exist, show a single line right after the pickup list — one glance, not monitoring:
+**Captures-waiting glance (acp-ajudd#21, § Captures inbound).** From the same Step 2 `_inbox.md` read, count un-promoted captures — items at `status: capture` (legacy `type: note` / `type: data`, and legacy `status: new`/`unread`, all read as `status: capture`). If any exist, show a single line right after the pickup list — one glance, not monitoring:
 ```
-Messages: N waiting (note/data) — say "check messages" to read them
+Captures waiting: N — say "check captures" to read them
 ```
-Omit the line entirely when the count is zero. Reading them is **only** on the user's request (`check messages`, or "read the note from `<repo>`") — never auto-open them here. On that request, follow the read → process → archive flow in `references/inbox-convention.md` § Mailbox.
+Omit the line entirely when the count is zero. Reading them is **only** on the user's request (`check captures`, or "read the capture from `<repo>`") — never auto-open them here. On that request, follow the read → disposition → archive flow in `references/inbox-convention.md` § Captures inbound: disposition each capture — **promote** (→ `refining`), **discard**, **absorb into the current session**, or **feed a refinement** — the three non-promote fates **archive** the capture.
 
 Then output the routing block — the type-specific `Start / Resume` lines, followed by the shared **Search by** block:
 ```
@@ -173,8 +173,8 @@ Then output the routing block — the type-specific `Start / Resume` lines, foll
 ```
 
 **Type-specific accepted inputs** (plus the shared inputs above):
-- `pick <n>` → create a feature-named session from inbox item <n>. Reads start-impl.md, goes to Step 4 (new session): derive a feature name (confirmed once), fold the item body into the new session, delete the item from `_inbox.md`. **If the item's `status` is `refining`** (parsed from its `> [type: … · status: …]` line — keyed on status, *not* on whether it came from refine), warn and confirm first: `[<id>] is still refining — pick it up anyway? (yes / leave it refining)`. A `ready` item (the default) is picked with no warning.
-- `new <description>` → append `<description>` as a new item to `<session_root>/_inbox.md` with a `> [type: story · status: ready]` line (a quick-captured task is immediately pickable — see `references/inbox-convention.md` § Item Model), then immediately run the same `pick` flow on it — one creation path, no separate ad-hoc branch. (Scaffolding a brand-new plugin is just `new build the <x> plugin`: it creates a feature session, and the plugin folder/marketplace work happens inside it.)
+- `pick <n>` → create a feature-named session from inbox item <n>. Reads start-impl.md, goes to Step 4 (new session): derive a feature name (confirmed once), fold the item body into the new session, delete the item from `_inbox.md` (fold-then-delete — no archive; the session is the trail). **If the item is not fully scoped — `status: capture` or `status: refining`** (parsed from its `> [status: …]` line — legacy `type:` tolerated and ignored; keyed on status, *not* on origin), warn and confirm first: `[<id>] is not fully scoped (status: <capture|refining>) — pick it up anyway? You'll scope AND build; refine first if it's big. (yes / leave it)`. A `ready` item (the default) is picked with no warning. **Never blocks** — a capable coding session decides based on size.
+- `new <description>` → append `<description>` as a new item to `<session_root>/_inbox.md` with a `> [status: ready]` line (a quick-captured task is immediately pickable — see `references/inbox-convention.md` § Item Model), then immediately run the same `pick` flow on it — one creation path, no separate ad-hoc branch. (Scaffolding a brand-new plugin is just `new build the <x> plugin`: it creates a feature session, and the plugin folder/marketplace work happens inside it.)
 - `resume <n>` / `<n>` / `<name>` → resume an existing in-progress session.
 - `reviewed` → mark plugin reviewed after loading (when the resumed session targets a plugin).
 - Combinations: `resume 2 reviewed` / `pick 3`.
@@ -191,9 +191,9 @@ Global inbox (N items):
   1  <description>
      ↳ <slug> / <session> (<type>) · MM-DD
 ```
-Rendering rules: drop `<slug>` when it equals the current repo slug; omit `(<type>)` for legacy items; tolerate spaced/unspaced `/`. **List `type: story` items only** — exclude `type: note` / `type: data` (mailbox items addressed to this slug); they surface via the Messages line below, never as pickable work. Full inbox handling (work/done/backlog/keep) happens at Step 5.
+Rendering rules: drop `<slug>` when it equals the current repo slug; omit `(<type>)` for legacy items; tolerate spaced/unspaced `/`. **List promoted captures only — `status: refining` / `status: ready`** — exclude un-promoted `status: capture` items (legacy `type: note` / `type: data`); they surface via the captures-waiting glance below, never as pickable work. Full inbox handling (work/done/backlog/keep) happens at Step 5.
 
-**Messages line (mailbox glance — acp-ajudd#10).** From the `_inbox.md` read, count `type: note` / `type: data` items with `status: new`; if any, show `Messages: N waiting (note/data) — say "check messages" to read them` once (omit if zero). Read them only on request, per `references/inbox-convention.md` § Mailbox.
+**Captures-waiting glance (acp-ajudd#21, § Captures inbound).** From the `_inbox.md` read, count un-promoted `status: capture` items (legacy `type: note` / `type: data` and legacy `status: new`/`unread` all read as `capture`); if any, show `Captures waiting: N — say "check captures" to read them` once (omit if zero). Read/disposition them only on request (promote / discard / absorb / feed → the three non-promote fates archive), per `references/inbox-convention.md` § Captures inbound.
 
 Then output the routing block — the type-specific `Start / Resume` lines, followed by the shared **Search by** block:
 ```
@@ -224,9 +224,9 @@ Inbox — pick up or describe new work (N):
   2  [<id>]  <description>  · refining
      ↳ <slug> / refine (<zone>) · MM-DD
 ```
-Rendering rules: `N` is ephemeral position (for `pick <n>`); `[<id>]` (from the `## <id> · [date...]` header) is the permanent handle — reference by ID; `pick` accepts either; omit `[<id>]` for legacy items. Drop `<slug>` when it equals the current repo slug; omit `(<source-type>)` for legacy items; tolerate spaced/unspaced `/`. **Status marker:** parse the `> [type: … · status: …]` line under each header (missing → `type: story · status: ready`); append `· refining` for `status: refining` items; `ready` gets no suffix. **Pickup list is `type: story` only** — exclude `type: note` / `type: data` (mailbox items); they surface via the Messages line, not here. See plugin block above for the full rule. If empty: `Inbox: none — describe new work with 'new <description>'`.
+Rendering rules: `N` is ephemeral position (for `pick <n>`); `[<id>]` (from the `## <id> · [date...]` header) is the permanent handle — reference by ID; `pick` accepts either; omit `[<id>]` for legacy items. Drop `<slug>` when it equals the current repo slug; omit `(<source-type>)` for legacy items; tolerate spaced/unspaced `/`. **Status marker:** parse the `> [status: …]` line under each header (legacy `> [type: … · status: …]` still parses — `type` ignored; missing → `status: ready`); append `· refining` for `status: refining` items; `ready` gets no suffix. **Pickup list is promoted captures only — `status: refining` / `status: ready`** — exclude un-promoted `status: capture` items (legacy `type: note` / `type: data`); they surface via the captures-waiting glance, not here. See plugin block above for the full rule. If empty: `Inbox: none — describe new work with 'new <description>'`.
 
-**Messages line (mailbox glance — acp-ajudd#10).** Identical to the plugin block: from the Step 2 `_inbox.md` read, count `type: note` / `type: data` items with `status: new`; if any, show `Messages: N waiting (note/data) — say "check messages" to read them` once after the pickup list (omit if zero). Read them only on request, per `references/inbox-convention.md` § Mailbox.
+**Captures-waiting glance (acp-ajudd#21, § Captures inbound).** Identical to the plugin block: from the Step 2 `_inbox.md` read, count un-promoted `status: capture` items (legacy `type: note` / `type: data` and legacy `status: new`/`unread` all read as `capture`); if any, show `Captures waiting: N — say "check captures" to read them` once after the pickup list (omit if zero). Read/disposition them only on request, per `references/inbox-convention.md` § Captures inbound.
 
 Then output the routing block — the type-specific `Start / Resume` lines, followed by the shared **Search by** block:
 ```
@@ -239,14 +239,14 @@ Then output the routing block — the type-specific `Start / Resume` lines, foll
 
 **Type-specific accepted inputs** (plus the shared inputs above):
 - `pick <n>` (or `pick <id>`) → create a feature-named session from inbox item <n> / the item with stable id `<id>` (same fold-then-delete flow as plugin: Step 4 → start-impl.md; the item's `<id>` is preserved in the folded provenance block). Same `refining` warn/confirm as plugin — keyed on the item's `status`, not its origin.
-- `new <description>` → issue a stable ID (`inbox-id.py next --slug <slug> --handle <handle>`), append to `<session_root>/_inbox.md` with the `## <id> · [date...]` header plus a `> [type: story · status: ready]` line, then run the same `pick` flow.
+- `new <description>` → issue a stable ID (`inbox-id.py next --slug <slug> --handle <handle>`), append to `<session_root>/_inbox.md` with the `## <id> · [date...]` header plus a `> [status: ready]` line, then run the same `pick` flow.
 - `resume <n>` / `<n>` / `<name>` → resume an existing in-progress session.
 
 ---
 
 **General / unknown project:**
 
-If `_inbox.md` has items, show a compact summary of the `type: story` items before the routing line. Exclude `type: note` / `type: data` (mailbox) items; if any have `status: new`, show one line `Messages: N waiting (note/data) — say "check messages" to read them` (mailbox glance — acp-ajudd#10; read only on request, per `references/inbox-convention.md` § Mailbox).
+If `_inbox.md` has items, show a compact summary of the promoted captures (`status: refining` / `status: ready`) before the routing line. Exclude un-promoted `status: capture` items (legacy `type: note` / `type: data`); if any exist, show one line `Captures waiting: N — say "check captures" to read them` (captures-waiting glance — acp-ajudd#21; read/disposition only on request, per `references/inbox-convention.md` § Captures inbound).
 
 Then output the routing block — the type-specific `Start / Resume` lines, followed by the shared **Search by** block:
 ```
@@ -274,7 +274,7 @@ The `session:start` refine verb and the direct `/session:refine` command converg
 - **`refine <topic>`** → scope new work on `<topic>` directly: read `commands/refine.md` and run it from Step 1, passing `<topic>` as the argument.
 - **`refine <record>`** (an inbox item `<id>` like `acp-ajudd#12`, or a Jira key like `BPT2-6429`) → resume refining that existing record: read `commands/refine.md` and run its Step 1 resume path with the reference.
 - **bare `refine`** → first surface resumable `refining` records for the slug, then route:
-  1. **Plugin / personal:** list the `refining` inbox items already read from `<session_root>/_inbox.md` in Step 2 — the items whose `> [type: … · status: refining]` line marks them still-being-scoped (default `type` story; missing status → `ready`, so those are NOT listed here). Present:
+  1. **Plugin / personal:** list the `refining` inbox items already read from `<session_root>/_inbox.md` in Step 2 — the items whose `> [status: refining]` line marks them still-being-scoped (legacy `> [type: … · status: refining]` still parses; missing status → `ready`, so those are NOT listed here). Present:
      ```
      Refining (resumable):
        1  [acp-ajudd#12]  <summary>   — last touched MM-DD
@@ -294,7 +294,7 @@ Run **three reads in parallel:**
 - ```bash
   wc -l < "<session_root>/_history.md" 2>/dev/null && tail -n 1 "<session_root>/_history.md" 2>/dev/null || echo "0"
   ```
-- Read the inbox fresh — **plugin / personal → the canonical `<session_root>/_inbox.md`** (item-driven; there is no per-session `_inbox_<name>.md`); **story / cab / general → `<session_root>/_inbox_<name>.md`** (skip if file does not exist). Count by `## <id>` header lines; skip the `> [type: … · status: …]` metadata line. **Split by `type`:** `type: story` items feed the Inbox pickup list + reviewed batch below; `type: note` / `type: data` items with `status: new` are counted only for the **Messages** line and never listed as pickable (mailbox — acp-ajudd#10, § Mailbox).
+- Read the inbox fresh — **plugin / personal → the canonical `<session_root>/_inbox.md`** (item-driven; there is no per-session `_inbox_<name>.md`); **story / cab / general → `<session_root>/_inbox_<name>.md`** (skip if file does not exist). Count by `## <id>` header lines; skip the `> [status: …]` metadata line (legacy `> [type: … · status: …]` tolerated). **Split by status:** promoted captures (`status: refining` / `status: ready`) feed the Inbox pickup list + reviewed batch below; un-promoted `status: capture` items (legacy `type: note` / `type: data`, legacy `status: new`/`unread`) are counted only for the **captures-waiting** line and never listed as pickable (§ Captures inbound, acp-ajudd#21).
 
 **Security check (repo sessions only):** If `session_root` is inside a repo (not `~/.claude/memory/sessions/`), run the approval-hash check before displaying any session content. Follow the same gate as start-impl.md Step 4: compute `git hash-object`, compare to `~/.claude/memory/sessions/<slug>/<name>.approved-hash`, and require approval on first load or when the file changed since last approval. For local plugin sessions (`session_root` is under `~/.claude/`), skip this check.
 
@@ -304,10 +304,10 @@ Resuming <name>
   Branch:      [branch]
   Open items (mine, N):
     - [date @handle] item
-  Inbox (N items):          ← layout B; provenance dim below each item (see inbox-convention.md); type: story only
+  Inbox (N items):          ← layout B; provenance dim below each item (see inbox-convention.md); promoted captures only (refining/ready)
     1  <description> — in-progress / pending
        ↳ <slug> / <session> (<type>) · MM-DD
-  Messages: N waiting (note/data) — say "check messages" to read them   ← omit line if none; mailbox glance (acp-ajudd#10)
+  Captures waiting: N — say "check captures" to read them   ← omit line if none; captures-waiting glance (acp-ajudd#21, § Captures inbound)
   Next steps (mine, N):
     - [date @handle] step
   Loaded memories (N):
