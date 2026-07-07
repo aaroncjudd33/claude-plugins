@@ -116,7 +116,7 @@ Output the routing block and wait for one free-text reply. **Do not use AskUserQ
 
 **Free-text and search:** If the user types text that doesn't match a routing action, interpret it as a natural-language filter — match against name, title, handle, status, inbox count, or any session field. Accept plain descriptions like `has inbox`, `updated by nivi`, `created by me`, `paused`, `completed this week`. Re-display the filtered table with `(filtered by '<query>')` and re-show the routing block. If no sessions match and the text looks like intent rather than a filter, proceed naturally. Keywords `mine`, `all`, `backlog`, `index`, `status`, `refine` are handled directly (see Step 2 and the refine entry in the shared inputs below).
 
-**Parse combinations freely.** A single reply may include multiple signals — session number, mode, modifiers, inbox dispositions. Examples: `1`, `resume 1`, `1 planning`, `resume session reviewed work 2`, `start release`, `2 yes 4 skip`. Infer intent; speak up only if genuinely ambiguous.
+**Parse combinations freely.** A single reply may include multiple signals — session number, modifiers, inbox dispositions. Examples: `1`, `resume 1`, `resume session reviewed work 2`, `start release`, `2 yes 4 skip`. Infer intent; speak up only if genuinely ambiguous.
 
 **Shared across all project types** (defined once — the per-type blocks below add only their type-specific `Start / Resume` lines and inputs):
 
@@ -176,9 +176,8 @@ Then output the routing block — the type-specific `Start / Resume` lines, foll
 - `pick <n>` → create a feature-named session from inbox item <n>. Reads start-impl.md, goes to Step 4 (new session): derive a feature name (confirmed once), fold the item body into the new session, delete the item from `_inbox.md`. **If the item's `status` is `refining`** (parsed from its `> [type: … · status: …]` line — keyed on status, *not* on whether it came from refine), warn and confirm first: `[<id>] is still refining — pick it up anyway? (yes / leave it refining)`. A `ready` item (the default) is picked with no warning.
 - `new <description>` → append `<description>` as a new item to `<session_root>/_inbox.md` with a `> [type: story · status: ready]` line (a quick-captured task is immediately pickable — see `references/inbox-convention.md` § Item Model), then immediately run the same `pick` flow on it — one creation path, no separate ad-hoc branch. (Scaffolding a brand-new plugin is just `new build the <x> plugin`: it creates a feature session, and the plugin folder/marketplace work happens inside it.)
 - `resume <n>` / `<n>` / `<name>` → resume an existing in-progress session.
-- Mode modifier (`planning` / `both` / `coding`) → set the new/resumed session's mode.
 - `reviewed` → mark plugin reviewed after loading (when the resumed session targets a plugin).
-- Combinations: `pick 1 planning` / `resume 2 reviewed`.
+- Combinations: `resume 2 reviewed` / `pick 3`.
 
 ---
 
@@ -242,7 +241,6 @@ Then output the routing block — the type-specific `Start / Resume` lines, foll
 - `pick <n>` (or `pick <id>`) → create a feature-named session from inbox item <n> / the item with stable id `<id>` (same fold-then-delete flow as plugin: Step 4 → start-impl.md; the item's `<id>` is preserved in the folded provenance block). Same `refining` warn/confirm as plugin — keyed on the item's `status`, not its origin.
 - `new <description>` → issue a stable ID (`inbox-id.py next --slug <slug> --handle <handle>`), append to `<session_root>/_inbox.md` with the `## <id> · [date...]` header plus a `> [type: story · status: ready]` line, then run the same `pick` flow.
 - `resume <n>` / `<n>` / `<name>` → resume an existing in-progress session.
-- Mode modifier (`planning` / `both` / `coding`) → set the new/resumed session's mode.
 
 ---
 
@@ -304,7 +302,6 @@ Display resume block:
 ```
 Resuming <name>
   Branch:      [branch]
-  Mode:        planning          ← show this line ONLY when Mode is planning; omit for coding/both
   Open items (mine, N):
     - [date @handle] item
   Inbox (N items):          ← layout B; provenance dim below each item (see inbox-convention.md); type: story only
@@ -319,7 +316,6 @@ Resuming <name>
     - [date] <sha> — <subject>
   History:     N entries — last: [condensed one-liner]
 ```
-- **Mode:** show the line only when Mode is `planning` (read-only session — a behavior-changing signal worth surfacing). Omit entirely for `coding`/`both`/absent.
 - **Updated by** is intentionally not shown here — it's already in the listing the user just saw.
 - **Memory:** do not print a standalone global-memory hint line. The on-demand `load memory [topic]` capability still applies; surface it only if the user asks.
 - Omit teammate sections if no items tagged with a different @handle.
@@ -352,7 +348,7 @@ Write state:
 - `~/.claude/memory/sessions/<slug>/_active` — session name (plain text).
 - `_index.md` — find line starting with `<name> | ` and replace (or append): `<name> | @<created-by> | <created-date> | @<handle> | <today> | in-progress | <title-or-dash>`.
 
-Read `<plugin_root>/.claude-plugin/plugin.json` and `<plugin_root>/skills/<plugin>/SKILL.md` in parallel. Apply any mode modifier from the user's reply. Ask what needs to change.
+Read `<plugin_root>/.claude-plugin/plugin.json` and `<plugin_root>/skills/<plugin>/SKILL.md` in parallel. Ask what needs to change.
 
 ---
 

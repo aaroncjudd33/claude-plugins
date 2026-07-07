@@ -43,7 +43,7 @@ Accepted inputs: number (`1`), session name (`session`), verb+target (`resume 1`
 
 ## Pattern 2 — Batched Question Block
 
-*Used in: session:start (post-load inbox + mode + review), session:checkpoint, session:finish*
+*Used in: session:start (post-load inbox + review), session:checkpoint, session:finish*
 
 List all pending questions with defaults shown inline. Claude outputs the block and waits for one reply.
 
@@ -73,21 +73,21 @@ Reply with overrides or "go".
 
 ## Pattern 3 — Inline Options Line
 
-*Used in: session:start when showing post-load context (inbox, mode, review)*
+*Used in: session:start when showing post-load context (inbox, review)*
 
 Add a compact options line immediately after showing the relevant data, without a separate stop. Claude folds parsing into the routing reply or resume response.
 
 ```
-Last active: <name>  ·  mode: <mode>  [·  ⚠ not reviewed since v<old> (current v<new>)]
+Last active: <name>  [·  ⚠ not reviewed since v<old> (current v<new>)]
   Inbox (2):
     1  <description> — pending
     2  <description> — pending
 
   resume <n>  ·  pick <n>  ·  new <description>
-  + planning / both → change mode  ·  reviewed → mark it
+  + reviewed → mark it
 ```
 
-User types `pick 1 planning` or `resume 2 reviewed` and Claude handles all of it.
+User types `resume 2 reviewed` and Claude handles all of it.
 
 ---
 
@@ -154,5 +154,5 @@ Approve changes / load-quarantined / cancel
 The following are **removed** — do not use:
 
 - `AskUserQuestion` — removed entirely from this plugin
-- Sequential single-question stops ("Mark as reviewed?", "Mode — keep it or change?") — use batch block
+- Sequential single-question stops ("Mark as reviewed?", "Adopt this teammate step?") — use batch block
 - Verb tables with follow-up "Which number?" questions — use routing block

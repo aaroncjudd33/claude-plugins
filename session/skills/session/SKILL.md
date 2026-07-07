@@ -7,7 +7,7 @@ description: "This skill governs session lifecycle across all project types. Loa
 
 Governs session lifecycle across all project types (plugin, story, cab, personal, general).
 
-**Refine (`/session:refine` or `session:start` → `refine [topic]`)** is the **analyze-then-record** flow: scope raw requirements or a bug against the actual repo before code is written. It creates **no session file in any zone** — the realization is that the *record it produces is itself the work-in-progress store as well as the final deliverable*, so there is nothing separate to persist. A session file is only ever created for **work being done** (a coding session), never for scoping. Refine therefore does **not** touch `_active`, set `Mode: planning`, or leave anything to migrate/expire — a coding session already active stays active alongside a refine. Both entry points converge on `commands/refine.md`. The record is written **early** (after the first substantive pass) in a "still-scoping" state and iterated in place; graduation is a **status flip** — no new artifact. Zone-aware, never hardcoding the target:
+**Refine (`/session:refine` or `session:start` → `refine [topic]`)** is the **analyze-then-record** flow: scope raw requirements or a bug against the actual repo before code is written. It creates **no session file in any zone** — the realization is that the *record it produces is itself the work-in-progress store as well as the final deliverable*, so there is nothing separate to persist. A session file is only ever created for **work being done** (a coding session), never for scoping. Refine therefore does **not** touch `_active`, create a session file, or leave anything to migrate/expire — a coding session already active stays active alongside a refine. Both entry points converge on `commands/refine.md`. The record is written **early** (after the first substantive pass) in a "still-scoping" state and iterated in place; graduation is a **status flip** — no new artifact. Zone-aware, never hardcoding the target:
 - **plugin / personal** → an **inbox item** in `_inbox.md` at `status: refining` → flipped to `status: ready` at graduation. Resumable via the `refining` inbox listing at `/session:start`.
 - **work repo** → a **Jira story** created in *Gathering Requirements* (project resolved-or-confirmed, not assumed `BPT2`) → transitioned to *Ready For Work* at graduation. A Jira story is a visible artifact others can grab, so the "first substantive pass" threshold (not the first message) gates creation to avoid half-baked stories on the board.
 - **general** → record type confirmed first (no assumed system of record).
@@ -174,7 +174,7 @@ Sessions are typed, and the type determines whether there's an **external system
 
 **Why plugin/personal differ from story/cab:** story and CAB work already have an authoritative external unit of work (the ticket) that says what's being done and tracks its lifecycle. Plugin and personal work have no such anchor — so the session itself becomes the unit of work: it can only exist by picking up an inbox item, and it's named after the feature. That is what makes "the session is the record" real rather than aspirational. (The *creation path* differs by type; the *command-level enforcement* — session commands need a session — is uniform across all types.)
 
-All types support a working **Mode** (`planning` / `coding` / `both`). Planning sessions produce specs and inbox items; coding sessions consume them and ship code. Mode is a session attribute, not a hard edit gate (see below).
+**A session file exists only for implementation — it is always a coding session (1:1).** Planning and refinement are **sessionless**: they are the `refine` flow, which writes a *record* (a Jira story in a work repo, or a `type: story` inbox item in plugin/personal) and never a session file. There is no session "mode" — scoping happens in `refine` (no file), building happens in a session (one file). A `ready` record is picked up into a coding session; that is the (optional) next step after refine.
 
 ## Session Enforcement (command-level — acp-ajudd#1)
 
@@ -293,19 +293,13 @@ If the user runs `/clear` or mentions that context was lost, the recovery path d
 
 ---
 
-## Planning Mode
-
-When `Mode: planning` is active in the session file, treat it as a **soft, instruction-level** convention: the session is for scoping, not building, so route implementation requests to the session inbox (or graduate a record via `refine`) rather than writing code in it. This is a behavioral cue, **not a hard gate** — there is no hook blocking edits (acp-ajudd#1 removed edit-blocking entirely). If real code work is needed, switch the session to `coding` (`/session:switch <name> coding`) or pick up a `ready` item into a fresh coding session. Reads and investigation are always free.
-
----
-
 ## Record-Write Boundary — planning edits requirements, coding hands off (acp-ajudd#13)
 
-A **coding/implementation session** and a **planning/`refine` session** have different write rights over the **record layer** (inbox item bodies / requirements / acceptance criteria, and their work-repo analog: Jira stories). This is a **documented convention, instruction-only — no guard or hook** (consistent with acp-ajudd#1's "editing is never policed"; a record-layer hook would re-police the memory tier we keep free and would be trivially bypassed anyway).
+A **coding/implementation session** and the **sessionless `refine` (planning) flow** have different write rights over the **record layer** (inbox item bodies / requirements / acceptance criteria, and their work-repo analog: Jira stories). This is a **documented convention, instruction-only — no guard or hook** (consistent with acp-ajudd#1's "editing is never policed"; a record-layer hook would re-police the memory tier we keep free and would be trivially bypassed anyway).
 
 - **Coding session — may:** edit its **own session file**; **post NEW inbox items** (handoffs via `/session:inbox`, spawns, `note`/`data` mailbox messages); **pick up** an item (fold-then-delete). **Must NOT:** edit the body/requirements/acceptance criteria of an **existing** inbox item or Jira story.
-- **Planning / `refine` session — owns** creating records and **editing requirement records in place** (that is what `refine` does).
-- **Sanctioned alternative** when a coding session notices a requirement needs changing: drop a `note`/`data` into the inbox (the mailbox — below) or hand off to a planning/`refine` pass. Never rewrite the record's body from the coding seat.
+- **`refine` (planning, sessionless) — owns** creating records and **editing requirement records in place** (that is what `refine` does).
+- **Sanctioned alternative** when a coding session notices a requirement needs changing: drop a `note`/`data` into the inbox (the mailbox — below) or hand off to a `refine` pass. Never rewrite the record's body from the coding seat.
 
 A `refining`→`ready` **status flip** and the fold-then-delete on pickup are not "editing the body" — they remain fine. Mirror in the codebase: `/story:update` locks a story's description once *In Progress*. Full statement: `references/inbox-convention.md` § Record-write boundary.
 

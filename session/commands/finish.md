@@ -115,7 +115,7 @@ Before assembling the batch, gather contextual data needed to build the batch it
 
 Universal reads (all types):
 
-1. **Inbox file — fresh read at close (acp-ajudd#6).** The recap must reflect the *live* inbox, not a snapshot taken at session start — a concurrent planning session or another terminal may have added items while this session ran.
+1. **Inbox file — fresh read at close (acp-ajudd#6).** The recap must reflect the *live* inbox, not a snapshot taken at session start — a concurrent `refine` pass or another terminal may have added items while this session ran.
    - **plugin / personal (item-driven):** read the **canonical `<session_root>/_inbox.md` fresh, now** — do NOT reuse a session-start snapshot, and do NOT look for a per-session `_inbox_<name>.md` (item-driven sessions are fold-then-delete; that file does not exist for them). **Exclude** any item this session folded at pickup or marked completed; **include** everything else currently in the file (so concurrently-added items appear).
    - **story / cab / general:** read the per-session `<session_root>/_inbox_<name>.md` (these are not item-driven — a per-session handoff file is correct). Same fresh-read discipline.
    - **Parser (both):** count and list **by the `## <id> · [date…]` header lines**. **Skip the `> [type: … · status: …]` metadata line** under each header — it is item metadata (shipped v1.57.0, acp-ajudd#9), not a separate item and not body content; never miscount it. Tolerate legacy items with no `<id>` prefix and no metadata line. **Exclude `type: note` / `type: data` mailbox items** from the pickup sweep (acp-ajudd#10) — they are not work to close out; they're read/archived only on request (§ Mailbox). Categorize each surviving **story** item as in-progress (has an `[in-progress — …]` marker) or pending.
@@ -307,20 +307,18 @@ Route next step → inbox (ready) / backlog (defer) / skip (keep as-is)
 
 Write `<session_root>/<name>.md` with the final state:
 
-**Frontmatter:** for `plugin` and `personal` types, write `type:`, `mode:`, and `status:` keys alongside `updated:`. At finish, `status: completed` — this is what excludes the session from the default `/session:start` resumable listing (the file is never deleted). For `story` / `cab` / `general`, write only `updated:` (preserve any existing extra keys as-is).
+**Frontmatter:** for `plugin` and `personal` types, write `type:` and `status:` keys alongside `updated:`. At finish, `status: completed` — this is what excludes the session from the default `/session:start` resumable listing (the file is never deleted). For `story` / `cab` / `general`, write only `updated:` (preserve any existing extra keys as-is). **No `mode` key — a session is always a coding session (acp-ajudd#16); drop `mode:` from any older file rather than preserving it.**
 
 ```
 ---
 updated: [today's date]
 type: [type]            ← plugin/personal only
-mode: [planning / coding / both]   ← plugin/personal only; preserve from session file
 status: completed       ← plugin/personal only; marks the session done (file kept, hidden from default listing)
 ---
 
 # Session State — <name>
 
 - **Type:** [type]
-- **Mode:** [planning / coding / both]   ← preserve from session file; omit if not present (backward compat)
 - **Name:** [name]
 - **updated-by:** @<handle>
 - **created-by:** @<original-handle>   ← read from existing file; preserve as-is — never overwrite

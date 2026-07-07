@@ -71,7 +71,6 @@ Display:
 ```
 Switching to <name>
   Branch:      [branch]
-  Mode:        planning          ← show ONLY when Mode is planning; omit for coding/both/absent
   Open items (mine, N):
     - [date @handle] item
   Teammate notes (N — read-only):
@@ -122,9 +121,7 @@ Write `~/.claude/memory/sessions/<slug>/_active` with the new session name (alwa
 
 Update `<session_root>/<name>.md`: set `updated` to today, set `updated-by: @<handle>`, and preserve `created-by:` as-is (never overwrite). Tag any untagged Open items or Next steps items with `[today @<handle>]`.
 
-**Preserve frontmatter keys.** For `plugin` / `personal` sessions, the frontmatter carries `type:`, `mode:`, and `status:` — these gate the scope guard. When updating `updated:`, leave `type:`/`mode:`/`status:` intact (do not strip them). If the session file has no frontmatter `mode:` yet (older file), add `type:`/`mode:`/`status:` to match the body bullets while you're writing.
-
-**Mode modifier (optional).** If the switch argument included a mode (`planning` / `coding` / `both` — e.g. `/session:switch release planning`), apply it now: update both the frontmatter `mode:` key and the `- **Mode:**` body bullet, and note `Mode changed to <new>`. Mode is a soft convention (acp-ajudd#1 removed edit-blocking — no hook reads it): switching into a `planning` session signals "scope, don't build," while `coding` signals normal build work. Nothing hard-blocks edits either way.
+**Preserve frontmatter keys.** For `plugin` / `personal` sessions, the frontmatter carries `type:` and `status:`. When updating `updated:`, leave `type:`/`status:` intact (do not strip them). If the session file has no frontmatter `type:`/`status:` yet (older file), add them to match the body bullets while you're writing. **Do not carry over a `mode:` key from an older file — a session is always a coding session (acp-ajudd#16); drop `mode:` if present.**
 
 **After writing — update approved-hash (repo sessions only):** Recompute and overwrite `~/.claude/memory/sessions/<slug>/<name>.approved-hash`:
 ```bash

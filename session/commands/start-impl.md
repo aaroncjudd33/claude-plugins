@@ -27,7 +27,7 @@ Loaded by `start.md` after the user makes their selection. Context already in sc
 2. Read `~/.claude/memory/sessions/<slug>/<name>.approved-hash` (local, never in repo).
 3. **Hash file missing (first-time load):**
    - Show: `"First time loading this session file from the repo — reviewing before use."`
-   - Display key fields: Type, Branch, Mode, Open items, Next steps, Notes.
+   - Display key fields: Type, Branch, Open items, Next steps, Notes.
    - Output and wait (Pattern 6):
      ```
      Approve and load  ·  skip-teammate-fields  ·  cancel
@@ -59,7 +59,6 @@ Loaded by `start.md` after the user makes their selection. Context already in sc
   ```
   Resuming <name>
     Branch:      [branch]
-    Mode:        planning          ← show ONLY when Mode is planning; omit for coding/both/absent
     Open items (mine, N):
       - [date @ajudd] item one
       - [date @ajudd] item two
@@ -84,7 +83,6 @@ Loaded by `start.md` after the user makes their selection. Context already in sc
     Related:     [BPT2-XXXX, ...]   ← cab type only, omit if none
     History:     N entries — last: [condensed one-liner of most recent _history.md entry]
   ```
-  - **Mode:** show the line only when Mode is `planning` (read-only session — a behavior-changing signal). Omit for `coding`/`both`/absent.
   - **Updated by** is intentionally not shown — it's already in the listing the user just saw.
   - **Memory:** do not print a standalone global/project memory hint line. The on-demand `load memory [topic]` capability still applies; surface it only if the user asks.
   - **Loaded memories:** read from the session file's `Loaded memories:` field. Omit the line if absent or empty. If present, append `— say 'reload' to load them back into context`; do not auto-read the files (on-demand rule). On `reload`, read each listed file from the resolved project memory root.
@@ -278,20 +276,6 @@ For **general**, also ask for a category if not obvious: Research / Prototype / 
 
 For **personal**, no category prompt — and Teams chat is always `none` (no lookup or creation).
 
-### 6a. Session Mode
-
-**Default: `coding`.** No stop needed.
-
-For **new sessions**: state the mode as a note at the end of the Step 6 output:
-```
-Mode: coding  (say 'planning' or 'both' to change before we begin)
-```
-If the user included a mode modifier in their start.md reply, apply it silently.
-
-For **resume**: mode is shown in the resume block. If the user included `planning`, `both`, or `coding` in their start.md reply, apply it now and note the change: `Mode changed to <new>`. If no modifier was given, keep the existing mode.
-
-Store the result as `mode` for use in Step 8.
-
 ### 7. Teams Chat Setup
 
 **Plugin sessions default to the consolidated "Plugin — Aaron Work" chat** (`19:8bff4d4e8659475da4a8edbfca0d270a@thread.v2`) — the whole plugin suite is one house, so there are no per-plugin "<Name> - Claude Plugin" chats anymore (those are retired, `Active=no`). Resolve to the consolidated chat by default; the repoint-to-different option below still applies if the user wants a specific chat for a session.
@@ -324,20 +308,18 @@ Create `session_root` directory if it does not exist.
 
 Write `<session_root>/<name>.md`:
 
-**Frontmatter — for `plugin` and `personal` types, write `type:`, `mode:`, and `status:` keys alongside `updated:`.** `status:` is consumed by the listing renderer (`completed` sessions are hidden from the default `/session:start` list); `type:` and `mode:` record the session's kind and working mode (mode is a soft convention since acp-ajudd#1 removed edit-blocking — no hook reads it). Keep these keys in sync with the body bullets. For `story` / `cab` / `general` types, write only `updated:` as before (no need to churn their frontmatter). The body bullets (`- **Type:**`, `- **Mode:**`, `- **Status:**`) stay for all types regardless.
+**Frontmatter — for `plugin` and `personal` types, write `type:` and `status:` keys alongside `updated:`.** `status:` is consumed by the listing renderer (`completed` sessions are hidden from the default `/session:start` list); `type:` records the session's kind. Keep these keys in sync with the body bullets. For `story` / `cab` / `general` types, write only `updated:` as before (no need to churn their frontmatter). The body bullets (`- **Type:**`, `- **Status:**`) stay for all types regardless. **There is no `mode` — a session file is always a coding session (acp-ajudd#16); planning is sessionless (`refine`).**
 
 ```
 ---
 updated: [today's date]
-type: [type]            ← plugin/personal only — keep in sync with the Mode bullet
-mode: [planning / coding / both]
+type: [type]            ← plugin/personal only — keep in sync with the Type bullet
 status: in-progress
 ---
 
 # Session State — <name>
 
 - **Type:** [type]
-- **Mode:** [planning / coding / both]
 - **Name:** [name]
 - **updated-by:** @<handle>
 - **created-by:** @<handle>   ← written once at creation; never overwrite on checkpoint/finish/commit/switch
@@ -391,12 +373,6 @@ Find the line starting with `<name> | ` and replace it; if not found, append. Wr
 Where `<title-or-dash>` = `Title:` field for story/cab; `—` for other types.
 
 ### 9. Route Based on Choice
-
-**If Mode is `planning`**, print before routing:
-```
-PLANNING MODE — No code edits this session.
-Any implementation work should be routed to this session's inbox for a coding session to pick up.
-```
 
 **Plugin — feature session (new, via `pick`/`new`):**
 1. **Determine the target plugin(s)** from the folded item body / feature scope. If the work targets one or more existing plugins, **read in parallel** their `plugin.json`, `SKILL.md` (if present), and all files under each skill's `references/` directory. **Do not pre-read individual command `.md` files** — load them on demand when the task targets a specific command. If the feature is scaffolding a brand-new plugin, skip this read; the folder/marketplace work happens within the session.

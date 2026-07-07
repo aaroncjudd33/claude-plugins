@@ -7,7 +7,7 @@ description: Stage a new linked session from the current one — writes a [spawn
 
 Prepares a handoff for a new session by writing a `[spawn]` entry to the global `_inbox.md`. Your active session does not change. The spawned entry appears in the global inbox the next time anyone runs `/session:start` on this project — clearly marked and ready to kick off.
 
-**Typical use:** You finish a planning or investigation session and want to hand off to an implementation session — same project, new scope, connected history.
+**Typical use:** You finish an investigation and want to hand off follow-on scope to a new implementation session — same project, new scope, connected history.
 
 ## Instructions
 

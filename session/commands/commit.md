@@ -38,7 +38,6 @@ Read `<session_root>/<name>.md` and extract all fields. Minimally:
 - `type` (plugin / story / cab / personal / general)
 - `name`
 - `branch`
-- `mode` (may be absent — preserve as-is)
 - `title` (story/cab only — may be absent in older session files; treat as empty)
 - `category` (general only — may be absent)
 - `teams_chat`
@@ -189,7 +188,6 @@ updated: [today's date]
 # Session State — <name>
 
 - **Type:** [type]
-- **Mode:** [planning / coding / both]   ← preserve from session file; omit if not present (backward compat)
 - **Name:** [name]
 - **updated-by:** @<handle>
 - **created-by:** @<original-handle>   ← read from existing file; preserve as-is — never overwrite

@@ -217,20 +217,18 @@ For **story/cab slots (A, C)** the apply-logic lives in `references/checkpoint-s
 
 Write `<session_root>/<name>.md` with the current state:
 
-**Frontmatter:** for `plugin` and `personal` types, write `type:`, `mode:`, and `status:` keys alongside `updated:`, kept in sync with the body bullets. `status:` (consumed by the listing renderer to hide completed sessions) is `in-progress` at checkpoint; `type:`/`mode:` record the session's kind and mode (soft convention — no hook reads `mode:` since acp-ajudd#1). For `story` / `cab` / `general`, write only `updated:` (preserve any existing extra keys as-is).
+**Frontmatter:** for `plugin` and `personal` types, write `type:` and `status:` keys alongside `updated:`, kept in sync with the body bullets. `status:` (consumed by the listing renderer to hide completed sessions) is `in-progress` at checkpoint; `type:` records the session's kind. For `story` / `cab` / `general`, write only `updated:` (preserve any existing extra keys as-is). **No `mode` key — a session is always a coding session (acp-ajudd#16); if an older file still carries `mode:`, simply drop it (do not preserve it).**
 
 ```
 ---
 updated: [today's date]
 type: [type]            ← plugin/personal only
-mode: [planning / coding / both]   ← plugin/personal only; preserve from session file
 status: in-progress     ← plugin/personal only; always reset to in-progress at checkpoint
 ---
 
 # Session State — <name>
 
 - **Type:** [type]
-- **Mode:** [planning / coding / both]   ← preserve from session file; omit if not present (backward compat)
 - **Name:** [name]
 - **updated-by:** @<handle>
 - **created-by:** @<original-handle>   ← read from existing file; preserve as-is — never overwrite
