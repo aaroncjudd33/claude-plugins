@@ -136,7 +136,7 @@ Every type also accepts these same inputs (in addition to its type-specific ones
 - `all` → re-display including completed sessions; re-show routing
 - `full` → re-display the table with the full 8-column set (adds `out` count + `created` date); re-show routing
 - `status <value>` → filter to that status; re-display and re-show routing
-- `refine [topic]` → enter the **refinement** flow (analyze-then-record; `commands/refine.md`). Applies to every type — `session:start` is the front door to refine. Refine creates **no session file**; it writes the work directly into the record (an inbox item for plugin/personal, a Jira story for work repos). With a topic (`refine shopify refund window`) → scope new work directly. With an existing record reference (`refine acp-ajudd#12`, `refine BPT2-6429`) → resume refining that record in place. Bare `refine` → surface resumable **`refining` records** for the slug (for plugin/personal, the `refining` inbox items; for work repos, stories in *Gathering Requirements* via `/story:dashboard`), then resume one or start new. Direct `/session:refine` and this verb converge on the same flow. Graduation is **zone-aware** and never hardcodes the target: plugin/personal → inbox item (unambiguous); work repo → Jira story (project resolved-or-confirmed, not assumed `BPT2`); general → confirm target. Graduation = flipping the record to `ready` / *Ready For Work*. See Step 4 → **Refine — enter refinement flow**.
+- `refine [topic]` → enter the **refinement** flow (analyze-then-record; `commands/refine.md`). Applies to every type — `session:start` is the front door to refine. Refine creates **no session file**; it writes the work directly into the record (an inbox item for plugin/personal, a Jira story for work repos). With a topic (`refine shopify refund window`) → scope new work directly. With an existing record reference (`refine acp-ajudd#12`, `refine BPT2-6429`) → resume refining that record in place. Bare `refine` → surface resumable **`refining` records** for the slug (for plugin/personal, the `refining` inbox items; for work repos, stories in *Gathering Requirements* via `/story:dashboard`), then resume one or start new. Direct `/session:refine` and this verb converge on the same flow. The record target is **strictly the zone — no override, no target picker**: plugin/personal → inbox item (unambiguous); work repo → Jira story (project resolved-or-confirmed, not assumed `BPT2`); general → **no record created** (a general repo has no system of record; only a `/session:inbox` note can leave). Graduation = flipping the record to `ready` / *Ready For Work*. See Step 4 → **Refine — enter refinement flow**.
 - Any other text → natural-language filter; match against name, title, handle, status, inbox count, or any field; re-display with `(filtered by '<query>')` and re-show routing
 
 ---
@@ -253,7 +253,7 @@ Then output the routing block — the type-specific `Start / Resume` lines, foll
   Start / Resume:
     resume <n>       — resume by number
     start            — start a new session — you'll give a name and context
-    refine [topic]   — scope work first (analyze-then-record → Jira story or inbox item; confirmed); lists resumable refinements
+    refine [topic]   — scope work first (analyze-then-record; general repo = no record created, scope only); lists resumable refinements
 ```
 
 **Type-specific accepted inputs** (plus the shared inputs above):
