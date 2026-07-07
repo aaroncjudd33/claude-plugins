@@ -20,7 +20,7 @@ Before the item-driven-sessions overhaul, multi-plugin repos used one inbox file
 
 ```markdown
 ## <id> · [YYYY-MM-DD @<handle>] from <source-slug> / <session-name> (<source-type>) — <short title>
-> [type: story · status: ready]
+> [status: capture]
 
 <Context: what the item is, why it matters, what needs to happen.>
 ```
@@ -30,74 +30,91 @@ Before the item-driven-sessions overhaul, multi-plugin repos used one inbox file
 - `<session-name>` — the originating session (e.g. `BPT2-6377`, a feature name).
 - `<source-type>` — the **provenance** axis: the source session's type (`story` / `cab` / `plugin` / `personal` / `general`). This is the value that sits positionally inside `from … (<…>)`. It answers *where the item came from* — do **not** confuse it with the `type` field below (what the recipient does with it). It was previously called just "type"; it is relabeled `source-type` so the two never blur.
 - **Keep both repo AND session — never collapse to one.** Derive all three from the *source* session context when routing.
-- The `> [type: … · status: …]` line directly under the header carries the **message type** and **lifecycle status** (see Item Model below). It is optional for back-compat; when absent, defaults apply.
+- The `> [status: …]` line directly under the header carries the item's **lifecycle status** (`capture` → `refining` → `ready`) plus an **optional `intent:` hint** (see Item Model below). It is optional for back-compat; when absent, defaults apply.
 
 Keep it self-contained — the receiving session may pick this up weeks later with no memory of the source conversation.
 
-## Item Model — three orthogonal axes
+## Item Model — captures on one lifecycle (acp-ajudd#21)
 
-Every inbox item is described by **three independent axes**. Keep them separate — never collapse two into one field. (Metaphor: an inbox item is to a plugin/personal repo what a Jira story is to a work repo — the same object is both the **work-in-progress store** *and* the **final deliverable**. You write into it, iterate, and mark it ready; an implementation session then picks it up. A session file is only ever created for *work being done*, never for scoping the item itself.)
+> **This supersedes the v1.57.0 "three orthogonal axes" model.** The old `type` axis (`story` / `note` / `data`) is **gone**. There is no message-type field anymore — an inbox holds **captures**, and every capture moves along **one lifecycle**. Back-compat for the old syntax is spelled out at the end of this section.
 
-**1. `source-type` — provenance (where it came from).** The source session's type, tracked positionally in the header's `from <slug> / <session> (<source-type>)`. Values: `story` / `cab` / `plugin` / `personal` / `general`. Display-only; never gates behavior. (In-repo vs cross-repo is **derived** from `source-slug` vs the current slug — it is not a declared axis.)
+**An inbox holds captures.** A **capture** is raw inbound — *provenance known, intent deferred*. It's whatever arrived: a plugin idea fired in from another repo, a heads-up from a sibling session, a payload of values, a half-formed task. You don't classify it at write time; you **disposition it on read**. (Metaphor: an inbox item is to a plugin/personal repo what a Jira story is to a work repo — once promoted, the same object is both the **work-in-progress store** *and* the **final deliverable**: you write into it, iterate, mark it ready, and an implementation session picks it up. A session file is only ever created for *work being done*, never for scoping the item itself.)
 
-**2. `type` — message type (what the recipient does with it).** The primary NEW field, carried on the `> [type: …]` line. Values:
-- `story` *(default)* — actionable work; the Jira-story analog. Picked up and built/done. A **spawn** is a `story` tagged `[spawn]`, not its own type.
-- `note` — awareness / FYI / recorded decision for another session; no build expected.
-- `data` — a payload consumed as input to work (results, values, file refs, config).
-- `question` *(deferred — not built in v1)* — would ask for a decision/input and expect a reply. Until it lands, a question is just a `note` and a reply is just another `note`; there is no reply-expected lifecycle.
+**One lifecycle:**
 
-> **`note` / `data` are live (acp-ajudd#10).** Their delivery behavior — the **mailbox** — is implemented: a session drops a `note`/`data` into another slug's inbox (free-rein write, visible confirmation), the human points the target session at it, and it reads → processes → **archives** on request. It is **human-driven**: Claude does NOT poll, monitor, or auto-announce mail; a single "N messages waiting" line at `session:start` is the only surfacing. Full flow in **§ Mailbox — note/data delivery** below.
+```
+capture  ──(promote)──▶  refining  ──▶  ready  ──▶  [picked up → coding session]
+   │
+   └──(disposition on read)──▶  discard  ·  absorb into current session  ·  feed a refinement   → archived
+```
 
-**3. `status` — lifecycle. Which lifecycle depends on `type`:**
-- **`story` → maturity lifecycle:** `refining` → `ready` → *(picked)* → done. `refining` = still being scoped/polished (the WIP-store phase); `ready` = matured enough for an implementation session to pick up. This mirrors a Jira story moving from *Gathering Requirements* → *Ready For Work*.
-- **`note` / `data` → delivery lifecycle:** `new` (a.k.a. `unread`) → `consumed` → archived. Presence in the inbox IS the "sent/delivered" state; "ready" is implicit. On read, the target processes the message and **archives** it to `_inbox_archive.md` (see § Mailbox). (Mechanics: acp-ajudd#10.)
+- **`capture`** — the single entry state. *Everything* starts here (this is what note/data + unclassified ideas all become). Provenance is recorded; intent is deferred to the reader.
+- **promote** — a refine/planning read decides "this is real work" and moves the capture into the story track (`status: refining`), right in the inbox. Promotion is a status flip, not a move to a different file.
+- **`refining`** — a promoted capture being scoped/polished (the WIP-store phase). **`ready`** — scoped enough for an implementation session to pick up. This mirrors a Jira story moving *Gathering Requirements → Ready For Work*.
+- **"story" is not a type — it's a promoted capture.** A capture that has been promoted into `refining`/`ready` is *tracked work* (the Jira-story analog). "Story" names that stage, not a separate kind of item. A **spawn** is a promoted (`ready`) capture tagged `[spawn]`.
+- **A capture that is *not* promoted is dispositioned on read** — one of: **discard** (drop it), **absorb into the current session** (fold its content into the work you're doing now), or **feed a refinement** (hand it to a refine pass to shape into work). All three end **archived** — a capture whose fate is read-and-archive. *This is what the old `note`/`data` items become.*
 
-**Creator defaults:**
-- `new <description>` quick-capture → `type: story · status: ready` (a captured task is immediately pickable).
-- `refine` → `type: story · status: refining` (written early, matured over sessions, flipped to `ready` at graduation).
-- `/session:inbox` handoff → `type: story · status: ready` unless the sender specifies `note`/`data`.
-- spawn → `type: story · status: ready`, plus the `[spawn]` tag.
+**Provenance is a required attribute; intent is an optional hint.**
+- **Provenance** (where/who it came from) is always recorded — the header's `from <slug> / <session> (<source-type>)` plus the author `@handle` and date. `source-type` (`story` / `cab` / `plugin` / `personal` / `general`) is display-only and never gates behavior; in-repo vs cross-repo is *derived* from `source-slug` vs the current slug.
+- **Intent** is an **optional, non-binding hint** the sender may attach — `· intent: <hint>` on the status line. It tells the reader what the sender *thinks* the capture is, without deciding for them:
+  - `intent: story` — "this looks like real work" (the old `story` signal)
+  - `intent: fyi` — "awareness only, no build expected" (the old `note` signal)
+  - `intent: data` — "a payload to consume as input" (the old `data` signal)
+  When absent, the reader infers from the content. Intent **never binds** — the reader always dispositions.
 
-**Back-compat (verified against the existing inbox — no lockout):** the `> [type: … · status: …]` line is **optional**. A missing `type` defaults to `story`; a missing `status` defaults to `ready`. Items written before this model (no line at all) therefore read as `story` / `ready` — pickable exactly as before. Parse `type` and `status` independently: `> [status: refining]` alone is valid (type defaults to `story`), as is `> [type: note]` alone (status defaults per its lifecycle). Never break on an absent or partial line.
+**The status line:** `> [status: <capture|refining|ready>]`, with an optional intent hint: `> [status: capture · intent: fyi]`. Parse `status` and `intent` independently; both are optional.
 
-**Picking a `refining` story is guarded.** Because a `story` doubles as its own WIP store, a half-scoped item must be distinguishable from a ready one — that is exactly what `refining` vs `ready` encodes. `pick` on a `refining` item **warns and confirms** ("still being refined — pick it up anyway?") before folding it into a coding session.
+**Creator defaults** (the model — the command wiring lands in acp-ajudd#22/#23):
+- `/session:inbox` handoff / any cross-repo capture → `status: capture` (+ optional `intent:` hint from the sender). This one path replaces the old note/data *and* story/ready handoff defaults — everything arrives as a capture.
+- `refine` → creates/promotes at `status: refining` (written early, matured over sessions, flipped to `ready` at graduation). Refine is also where an existing `capture` gets **promoted**.
+- `new <description>` quick-capture → a capture picked up in the same gesture; because pickup is warn-not-block, an unscoped `new` is expected to be scoped-while-built.
+- spawn → `status: ready`, plus the `[spawn]` tag (a spawn stages a follow-on coding session, so it's inherently promoted work).
 
-## Mailbox — note/data delivery (acp-ajudd#10)
+**Picking a not-yet-`ready` capture is guarded, not blocked.** Because a promoted capture doubles as its own WIP store, a half-scoped item must be distinguishable from a ready one — that is what `capture`/`refining` vs `ready` encodes. `pick` on a `capture` or `refining` item **warns and confirms** ("not fully scoped — you'll scope *and* build; refine first if it's big") before folding it into a coding session. It **never blocks** — a capable coding session decides based on size. A `ready` item picks clean.
 
-The inbox does two jobs. The **to-do list** job is `type: story` items you pick up and build (above). The **mailbox** job is `type: note` / `type: data` items — inter-session messages one session drops for another: a `note` ("heads up, I changed X") or `data` ("here are the values you need"). This section is the mailbox.
+**Back-compat (verified against the existing inbox — no lockout).** The `> [status: …]` line is **optional**, and legacy `> [type: … · status: …]` lines still parse:
+- **No line at all** (pre-model items) → reads as **`ready`** — pickable exactly as before.
+- **Legacy `type: story`** → a **promoted capture** at its existing `status` (`refining`/`ready`); the `type` word is ignored.
+- **Legacy `type: note`** → a **capture** with `intent: fyi`. **Legacy `type: data`** → a **capture** with `intent: data`.
+- **Legacy statuses:** `new`/`unread` → `capture`; `refining`/`ready` → unchanged; `consumed` → already dispositioned (archived).
+- Parse `status` and `intent` independently; never break on an absent, partial, or legacy line. **No migration of existing files** — old items read correctly in place.
 
-**The model: the human is the notifier.** Claude does **not** monitor, poll, or auto-announce mail. There is no hook watching the inbox and no mid-session "you have mail" surfacing. Mail moves only when a human coordinates it. Three phases:
+## Captures inbound — reading and dispositioning (acp-ajudd#10)
 
-**1. Write (silent to the recipient, visible to the sender).** A session drops a `note`/`data` into another slug's inbox via `/session:inbox` — a **free-rein write** (no propose→approve, per acp-ajudd#5) that surfaces a visible confirmation line *in the sending session* (`Sent inbox item <id> to <target> inbox`). The receiving side is not interrupted — nothing pings the target session.
+The inbox does two jobs, and both are now the *same object* at different lifecycle stages. The **to-do list** job is promoted captures (`refining`/`ready`) you pick up and build (above). The **captures-inbound** job is un-promoted `capture` items — raw inbound one session drops for another (a heads-up, a payload of values, a stray idea). This section is that inbound read flow. *(It was previously called the "mailbox" for `note`/`data` items; the behavior is identical — only the framing changed: there is no note/data type, just captures awaiting disposition.)*
 
-**2. Coordinate (human).** The developer tells the target session where to look — "there's a note for you from `<repo>/<session>`, go read it," or just "check my inbox messages." Claude looks only when told. (The one automatic touch: a single **"N messages waiting"** count at `session:start` — see below — which is one read at a natural moment, not monitoring.)
+**The model: the human is the notifier.** Claude does **not** monitor, poll, or auto-announce inbound captures. There is no hook watching the inbox and no mid-session "you have mail" surfacing. Captures move only when a human coordinates it. Three phases:
 
-**3. Read → process → archive (on request).** When asked, the target session:
-   - reads every `type: note` / `type: data` item with `status: new` in its slug inbox (`_inbox.md` for plugin/personal; `_inbox.md` — the global slug inbox — for story/cab, *not* a per-session `_inbox_<name>.md`, since mail is addressed to the slug);
-   - **processes** each: a `note` is read/acknowledged (fold any actionable follow-up into the session's own work or a new `story` item); a `data` payload is folded into the work that needs it;
-   - **archives** each: append it to `_inbox_archive.md` with a `[CONSUMED YYYY-MM-DD]` stamp and remove it from the live inbox. Archiving behavior is unchanged from the existing `[DONE]` archive flow — same file, same auto-purge (>30d). Messages are **archived, never deleted.**
-   - surface a one-line summary of what was consumed, e.g. `Consumed 2 messages (1 note, 1 data) → archived.`
+**1. Write (silent to the recipient, visible to the sender).** A session drops a capture into another slug's inbox via `/session:inbox` — a **free-rein write** (no propose→approve, per acp-ajudd#5) that surfaces a visible confirmation line *in the sending session* (`Sent inbox item <id> to <target> inbox`). The receiving side is not interrupted — nothing pings the target session.
 
-**Addressing = to-slug (v1).** A message is addressed to a repo's inbox — whoever next works that slug — not to a specific named session. (`/session:inbox` already writes to the slug inbox for plugin/personal.)
+**2. Coordinate (human).** The developer tells the target session where to look — "there's a capture for you from `<repo>/<session>`, go read it," or just "check my captures." Claude looks only when told. (The one automatic touch: a single **"N captures waiting"** count at `session:start` — see below — which is one read at a natural moment, not monitoring.)
 
-**`data` payload — inline by default, optional `ref:`.** Small payloads go inline in the item body. For a large payload, put it in a file and reference it:
+**3. Read → disposition → archive (on request).** When asked, the target session:
+   - reads every un-promoted `capture` (`status: capture`) in its slug inbox (`_inbox.md` for plugin/personal; `_inbox.md` — the global slug inbox — for story/cab, *not* a per-session `_inbox_<name>.md`, since captures are addressed to the slug);
+   - **dispositions** each — **promote** (it's real work → flip to `refining`, hand to refine or scope inline), or one of the read-and-archive fates: **discard**, **absorb into the current session** (fold its content — e.g. a data payload or an FYI — into the work at hand), or **feed a refinement**;
+   - **archives** each non-promoted capture: append it to `_inbox_archive.md` with a `[CONSUMED YYYY-MM-DD]` stamp and remove it from the live inbox. Archiving is unchanged from the existing `[DONE]` archive flow — same file, same auto-purge (>30d). Captures are **archived, never deleted** (a promoted capture stays live in the inbox at `refining`/`ready`).
+   - surface a one-line summary, e.g. `Read 2 captures — 1 promoted to refining, 1 absorbed → archived.`
+
+**Addressing = to-slug (v1).** A capture is addressed to a repo's inbox — whoever next works that slug — not to a specific named session. (`/session:inbox` already writes to the slug inbox for plugin/personal.)
+
+**Payloads — inline by default, optional `ref:`.** A small payload goes inline in the capture body. For a large payload, put it in a file and reference it:
 ```markdown
 ## <id> · [YYYY-MM-DD @ajudd] from virtual-office / BPT2-6258 (story) — enrollment test IDs
-> [type: data · status: new]
+> [status: capture · intent: data]
 ref: ~/.claude/memory/sessions/ajudd-claude-plugins/_data_enrollment-ids.md
 (inline summary: 12 member IDs for the reactivation smoke test — see ref for the full list)
 ```
-When a `data` item has a `ref:`, the processing session reads the referenced file to get the payload. Inline is the default; `ref:` is only for payloads too big to sit in the inbox comfortably.
+When a capture has a `ref:`, the reading session reads the referenced file to get the payload. Inline is the default; `ref:` is only for payloads too big to sit in the inbox comfortably.
 
-**Out of the pickup backlog.** `note`/`data` messages **never appear in the `story` pickup list** — they are not work to grab. The `session:start` pickup list shows only `type: story` items. The mailbox count is separate: a single line
+**Two lists at `session:start`, one object.** Un-promoted captures **never appear in the pickup list** — they are not yet work to grab; they surface only as a glance count. The `session:start` pickup list shows only promoted captures (`refining`/`ready`). The captures-inbound count is separate: a single line
 
 ```
-Messages: N waiting (note/data) — say "check messages" to read them
+Captures waiting: N — say "check captures" to read them
 ```
 
-shown once at `session:start` when any `type: note`/`type: data` item has `status: new`. Omit the line entirely when there are none. This is the only place mail surfaces on its own — one glance, no monitoring.
+shown once at `session:start` when any `status: capture` item exists. Omit the line entirely when there are none. This is the only place inbound captures surface on their own — one glance, no monitoring.
 
-**`question` deferred.** Not built in v1. A note can carry a question; a reply is just another `note`. No reply-expected lifecycle yet.
+**`question` deferred.** Not built in v1. A capture can carry a question; a reply is just another capture. No reply-expected lifecycle yet.
 
 ## Writing records — free rein, never silent (acp-ajudd#5)
 
@@ -120,25 +137,21 @@ Rule of thumb: **what repo am I in → that's my source of record → I write to
 
 **Where this shows up:** `session:inbox` (writes directly, then a `Sent inbox item <id> to <target> inbox` line), `refine` (writes early + on each edit, surfacing `Wrote/Updated <id>`), `new` (writes then immediately picks up — visible via the pickup), `spawn` (writes the `[spawn]` entry, confirms with `<id>`), and the `checkpoint`/`finish`/`commit` scope-routing handoffs (route through `session:inbox`, which surfaces the line). None of these gate the write; all of them surface it.
 
-## Record-write boundary — planning edits in place, coding hands off (acp-ajudd#13)
+## State-exclusivity — a live item OR a consumed session, never both (acp-ajudd#13)
 
-Free rein (above) governs *how* records get written — no approval ceremony. This section governs *who* may **edit an existing record's body in place** versus who must **hand off**. It is a **documented convention, instruction-only — there is no guard or hook** (a record-layer hook would reintroduce exactly the file-edit policing acp-ajudd#1 removed, and would gate the `~/.claude/memory/` tier we deliberately keep free; it would also be trivially bypassed by a plain session). The boundary holds by convention plus the sanctioned alternative below.
+Free rein (above) governs *how* records get written — no approval ceremony. This section governs the relationship between a **live inbox item** and the **coding session** that builds it. It **replaces the old "planning edits in place, coding must not touch the record" role rule** — that rule tried to keep a coding session from mutating requirements by *forbidding* it; state-exclusivity makes the concern structurally impossible instead. It is a **documented convention, instruction-only — there is no guard or hook** (a record-layer hook would reintroduce exactly the file-edit policing acp-ajudd#1 removed, and would gate the `~/.claude/memory/` tier we deliberately keep free; it would also be trivially bypassed by a plain session). The invariant holds by construction, not by policing.
 
 The record layer = inbox items (their body / requirements / acceptance criteria) and their work-repo analog, Jira stories.
 
-**Planning / `refine` session — owns in-place requirement edits.** Creating a record and **editing its body/requirements/acceptance criteria in place** (reshape, re-scope, re-annotate) is the analyze-then-record job. `refine` writes the record early and iterates it in place, graduating by a status flip — that is exactly this.
+**The invariant: a given piece of work is EITHER a live inbox item OR a consumed coding session — never both at once.**
 
-**Coding / implementation session — may:**
-- write/update its **own session file** (working state);
-- **post NEW inbox items** — cross-session handoffs (`/session:inbox`), spawns, and `note`/`data` mailbox messages;
-- **pick up** an inbox item (the fold-then-delete at pickup *consumes* the requirement to start building — that's fine).
+- **A coding session *may* edit a live inbox item.** While an item is still in the inbox, editing its body is just **planning-in-the-moment** — free-rein, exactly like `refine`. There is no "coding sessions can't touch requirements" prohibition; a coding session acting as planning is fine.
+- **Picking up an item consumes it — fold-then-delete.** The pickup folds the item body into the session file and **deletes** the item from the inbox (preserving its stable `<id>` in the session's provenance block). After that there is **no item left to edit** — the requirement now lives, and evolves, in the session. So the work can never exist as *both* a divergent live item and an in-flight session: consuming is what makes it session-only. This is **self-enforcing** — nothing needs to forbid double-editing because there is only ever one live copy.
+- **Jira stories keep the "locked once *In Progress*" rule.** A Jira story is **not consumable** — you can't fold-then-delete it — so the exclusivity invariant can't be enforced structurally for stories. Instead, `/story:update` **locks the description once the story moves to *In Progress***, which achieves the same "requirements don't drift mid-build" outcome by a lock rather than by deletion. The exclusivity-by-consumption invariant is therefore **inbox-native only**; stories get the lock as their equivalent.
 
-**Coding / implementation session — must NOT:**
-- **edit the body / requirements / acceptance criteria of an existing inbox item or Jira story.** The thing you picked up to build must not drift underneath you, and editing a *sibling* item you're not building leaks planning decisions into implementation commits.
+What a coding session **still does freely**: write/update its **own session file**; **post NEW inbox items** — cross-session handoffs (`/session:inbox`), spawns, and inbound captures. Posting new captures is unrelated to the invariant (it creates fresh items, it doesn't fork an in-flight one).
 
-**The sanctioned alternative for a coding session** that notices a requirement needs changing: don't edit the record's body from the coding seat — **drop a `note`/`data` into the inbox** (the mailbox — acp-ajudd#10, below) or **hand off to a planning/`refine` pass**. That keeps the record a stable contract shaped in planning, not rewritten mid-implementation.
-
-Mirror already in the codebase: story lifecycle **locks the description once *In Progress*** (`/story:update`). Same principle — requirements are shaped in planning, not rewritten mid-implementation. (Note this is a *body/requirements* boundary: a `refining`→`ready` **status flip**, or the fold-then-delete on pickup, are not "editing the body" and remain fine.)
+(A `refining`→`ready` **status flip** and the fold-then-delete on pickup are not "forking the work" — they're the normal lifecycle. The thing state-exclusivity rules out is a live item and a session both claiming the *same* work and drifting apart.)
 
 ## Stable IDs
 
@@ -201,14 +214,18 @@ Inbox — pick up or describe new work (N):
 ```
 Drop the slug when same-repo (as above); include it (`↳ <slug> / <session> (<type>)`) for cross-repo items. Omit the `[<id>]` for legacy items with none.
 
-## Item Lifecycle
+## Item Lifecycle (pickup states)
 
-Items move through three **pickup** states, all tracked inline in the inbox file. (These are orthogonal to the `type`/`status` axes above: pickup state = "has a session grabbed this yet"; maturity `status` = "is a `story` scoped enough to grab." A `refining` or `ready` story is both "pending" here; picking either one makes it in-progress. `refining` just means `pick` warns first.)
+Pickup state is **orthogonal to the maturity `status` above**: `status` = "is this capture promoted and scoped enough to grab" (`capture` → `refining` → `ready`); pickup state = "has a session grabbed it yet." A `refining` or `ready` item is "pending" here; picking either makes it in-progress (`capture`/`refining` just means `pick` warns first).
+
+**Two pickup mechanisms, by inbox kind:**
+- **Item-driven consolidated inbox (plugin / personal — `_inbox.md`):** pickup **consumes** the item — **fold-then-delete** (state-exclusivity, above). The item never sits at "in-progress" in the inbox; it's gone the moment it's picked up, and the session is the paper trail.
+- **Per-session inbox (story / cab — `_inbox_<name>.md`):** pickup inserts an **in-progress marker** and the item **stays** in the inbox until done, then archives. This is the pending → in-progress → done flow below.
 
 **Pending** — item has arrived, not yet picked up:
 ```markdown
 ## [2026-05-13 @ajudd] from virtual-office / BPT2-6258 (story) — Add /comms:pto command
-> [type: story · status: ready]
+> [status: ready]
 
 Add a `/comms:pto` command...
 ```

@@ -10,7 +10,7 @@ Governs session lifecycle across all project types (plugin, story, cab, personal
 **Refine (`/session:refine` or `session:start` → `refine [topic]`)** is the **analyze-then-record** flow: scope raw requirements or a bug against the actual repo before code is written. It creates **no session file in any zone** — the realization is that the *record it produces is itself the work-in-progress store as well as the final deliverable*, so there is nothing separate to persist. A session file is only ever created for **work being done** (a coding session), never for scoping. Refine therefore does **not** touch `_active`, create a session file, or leave anything to migrate/expire — a coding session already active stays active alongside a refine. Both entry points converge on `commands/refine.md`. The record is written **early** (after the first substantive pass) in a "still-scoping" state and iterated in place; graduation is a **status flip** — no new artifact. The record target is **strictly the zone — no override, no target picker** (acp-ajudd#17):
 - **plugin / personal** → an **inbox item** in `_inbox.md` at `status: refining` → flipped to `status: ready` at graduation. Resumable via the `refining` inbox listing at `/session:start`.
 - **work repo** → a **Jira story** created in *Gathering Requirements* (project resolved-or-confirmed, not assumed `BPT2`) → transitioned to *Ready For Work* at graduation. The project is the only thing ever confirmed; the *kind* of record is fixed by zone. A Jira story is a visible artifact others can grab, so the "first substantive pass" threshold (not the first message) gates creation to avoid half-baked stories on the board.
-- **general** → **no system of record — refine creates no record.** Scope verbally; the only outbound is a `/session:inbox` mailbox note. (No prompt, no role logic — the graduation offer is shown the same way to everyone; security is repo zone + source-control write access, never a config-field role.)
+- **general** → **no system of record — refine creates no record.** Scope verbally; the only outbound is a `/session:inbox` capture. (No prompt, no role logic — the graduation offer is shown the same way to everyone; security is repo zone + source-control write access, never a config-field role.)
 
 The maturity lifecycle (`refining` → `ready`) is the same mental model across zones — rough → iterate → ready, exactly Heber's Jira flow — mapped onto whatever record the zone uses. Refine never becomes a build session; picking up a `ready` item into a coding session is the (optional) next step. Legacy `refinement-*.md` files from the old model are harmless — still hidden from the default listing and skipped by `session:migrate` — and can be deleted whenever convenient.
 
@@ -174,7 +174,7 @@ Sessions are typed, and the type determines whether there's an **external system
 
 **Why plugin/personal differ from story/cab:** story and CAB work already have an authoritative external unit of work (the ticket) that says what's being done and tracks its lifecycle. Plugin and personal work have no such anchor — so the session itself becomes the unit of work: it can only exist by picking up an inbox item, and it's named after the feature. That is what makes "the session is the record" real rather than aspirational. (The *creation path* differs by type; the *command-level enforcement* — session commands need a session — is uniform across all types.)
 
-**A session file exists only for implementation — it is always a coding session (1:1).** Planning and refinement are **sessionless**: they are the `refine` flow, which writes a *record* (a Jira story in a work repo, or a `type: story` inbox item in plugin/personal) and never a session file. There is no session "mode" — scoping happens in `refine` (no file), building happens in a session (one file). A `ready` record is picked up into a coding session; that is the (optional) next step after refine.
+**A session file exists only for implementation — it is always a coding session (1:1).** Planning and refinement are **sessionless**: they are the `refine` flow, which writes a *record* (a Jira story in a work repo, or a promoted inbox item — a capture at `refining`/`ready` — in plugin/personal) and never a session file. There is no session "mode" — scoping happens in `refine` (no file), building happens in a session (one file). A `ready` record is picked up into a coding session; that is the (optional) next step after refine.
 
 ## Session Enforcement (command-level — acp-ajudd#1)
 
@@ -293,25 +293,25 @@ If the user runs `/clear` or mentions that context was lost, the recovery path d
 
 ---
 
-## Record-Write Boundary — planning edits requirements, coding hands off (acp-ajudd#13)
+## State-Exclusivity — a live item OR a consumed session, never both (acp-ajudd#13)
 
-A **coding/implementation session** and the **sessionless `refine` (planning) flow** have different write rights over the **record layer** (inbox item bodies / requirements / acceptance criteria, and their work-repo analog: Jira stories). This is a **documented convention, instruction-only — no guard or hook** (consistent with acp-ajudd#1's "editing is never policed"; a record-layer hook would re-police the memory tier we keep free and would be trivially bypassed anyway).
+A given piece of work is **either a live inbox item or a consumed coding session — never both at once.** This **replaces the old "coding must not edit the record" role rule**: rather than forbidding a coding session from touching requirements, the model makes divergence structurally impossible. It is a **documented convention, instruction-only — no guard or hook** (consistent with acp-ajudd#1's "editing is never policed"; a record-layer hook would re-police the memory tier we keep free and would be trivially bypassed anyway).
 
-- **Coding session — may:** edit its **own session file**; **post NEW inbox items** (handoffs via `/session:inbox`, spawns, `note`/`data` mailbox messages); **pick up** an item (fold-then-delete). **Must NOT:** edit the body/requirements/acceptance criteria of an **existing** inbox item or Jira story.
-- **`refine` (planning, sessionless) — owns** creating records and **editing requirement records in place** (that is what `refine` does).
-- **Sanctioned alternative** when a coding session notices a requirement needs changing: drop a `note`/`data` into the inbox (the mailbox — below) or hand off to a `refine` pass. Never rewrite the record's body from the coding seat.
+- **A coding session *may* edit a live inbox item.** While the item is still in the inbox, editing its body is just planning-in-the-moment — free-rein, like `refine`. There is no prohibition on a coding session shaping requirements.
+- **Picking up an item consumes it — fold-then-delete.** The pickup folds the body into the session file and **deletes** the item (stable `<id>` preserved in the session's provenance). Afterward there is no item left to edit — the work is session-only, so it can never exist as *both* a divergent live item and an in-flight session. **Self-enforcing**, not policed.
+- **Jira stories keep the "locked once *In Progress*" rule.** A story isn't consumable (can't be fold-then-deleted), so exclusivity can't be structural for it; `/story:update` locks its description at *In Progress* to get the same "requirements don't drift mid-build" outcome. Exclusivity-by-consumption is **inbox-native only**.
 
-A `refining`→`ready` **status flip** and the fold-then-delete on pickup are not "editing the body" — they remain fine. Mirror in the codebase: `/story:update` locks a story's description once *In Progress*. Full statement: `references/inbox-convention.md` § Record-write boundary.
+A coding session still freely writes its **own session file** and **posts NEW inbox items** (handoffs via `/session:inbox`, spawns, inbound captures) — those create fresh items, they don't fork an in-flight one. A `refining`→`ready` **status flip** and the fold-then-delete on pickup are normal lifecycle, not forking. Full statement: `references/inbox-convention.md` § State-exclusivity.
 
 ---
 
-## Inbox Mailbox (note/data) — human-driven
+## Captures Inbound (un-promoted captures) — human-driven
 
-The inbox is both a **to-do list** (`type: story` items you pick up and build) and a **mailbox** (`type: note` / `type: data` items — messages one session leaves another). The mailbox is **human-driven** (acp-ajudd#10): Claude never polls, monitors, or auto-announces mail.
+The inbox is both a **to-do list** (promoted captures at `refining`/`ready` you pick up and build) and an **inbound stream** (un-promoted `status: capture` items — raw inbound one session drops for another: a heads-up, a payload of values, a stray idea). Reading inbound captures is **human-driven** (acp-ajudd#10): Claude never polls, monitors, or auto-announces them. *(This was the "note/data mailbox"; the behavior is identical — there is no note/data type now, just captures awaiting disposition.)*
 
-- **Send:** `/session:inbox` drops a `note`/`data` into a target slug's inbox — a free-rein write with a visible confirmation line in the sending session (per acp-ajudd#5). Nothing pings the recipient.
-- **Surface:** a single **"Messages: N waiting"** line at `session:start` (and in the switch/resume blocks) when any `note`/`data` has `status: new`. That is the only automatic surfacing — one glance, not monitoring. Messages **never** appear in the story pickup list or the checkpoint/finish sweeps.
-- **Read → process → archive (on request only):** when the user says "check messages" / "read the note from `<repo>`", read every `new` note/data in the slug inbox, process each (a `note` is acknowledged / its follow-up folded into work; a `data` payload — inline, or via a `ref:` file — is folded into the work that needs it), then **archive** each to `_inbox_archive.md` with a `[CONSUMED YYYY-MM-DD]` stamp and remove it from the live inbox (archived, never deleted). Full flow: `references/inbox-convention.md` § Mailbox.
+- **Send:** `/session:inbox` drops a capture into a target slug's inbox — a free-rein write with a visible confirmation line in the sending session (per acp-ajudd#5). Nothing pings the recipient. An optional `intent:` hint (`story`/`fyi`/`data`) may ride along; it never binds the reader.
+- **Surface:** a single **"Captures waiting: N"** line at `session:start` (and in the switch/resume blocks) when any `status: capture` item exists. That is the only automatic surfacing — one glance, not monitoring. Un-promoted captures **never** appear in the pickup list or the checkpoint/finish sweeps.
+- **Read → disposition → archive (on request only):** when the user says "check captures" / "read the capture from `<repo>`", read every un-promoted `capture` in the slug inbox and disposition each — **promote** (real work → flip to `refining`), or a read-and-archive fate: **discard**, **absorb into the current session** (fold an FYI or a `data` payload — inline or via a `ref:` file — into the work at hand), or **feed a refinement**. Then **archive** each non-promoted capture to `_inbox_archive.md` with a `[CONSUMED YYYY-MM-DD]` stamp and remove it from the live inbox (archived, never deleted; a promoted capture stays live at `refining`/`ready`). Full flow: `references/inbox-convention.md` § Captures inbound.
 
 ## Cross-Session Paste Handoff (the handoff block)
 
@@ -319,7 +319,7 @@ Three paths move work between sessions, and they split on **how the item travels
 
 | Path | Mechanism | Crosses machines? | Command |
 |------|-----------|-------------------|---------|
-| **inbox** | writes a `type: story`/`note`/`data` item into a target slug's `_inbox.md` | no — same machine, file-based | `/session:inbox` |
+| **inbox** | writes a capture into a target slug's `_inbox.md` | no — same machine, file-based | `/session:inbox` |
 | **spawn** | writes a `[spawn]` inbox item staging a linked follow-on session | no — same machine, file-based | `/session:spawn` |
 | **handoff** | prints a self-contained block the human **copies and pastes** into another live Claude session (another terminal / another machine) | **yes** — human-carried, no file | `/session:handoff` |
 
@@ -348,7 +348,7 @@ Items: <optional — inbox IDs, or omit / "none">
 
 ## Reference Files
 
-- `references/inbox-convention.md` — How to write cross-session/cross-project change instructions to plugin inbox files; the item model (type/status axes); and the note/data **mailbox** delivery flow (§ Mailbox)
+- `references/inbox-convention.md` — How to write cross-session/cross-project change instructions to plugin inbox files; the capture-first item model (one lifecycle: capture → refining → ready + provenance + dispositions, acp-ajudd#21); and the captures-inbound read flow (§ Captures inbound)
 - `references/epic-template.md` — Template structure for creating new epic memory files at `~/.claude/memory/epics/<key>.md`
 - `references/skill-repo-security.md` — Approved-hash review flow, commit-guard hook, and three-layer secrets/PII defense (procedure behind the Repo Session File Safety invariant)
 - `references/skill-epic.md` — Cross-story research procedure: check the epic file first, sibling-session lookup, "look across the epic"
