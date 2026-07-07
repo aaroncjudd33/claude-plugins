@@ -66,6 +66,8 @@ This collects your name, email, Jira account ID, and Teams user ID, then writes 
 
 The onboarding command will offer to look up your Jira account ID and Teams user ID from your email address — you don't need to know them in advance.
 
+Onboarding also **offers to install the `ccs` repo launcher** into your shell profile(s) — a shortcut that cds into a repo and starts Claude Code in one step (`ccs vo`, `ccs plugins`, or `ccs` alone to launch in the current directory). It reads your repos base directory from `user-config.json`, so it works wherever you cloned your repos. Say yes when prompted; open a new shell afterward to use it. You can add it later by re-running `/setup:onboarding`.
+
 ### First commands to try
 
 ```
