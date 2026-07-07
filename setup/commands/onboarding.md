@@ -260,9 +260,108 @@ For any field left blank or skipped: write an empty string. The relevant plugin 
 
 Note: Playwright test directories are configured per-project when you first run `/e2e:start` — not stored here.
 
-After the user confirms all values, proceed to Step 7.
+After the user confirms all values, proceed to Step 6a.
 
 > **Note (acp-ajudd#1):** there is no longer a "session enforcement" opt-in. The session plugin never blocks edits — enforcement is now purely command-level (the session commands refuse to run without a session; editing files is never policed). The old `sessionGate.enforce` toggle and its `session-scope-guard.py` hook were removed. Nothing to configure here.
+
+### 6a. Offer to install the `ccs` repo launcher
+
+`ccs` is a shell shortcut that cds into a repo and launches Claude Code in one step:
+`ccs vo` → virtual-office, `ccs plugins` → the marketplace clone, `ccs` alone → launch
+Claude in the current directory; an unknown argument falls back to a starts-with scan of
+your work repos. It ships with the setup plugin (`${CLAUDE_PLUGIN_ROOT}/scripts/ccs.sh`
+and `ccs.ps1`) and is installed into your shell profile(s) here.
+
+**Offer it explicitly — never install silently, and do not skip this step just because
+it's optional.** Most people won't find it from docs; this active offer is how it reaches
+the team, and word-of-mouth does the rest.
+
+**1. Resolve inputs** from the values just configured in Step 6 (or the existing config file):
+- `repos_base` = `paths.workReposDir` (e.g. `/c/dev`) — may be empty if skipped
+- `marketplace` = `paths.pluginMarketplaceName` (e.g. `ajudd-claude-plugins`)
+
+**2. Detect available shells** and whether `ccs` is already installed. Run:
+```bash
+BASHRC="$HOME/.bashrc"
+PS_WIN="$HOME/Documents/WindowsPowerShell/Microsoft.PowerShell_profile.ps1"   # Windows PowerShell 5.1
+PS_CORE="$HOME/Documents/PowerShell/Microsoft.PowerShell_profile.ps1"          # pwsh 7+
+for f in "$BASHRC" "$PS_WIN" "$PS_CORE"; do
+  if [ -f "$f" ]; then
+    if grep -qF "# >>> ccs launcher" "$f"; then echo "$f: installed"; else echo "$f: present, ccs not installed"; fi
+  else
+    echo "$f: (no profile)"
+  fi
+done
+```
+On Windows most users have both a bash (`~/.bashrc`) and a PowerShell profile — offer whichever exist. If a shell has no profile yet, still offer it (you'll create the file).
+
+**3. Offer** — plain-text routing (show the per-shell status from step 2):
+```
+Install the `ccs` repo launcher? — one command to cd into a repo + start Claude
+  bash   — <not installed | installed (will update)>
+  pwsh   — <not installed | installed (will update)>
+  both / skip
+```
+
+**4. On accept**, for each chosen shell, read the shipped template, substitute the two
+tokens, and install idempotently. Use a language that treats the values **literally** —
+the Windows path contains backslashes, so `sed` is unsafe here; use python:
+
+```bash
+# Substitute tokens into a temp block file.
+#   $TMPL = ${CLAUDE_PLUGIN_ROOT}/scripts/ccs.sh  (bash)  or  ccs.ps1  (PowerShell)
+#   $BASE = repos_base   $MKT = marketplace   $WIN = 1 for the .ps1 (translate path form)
+python3 - "$TMPL" "$BASE" "$MKT" "$WIN" > /tmp/ccs.block <<'PY'
+import sys
+tmpl, base, mkt, win = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4] == "1"
+def to_win(p):
+    if not p: return ""
+    if p.startswith('/') and len(p) > 2 and p[2] == '/':   # /c/dev -> C:\dev
+        return p[1].upper() + ':' + p[2:].replace('/', '\\')
+    return p.replace('/', '\\')
+if win: base = to_win(base)
+s = open(tmpl, encoding='utf-8').read()
+sys.stdout.write(s.replace('__CCS_REPOS_BASE__', base).replace('__CCS_MARKETPLACE__', mkt))
+PY
+```
+- **bash** uses `repos_base` as-is (`/c/dev`); **PowerShell** translates MSYS→Windows form
+  (`/c/dev` → `C:\dev`). Empty `repos_base` substitutes an empty string — the function still
+  works for `ccs` (cwd) and `ccs plugins`; the starts-with scan just reports "no repos base
+  dir configured".
+
+Then install the block into the profile using the marker sentinels that ship in the
+template (`# >>> ccs launcher …` / `# <<< ccs launcher <<<`):
+
+```bash
+install_ccs_block() {   # $1 = profile path, $2 = block file
+  local profile="$1" block="$2"
+  mkdir -p "$(dirname "$profile")"; touch "$profile"
+  if grep -qF "# >>> ccs launcher" "$profile"; then
+    awk -v bf="$block" '
+      BEGIN { while ((getline l < bf) > 0) blk = blk l ORS }
+      /# >>> ccs launcher/ { print blk; skip=1; next }   # emit new block, drop old
+      skip && /# <<< ccs launcher/ { skip=0; next }
+      !skip { print }
+    ' "$profile" > "$profile.tmp" && mv "$profile.tmp" "$profile"
+  else
+    printf '\n%s' "$(cat "$block")" >> "$profile"
+  fi
+}
+```
+- If both markers already exist → **replace in place** (never double-append).
+- Else → append with a leading blank line.
+- Profile targets: bash → `~/.bashrc`; PowerShell → whichever of `$PS_WIN` / `$PS_CORE`
+  exists (both if both do), else create `$PS_WIN`.
+
+**5. Tell the user to reload:**
+```
+Installed `ccs` into <profile(s)>. Open a new shell — or run `source ~/.bashrc`
+(bash) / `. $PROFILE` (PowerShell) — to start using it: try `ccs plugins`.
+```
+
+On **skip**, note it's available later: "You can add it anytime by re-running `/setup:onboarding`."
+
+Proceed to Step 7.
 
 ### 7. Confirm and write user config
 
@@ -326,6 +425,7 @@ Daily Workflow
   Working a story: /story:dashboard  →  /story:create  →  /session:checkpoint  →  /session:commit
   Shipping it:     /release:create  →  /release:deploy  →  /session:finish
   Stay current:    /setup:update  →  restart Claude Code
+  Jump to a repo:  ccs <acronym>  (shell shortcut — cd + launch Claude; e.g. ccs vo, ccs plugins)
 
 ─────────────────────────────────────────────────────────────
 Key Commands to Know First

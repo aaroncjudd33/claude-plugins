@@ -114,6 +114,26 @@ If any section fails (MCP auth issue, network error, etc.), print the error unde
 
 ---
 
+## `ccs` Repo Launcher
+
+A shell shortcut shipped with this plugin and installed by `/setup:onboarding` (Step 6a).
+`ccs <acronym>` cds into a repo and launches Claude Code; `ccs` alone launches in the
+current directory; an unknown argument falls back to a starts-with scan of the work-repos
+base dir.
+
+- **Source templates:** `${CLAUDE_PLUGIN_ROOT}/scripts/ccs.sh` (bash) and `ccs.ps1` (PowerShell), behavior-identical.
+- **Config-driven, baked at install:** onboarding substitutes two tokens — `__CCS_REPOS_BASE__`
+  (from `paths.workReposDir`; MSYS→Windows-translated for the `.ps1`) and `__CCS_MARKETPLACE__`
+  (from `paths.pluginMarketplaceName`). Nothing is hardcoded to `C:\dev`.
+- **Idempotent install:** the function is written between the marker sentinels
+  `# >>> ccs launcher …` / `# <<< ccs launcher <<<`. Re-running onboarding replaces the block
+  in place (never double-appends). To update the shipped map/logic on a machine, edit the
+  template here, then re-run `/setup:onboarding` and choose to install.
+- **Default acronym map** covers the common YL repos; the starts-with fallback covers the rest,
+  so it need not be exhaustive. `plugins` is special-cased to the marketplace clone.
+
+---
+
 ## Calendar
 
 <!-- SYNC NOTE: Mirrors setup/commands/calendar.md. Update both together. -->

@@ -76,6 +76,27 @@ Report each deletion:
 - "Deleted ~/.claude/browser-links.json"
 - "Deleted ~/.claude/jira-stories.json"
 
+### 4a. Remove the `ccs` launcher from shell profiles (offer separately)
+
+The `ccs` repo launcher (installed by `/setup:onboarding`) lives as a marked block inside
+your shell profiles, not as a config file — so it needs its own removal. Check for it:
+
+```bash
+for f in "$HOME/.bashrc" "$HOME/Documents/WindowsPowerShell/Microsoft.PowerShell_profile.ps1" "$HOME/Documents/PowerShell/Microsoft.PowerShell_profile.ps1"; do
+  [ -f "$f" ] && grep -qF "# >>> ccs launcher" "$f" && echo "$f"
+done
+```
+
+If any profile contains the block, offer (do not remove silently — these are hand-authored files):
+"Also remove the `ccs` launcher from <profile(s)>? (yes/no)"
+
+On **yes**, strip the block between (and including) the sentinels from each profile:
+```bash
+awk '/# >>> ccs launcher/{skip=1} !skip{print} /# <<< ccs launcher/{skip=0}' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+```
+Report each: "Removed the ccs launcher from <profile>." On **no**, leave the profiles untouched.
+The profiles themselves are never deleted — only the marked block is removed.
+
 ### 5. Final report and next steps
 
 ```
