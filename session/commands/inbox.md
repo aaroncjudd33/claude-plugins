@@ -66,18 +66,20 @@ python3 "$IDT" next --slug "<target-slug>" --handle "<handle>"   # prints e.g. a
 ```
 If `python3`/script is unavailable, fall back to `<acronym>-<handle>#?` and note the counter wasn't advanced — never block the write. See `references/inbox-convention.md` § Stable IDs.
 
-Append (record the ID, then the **source** slug/session/type — not the target — followed by the `type`/`status` line):
+Append (record the ID, then the **source** slug/session/type — not the target — followed by the `status` line):
 ```markdown
 ## <id> · [YYYY-MM-DD @<handle>] from <source-slug> / <source-session> (<source-type>) — <description>
-> [type: story · status: ready]
+> [status: capture]
 <body>
 ```
-Omit the `(<source-type>)` segment only when no source session is active (repo-level routing). The `<id>` is permanent — it never changes as the item moves through pending/in-progress/done.
+Omit the `(<source-type>)` segment only when no source session is active (repo-level routing). The `<id>` is permanent — it never changes as the item moves through its lifecycle.
 
-**The `> [type: … · status: …]` line** carries the two axes orthogonal to provenance (full model in `references/inbox-convention.md` § Item Model):
-- **`type`** — default **`story`** (actionable work the target picks up). A routed handoff is normally a `story`. Set `note` (an FYI / recorded decision, no build expected) or `data` (a payload consumed as input) when the sender frames it that way. `note`/`data` are the **mailbox** (acp-ajudd#10): they are delivered by this same free-rein write, then the target session reads → processes → archives them on request (never picked up as work, never auto-announced). See `references/inbox-convention.md` § Mailbox.
-  - **`data` payload:** inline in the body by default. For a large payload, write it to a file and add a `ref: <path>` line in the body instead (see § Mailbox for the shape).
-- **`status`** — for a `story` handoff use **`ready`** (it's a delivered, pickable item — the sender has finished composing it). For `note`/`data`, use **`new`** (the mailbox delivery state; flipped to consumed + archived when the target reads it).
+**Everything routed through `/session:inbox` is a capture (acp-ajudd#21).** There is no `type` axis anymore — an inbox holds **captures** on one lifecycle (`capture` → `refining` → `ready`), and a routed handoff always arrives at the entry state `capture`. Provenance is recorded (the header above); *intent* is deferred to the reader, who dispositions the capture when they read it. Full model in `references/inbox-convention.md` § Item Model.
+
+**The `> [status: …]` line** carries the capture's lifecycle status plus an **optional, non-binding intent hint**:
+- **`status`** — always **`capture`** for a fresh handoff (the single entry state). Do not write `refining`/`ready` here — those are reached by `refine` promoting the capture, not by the sender. (`refine` writes `refining` directly; a spawn writes `ready` — those are separate write sites.)
+- **`intent`** (optional) — a hint the sender may attach so the reader knows what the sender *thinks* it is, without deciding for them: `> [status: capture · intent: story]` ("looks like real work"), `intent: fyi` ("awareness only, no build expected"), or `intent: data` ("a payload to consume as input"). Omit it entirely when unsure — the reader infers from the content. Intent **never binds**; the reader always dispositions (promote / discard / absorb / feed a refinement — see § Captures inbound).
+  - **`intent: data` payload:** inline in the body by default. For a large payload, write it to a file and add a `ref: <path>` line in the body instead (see § Captures inbound for the shape).
 
 See Provenance Rendering in `references/inbox-convention.md` for how this header + line is later displayed.
 

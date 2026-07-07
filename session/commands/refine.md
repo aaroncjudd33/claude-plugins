@@ -12,7 +12,7 @@ Refine is universal. What the record *is* is decided **strictly by the repo's zo
 
 - **Plugin / personal** (item-driven) → an **inbox item** in `_inbox.md`.
 - **Work repo (story/cab)** → a **Jira story** (project resolved-or-confirmed, never hardcoded).
-- **General** → **no system of record — refine creates no record.** A general repo has nothing to graduate into; the only thing that can leave a refine here is a `/session:inbox` mailbox note (a separate axis — see below). Scope verbally, hand off via a note if needed.
+- **General** → **no system of record — refine creates no record.** A general repo has nothing to graduate into; the only thing that can leave a refine here is a `/session:inbox` capture aimed at another slug (a separate concern — see below). Scope verbally, hand off via a capture if needed.
 
 ## The model: the record IS the work-in-progress store
 
@@ -24,15 +24,15 @@ This is exactly Heber's Jira flow — rough story → iterate → *Ready For Wor
 |------|----------------------------------------|-----------------------|--------------------|
 | plugin / personal | inbox item in `_inbox.md` | `status: refining` | flip to `status: ready` |
 | work repo | Jira story | *Gathering Requirements* | transition to *Ready For Work* |
-| general | none — no record is created | n/a | n/a (verbal scope; hand off via a `/session:inbox` note) |
+| general | none — no record is created | n/a | n/a (verbal scope; hand off via a `/session:inbox` capture) |
 
 Both the **write-early** path ("scope some, come back later, keep polishing") and the **one-shot** path ("scope it and mark ready in one sitting") are the same flow — the only difference is how mature the record is when you stop. Create-at-graduation is just the degenerate case where you finish in one sitting.
 
 ## Key properties
 
 - **Read-only toward code.** Refine scopes; it does not implement. Writing/editing the *record* (an inbox item under `~/.claude/memory/`, or a Jira story) is not a code edit — refine writes the record freely. If asked to implement, graduate the record and pick it up as a coding session. (Nothing hard-blocks a code edit either — acp-ajudd#1 removed edit-blocking — but refine's *job* is to scope, not build; keep it that way by convention.)
-- **Refine owns in-place requirement edits (acp-ajudd#13).** Editing a record's body / requirements / acceptance criteria in place is refine's job — that is exactly what the write-early + iterate loop below does. The mirror boundary: a **coding session must NOT** rewrite the requirements of an existing inbox item or Jira story it (or anyone) picked up. When a coding session finds a requirement needs changing, it hands off — a `/session:inbox` note, or back to a refine pass — rather than editing the record inline. So requirement changes always flow through refine.
-- **Record vs. mailbox are separate axes.** Refine's *record* target is locked by zone (above). The **mailbox** (`type: note` / `type: data` via `/session:inbox`) is independent and available from any context. In a work repo, refine's record is the Jira story, so the only thing refine ever puts in an inbox is a mailbox note — never a `type: story` record. In plugin/personal the inbox `type: story` item **is** the record (not a mailbox message) — correct, not a violation. Never touch the mailbox axis when locking the record target.
+- **Refine owns in-place requirement edits (acp-ajudd#13).** Editing a record's body / requirements / acceptance criteria in place is refine's job — that is exactly what the write-early + iterate loop below does. The mirror boundary: a **coding session must NOT** rewrite the requirements of an existing inbox item or Jira story it (or anyone) picked up. When a coding session finds a requirement needs changing, it hands off — a `/session:inbox` capture, or back to a refine pass — rather than editing the record inline. So requirement changes always flow through refine.
+- **Writing your zone's record vs. firing a capture are separate concerns (acp-ajudd#21).** Refine's *record* target is locked by zone (above). Dropping a **capture** into an inbox via `/session:inbox` — a raw inbound item another session dispositions on read — is independent and available from any context. In a work repo, refine's record is the Jira story, so the only thing refine ever puts in an inbox is a capture (an FYI / handoff aimed at another slug) — never a promoted `refining`/`ready` inbox record. In plugin/personal the inbox item refine writes **is** the record: it lives in `_inbox.md` at `status: refining` and matures to `ready` in place — that's a promoted capture, not an inbound capture-for-someone-else, so it's correct, not a violation. There is no `type` axis (`note`/`data`/`story` are gone) — just captures on one lifecycle; don't conflate writing your own record with firing a capture at another slug.
 - **No session file, no `_active` change.** Refine creates nothing under `<session_root>` and never touches `_active`. A coding session already active stays active *alongside* a refine, unaffected. (This is what decoupled refine from the `_active` redesign.)
 - **Nothing to expire or migrate.** With no session file there is no `refinement-*.md` to sweep, hide, or exclude from `session:migrate`. The record's own history (git for inbox items, Jira for stories) is the trail.
 - **Resumable through the record itself.** A `refining` inbox item shows up in `/session:start`'s inbox listing as resumable (marked `refining`); a work-repo story in *Gathering Requirements* is a first-class Jira object you reopen with `refine BPT2-XXXX` (or find via `/story:dashboard`).
@@ -48,12 +48,15 @@ Run `pwd`, extract the repo slug. Read `handle` per the Session Skill's handle l
 | **plugin** | pwd contains `pluginMarketplaceName` | inbox item in `_inbox.md` (unambiguous — no target confirmation) |
 | **personal** | pwd begins with `personalProjectsDir` (fallback: contains `/c/claude/`) | inbox item in `_inbox.md` (unambiguous — no target confirmation) |
 | **work repo (story/cab)** | pwd begins with `workReposDir` (fallback: contains `/dev/`) | Jira story — project resolved-or-confirmed, **never hardcoded** |
-| **general** | anything else | **no system of record — no record is created** (scope verbally; hand off via a `/session:inbox` note if needed) |
+| **general** | anything else | **no system of record — no record is created** (scope verbally; hand off via a `/session:inbox` capture if needed) |
 
 **Do not warn or block** when refine runs outside a work repo — refine is welcome everywhere; it just graduates to the right kind of record for the zone. **The target is strictly the zone — there is no override and no target picker.** For work repos the Jira **project** is not assumed to be `BPT2` — resolve from context or confirm the project (that is the only thing ever confirmed; the *kind* of record is fixed by zone). For general, no record is created at all.
 
-**New vs resume** (from the argument):
-- **An existing record reference** — a `refining` inbox item's `<id>` (e.g. `refine acp-ajudd#12`) or a Jira key (`refine BPT2-6429`) → **resume**: read that record (inbox item body, or `getJiraIssue`) and continue refining it in place from Step 3. Skip Step 2 (the record already exists).
+**New, resume, or promote** (from the argument):
+- **An existing inbox item's `<id>`** (e.g. `refine acp-ajudd#12`) → read the item and branch on its `status` line:
+  - **`status: capture`** → **promote** (the capture-first promotion step — acp-ajudd#21). A capture is raw inbound; refine is where it becomes tracked work. Flip its status line `capture` → `refining` **in place** — preserve the header, `<id>`, provenance, and any `intent:` hint verbatim; only the status word changes. Surface it plainly: `Promoted <id> (capture → refining) — <one-line summary>`. Then continue scoping from Step 3, editing the same item. (Skip Step 2's record *creation* — the item already exists — but still run its memory scan for context.)
+  - **`status: refining`** → **resume**: continue refining that item in place from Step 3 (skip creation; still load memories).
+- **A Jira key** (`refine BPT2-6429`) → **resume**: `getJiraIssue` and continue refining the story in place from Step 3 (skip creation; still load memories).
 - **A topic / free text** (`refine shopify refund window`) or **nothing** → **new**: proceed to Step 2. If no argument, ask: "What are we refining? (a short topic)".
 
 > **Migrating away from the old model:** older versions wrote a local `refinement-<topic>.md` session file. That file is gone from this flow. Any leftover `refinement-*.md` on disk is harmless legacy — it is still hidden from the default listing and skipped by `session:migrate`; delete it whenever convenient. Nothing new is written there.
@@ -76,11 +79,11 @@ Created <KEY> in Gathering Requirements — <one-line summary>   ← work repo (
 
 **A. Plugin / personal → inbox item at `status: refining`.**
 
-Issue a stable ID (`python3 <session>/scripts/inbox-id.py next --slug <slug> --handle <handle>`), then append a self-contained item to `~/.claude/memory/sessions/<slug>/_inbox.md` (create with header `# Inbox — <slug>` if needed). Use the **exact `_inbox.md` format `new` / `/session:inbox` write** — same header, plus the `> [type: story · status: refining]` line and a freeform body carrying the refinement report. The provenance surrogate is the command itself (there is no originating session): `from <slug> / refine (<zone>)`, with `<zone>` as the `source-type`:
+Issue a stable ID (`python3 <session>/scripts/inbox-id.py next --slug <slug> --handle <handle>`), then append a self-contained item to `~/.claude/memory/sessions/<slug>/_inbox.md` (create with header `# Inbox — <slug>` if needed). Use the **exact `_inbox.md` format `new` / `/session:inbox` write** — same header, plus the `> [status: refining]` line and a freeform body carrying the refinement report. The provenance surrogate is the command itself (there is no originating session): `from <slug> / refine (<zone>)`, with `<zone>` as the `source-type`:
 
 ```markdown
 ## <id> · [YYYY-MM-DD @<handle>] from <slug> / refine (<zone>) — <Summary>
-> [type: story · status: refining]
+> [status: refining]
 
 **Affected areas:** <from report>
 **Estimate:** <from report, with reasoning>
@@ -97,10 +100,10 @@ Resolve the Jira project first — do **not** assume `BPT2`: default from `~/.cl
 
 **C. General → no record is created.**
 
-A general repo has no system of record, so refine writes **nothing** here — no inbox item, no Jira story, no prompt asking which. Scope the work in the conversation and, if it needs to go somewhere, hand it off with a `/session:inbox` mailbox note to a repo that does have a record. State this plainly rather than offering a target choice:
+A general repo has no system of record, so refine writes **nothing** here — no inbox item, no Jira story, no prompt asking which. Scope the work in the conversation and, if it needs to go somewhere, hand it off with a `/session:inbox` capture to a repo that does have a record. State this plainly rather than offering a target choice:
 ```
 This is a general repo — no system of record, so refine won't create a record here.
-Scope it in the conversation; to hand it off, drop a /session:inbox note to a target repo.
+Scope it in the conversation; to hand it off, drop a /session:inbox capture to a target repo.
 ```
 
 ### 4. Iterate In Place
@@ -124,7 +127,7 @@ Mark ready for pickup?  ready  ·  not yet
 ```
 
 On `ready`:
-- **Inbox item** → change the item's line to `> [type: story · status: ready]`. Nothing else moves — it's already a normal, pickable inbox item. Surface it: `Marked <id> ready for pickup.`
+- **Inbox item** → change the item's status line to `> [status: ready]` (preserving any `intent:` hint). Nothing else moves — it's already a normal, pickable inbox item. Surface it: `Marked <id> ready for pickup.`
 - **Jira story** → `transitionJiraIssue` to **Ready For Work** (add a short comment noting refinement is complete, per the story plugin's transition convention). Surface it: `Transitioned <KEY> → Ready For Work.`
 
 On `not yet` → leave it `refining` / *Gathering Requirements*; it stays resumable.
@@ -138,7 +141,7 @@ Pick it into a coding session now?  pick  ·  leave
 - **pick** → run the `pick` flow (`start-impl.md` → Item Pickup): derive a feature name (confirm once), fold the item into a new **coding** session, delete it from `_inbox.md`, set `_active` to the new session. This is the point a session file is finally created — because now it's work being done.
 - **leave** → the item stays `ready` and pending; a later `/session:start` picks it up like any other.
 
-For **work-repo (Jira) graduations**, do not create a story session here — whoever builds it runs `/session:start BPT2-XXXX` later and picks up context from Jira. A `[scoping]` handoff note via `/session:inbox` is optional.
+For **work-repo (Jira) graduations**, do not create a story session here — whoever builds it runs `/session:start BPT2-XXXX` later and picks up context from Jira. A `[scoping]` handoff capture via `/session:inbox` is optional.
 
 (There is no `role` logic in refine — the graduation offer is shown the same way to everyone. Security is the repo zone plus source-control write access, never a config-field role.)
 
