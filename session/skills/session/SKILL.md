@@ -1,6 +1,6 @@
 ---
 name: session
-description: "This skill governs session lifecycle across all project types. Load whenever the user invokes a session command (/session:start, /session:checkpoint, /session:commit, /session:finish, /session:switch, /session:search, /session:in-flight, /session:spawn, /session:restore, /session:store, /session:refine, /session:worklog, /session:migrate, /session:inbox), asks about session state, asks what they were working on, wants to save progress, wants to start or end a working session, or asks about their inbox, backlog, or open items. Provides path resolution logic, @handle tagging rules, epic context, context-recovery guidance, and Teams messaging rules used by all session commands."
+description: "This skill governs session lifecycle across all project types. Load whenever the user invokes a session command (/session:start, /session:checkpoint, /session:commit, /session:finish, /session:switch, /session:search, /session:in-flight, /session:spawn, /session:handoff, /session:restore, /session:store, /session:refine, /session:worklog, /session:migrate, /session:inbox), asks about session state, asks what they were working on, wants to save progress, wants to start or end a working session, or asks about their inbox, backlog, or open items. Provides path resolution logic, @handle tagging rules, epic context, context-recovery guidance, and Teams messaging rules used by all session commands."
 ---
 
 # Session Skill
@@ -312,6 +312,39 @@ The inbox is both a **to-do list** (`type: story` items you pick up and build) a
 - **Send:** `/session:inbox` drops a `note`/`data` into a target slug's inbox — a free-rein write with a visible confirmation line in the sending session (per acp-ajudd#5). Nothing pings the recipient.
 - **Surface:** a single **"Messages: N waiting"** line at `session:start` (and in the switch/resume blocks) when any `note`/`data` has `status: new`. That is the only automatic surfacing — one glance, not monitoring. Messages **never** appear in the story pickup list or the checkpoint/finish sweeps.
 - **Read → process → archive (on request only):** when the user says "check messages" / "read the note from `<repo>`", read every `new` note/data in the slug inbox, process each (a `note` is acknowledged / its follow-up folded into work; a `data` payload — inline, or via a `ref:` file — is folded into the work that needs it), then **archive** each to `_inbox_archive.md` with a `[CONSUMED YYYY-MM-DD]` stamp and remove it from the live inbox (archived, never deleted). Full flow: `references/inbox-convention.md` § Mailbox.
+
+## Cross-Session Paste Handoff (the handoff block)
+
+Three paths move work between sessions, and they split on **how the item travels**:
+
+| Path | Mechanism | Crosses machines? | Command |
+|------|-----------|-------------------|---------|
+| **inbox** | writes a `type: story`/`note`/`data` item into a target slug's `_inbox.md` | no — same machine, file-based | `/session:inbox` |
+| **spawn** | writes a `[spawn]` inbox item staging a linked follow-on session | no — same machine, file-based | `/session:spawn` |
+| **handoff** | prints a self-contained block the human **copies and pastes** into another live Claude session (another terminal / another machine) | **yes** — human-carried, no file | `/session:handoff` |
+
+`inbox`/`spawn` hand off *through the filesystem* — the next `/session:start` on this machine surfaces them. `handoff` is the **human-carried** case: nothing is written or sent; the block is copied out of this session and pasted into a different live session that has none of this conversation's context. That is why the block must be **self-contained**.
+
+**The standard handoff block format** — every produced handoff (by `/session:handoff`, or any time a session emits one) uses exactly this shape:
+
+````
+═══════════════ SESSION HANDOFF ═══════════════
+To:    <target session / slug / topic>
+From:  <this session, one line>
+Items: <optional — inbox IDs, or omit / "none">
+
+<self-contained body: context, task, guardrails, done-when>
+
+═══════════════ END HANDOFF ═══════════════════
+````
+
+**Rules (all required):**
+- **Fenced code block is mandatory.** The fence is what gives the Claude UI its one-click copy button and copies the exact raw text — that one-gesture, exact-fidelity copy is the entire point. Never emit a handoff as loose prose.
+- **Heavier outer fence when the body has its own fences.** If the body contains ``` fences (bash snippets, JSON, nested blocks), wrap the whole handoff in a **four-backtick** (` ```` `) or `~~~~` fence so the inner triple-backticks survive intact. (This document does exactly that — note the four-backtick wrapper above.)
+- **Self-contained body.** Restate all context the receiver needs; never reference "what we decided above" or anything only visible in the originating conversation — the receiving session cannot see it.
+- **Titled header + END footer.** The `═══ SESSION HANDOFF ═══` title tells the receiving Claude what the block is; the `═══ END HANDOFF ═══` marker tells it where the handoff stops (so trailing chat isn't misread as part of the task).
+
+(A matching personal-memory note `feedback_delimit_paste_blocks` exists on the author's machine; **this SKILL section is the load-bearing, portable copy** — behavior ships in the plugin, per the repo principle. `/session:handoff` references this section as the single source of truth for the format and does not restate it.)
 
 ## Reference Files
 
