@@ -138,13 +138,15 @@ On `ready`:
 
 On `not yet` → leave it `refining` / *Gathering Requirements*; it stays resumable.
 
+**Refine never marks work complete (acp-ajudd#42).** Refine is a planning/sessionless flow: its highest disposition is **`ready`** (inbox) / **Ready For Work** (Jira) — *scoped, ready to build*, not built. It may create, update, promote, leave-refining, backlog, or discard a record freely, but it **never** writes a completion stamp (`[DONE]` / "shipped" / *Done*) — that authority belongs only to a coding session's `/session:finish`. If a refine read decides a capture should not be built as-is, that is a **planning disposition** (§ Disposition & completion in `references/inbox-convention.md`): drop it with a `[DISPOSITIONED … — <fate>]` archive or backlog it — never `[DONE]`.
+
 **Offer to pick it up** (inbox-item graduations only — plugin / personal). One optional line, never auto — the dev-sitting-there path:
 
 ```
 Pick it into a coding session now?  pick  ·  leave
 ```
 
-- **pick** → run the `pick` flow (`start-impl.md` → Item Pickup): derive a feature name (confirm once), fold the item into a new **coding** session, delete it from `_inbox.md`, set `_active` to the new session. This is the point a session file is finally created — because now it's work being done.
+- **pick** → run the `pick` flow (`start-impl.md` → Item Pickup): derive a feature name (confirm once), fold the item into a new **coding** session, archive-on-consume it from `_inbox.md` (a `[CONSUMED … → session <name>]` copy to `_inbox_archive.md`, then removed from the live inbox — the exact mechanics live in `start-impl.md` Item Pickup; acp-ajudd#40), set `_active` to the new session. This is the point a session file is finally created — because now it's work being done.
 - **leave** → the item stays `ready` and pending; a later `/session:start` picks it up like any other.
 
 For **work-repo (Jira) graduations**, do not create a story session here — whoever builds it runs `/session:start BPT2-XXXX` later and picks up context from Jira. A `[scoping]` handoff capture via `/session:inbox` is optional.

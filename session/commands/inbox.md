@@ -76,6 +76,8 @@ Omit the `(<source-type>)` segment only when no source session is active (repo-l
 
 **Everything routed through `/session:inbox` is a capture (acp-ajudd#21).** There is no `type` axis anymore — an inbox holds **captures** on one lifecycle (`capture` → `refining` → `ready`), and a routed handoff always arrives at the entry state `capture`. Provenance is recorded (the header above); *intent* is deferred to the reader, who dispositions the capture when they read it. Full model in `references/inbox-convention.md` § Item Model.
 
+`/session:inbox` only ever **creates** a capture at `status: capture` — it never marks any item complete, done, or shipped, and it never archives (the outbox is append-only, below). Completion is a coding-session `/session:finish` act alone (acp-ajudd#42, § Disposition & completion) — nothing on this write path can stamp it.
+
 **The `> [status: …]` line** carries the capture's lifecycle status plus an **optional, non-binding intent hint**:
 - **`status`** — always **`capture`** for a fresh handoff (the single entry state). Do not write `refining`/`ready` here — those are reached by `refine` promoting the capture, not by the sender. (`refine` writes `refining` directly; a spawn writes `ready` — those are separate write sites.)
 - **`intent`** (optional) — a hint the sender may attach so the reader knows what the sender *thinks* it is, without deciding for them: `> [status: capture · intent: story]` ("looks like real work"), `intent: fyi` ("awareness only, no build expected"), or `intent: data` ("a payload to consume as input"). Omit it entirely when unsure — the reader infers from the content. Intent **never binds**; the reader always dispositions (promote / discard / absorb / feed a refinement — see § Captures inbound).

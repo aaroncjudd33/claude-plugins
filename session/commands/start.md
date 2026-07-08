@@ -341,11 +341,11 @@ Reply with overrides or "go".
 Plugin reviewed check: `grep -o '"version": "[^"]*"' "<plugin_root>/.claude-plugin/plugin.json" | head -1` — compare MAJOR.MINOR of `Plugin reviewed:` field vs current. Show only if they differ.
 
 Apply answers:
-- **in-progress done**: archive with `[DONE YYYY-MM-DD]` stamp, remove from inbox, remove matching `[inbox] <item>` from Open items.
+- **in-progress done** (bucket 1 — COMPLETION): archive with `[DONE YYYY-MM-DD]` stamp, remove from inbox, remove matching `[inbox] <item>` from Open items. Valid because this resume enters a coding session closing work it built.
 - **in-progress keep**: no change.
 - **pending work**: add `[in-progress — <session-name>, YYYY-MM-DD]` immediately after the `## [date]...` header; add `[inbox] <short desc>` to Open items.
-- **pending done**: archive with stamp.
-- **backlog**: move to `_backlog_<name>.md` (create if needed), remove from inbox.
+- **pending done**: archive with `[DONE YYYY-MM-DD]` stamp. **`done` is a completion act (bucket 1) — reserve it for work that was actually built.** If you are only judging a pending item obsolete/superseded (not implementing it), that is a **planning disposition, not completion**: use **backlog** (defer) or drop it with a bucket-3 `[DISPOSITIONED YYYY-MM-DD — superseded]` archive — never `[DONE]`. See `references/inbox-convention.md` § Disposition & completion.
+- **backlog** (bucket 3 — planning disposition): move to `_backlog_<name>.md` (create if needed), remove from inbox.
 - **pending keep**: leave as-is.
 - **reviewed yes**: update `Plugin reviewed: <current-version>` in session file.
 

@@ -92,8 +92,8 @@ The inbox does two jobs, and both are now the *same object* at different lifecyc
 **3. Read → disposition → archive (on request).** When asked, the target session:
    - reads every un-promoted `capture` (`status: capture`) in its slug inbox (`_inbox.md` for plugin/personal; `_inbox.md` — the global slug inbox — for story/cab, *not* a per-session `_inbox_<name>.md`, since captures are addressed to the slug);
    - **dispositions** each — **promote** (it's real work → flip to `refining`, hand to refine or scope inline), or one of the read-and-archive fates: **discard**, **absorb into the current session** (fold its content — e.g. a data payload or an FYI — into the work at hand), or **feed a refinement**;
-   - **archives** each non-promoted capture: append it to `_inbox_archive.md` with a `[CONSUMED YYYY-MM-DD]` stamp and remove it from the live inbox. Archiving is unchanged from the existing `[DONE]` archive flow — same file, same auto-purge (>30d). Captures are **archived, never deleted** (a promoted capture stays live in the inbox at `refining`/`ready`).
-   - surface a one-line summary, e.g. `Read 2 captures — 1 promoted to refining, 1 absorbed → archived.`
+   - **archives** each non-promoted capture with the **bucket-3 planning-disposition stamp** `[DISPOSITIONED YYYY-MM-DD — <fate>]` (`<fate>` is one of `discarded` / `absorbed` / `refined` — see § Disposition & completion): append it to `_inbox_archive.md` and remove it from the live inbox. This is a **non-completion** stamp — dispositioning a capture on read is *not* completing implemented work (only a coding `/session:finish` writes `[DONE]`), and it is *not* a pickup-consume (that is `[CONSUMED → session]`). Same file and same auto-purge (>30d) as the `[DONE]` flow. Captures are **archived, never deleted** (a promoted capture stays live in the inbox at `refining`/`ready`). *(Legacy captures archived with a bare `[CONSUMED YYYY-MM-DD]` still read correctly as historical dispositions — see § Disposition & completion back-compat.)*
+   - surface a one-line summary, e.g. `Read 2 captures — 1 promoted to refining, 1 absorbed → dispositioned.`
 
 **Addressing = to-slug (v1).** A capture is addressed to a repo's inbox — whoever next works that slug — not to a specific named session. (`/session:inbox` already writes to the slug inbox for plugin/personal.)
 
@@ -214,6 +214,24 @@ Inbox — pick up or describe new work (N):
 ```
 Drop the slug when same-repo (as above); include it (`↳ <slug> / <session> (<type>)`) for cross-repo items. Omit the `[<id>]` for legacy items with none.
 
+## Disposition & completion — three stamps, three owners (acp-ajudd#42)
+
+When an item leaves the live inbox it gets an archive stamp. There are **three distinct stamps and they must never be blurred** — each answers a different question and only some actors may write each. The rule that matters most: **"complete" means *implemented*, and only a coding session's `/session:finish` may say it.** A planning / refine / sessionless read may create, refine, delete, backlog, or set-aside an item freely — it may do everything *except* mark it complete.
+
+| Stamp | Bucket | Means | Written by |
+|---|---|---|---|
+| `[DONE YYYY-MM-DD]` | **1 — COMPLETION** | the work is *implemented and closed* | **ONLY a coding session's `/session:finish`** (or a coding `checkpoint` closing its own picked-up work). Never a planning/refine/sessionless read. |
+| `[CONSUMED YYYY-MM-DD → session <name>]` | **2 — CONSUMED-ON-PICKUP** | the item was *folded into a coding session* — **taken, not done** | **ONLY a coding session, at pickup** (acp-ajudd#40). The `→ session <name>` suffix is what marks it as a pickup-consume, not a completion. |
+| `[DISPOSITIONED YYYY-MM-DD — <fate>]` | **3 — PLANNING DISPOSITION** | a *non-completion* fate applied on read: `<fate>` is one of `discarded` / `absorbed` / `refined` / `superseded` | a read that decides not to build the item as-is — typically a **planning / refine / sessionless** read, but a coding session reading a capture it won't build also dispositions it. **Never means implemented.** |
+
+**Why the split (the live incident).** A planning context once archived an audit-index capture with a `[CONSUMED … shipped]` stamp while that item still had open children — using a completion word for something it had no authority to complete. Bucket 3 exists so a planning read has a stamp that says "handled, not built": it reads as non-completion at a glance and can never be mistaken for `[DONE]`.
+
+**Backlog is a move, not a stamp.** "Move to backlog" relocates the item to `_backlog*.md` (bucket-3 non-completion, nothing archived); it is deferral, not completion. Deleting a backlog item is a permanent drop — still never a completion.
+
+**Back-compat (existing archives stay readable).** Legacy `[DONE]` and legacy bare `[CONSUMED YYYY-MM-DD]` (no `→ session`, written by the old captures-inbound disposition flow) both still parse — treat a bare `[CONSUMED]` with no `→ session` suffix as a historical bucket-3 disposition, not a pickup-consume or a completion. No migration; old stamps read in place.
+
+**Parent / index items close bottom-up.** A capture that spawned children — an **audit index** that maps findings to child items (e.g. `A1 → #36`, `D10 → #40`) is the canonical case — is **not complete until its implemented children are complete**. Each child is closed by *its own* coding session's `/session:finish` (bucket 1); only once every implemented child is `[DONE]` may the parent index be marked `[DONE]`. A planning/refine read **must never self-complete a parent** while children remain open — doing so is exactly the completion-without-authority the whole rule forbids. Until then the index stays live (at `refining`/`ready`), ideally carrying an explicit "stays live until children close" note and a child→status map so the open work is legible. (This is the rule the live incident violated: an index was archived `[CONSUMED … shipped]` by planning while its children were still in flight.)
+
 ## Item Lifecycle (pickup states)
 
 Pickup state is **orthogonal to the maturity `status` above**: `status` = "is this capture promoted and scoped enough to grab" (`capture` → `refining` → `ready`); pickup state = "has a session grabbed it yet." A `refining` or `ready` item is "pending" here; picking either makes it in-progress (`capture`/`refining` just means `pick` warns first).
@@ -241,18 +259,21 @@ Add a `/comms:pto` command...
 
 The item stays in the inbox file until work is complete. A matching `[inbox] Add /comms:pto command` line is added to the session's Open items.
 
-**Done** — work complete. Item is removed from inbox and appended to the archive file (`_inbox_<name>_archive.md` or `_inbox_archive.md`) with a `[DONE]` stamp:
+**Done** — work **implemented and complete** (bucket 1 — see § Disposition & completion). This stamp asserts the work was *built*, so it is written **only by a coding session's `/session:finish`** (or a coding `checkpoint` closing its own picked-up work) — never by a planning/refine/sessionless read. The item is removed from inbox and appended to the archive file (`_inbox_<name>_archive.md` or `_inbox_archive.md`) with a `[DONE]` stamp:
 ```markdown
 [DONE 2026-06-05]
 ## [2026-05-13 @ajudd] from virtual-office / BPT2-6258 (story) — Add /comms:pto command
 [Work file: _work_session_2026-06-05-comms-pto.md]   ← preserved if one was created
 ```
+(The pickup archive above uses the distinct bucket-2 stamp `[CONSUMED <date> → session <name>]` — *taken, not done*. A planning read that decides not to build an item uses the bucket-3 `[DISPOSITIONED …]` stamp or moves it to backlog — never `[DONE]`.)
 
 ## Triage Options (at session:start / checkpoint / finish)
 
+Each verb maps to a disposition bucket (§ Disposition & completion). Only **Mark done** carries a completion semantic, and it is gated to a coding session.
+
 - **Work on it** — inserts `[in-progress — <session>, <date>]` in the inbox entry, adds `[inbox] <item>` to session Open items. Does NOT archive yet.
-- **Mark done** — archives with `[DONE]` stamp, removes from inbox.
-- **Move to backlog** — moves to `_backlog_<name>.md` (plugin) or `_backlog.md` (others). No archive — stays until explicitly deleted.
+- **Mark done** (bucket 1 — COMPLETION) — archives with `[DONE]` stamp, removes from inbox. **Only valid from a coding session closing work it actually built** (this is why the prompt appears at `checkpoint`/`finish`, which require a coding session). **A planning / refine / sessionless read must not use this** to clear an item it merely judged obsolete — that is a planning disposition: use **Move to backlog** (defer) or a bucket-3 `[DISPOSITIONED … — superseded]` archive (drop), never `[DONE]`.
+- **Move to backlog** (bucket 3 — planning disposition, non-completion) — moves to `_backlog_<name>.md` (plugin) or `_backlog.md` (others). No archive — stays until explicitly deleted. Available to any read, planning included.
 - **Keep** — leaves as-is in inbox. Does not add to Open items.
 
 ## Auto-Purge
