@@ -38,8 +38,71 @@ import json
 import os
 import re
 import sys
+import time
 
 DEFAULT_SEQ_FILE = os.path.expanduser("~/.claude/config/inbox-seq.json")
+
+# Locking for the read-modify-write in `next`. The critical section is a tiny
+# JSON read + write (sub-millisecond), so a live holder is never contended for
+# long. We bound the wait and degrade gracefully rather than ever block work.
+LOCK_RETRIES = 50          # attempts before giving up
+LOCK_RETRY_SLEEP = 0.05    # seconds between attempts (~2.5s worst-case wait)
+LOCK_STALE_SECONDS = 10.0  # a lock older than this is a crashed run — break it
+
+
+def acquire_lock(lock_path):
+    """Acquire an exclusive lock via atomic O_EXCL create.
+
+    Cross-platform (works under Git Bash on Windows — no POSIX-only fcntl).
+    Returns the open fd on success, or None if the lock could not be taken
+    within LOCK_RETRIES. A lock file older than LOCK_STALE_SECONDS is assumed
+    to be from a crashed run and is broken so a wedged lock never stops work.
+    """
+    try:
+        os.makedirs(os.path.dirname(lock_path), exist_ok=True)
+    except OSError:
+        return None  # can't even prepare the dir — degrade, never crash
+    flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY
+    for _ in range(LOCK_RETRIES):
+        try:
+            fd = os.open(lock_path, flags)
+            try:
+                os.write(fd, str(os.getpid()).encode("ascii"))
+            except OSError:
+                pass
+            return fd
+        except OSError:
+            # The create failed. On POSIX a held lock is FileExistsError; on
+            # Windows a file open/locked by another process can instead surface
+            # as PermissionError (and other transient OSErrors happen), so we
+            # treat ANY create failure the same: if the lock is stale (crashed
+            # holder), break it; otherwise wait briefly and retry. Catching
+            # OSError broadly guarantees the lock mechanism never crashes the
+            # mint — a wedged lock must degrade to the placeholder, not stop work.
+            try:
+                age = time.time() - os.path.getmtime(lock_path)
+            except OSError:
+                age = 0.0  # not present/unreadable — just retry the create
+            if age > LOCK_STALE_SECONDS:
+                try:
+                    os.remove(lock_path)
+                except OSError:
+                    pass  # another process broke it first, or can't — retry
+                continue
+            time.sleep(LOCK_RETRY_SLEEP)
+    return None
+
+
+def release_lock(fd, lock_path):
+    """Release a lock acquired by acquire_lock(). Best-effort, never raises."""
+    try:
+        os.close(fd)
+    except OSError:
+        pass
+    try:
+        os.remove(lock_path)
+    except OSError:
+        pass
 
 
 def acronym(slug):
@@ -111,10 +174,35 @@ def main():
     # next
     if not args.handle:
         ap.error("next requires --handle")
-    n = current + 1
-    if not args.peek:
+
+    # --peek never writes, so it needs no lock — report what the next ID would be.
+    if args.peek:
+        print(f"{acr}-{args.handle}#{current + 1}")
+        return
+
+    # Real mint: serialize the read-modify-write behind an exclusive lock so
+    # concurrent callers can't read the same value and collide (or roll the
+    # counter backward). Re-read the sequence INSIDE the lock — the pre-lock
+    # `current` above may be stale by the time we hold it.
+    lock_path = args.seq_file + ".lock"
+    fd = acquire_lock(lock_path)
+    if fd is None:
+        # Lock could not be taken within the bounded wait. Never block work:
+        # emit the same placeholder the call sites use when python is absent,
+        # and note it on stderr (stdout stays a clean, usable ID).
+        sys.stderr.write(
+            "inbox-id: could not acquire counter lock; emitted placeholder id "
+            "(reconcile the number manually)\n"
+        )
+        print(f"{acr}-{args.handle}#?")
+        return
+    try:
+        seq = load_seq(args.seq_file)
+        n = int(seq.get(args.slug, 0)) + 1
         seq[args.slug] = n
         save_seq(args.seq_file, seq)
+    finally:
+        release_lock(fd, lock_path)
     print(f"{acr}-{args.handle}#{n}")
 
 
