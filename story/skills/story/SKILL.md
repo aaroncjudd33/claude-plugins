@@ -228,12 +228,10 @@ member's `teamsUserId` is blank, skip them silently — they can be added manual
 
 Whenever any step in this plugin posts a Teams message, apply these rules without exception:
 
-1. **Always end with the Claude signature** — no exceptions:
-   `<p><em>Posted by Claude Code on behalf of {USER_NAME}</em></p>` (use `user.name` from `~/.claude/plugins/user-config.json`)
-2. **Always preview before sending.** Show the full message content and wait for explicit approval before calling `send_chat_message`.
-3. **Always use HTML formatting.** `send_chat_message` body supports and renders HTML.
-4. **Always open with an intro paragraph** (`<p>`) before the first section.
-5. **Follow the HTML guide.** Read `~/.claude/plugins/marketplaces/ajudd-claude-plugins/comms/skills/comms/references/teams-html-guide.md` before drafting any message.
+1. **Always preview before sending.** Show the full message content and wait for explicit approval before calling `send_chat_message`.
+2. **Always use HTML formatting.** `send_chat_message` body supports and renders HTML.
+3. **Always open with an intro paragraph** (`<p>`) before the first section.
+4. **Follow the HTML guide.** Read `~/.claude/plugins/marketplaces/ajudd-claude-plugins/comms/skills/comms/references/teams-html-guide.md` before drafting any message.
 
 Standard message template:
 
@@ -246,6 +244,4 @@ Standard message template:
 <ul>
   <li><b>Item</b> — detail</li>
 </ul>
-<p>&nbsp;</p>
-<p><em>Posted by Claude Code on behalf of {USER_NAME}</em></p>
 ```

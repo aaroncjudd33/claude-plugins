@@ -72,7 +72,6 @@ Draft a message with:
 - Deploy date/time in both ET and MT (read `customfield_13137` from the CAB card; convert to both timezones)
 - BPT2 stories bundled: key + summary for each
 - PR link (if present)
-- Signature: `<p><em>Posted by Claude Code on behalf of {USER_NAME}</em></p>`
 
 **Preview the full message and wait for explicit "yes" before sending.**
 
@@ -95,7 +94,6 @@ Draft a message for each story chat including:
 - PR link (if present)
 - Deploy date/time in both MDT and UTC
 - Post-deployment checks from that story's session file `Post-deployment checks` field (list them unchecked)
-- Signature: `<p><em>Posted by Claude Code on behalf of {USER_NAME}</em></p>`
 
 **Preview all messages together and wait for explicit "yes" before sending any.**
 

@@ -99,8 +99,6 @@ Wait for the user to confirm, then call `confirm_action`.
 Example:
 ```
 Hey team! Can someone approve PR #NNN for [short description]? Targeting [day + time MDT] deploy. Thanks!
-
-Posted by Claude Code on behalf of Aaron Judd
 ```
 
 ### 6. Update session state
