@@ -145,7 +145,7 @@ CDK_PRESENT=""
      skip / all / <number(s)>
 ```
 
-**(F) In-progress inbox items** — **read the inbox fresh at checkpoint time (acp-ajudd#6), never a session-start snapshot.** File is type-aware: **plugin / personal → the canonical `_inbox.md`** (item-driven — there is no per-session `_inbox_<name>.md`); **story / cab / general → `_inbox_<name>.md`**. Count/list **by `## <id>` header lines** and **skip the `> [type: … · status: …]` metadata line** under each (v1.57.0 item metadata — never miscount it). **Exclude `type: note` / `type: data` mailbox items** (acp-ajudd#10) — they are not pickup work; they're read/archived only on request (§ Mailbox). Include one per in-progress **story** item:
+**(F) In-progress inbox items** — **read the inbox fresh at checkpoint time (acp-ajudd#6), never a session-start snapshot.** File is type-aware: **plugin / personal → the canonical `_inbox.md`** (item-driven — there is no per-session `_inbox_<name>.md`); **story / cab / general → `_inbox_<name>.md`**. Count/list **by `## <id>` header lines** and **skip the `> [status: …]` metadata line** under each (legacy `> [type: … · status: …]` tolerated — never miscount it). **Exclude un-promoted `status: capture` items** (acp-ajudd#10) — they are not pickup work; they're read/archived only on request (§ Captures inbound). Include one per in-progress promoted capture:
 ```
   (N) [<id>] Inbox [in-progress]: "<description>"    keep / done
 ```

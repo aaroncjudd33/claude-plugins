@@ -61,7 +61,7 @@ Pick the target inbox by zone — a spawn must land where `/session:start` will 
 
 ```markdown
 ## <id> · [YYYY-MM-DD @<handle>] from <slug> / <current-session-name> (<current-type>) [spawn] — <label>
-> [type: story · status: ready]
+> [status: ready]
 - **Type:** <story / cab / plugin / personal / general>
 - **linked_sessions:** <current-session-name>
 - **Next step:** <concrete first action for the person picking this up>
@@ -73,7 +73,7 @@ Pick the target inbox by zone — a spawn must land where `/session:start` will 
 
 `<current-type>` in the header is the **source** (current) session's type — provenance (`source-type`) for where the spawn came from. It may differ from the `- **Type:**` bullet, which is the *session type to create* when someone picks this up.
 
-**The `> [type: story · status: ready]` line** is the message-model line (see `references/inbox-convention.md` § Item Model): a spawn is always a **`story`** tagged `[spawn]` — not its own message type — and it is **`ready`** (staged and pickable the moment it's written). Do not confuse this `type` (message type = `story`) with the `- **Type:**` bullet (the session type to create) — they are different axes and both are correct as written. Derive `<current-type>` from the current session's `type:` frontmatter / `- **Type:**` bullet.
+**The `> [status: ready]` line** is the capture status line (see `references/inbox-convention.md` § Item Model): a spawn is a **promoted capture** at `status: ready` — staged and pickable the moment it's written — tagged `[spawn]`. There is no type axis on a capture. Do not confuse the capture's `status` with the `- **Type:**` bullet (the session type to create) — they are different axes and both are correct as written. Derive `<current-type>` from the current session's `type:` frontmatter / `- **Type:**` bullet.
 
 Do **not** write `_active` or modify the current session file in any way.
 
