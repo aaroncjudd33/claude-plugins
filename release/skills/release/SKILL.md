@@ -229,4 +229,9 @@ During `release:deploy`, also register the Actions run:
 
 ## Teams Messaging
 
-No current release command posts to Teams. If a Teams step is added in the future, read the HTML formatting guide from the comms plugin (`comms/skills/comms/references/teams-html-guide.md`) before drafting — note this requires the `comms` plugin to be installed.
+`/release:cab-review` posts to Teams — the CAB-chat announcement (step 5) and the per-story status updates (step 6). Any release step that posts a Teams message must pass the comms plugin's **two Teams gates** (read-before-post + show-draft-before-send — see `comms/skills/comms/SKILL.md`):
+
+1. **Gate 1 — read the recent chat with `list_chat_messages` before drafting**, so you never duplicate what's already posted.
+2. **Gate 2 — show the full draft and wait for the user's explicit approval *for that message* before calling `send_chat_message`.** Approval is per-message and never inferred: a general "go ahead" earlier, or approval of a previous message, does not authorize the next one without showing it first. (cab-review already stops for approval at each send — keep it that way.)
+
+Read the HTML formatting guide (`comms/skills/comms/references/teams-html-guide.md`) before drafting — this requires the `comms` plugin to be installed.

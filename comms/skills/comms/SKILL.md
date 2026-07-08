@@ -11,16 +11,26 @@ Governs all Microsoft 365 communication via the `yl-msoffice` MCP — Teams mess
 
 ## Teams Messaging
 
+### The Two Teams Gates
+
+Every outward Teams message passes through two gates, in order. Both are hard requirements, not preferences — a send that skips either one is wrong:
+
+- **Gate 1 — read before you post (No-Duplicates).** Read the recent chat *before* drafting, so you never repeat what has already been said.
+- **Gate 2 — show the draft before you send.** Never call `send_chat_message` without first showing the full draft and getting the user's explicit approval *for that specific message*.
+
+Everything else in the rules below is formatting and voice. These two are the gates.
+
 ### Non-Negotiable Rules
 
 These apply to every Teams message, no exceptions:
 
-1. **Always preview before sending.** Show the full draft in BOTH formats and wait for explicit approval before calling `send_chat_message`. Never auto-confirm.
-2. **Always use HTML formatting.** The `yl-msoffice` `send_chat_message` body supports HTML and renders it properly.
-3. **Always open with an intro paragraph.** Before the first section, include a `<p>` that sets context — what this message is about and why you're sending it. Do NOT open with a greeting or self-introduction (see voice guide).
-4. **Follow the HTML guide.** See `references/teams-html-guide.md` for what renders well vs. poorly. The short version: no `<pre>`, no `<code>`, no `<h1>`, no `<h3>`, no `<th>`. Use `<h2>` for section headers, `<b>` for labels, `<ul>` for structure, nested `<ul>` for hierarchical content.
-5. **Apply Aaron's voice.** Read `references/aaron-voice.md` before drafting. Key rules: no greeting, paragraphs for conversational messages, brief on mistakes, "we/us" not "I", passive availability.
-6. **Self-correct on wrong-chat mismatches.** When the user reports that a message went to the wrong chat (e.g. "I meant the CAB chat, not the story chat" or "that's the wrong chat"), immediately: (a) identify what phrase was used and what Name it incorrectly resolved to, (b) add the phrase as an alias on the correct chat's row in `~/.claude/plugins/known-chats.md`, (c) if the phrase is ambiguous (matches multiple chats), also note it in a comment on the wrong chat's row so future sessions avoid the conflict, (d) save a feedback memory documenting the correction. Do not ask permission — do it immediately as part of acknowledging the correction.
+1. **Read the chat before drafting — No-Duplicates (gate 1).** Before composing, read the recent history with `list_chat_messages` (last 20–50 messages). Draft only what is *new* since the last update — never re-post or re-summarize something already sent. If a kickoff was already posted, don't repeat the problem statement; post only the progress or outcome. After a message goes out, record a one-line summary under a `## Teams Chat` section in the active session memory so the next session knows where the conversation left off.
+2. **Show the draft, get approval, then send — every single message (gate 2).** Before calling `send_chat_message`, show the full draft in BOTH formats (plain text + HTML) and wait for the user's explicit approval *for that message*. **Approval is per-message and is never inferred.** A general "go ahead" given earlier, an established per-item rhythm, or approval of the previous message does **not** authorize sending the next one without showing it first. Never auto-confirm. If you catch yourself about to send a message whose draft you have not shown *in this exchange*, stop and show it.
+3. **Always use HTML formatting.** The `yl-msoffice` `send_chat_message` body supports HTML and renders it properly.
+4. **Always open with an intro paragraph.** Before the first section, include a `<p>` that sets context — what this message is about and why you're sending it. Do NOT open with a greeting or self-introduction (see voice guide).
+5. **Follow the HTML guide.** See `references/teams-html-guide.md` for what renders well vs. poorly. The short version: no `<pre>`, no `<code>`, no `<h1>`, no `<h3>`, no `<th>`. Use `<h2>` for section headers, `<b>` for labels, `<ul>` for structure, nested `<ul>` for hierarchical content.
+6. **Apply Aaron's voice.** Read `references/aaron-voice.md` before drafting. Key rules: no greeting, paragraphs for conversational messages, brief on mistakes, "we/us" not "I", passive availability.
+7. **Self-correct on wrong-chat mismatches.** When the user reports that a message went to the wrong chat (e.g. "I meant the CAB chat, not the story chat" or "that's the wrong chat"), immediately: (a) identify what phrase was used and what Name it incorrectly resolved to, (b) add the phrase as an alias on the correct chat's row in `~/.claude/plugins/known-chats.md`, (c) if the phrase is ambiguous (matches multiple chats), also note it in a comment on the wrong chat's row so future sessions avoid the conflict, (d) save a feedback memory documenting the correction. Do not ask permission — do it immediately as part of acknowledging the correction.
 
 ### Standard Message Template
 
@@ -67,13 +77,14 @@ Only use for genuinely tabular data with 2–3 columns. See `references/teams-ht
 Use the `yl-msoffice` MCP tools in this order:
 
 1. **Find the chat ID** — look up the chat name or phrase in `~/.claude/plugins/known-chats.md` (filter to `Active=yes`). Match priority: (1) exact Name match, (2) any Aliases entry (comma-separated, match each individually), (3) substring Topic match. When the user says something informal ("my team chat", "the group chat", "cab chat"), check Aliases before Topic. If matched via alias, confirm before sending: "Matched '[phrase]' → [Name]. Using that — ok?" If not found, call `list_chats` to check whether it already exists in Teams before creating a new one. If it truly does not exist, use `teams.create_chat`, then add the new chat ID to `~/.claude/plugins/known-chats.md`.
-2. **Compose the message** using the template above. Read `references/aaron-voice.md` first.
-3. **Show the full preview in both formats:**
+2. **Read the recent chat (gate 1 — No-Duplicates)** — call `list_chat_messages` (last 20–50 messages) before composing. Draft only what is new since the last update; never repeat what was already posted.
+3. **Compose the message** using the template above. Read `references/aaron-voice.md` first.
+4. **Show the full preview in both formats:**
    - **Plain text** — readable prose version so the user can verify content and tone
    - **HTML** — the exact markup that will be sent, so layout issues are visible before send
-4. **Wait for explicit approval** — the user must say yes (or request edits) before proceeding. This approval authorizes calling `send_chat_message` in the next step.
-5. **Call `send_chat_message`** — this queues the message and returns a pending `actionId`. The message has NOT been sent yet.
-6. **Call `confirm_action`** with the returned `actionId`. This is a required API execution step — it is not a second human approval prompt. Do not skip it.
+5. **Wait for explicit approval for THIS message (gate 2)** — the user must say yes (or request edits) for this specific draft before proceeding. Approval is per-message: a general "go ahead" earlier, or having approved the previous message, does not authorize this one. This approval authorizes calling `send_chat_message` in the next step.
+6. **Call `send_chat_message`** — this queues the message and returns a pending `actionId`. The message has NOT been sent yet.
+7. **Call `confirm_action`** with the returned `actionId`. This is a required API execution step — it is not a second human approval prompt. Do not skip it.
 
 ### Creating a New Chat
 
