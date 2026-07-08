@@ -15,8 +15,9 @@ The `pr` plugin covers the pull-request lifecycle at Young Living. Its first com
 would be waste. What the generic toolkit lacks is the YL connective tissue this marketplace
 exists to add (same shape as story→Jira, release→CAB, comms→Teams):
 
-1. a **security pass** (OWASP Top 10 + active exploit patterns) — added here, Phase 1;
-2. a **reviewer roster** from `team.json` + story/branch context — Phase 2 (#25);
+1. a **security pass** (OWASP Top 10 + active exploit patterns) — Phase 1;
+2. a **reviewer roster** from `team.json` + story/branch context in the report header —
+   Phase 2 (#25, shipped);
 3. **posting results back** to Teams / Jira / GitHub — Phase 3 (#26).
 
 Gaps in the bare toolkit that motivate the wrap: no GitHub write-back (terminal output
@@ -58,8 +59,23 @@ than fork the agents, `/pr:review` injects YL guidance into each agent's Task pr
 the same guidance lives in the plugin's `CLAUDE.md`) telling them to judge against the
 target repo's own conventions.
 
-## Phase 1 boundary
+## Story / branch + reviewer context (Phase 2, #25)
 
-Phase 1 reviews the **local working diff** and prints **one terminal report**
-(Critical / Important / Suggestions / Strengths). No reviewer selection, no PR-number
-fetch, no external post-back — those are #25 and #26.
+Step 3 of `/pr:review` builds a **Context block** that heads the report:
+
+- **Branch** from `git rev-parse --abbrev-ref HEAD`.
+- **Story key** detected in order — an active story/CAB session (`_active`), else the
+  `feature/BPT2-<STORY>-<desc>` branch convention (`grep -oE '[A-Z][A-Z0-9]*-[0-9]+'`,
+  which matches digit-bearing keys like `BPT2-6155`), else `none detected`. Never invented.
+- **Suggested reviewers** — members whose `roles` includes `pr-reviewer`, read from
+  `~/.claude/plugins/team.json` (portable path, never hardcoded per global CLAUDE.md).
+  Missing roster degrades to `team.json not found` — it never blocks the review.
+
+This is *context only*: it names the story/branch and *suggests* reviewers. Assigning
+reviewers on a real PR and posting the review back are #26.
+
+## Current boundary
+
+`/pr:review` reviews the **local working diff** and prints **one terminal report**
+(Context header + Critical / Important / Suggestions / Strengths). No PR-number fetch,
+no external post-back — those are #26.

@@ -5,7 +5,7 @@ when they run over Young Living code. It is shipped **inside** the plugin, so it
 for every teammate who installs `pr` — we never fork the toolkit's agents.
 
 `/pr:review` injects the substance of this guidance into each toolkit agent's Task
-prompt (see `commands/review.md` Step 4). Keep this file and that injected block in sync.
+prompt (see `commands/review.md` Step 5). Keep this file and that injected block in sync.
 
 ## Counter the toolkit's foreign-project assumptions
 
@@ -28,6 +28,9 @@ target repo and its own `CLAUDE.md`, not against a remembered foreign baseline.*
   exploit patterns, embedded so it ships with the plugin (never read from a personal
   global `~/.claude/CLAUDE.md`).
 - A single **consolidated report** merging toolkit + security findings.
+- A **Context header** on the report (Phase 2, #25): the detected story key + branch, and
+  the suggested reviewers read from `team.json` (the `pr-reviewer` role). Read the roster
+  from `~/.claude/plugins/team.json` — never hardcode team data — and degrade gracefully
+  when it is absent (`team.json not found`) rather than failing the review.
 
-Later phases (tracked separately): reviewer roster from `team.json` + story/branch
-context (#25); post-back to Teams/Jira/GitHub (#26).
+Later phase (tracked separately): post-back to Teams/Jira/GitHub (#26).
