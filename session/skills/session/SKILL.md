@@ -357,7 +357,7 @@ Three paths move work between sessions, and they split on **how the item travels
 **The standard handoff block format** — every produced handoff (by `/session:handoff`, or any time a session emits one) uses exactly this shape. The header mirrors an **inbox-item header's provenance** (`[date @handle] from <source> (<zone>)`) so the receiver sees *who is handing to whom* without asking; horizontal rules give the block vertical breathing room and the body reads like a Teams message, not a wall:
 
 ````
-═══════════════ SESSION HANDOFF ═══════════════
+═══════════════ <FROM-STANCE> HANDOFF ═══════════════
  [YYYY-MM-DD @handle]   <from-stance> (<from-session-name>) ──▶ <to-stance> (<target>)
  Re:    <topic>  ·  <inbox IDs if any, else omit the ID clause>
  Slug:  <slug>  ·  Zone: <plugin|personal|story|cab|general>
@@ -371,13 +371,14 @@ Three paths move work between sessions, and they split on **how the item travels
 ````
 
 **Provenance header fields** (the meaningful part — mirror the inbox-item header):
+- **Title (`<FROM-STANCE> HANDOFF`)** — the block title names the **origin stance** so the handoff's direction is legible at a glance, without reading the provenance line: a **planning**-origin handoff is titled `PLANNING HANDOFF`, a **coding**-origin handoff `CODING HANDOFF` (acp-ajudd#45). `<FROM-STANCE>` is the origin stance uppercased, and it **always matches the left side of the `──▶` provenance line** directly below it (planning→coding reads `PLANNING HANDOFF`; coding→planning reads `CODING HANDOFF`). (Legacy blocks titled the generic `SESSION HANDOFF` are historical and still read fine — no migration.)
 - **`[YYYY-MM-DD @handle]`** — the same stamp an inbox item carries.
 - **`<from-stance> (<from-session-name>) ──▶ <to-stance> (<target>)`** — who → who, with each side's **stance** (planning / coding — see § Session Stance). This is the "where it came from" provenance. A sessionless origin is `planning (<slug>)`; a coding origin is `coding (<session-name>)`.
 - **`Re:`** — the topic, plus any inbox IDs the handoff carries (omit the ID clause when there are none).
 - **`Slug` / `Zone`** — so the receiver knows the repo and project type without asking.
-- **Footer** — names the origin session and says to reply back to it on completion. **On a planning→coding handoff the footer's return instruction MUST be command-invoking, not vague (acp-ajudd#43):** it explicitly tells the coding session to *run `/session:handoff`* to reply with a SESSION HANDOFF block back to the planning session for verification — **not** to free-form the report. Running the command is what re-emits this block; a vague "report back on done" is what let return handoffs come back as loose prose instead of a block. So a planning→coding footer reads, e.g.:
+- **Footer** — names the origin session and says to reply back to it on completion. **On a planning→coding handoff the footer's return instruction MUST be command-invoking, not vague (acp-ajudd#43):** it explicitly tells the coding session to *run `/session:handoff`* to reply with a handoff block back to the planning session for verification — **not** to free-form the report. Running the command is what re-emits this block; a vague "report back on done" is what let return handoffs come back as loose prose instead of a block. So a planning→coding footer reads, e.g.:
   ```
-   END HANDOFF · from <from-session-name> · when done, run /session:handoff to reply with a SESSION HANDOFF block back to <from-session-name> (planning) for verification — do not free-form the report
+   END HANDOFF · from <from-session-name> · when done, run /session:handoff to reply with a handoff block back to <from-session-name> (planning) for verification — do not free-form the report
   ```
   (Coding→planning and other directions keep the generic `reply to <from-stance> on done` footer — only the planning→coding *outgoing* footer needs the explicit command invocation, because it is the return leg that must come back as a block.)
 
@@ -385,7 +386,7 @@ Three paths move work between sessions, and they split on **how the item travels
 - **Fenced code block is mandatory.** The fence is what gives the Claude UI its one-click copy button and copies the exact raw text — that one-gesture, exact-fidelity copy is the entire point. Never emit a handoff as loose prose.
 - **Heavier outer fence when the body has its own fences.** If the body contains ``` fences (bash snippets, JSON, nested blocks), wrap the whole handoff in a **four-backtick** (` ```` `) or `~~~~` fence so the inner triple-backticks survive intact. (This document does exactly that — note the four-backtick wrapper above.)
 - **Self-contained body.** Restate all context the receiver needs; never reference "what we decided above" or anything only visible in the originating conversation — the receiving session cannot see it.
-- **Titled header + END footer.** The `═══ SESSION HANDOFF ═══` title tells the receiving Claude what the block is; the `═══ END HANDOFF ═══` marker tells it where the handoff stops (so trailing chat isn't misread as part of the task).
+- **Titled header + END footer.** The `═══ <FROM-STANCE> HANDOFF ═══` title tells the receiving Claude what the block is and which stance it came from; the `═══ END HANDOFF ═══` marker tells it where the handoff stops (so trailing chat isn't misread as part of the task).
 - **Rule-separated header / body / footer + provenance header.** The `───` rules separate the provenance header from the body and the body from the footer (vertical breathing room); the header carries the provenance line + `Re` + `Slug`/`Zone` above. Body stays paragraphed for a human skim while remaining self-contained.
 
 (A matching personal-memory note `feedback_delimit_paste_blocks` exists on the author's machine; **this SKILL section is the load-bearing, portable copy** — behavior ships in the plugin, per the repo principle. `/session:handoff` references this section as the single source of truth for the format and does not restate it.)
