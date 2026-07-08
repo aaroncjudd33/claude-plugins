@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if command -v python3 >/dev/null 2>&1; then python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session-file-guard.py\"; fi",
+            "command": "if command -v python3 >/dev/null 2>&1; then python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session-file-guard.py\"; else python \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session-file-guard.py\"; fi",
             "timeout": 5
           }
         ]

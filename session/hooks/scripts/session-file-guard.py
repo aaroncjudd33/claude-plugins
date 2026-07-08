@@ -1,8 +1,25 @@
 #!/usr/bin/env python3
 """
-PreToolUse hook — session file content guard.
+PreToolUse hook - session file content guard.
 Scans repo session files for injection patterns before Claude reads them.
-Blocks if detected; allows through otherwise.
+Denies the Read if detected; otherwise stays out of the way.
+
+PURELY ADDITIVE by design. This hook matches ^Read$, so it runs on EVERY Read
+in every project while the plugin is enabled. It therefore must never emit
+permissionDecision:"allow" - "allow" force-approves the Read and BYPASSES any
+Read permission rule the user/teammate has configured. The only decision this
+guard ever puts on the wire is "deny", and only on a real injection hit. On
+every other path (clean scan, skipped path, parse/read error) it emits NOTHING
+and exits 0 - the canonical no-op that lets normal permission flow proceed.
+
+Emits the documented PreToolUse permission contract (permissionDecision +
+exit 0). The old {"action": ...} shape is NOT a recognized contract - it was
+silently ignored, so every intended block failed open. See repo CLAUDE.md
+(hook conventions) and acp-ajudd#36.
+
+Fail-open on any parse/read error: emit nothing and exit 0 - an enforcement bug
+must never wedge a normal Read, and must never force-approve one either.
+ASCII-only messages (Windows cp1252 stdout on the `python` fallback).
 """
 
 import sys
@@ -10,15 +27,22 @@ import json
 import re
 import os
 
+# Import the shared injection-pattern list (single source of truth). The hook
+# is invoked by file path, so cwd is not this dir - add it to sys.path first.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from injection_patterns import scan_patterns  # noqa: E402
 
-INJECTION_PATTERNS = [
-    (r"(?i)(ignore|override|forget|disregard)\s+(all\s+)?(previous|prior|earlier|above|system)\s+(instructions?|prompts?|context|directives?|rules?)", "instruction-override"),
-    (r"(?i)(you\s+are\s+now|act\s+as\s+(a\s+)?(new|different)|your\s+(new\s+)?(role|instructions?|task|objective)\s+(is|are)\s+)", "persona-injection"),
-    (r"(?i)<\s*(system|instructions?|prompt)\s*>", "structural-tag"),
-    (r"(?i)^#{1,3}\s*(system\s+prompt|new\s+instructions?|override)\s*$", "header-override"),
-    (r"(?im)^\s*\n(ignore|you must|do not follow|disregard)\s+", "mid-content-imperative"),
-    (r"(?i)IMPORTANT:\s*(ignore|override|your\s+(new\s+)?instructions?)", "claude-md-override"),
-]
+
+def _deny(reason):
+    """Print a PreToolUse deny decision. This is the ONLY decision the guard
+    ever emits - clean/skip/error paths print nothing (see module docstring)."""
+    print(json.dumps({
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason": reason,
+        }
+    }))
 
 
 def extract_scannable_sections(content):
@@ -37,24 +61,19 @@ def extract_scannable_sections(content):
 
 def scan_content(content):
     scannable = extract_scannable_sections(content)
-    triggered = []
-    for pattern, label in INJECTION_PATTERNS:
-        match = re.search(pattern, scannable, re.MULTILINE)
-        if match:
-            triggered.append(f'  [{label}] matched: "{match.group(0).strip()}"')
-    return triggered
+    return scan_patterns(scannable)
 
 
 def main():
+    # Every early return below is a silent no-op (no stdout, exit 0) so normal
+    # permission flow proceeds. Only a confirmed injection hit emits a decision.
     try:
         tool_input = json.loads(sys.stdin.read())
     except Exception:
-        print(json.dumps({"action": "allow"}))
-        return
+        return  # fail-open: let normal flow proceed, never force-allow
 
     tool_name = tool_input.get("tool_name", "")
     if tool_name != "Read":
-        print(json.dumps({"action": "allow"}))
         return
 
     file_path = tool_input.get("tool_input", {}).get("file_path", "")
@@ -64,56 +83,50 @@ def main():
     is_session = "/.claude/sessions/" in normalized
     is_memory = "/.claude/memory/" in normalized
     if not (is_session or is_memory) or not normalized.endswith(".md"):
-        print(json.dumps({"action": "allow"}))
         return
 
     # Skip underscore-prefixed files (_active, _inbox, _history, etc.)
     basename = os.path.basename(normalized)
     if basename.startswith("_"):
-        print(json.dumps({"action": "allow"}))
         return
 
-    # Skip local ~/.claude/ paths — only scan repo paths
+    # Skip local ~/.claude/ paths - only scan repo paths
     home = os.path.expanduser("~").replace("\\", "/")
     if normalized.startswith(home + "/.claude/"):
-        print(json.dumps({"action": "allow"}))
         return
 
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
     except Exception:
-        print(json.dumps({"action": "allow"}))
-        return
+        return  # fail-open
 
     triggered = scan_content(content)
+    if not triggered:
+        return  # clean: no-op, normal permission flow proceeds
 
-    if triggered:
-        try:
-            import subprocess
-            has_vscode = subprocess.run(
-                ["code", "--version"], capture_output=True, timeout=2
-            ).returncode == 0
-        except Exception:
-            has_vscode = False
+    try:
+        import subprocess
+        has_vscode = subprocess.run(
+            ["code", "--version"], capture_output=True, timeout=2
+        ).returncode == 0
+    except Exception:
+        has_vscode = False
 
-        vscode_hint = (
-            f'\n\nTo inspect: run `code "{file_path}"`'
-            if has_vscode
-            else f"\n\nTo inspect: open {basename} in a text editor"
-        )
+    vscode_hint = (
+        'To inspect: run `code "{0}"`'.format(file_path)
+        if has_vscode
+        else "To inspect: open {0} in a text editor".format(basename)
+    )
 
-        msg = (
-            f"Session file guard — load blocked: {basename}\n"
-            f"Potential instruction injection detected:\n"
-            + "\n".join(triggered)
-            + "\n\nResolve the flagged content before this file can be loaded or hashed."
-            + vscode_hint
-        )
-        print(json.dumps({"action": "block", "message": msg}))
-        return
-
-    print(json.dumps({"action": "allow"}))
+    reason = (
+        "Session file guard blocked load of {0} - potential instruction "
+        "injection detected: ".format(basename)
+        + " ".join(triggered)
+        + ". Resolve the flagged content before this file can be loaded or hashed. "
+        + vscode_hint
+    )
+    _deny(reason)
 
 
 if __name__ == "__main__":

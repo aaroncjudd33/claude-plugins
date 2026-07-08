@@ -57,7 +57,7 @@ Pick the target inbox by zone — a spawn must land where `/session:start` will 
 - **plugin / personal (item-driven):** always the consolidated `<session_root>/_inbox.md` (create with header `# Inbox — <slug>` if needed). These slugs have exactly ONE inbox; `/session:start` reads it and flags `[spawn]` entries with ★. A per-label `_inbox_<label>.md` would never surface — do NOT write one for these types (there is no per-session inbox in the item-driven model).
 - **story / cab / general:** if the `Label` matches an existing session name in `session_root`, append to that session's `<session_root>/_inbox_<label>.md` (create with header `# Inbox — <label>`); otherwise (target session does not exist yet) append to the global `<session_root>/_inbox.md` (create with header `# Inbox — <slug>`).
 
-**Issue a stable ID first** (home slug = the inbox's slug = current `<slug>`; namespaced by `<handle>`): `python3 <session>/scripts/inbox-id.py next --slug <slug> --handle <handle>` — prepend `<id> · ` to the header. Fallback `<acronym>-<handle>#?` if unavailable; never block. See `references/inbox-convention.md` § Stable IDs.
+**Issue a stable ID first** (home slug = the inbox's slug = current `<slug>`; namespaced by `<handle>`): `python3 <session>/scripts/inbox-id.py next --slug <slug> --handle <handle>` (on a box without `python3`, use `python`) — prepend `<id> · ` to the header. Fallback `<acronym>-<handle>#?` if unavailable; never block. See `references/inbox-convention.md` § Stable IDs.
 
 ```markdown
 ## <id> · [YYYY-MM-DD @<handle>] from <slug> / <current-session-name> (<current-type>) [spawn] — <label>

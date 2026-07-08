@@ -79,7 +79,7 @@ Created <KEY> in Gathering Requirements — <one-line summary>   ← work repo (
 
 **A. Plugin / personal → inbox item at `status: refining`.**
 
-Issue a stable ID (`python3 <session>/scripts/inbox-id.py next --slug <slug> --handle <handle>`), then append a self-contained item to `~/.claude/memory/sessions/<slug>/_inbox.md` (create with header `# Inbox — <slug>` if needed). Use the **exact `_inbox.md` format `new` / `/session:inbox` write** — same header, plus the `> [status: refining]` line and a freeform body carrying the refinement report. The provenance surrogate is the command itself (there is no originating session): `from <slug> / refine (<zone>)`, with `<zone>` as the `source-type`:
+Issue a stable ID (`python3 <session>/scripts/inbox-id.py next --slug <slug> --handle <handle>` — on a box without `python3`, use `python`), then append a self-contained item to `~/.claude/memory/sessions/<slug>/_inbox.md` (create with header `# Inbox — <slug>` if needed). Use the **exact `_inbox.md` format `new` / `/session:inbox` write** — same header, plus the `> [status: refining]` line and a freeform body carrying the refinement report. The provenance surrogate is the command itself (there is no originating session): `from <slug> / refine (<zone>)`, with `<zone>` as the `source-type`:
 
 ```markdown
 ## <id> · [YYYY-MM-DD @<handle>] from <slug> / refine (<zone>) — <Summary>

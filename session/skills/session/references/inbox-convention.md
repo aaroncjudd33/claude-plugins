@@ -28,7 +28,7 @@ Before the item-driven-sessions overhaul, multi-plugin repos used one inbox file
 - `<id>` — the item's **stable, permanent handle** (e.g. `acp-ajudd#14`). Issued once at creation and never changes, even as positions shift. Form: `<acronym>-<handle>#<n>` (see Stable IDs below). Reference items by this ID in conversation and recaps — never by their shifting list position.
 - `<source-slug>` — the originating **repo** slug (where the request came from, e.g. `virtual-office`, `gen-leadership-bonus`, a personal project), **NOT** the target inbox's slug. This matters because plugin suggestions often route in from cross-repo work.
 - `<session-name>` — the originating session (e.g. `BPT2-6377`, a feature name).
-- `<source-type>` — the **provenance** axis: the source session's type (`story` / `cab` / `plugin` / `personal` / `general`). This is the value that sits positionally inside `from … (<…>)`. It answers *where the item came from* — do **not** confuse it with the `type` field below (what the recipient does with it). It was previously called just "type"; it is relabeled `source-type` so the two never blur.
+- `<source-type>` — the **provenance** axis: the source session's type (`story` / `cab` / `plugin` / `personal` / `general`). This is the value that sits positionally inside `from … (<…>)`. It answers *where the item came from*. (It was once called just "type"; it is named `source-type` to keep it distinct from the item's lifecycle `status` — the old recipient-facing `type` axis was removed in acp-ajudd#21.)
 - **Keep both repo AND session — never collapse to one.** Derive all three from the *source* session context when routing.
 - The `> [status: …]` line directly under the header carries the item's **lifecycle status** (`capture` → `refining` → `ready`) plus an **optional `intent:` hint** (see Item Model below). It is optional for back-compat; when absent, defaults apply.
 
@@ -170,9 +170,9 @@ Every inbox item gets a **permanent, per-item handle** at creation, so it can be
 **Generating an ID at write time** (any inbox write site):
 ```bash
 IDT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}/scripts/inbox-id.py"
-python3 "$IDT" next --slug "<home-slug>" --handle "<handle>"   # prints the ID and increments
+if command -v python3 >/dev/null 2>&1; then python3 "$IDT" next --slug "<home-slug>" --handle "<handle>"; else python "$IDT" next --slug "<home-slug>" --handle "<handle>"; fi   # prints the ID and increments
 ```
-Use `--peek` to preview the next ID without consuming it. If `python3` or the script is unavailable, fall back to `<acronym>-<handle>#?` and note that the counter could not be advanced (rare; degrade gracefully rather than block the write).
+The `python3 -> python` fallback matters on Windows Git Bash, where only `python` may be on PATH — without it every mint silently degrades to the `#?` placeholder. Use `--peek` to preview the next ID without consuming it. If **neither** `python3` nor `python` (nor the script) is available, fall back to `<acronym>-<handle>#?` and note that the counter could not be advanced (rare; degrade gracefully rather than block the write).
 
 **Parser tolerance (back-compat).** The `<id> · ` prefix is **optional** in the header. Items created before this scheme (and archived items) have no ID — parse them exactly as before. When rendering, show the ID if present; omit the segment if absent. Never break on a missing ID.
 

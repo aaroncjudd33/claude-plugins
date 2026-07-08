@@ -62,7 +62,7 @@ Determine target file:
 **Issue a stable ID first.** The ID's home is the **target** slug (where the item will live and get its number), and it is namespaced by the **author's** handle. Determine `<target-slug>` — the slug that owns `<target_session_root>` (the current slug for same-repo, or the chosen repo slug for cross-repo):
 ```bash
 IDT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}/scripts/inbox-id.py"
-python3 "$IDT" next --slug "<target-slug>" --handle "<handle>"   # prints e.g. acp-ajudd#7, increments the counter
+if command -v python3 >/dev/null 2>&1; then python3 "$IDT" next --slug "<target-slug>" --handle "<handle>"; else python "$IDT" next --slug "<target-slug>" --handle "<handle>"; fi   # prints e.g. acp-ajudd#7, increments the counter
 ```
 If `python3`/script is unavailable, fall back to `<acronym>-<handle>#?` and note the counter wasn't advanced — never block the write. See `references/inbox-convention.md` § Stable IDs.
 

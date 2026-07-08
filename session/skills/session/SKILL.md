@@ -212,6 +212,8 @@ No session established for <slug>. Run /session:start first.
 - **Enforced (require a session):** `commit`, `finish`, `checkpoint`, `switch`, `spawn`, `store`, `restore`.
 - **Exempt (run without a session):** `start` (it creates one), `refine` (sessionless — writes directly into the record), and the read-only views `search` / `worklog` / `in-flight` (they just report "no active session" where relevant).
 
+**Sanctioned wording exception — `restore` (acp-ajudd#39, C9).** Six of the enforced commands key off `_active` and emit the exact clean-stop string above. `restore` legitimately differs: it keys off the `_context_*.md` files (not `_active`), so its clean stop reads `No stored context for <slug>. Run /session:store before /clear, or /session:start to pick up work.` This divergence is intentional and correct — the message names the artifact `restore` actually looks for — not drift to be normalized to the standard string.
+
 **No edit-blocking hook.** There is no `PreToolUse` hook on `Edit`/`Write` — the old `session-scope-guard.py` was deleted (acp-ajudd#1). Editing files, in any zone, is never blocked by the session plugin. `sessionGate.enforce` is retired along with it; a fresh install never blocks edits anywhere.
 
 **Reads, searches, and read-only commands are never gated — investigation is always free, for every type.** (This was true before and stays true.)
