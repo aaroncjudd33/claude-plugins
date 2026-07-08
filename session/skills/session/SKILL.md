@@ -390,6 +390,25 @@ Three paths move work between sessions, and they split on **how the item travels
 
 (A matching personal-memory note `feedback_delimit_paste_blocks` exists on the author's machine; **this SKILL section is the load-bearing, portable copy** — behavior ships in the plugin, per the repo principle. `/session:handoff` references this section as the single source of truth for the format and does not restate it.)
 
+## The planning↔coding review loop (handed-off work) (acp-ajudd#44)
+
+§ Session Stance defines the two stances; § Cross-Session Paste Handoff defines the block that moves work between them. This section is the **protocol that ties them together** — the round-trip a planning context and the coding session it spawned run when work is **handed off**, so that "what was decided" is verified against "what was built" *before* anything ships. The stance model and the block format live in their own sections; this one is layered on top and does not restate either.
+
+**Scope — handed-off work only.** This loop applies when a planning stance hands scoped work to a *fresh* coding session (the sole planning→coding path — § Session Stance, acp-ajudd#32). A **solo coding session with no planning counterpart just finishes normally** (`/session:finish`) — there is no one to greenlight it and none is required. Do **not** impose the round-trip on unpaired sessions.
+
+**The loop — seven legs:**
+1. **Planning hands off** scoped work via `/session:handoff`, each item carrying explicit **Done-whens** — the checkable acceptance criteria on the inbox item / Jira story it came from (the record layer = requirements + acceptance criteria — see § State-Exclusivity and `references/inbox-convention.md`). The Done-whens **are** the validation contract: the coding session is built to satisfy them, and planning later validates against them.
+2. **Coding builds AND self-verifies**, then **HOLDS** — no commit-to-master, no push, no `/session:finish` deploy. The work sits complete-but-unshipped in the working tree.
+3. **Coding returns a handoff block** to planning (`/session:handoff`, standard block per § Cross-Session Paste Handoff — the planning→coding footer already instructed a command-invoked return, acp-ajudd#43, so the reply comes back *as a block*, not loose prose).
+4. **Planning validates against the Done-whens by inspecting the actual working tree** — reading the diff / the files the coding session produced — **NOT by rubber-stamping the report.** The report says what was *claimed* done; validation confirms it against the tree and the acceptance criteria.
+5. **Planning greenlights** — or flags fixes and hands them back, returning to leg 2. Iterate until the Done-whens are met.
+6. **Only on greenlight does coding run `/session:finish`** — the version bump + push + reinstall (the deploy — § Development Lifecycle). Greenlight is the gate on that terminal action.
+7. **Coding confirms the deploy** back to planning (the close leg — a final handoff or a brief note), so planning knows the work shipped.
+
+**Two load-bearing disciplines** (everything else is mechanics):
+- **Coding HOLDS for greenlight (leg 2).** A handed-off coding session self-verifies but does **not** deploy on its own authority — it stops at complete-in-the-tree and waits. Shipping is greenlight-gated; that is why the plugin `/session:finish` deploy is the terminal step, run only after leg 5.
+- **Planning VALIDATES the working tree, not the report (leg 4).** Greenlight is earned against the actual diff measured against the Done-whens — never against the coding session's self-report. Independent validation is the entire payoff of keeping planning and coding as **separate, immutable stances** (§ Session Stance): a validator that did not write the code confirms the build. A rubber-stamp throws that payoff away.
+
 ## Reference Files
 
 - `references/inbox-convention.md` — How to write cross-session/cross-project change instructions to plugin inbox files; the capture-first item model (one lifecycle: capture → refining → ready + provenance + dispositions, acp-ajudd#21); and the captures-inbound read flow (§ Captures inbound)

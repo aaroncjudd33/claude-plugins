@@ -395,6 +395,8 @@ Multiple entries per day are expected — always append, never overwrite.
 
 **For story / cab / personal / general: skip this step entirely.** Those types push during `commit` and have no version/reinstall concept — Step 11 is skipped and their finish ends at deactivation (Step 12).
 
+**When this coding session was handed off from a planning context, this deploy is greenlight-gated.** In the review loop (Session Skill § **The planning↔coding review loop**), the coding session HOLDS after self-verifying and returns a handoff for the planning context to validate the working tree against the Done-whens; only after planning greenlights does this deploy leg run. A **solo** coding session with no planning counterpart is not gated — it deploys here normally.
+
 **No-op guard:** if the Step 2 git scan found nothing to ship (clean tree AND no unpushed local commits from `session:commit`), report `Nothing to deploy — finish complete.` and stop. Do not bump or push.
 
 Otherwise, present the deploy as the clearly-final, visually distinct step — the last thing the user sees (only the silent deactivation of Step 12 follows it):

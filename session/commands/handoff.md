@@ -14,6 +14,8 @@ Assemble the current work into the **standard handoff block** (Session Skill § 
 
 **The sessionless path is the point.** A planning stance is *deliberately* sessionless (Session Skill § Session Stance) — yet it is the context that most needs to hand off, because the only sanctioned planning→coding path is **handoff into a fresh coding session** (never in-place conversion — acp-ajudd#32). This command is that **cheap exit**: it captures the planning context into a file so starting the coding session costs one command and loses nothing that mattered. Before acp-ajudd#29 this command stopped cold with "no session" — the one context that should produce handoffs couldn't.
 
+**This command drives both moving legs of the review loop.** When work is handed off, the planning→coding handoff (leg 1) and the coding session's command-invoked return handoff (leg 3) are both `/session:handoff` calls — see Session Skill § **The planning↔coding review loop** for the full round-trip (build → HOLD → planning validates the working tree vs. the Done-whens → greenlight → finish). A solo coding session with no planning counterpart doesn't run the loop; this command is just its outbound handoff.
+
 Distinguish `handoff` from the file-based same-machine paths:
 
 | Path | Mechanism | Crosses machines? |
