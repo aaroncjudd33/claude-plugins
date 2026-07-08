@@ -1,77 +1,120 @@
 ---
 name: handoff
-description: Emit a paste-ready handoff block for the current session — a self-contained block you copy into another live Claude session (another terminal/machine). Text only — writes no files, sends nothing, touches neither _active nor the session file. The human-carried counterpart to spawn/inbox.
+description: Hand off the current work to another Claude session. From a coding session it prints a paste-ready block (text only). From a sessionless planning context it also writes a durable local resume file a fresh /session:start or /session:restore picks up — planning is the context that most needs to hand off (planning → coding).
 ---
 
 # Session Handoff
 
-Assemble the current session's context into the **standard handoff block** and print it — nothing more. The human copies the block (one click on the fenced block's copy button) and pastes it into a *different live Claude session* elsewhere, which then has everything it needs to continue the work.
+Assemble the current work into the **standard handoff block** (Session Skill § Cross-Session Paste Handoff) so another Claude session can continue it. `handoff` has **two forms**, chosen automatically by whether a coding session is active:
 
-This is the **human-carried** handoff path. Distinguish it from the file-based paths:
+| Context | Primary output | Durable file? | Why |
+|---------|----------------|---------------|-----|
+| **Coding session** (a session file exists) | the paste block — text only | no | the human copies it into a live session elsewhere |
+| **Sessionless / planning** (no session file) | a **durable local resume file** a fresh session picks up | **yes** | paste is friction and lost with the clipboard; planning → coding is the crossing that most needs to survive a restart (acp-ajudd#29) |
+
+**The sessionless path is the point.** A planning stance is *deliberately* sessionless (Session Skill § Session Stance) — yet it is the context that most needs to hand off, because the only sanctioned planning→coding path is **handoff into a fresh coding session** (never in-place conversion — acp-ajudd#32). This command is that **cheap exit**: it captures the planning context into a file so starting the coding session costs one command and loses nothing that mattered. Before acp-ajudd#29 this command stopped cold with "no session" — the one context that should produce handoffs couldn't.
+
+Distinguish `handoff` from the file-based same-machine paths:
 
 | Path | Mechanism | Crosses machines? |
 |------|-----------|-------------------|
-| `/session:inbox` | writes an item into a target slug's `_inbox.md` | no — same machine |
+| `/session:inbox` | writes a capture into a target slug's `_inbox.md` | no — same machine |
 | `/session:spawn` | writes a `[spawn]` inbox item staging a linked session | no — same machine |
-| **`/session:handoff`** | **prints a block you paste into a live session elsewhere** | **yes — you carry it** |
+| **`/session:handoff`** | **prints a paste block (both forms) + writes a durable resume file (sessionless form)** | **paste block: yes, you carry it; resume file: no, same machine** |
 
-`inbox`/`spawn` travel through the filesystem; `handoff` travels through your clipboard. Because the receiving session has none of this conversation, the block must be **self-contained**. See the Session Skill § **Cross-Session Paste Handoff** for the format — that section is the single source of truth; this command does not restate the format.
+Because a receiving session has none of this conversation, every handoff — block and file alike — must be **self-contained**. The Session Skill § **Cross-Session Paste Handoff** owns the block format; this command does not restate it.
 
 ## Instructions
 
-### 1. Identify Current Session
+### 1. Identify the Context — Coding Session or Sessionless
 
 Run `pwd` and extract the repo slug (last path component). Resolve `session_root` and `handle` using Path Resolution (see Session Skill).
 
-Determine the session name from conversation context (same pattern as `commit`/`checkpoint`):
+Determine whether a **coding session** is active (same pattern as `commit`/`checkpoint`):
 1. Look for the most recent "Resuming `<name>`" (from `session:start`) or "Switching to `<name>`" (from `session:switch`) line. Use whichever is most recent.
 2. Fall back to reading `~/.claude/memory/sessions/<slug>/_active` if not in context.
 
-**Session guard (command-level enforcement — acp-ajudd#1).** `handoff` describes the active session, so a session must exist. If neither the conversation context nor `~/.claude/memory/sessions/<slug>/_active` yields a session name, **stop cleanly** — do not ask, do not guess, do not proceed:
+**This command does NOT enforce a session (acp-ajudd#29).** Unlike `commit`/`checkpoint`/`store` (which stop cleanly with `No session established…`), `handoff` treats "no session" as a **valid mode**, not an error — it is the whole reason the command exists for planning. Branch:
 
-```
-No session established for <slug>. Run /session:start first.
-```
-
-(The `_active` check is existence-only, for the guard — conversation context wins for *which* session is current when one is present.) Editing files is never blocked; the session commands are what require a session. (`start` / `refine` and read-only views are exempt.)
+- **A coding session is current** → **Coding-session path** (Step 2 → Step 4 → Step 5A). The block is text only, exactly as before.
+- **No session** (sessionless / planning stance) → **Sessionless path** (Step 2 → Step 3 → Step 4 → Step 5B). Assemble the handoff from the conversation and the records this planning context produced, write a durable resume file (primary), and print the block (secondary).
 
 ### 2. Gather Handoff Context
 
-Read `<session_root>/<name>.md` for the durable state (branch, open items, next steps, scope, related keys, loaded memories, recent commits). Combine it with what the current conversation surfaced to assemble what a *fresh* receiving session needs:
+Assemble what a *fresh* receiving session needs. State everything self-contained — never write "as we discussed above" or reference anything visible only in this conversation; the receiver reads it cold. Cap the body at what's genuinely needed.
 
-- **What we're doing** — the task in one or two sentences, stated from scratch.
-- **Key decisions** — choices already made and options already rejected (so the receiver doesn't relitigate them).
-- **Exact next action** — the single concrete thing to do next, not a vague direction.
-- **Guardrails / do-NOTs** — constraints, out-of-scope areas, conventions to follow.
+**Coding-session path** — read `<session_root>/<name>.md` for the durable state (branch, open items, next steps, scope, related keys, loaded memories, recent commits), and combine it with what the conversation surfaced.
+
+**Sessionless path** — there is no session file, so assemble from:
+- the **conversation** — the task, the reasoning, what's decided vs. still open;
+- the **records this planning context produced** — inbox items it wrote/scoped for this slug (their `<acronym>-<handle>#<n>` IDs), Jira stories it created/refined, decisions and rejected options;
+- the **exact next action** — the single concrete thing the coding session should do first.
+
+Both paths collect the same shape:
+- **What we're doing** — the task in one or two sentences, from scratch.
+- **Key decisions** — choices made and options rejected (so the receiver doesn't relitigate them).
+- **Exact next action** — the single concrete next step, not a vague direction.
+- **Guardrails / do-NOTs** — constraints, out-of-scope areas, conventions.
 - **Relevant paths / inbox IDs** — files to open, `<acronym>-<handle>#<n>` item IDs, story/CAB keys, branch name.
 
-Restate everything self-contained — never write "as we discussed above" or reference anything visible only in this conversation. Cap the body at what's genuinely needed; a receiver reads this cold.
+**Target label:** if the user passed an argument (`/session:handoff <target>`), use it verbatim for the `To:` line. Otherwise infer a short target from context (a slug, session name, or topic).
 
-**Target label:** if the user passed an argument (`/session:handoff <target>`), use it verbatim for the `To:` line. Otherwise infer a short target from context (a slug, session name, or topic), or write `To:    <topic>` with your best one-line description.
+### 3. Write the Durable Resume File (sessionless path only)
 
-### 3. Emit the Handoff Block
+**The file is the primary deliverable of the sessionless handoff (Aaron, acp-ajudd#29)** — paste is friction and lost if the clipboard is; a durable file survives a restart and a fresh terminal. This is the sessionless analog of `store`/`restore`: write a resume file that a later `/session:restore` picks up.
 
-Print the block in the **standard handoff format** (Session Skill § Cross-Session Paste Handoff). Fill the header from Step 1–2 and write the self-contained body:
+Reuse the **existing `_context_<name>.md` convention** so the file is discoverable with **no change to any other command** — bare `/session:restore` already lists `_context_*.md` files in the local session dir and loads the one you pick (see `commands/restore.md`; it degrades gracefully when there is no matching session file, which is exactly the sessionless case). Do **not** invent a new filename that nothing reads.
 
-```
-═══════════════ SESSION HANDOFF ═══════════════
-To:    <target label>
-From:  <current session name> (<type>) — <slug>, branch <branch>
-Items: <inbox IDs / story keys, or "none">
+1. **Name it** `_context_planning-<topic-slug>.md`, where `<topic-slug>` is a short kebab-case slug of the target/topic (e.g. `_context_planning-session-stance-model.md`). The `planning-` prefix makes it self-describing in the restore list. Collision → append a disambiguator.
+2. **Write it always to the local path** `~/.claude/memory/sessions/<slug>/_context_planning-<topic-slug>.md` — never in a repo, never migrated (identical rule to `store`: a resume point is a personal, ephemeral, local stash).
+3. **Content** — mirror the `store` context-file structure (so `restore` displays it cleanly), framed as a planning handoff:
+   ```markdown
+   # Planning Resume — <topic>
+   Generated: <YYYY-MM-DD HH:MM>   (sessionless planning handoff — no session file)
 
-<self-contained body: what we're doing · key decisions · exact next action · guardrails · relevant paths/IDs>
+   ## Problem Being Solved Now
+   <what this work is, one paragraph — self-contained>
 
-═══════════════ END HANDOFF ═══════════════════
-```
+   ## Decisions Made / Options Rejected
+   - <decision> — **Why:** <reasoning>
+   - <rejected option> — **Why not:** <reason>
 
-Format rules (from the SKILL section — apply them, do not re-explain them to the user):
-- **Wrap the block in a fenced code block** so it gets the one-click copy button and exact-text fidelity.
-- **If the body contains ``` fences** (bash, JSON, etc.), wrap the whole handoff in a **four-backtick** or `~~~~` outer fence so the inner fences survive.
-- Keep the titled header and the `END HANDOFF` footer intact.
+   ## Records Produced This Planning Context
+   - <acronym>-<handle>#<n> — <inbox item summary + status>
+   - <Jira key> — <story summary>   (work repos)
 
-Precede the block with a one-line lead-in so it's obvious what to copy, e.g.:
-`Copy the block below into the other session:`
+   ## Guardrails / Do-NOTs
+   - <constraint / out-of-scope area / convention>
 
-### 4. Do Nothing Else
+   ## Relevant Paths / IDs
+   - <files, branch, story/CAB keys, inbox IDs>
 
-`handoff` **produces text only.** It writes no files, sends no messages, and does **not** touch `_active`, the session file, `_index.md`, `_history.md`, the inbox, or the worklog. The current session is completely unchanged. Delivery is the human's job (paste). If the user wants a *file-based* handoff on the same machine instead, point them at `/session:spawn` (stage a linked session) or `/session:inbox` (drop an item/note into a target inbox).
+   ## Exact Next Action
+   <the single concrete first step for the coding session>
+   ```
+4. **Secrets & PII guard (BLOCKING — reuse `store` § 2a).** Before writing, scan the composed content for the same secrets/PII patterns `store`/`session-commit-guard.py` use (DB connection strings with passwords, `password=`/`token=`/`api_key=`, `AKIA…`, JWTs, private-key blocks, `fedTaxNum`/`ssn`/`taxId`, real-name↔custid pairings). Redact to a placeholder + pointer and report what was scrubbed. This is the file's only line of defense (local-only, never committed/migrated), so the scan is blocking — do not restate the procedure; follow `store.md` § 2a.
+
+### 4. Emit the Handoff Block (both paths)
+
+Print the block in the **standard handoff format** — the **Session Skill § Cross-Session Paste Handoff** owns the exact template and rules; this command does not restate them (single source of truth). Fill the provenance header from Steps 1–2:
+- **`[YYYY-MM-DD @handle] <from-stance> (<from-session-name>) ──▶ <to-stance> (<target>)`** — the origin's stance is `coding (<session-name>)` on the coding path and `planning (<slug>)` on the sessionless path; `<target>` is the label from Step 2.
+- **`Re:`** = topic + any inbox IDs / story keys carried (omit the ID clause if none). **`Slug` / `Zone`** = current repo slug + session type. **Footer** names this origin and asks the receiver to reply back on done.
+
+Then write the self-contained, paragraphed body (what we're doing · key decisions · exact next action · guardrails · relevant paths/IDs). Apply the SKILL section's rules as written — fenced block mandatory, heavier outer fence if the body has its own ``` fences, rule-separated header/body/footer — do not re-explain them to the user.
+
+Precede the block with a one-line lead-in so it's obvious what to copy:
+- **Coding-session path:** `Copy the block below into the other session:`
+- **Sessionless path:** name the resume file too, since it's the primary artifact:
+  ```
+  Wrote planning resume → _context_planning-<topic-slug>.md
+  Pick it up in a fresh session with:  /session:restore planning-<topic-slug>
+  (or copy the block below into a live session elsewhere)
+  ```
+
+### 5. Finish — Touch Nothing Else
+
+**Step 5A — Coding-session path.** `handoff` here **produces text only.** It writes no files, sends no messages, and does **not** touch `_active`, the session file, `_index.md`, `_history.md`, the inbox, or the worklog. The current session is completely unchanged. Delivery is the human's job (paste).
+
+**Step 5B — Sessionless path.** `handoff` wrote **exactly one** artifact: the local `_context_planning-<topic-slug>.md` resume file (Step 3). It **sends nothing** (no Teams), and touches **no** `_active`, **no** session file, **no** `_index.md`, **no** `_history.md`, and does **not** consume or create inbox items. Writing a session file or `_active` here would be starting a coding session — which is exactly the in-place conversion acp-ajudd#32 forbids. The planning context stays planning; the coding session is born fresh when the human runs `/session:restore` (or `/session:start`).
+
+If the user wants a *file-based* handoff on the same machine that stages actual work rather than a resume point, point them at `/session:spawn` (stage a linked session) or `/session:inbox` (drop an item/capture into a target inbox).

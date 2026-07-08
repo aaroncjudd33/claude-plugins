@@ -176,6 +176,29 @@ Sessions are typed, and the type determines whether there's an **external system
 
 **A session file exists only for implementation — it is always a coding session (1:1).** Planning and refinement are **sessionless**: they are the `refine` flow, which writes a *record* (a Jira story in a work repo, or a promoted inbox item — a capture at `refining`/`ready` — in plugin/personal) and never a session file. There is no session "mode" — scoping happens in `refine` (no file), building happens in a session (one file). A `ready` record is picked up into a coding session; that is the (optional) next step after refine.
 
+## Session Stance — planning is default, coding is explicit and immutable (acp-ajudd#28/#30/#32)
+
+A working context is always in one of two **stances**. The stance is a *behavioral* posture, **not** a stored flag — there is no `Mode:` field (acp-ajudd#16's storage call stands: a session file = coding, 1:1). It is decoupled from file-presence in the sense that *behavior* is what defines it, but the two line up exactly: **planning is sessionless; coding is backed by a session file.**
+
+**The operational tell (answer "which stance am I in?" from one fact).** You are in **coding** stance *iff a session file exists for this context*. No session file → **planning** (reading, searching, discussing, and refining an inbox item are *all* planning). Picking up a `ready` item (`pick` / promote-and-start `new`) or running `/session:start` is the **sole** action that mints the coding session file and flips you to coding; from that point the stance is immutable (see the keystone rule below). **An inbox item is NOT a session file** — reading or refining an item is still planning; *picking it up* is the gesture that creates the file. So **the command you reach for is itself the stance declaration**: `refine` is a planning verb (writes a record, no file), while `pick` / `start` are coding verbs (mint the session file).
+
+**Planning is the default stance.** In it, read, search, analyze, discuss, and **write records** (inbox items, Jira stories) freely — but make **no code changes**, and **never self-start a coding session**. Planning stays sessionless; its output is records, not commits. (This restores an *explicit* default: acp-ajudd#16 correctly removed the `Mode:` field, but defining planning as merely "the absence of a session file" left the stance implicit and driftable — which is how a planning conversation once self-started a coding session. The stance is the default; the file is just its footprint.)
+
+**Coding is entered only by an explicit user gesture** — the user picks up a `ready` record, says "switch to coding" / "build it", or runs `/session:start`. Claude may *offer* ("hand this to a coding session?") but **never crosses on inference.** Capability containment still holds — coding ⊇ planning (a coding session may plan within itself; planning may not code) — but in practice a coding session rarely plans-then-builds; it folds in the `ready` item and moves.
+
+**A stance is immutable once established (acp-ajudd#32 — the keystone).** Once a context is planning it stays planning; once it is coding (has a session file) it stays coding. **There is no "switch type" verb.** The explicit gesture that enters coding starts a **fresh** coding session — it **never converts the planning context in place.** The only planning→coding path is **handoff into a fresh session** (`/session:handoff`, then `/session:restore` / `/session:start` in a fresh context).
+- **Why — the boundary IS the value.** The clean, auditable line between "what was decided" (planning) and "what was built" (coding) is exactly what the handoff/spawn/inbox machinery exists to carry. In-place conversion destroys it two ways: (a) the planning context's exploratory reasoning, rejected approaches, cross-item chatter, and ID-minting would **bleed into the implementation** — the scope-bleed we prevent; a fresh coding session starts from *only* the distilled handoff (a feature, not a loss). (b) In-place is always lower-friction than writing a handoff, so if allowed it gets used, the handoff **atrophies**, and the decided→built lineage is lost. **Locking the stance is what forces the handoff to exist.**
+- **Symmetry.** coding→planning is *already* locked by fileless-ness (planning has no file; you can't drift backward without abandoning the coding file). Making planning→coding equally immutable is simply the symmetric, cleaner rule.
+- **One-directional in practice — no ceremony on coding sessions (Aaron).** The lock's real weight is entirely on planning→coding. The containment path (a coding session planning within itself) carries little weight and needs **no guarding** — do **not** add ceremony to coding sessions to honor this.
+- **The cheap exit (acp-ajudd#29).** `/session:handoff` works from a sessionless planning context and writes a **durable resume file** a fresh session picks up, so crossing the boundary costs one command and loses nothing. Without it the lock is friction; with it, immutability is nearly free and strictly cleaner.
+
+**One planning + one coding session per repo, max — two total (acp-ajudd#30).** A documented discipline (instruction-level, **not a hook**), prompted by a live incident: two concurrent planning contexts on one slug raced the shared ID counter and nearly minted a duplicate.
+- **Cap coding at 1:** `_active`, `_index.md`, and the git working tree / push are **coding-only writes** → one coding session = one writer, so structural races (a clobbered `_active`, a lost `_index` row, cross-contaminated commits, push races) cannot happen.
+- **Cap planning at 1:** planning mints inbox IDs and writes `_inbox.md`; two planners race the counter (the incident).
+- **Residual (one-of-each):** both stances can touch the counter and `_inbox.md`; the overlap is small and complementary. The counter race itself is closed **in code** by acp-ajudd#31 (atomic increment in `inbox-id.py`), independent of session count. **Immutable stances (acp-ajudd#32) are what keep these counts legible** — a session never morphs from one type into the other, so "one of each" stays a countable invariant rather than a moving target.
+
+This is the behavioral layer above § Session Enforcement (which enforces only "engage a session command → a session must exist"). Stance is never policed by a hook — like everything here, editing is never blocked (acp-ajudd#1); the stance is a convention that keeps the planning/coding boundary clean.
+
 ## Session Enforcement (command-level — acp-ajudd#1)
 
 **Enforcement lives at the command level, not the file-edit level. Editing is never policed.** The plugins exist to *record work in sessions* — but you cannot actually stop anyone from editing code (anyone can open a plain Claude session in any repo and do whatever, and that is fine). So the thing worth enforcing is not "block edits"; it is: **if you engage the session workflow, a session has to exist.** That is enforced by the session commands themselves.
@@ -321,28 +344,41 @@ Three paths move work between sessions, and they split on **how the item travels
 |------|-----------|-------------------|---------|
 | **inbox** | writes a capture into a target slug's `_inbox.md` | no — same machine, file-based | `/session:inbox` |
 | **spawn** | writes a `[spawn]` inbox item staging a linked follow-on session | no — same machine, file-based | `/session:spawn` |
-| **handoff** | prints a self-contained block the human **copies and pastes** into another live Claude session (another terminal / another machine) | **yes** — human-carried, no file | `/session:handoff` |
+| **handoff** | prints a self-contained block the human **copies and pastes** into another live Claude session (another terminal / another machine) | **yes** — human-carried | `/session:handoff` |
 
-`inbox`/`spawn` hand off *through the filesystem* — the next `/session:start` on this machine surfaces them. `handoff` is the **human-carried** case: nothing is written or sent; the block is copied out of this session and pasted into a different live session that has none of this conversation's context. That is why the block must be **self-contained**.
+`inbox`/`spawn` hand off *through the filesystem* — the next `/session:start` on this machine surfaces them. `handoff` is the **human-carried** case: the block is copied out of this session and pasted into a different live session that has none of this conversation's context. That is why the block must be **self-contained**.
 
-**The standard handoff block format** — every produced handoff (by `/session:handoff`, or any time a session emits one) uses exactly this shape:
+**`handoff` has two forms** (acp-ajudd#29), chosen by whether a coding session is active. From a **coding session** it produces the paste block **text only** — nothing is written or sent. From a **sessionless planning context** it *also* writes **one durable local resume file** (`_context_planning-<topic>.md`, picked up by a fresh `/session:restore`) as the **primary** artifact — paste is friction and lost with the clipboard, and planning → coding is the crossing that most needs to survive a restart. Even then it sends nothing and touches no `_active` / session file / `_index` — writing those would be an in-place planning→coding conversion, which § Session Stance (acp-ajudd#32) forbids. `commands/handoff.md` owns the two-path detail; this section owns only the block format below.
+
+**The standard handoff block format** — every produced handoff (by `/session:handoff`, or any time a session emits one) uses exactly this shape. The header mirrors an **inbox-item header's provenance** (`[date @handle] from <source> (<zone>)`) so the receiver sees *who is handing to whom* without asking; horizontal rules give the block vertical breathing room and the body reads like a Teams message, not a wall:
 
 ````
 ═══════════════ SESSION HANDOFF ═══════════════
-To:    <target session / slug / topic>
-From:  <this session, one line>
-Items: <optional — inbox IDs, or omit / "none">
+ [YYYY-MM-DD @handle]   <from-stance> (<from-session-name>) ──▶ <to-stance> (<target>)
+ Re:    <topic>  ·  <inbox IDs if any, else omit the ID clause>
+ Slug:  <slug>  ·  Zone: <plugin|personal|story|cab|general>
+───────────────────────────────────────────────
 
-<self-contained body: context, task, guardrails, done-when>
+ <self-contained body — human-readable paragraphs, like a Teams message, not a wall>
 
-═══════════════ END HANDOFF ═══════════════════
+───────────────────────────────────────────────
+ END HANDOFF · from <from-session-name> · reply to <from-stance> on done
+═══════════════════════════════════════════════
 ````
+
+**Provenance header fields** (the meaningful part — mirror the inbox-item header):
+- **`[YYYY-MM-DD @handle]`** — the same stamp an inbox item carries.
+- **`<from-stance> (<from-session-name>) ──▶ <to-stance> (<target>)`** — who → who, with each side's **stance** (planning / coding — see § Session Stance). This is the "where it came from" provenance. A sessionless origin is `planning (<slug>)`; a coding origin is `coding (<session-name>)`.
+- **`Re:`** — the topic, plus any inbox IDs the handoff carries (omit the ID clause when there are none).
+- **`Slug` / `Zone`** — so the receiver knows the repo and project type without asking.
+- **Footer** — names the origin session and says to reply back to it on completion.
 
 **Rules (all required):**
 - **Fenced code block is mandatory.** The fence is what gives the Claude UI its one-click copy button and copies the exact raw text — that one-gesture, exact-fidelity copy is the entire point. Never emit a handoff as loose prose.
 - **Heavier outer fence when the body has its own fences.** If the body contains ``` fences (bash snippets, JSON, nested blocks), wrap the whole handoff in a **four-backtick** (` ```` `) or `~~~~` fence so the inner triple-backticks survive intact. (This document does exactly that — note the four-backtick wrapper above.)
 - **Self-contained body.** Restate all context the receiver needs; never reference "what we decided above" or anything only visible in the originating conversation — the receiving session cannot see it.
 - **Titled header + END footer.** The `═══ SESSION HANDOFF ═══` title tells the receiving Claude what the block is; the `═══ END HANDOFF ═══` marker tells it where the handoff stops (so trailing chat isn't misread as part of the task).
+- **Rule-separated header / body / footer + provenance header.** The `───` rules separate the provenance header from the body and the body from the footer (vertical breathing room); the header carries the provenance line + `Re` + `Slug`/`Zone` above. Body stays paragraphed for a human skim while remaining self-contained.
 
 (A matching personal-memory note `feedback_delimit_paste_blocks` exists on the author's machine; **this SKILL section is the load-bearing, portable copy** — behavior ships in the plugin, per the repo principle. `/session:handoff` references this section as the single source of truth for the format and does not restate it.)
 
