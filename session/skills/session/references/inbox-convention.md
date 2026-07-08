@@ -8,7 +8,7 @@ How to leave cross-session or cross-project work items for a plugin or session y
 
 `~/.claude/memory/sessions/<repo-slug>/_inbox.md`
 
-This single file is THE inbox for the slug. `/session:start` reads it and the plugin/personal flow `pick`s items from it — at pickup, the item body is folded into the new feature session and the item is deleted (no archive). For the plugin marketplace, slug = `ajudd-claude-plugins`; for a personal project, slug = that project's directory name. Plugin and personal behave identically.
+This single file is THE inbox for the slug. `/session:start` reads it and the plugin/personal flow `pick`s items from it — at pickup, the item body is folded into the new feature session and the item is archived-on-consume (a `[CONSUMED …]` copy is appended to `_inbox_archive.md`, then the item is removed from the live inbox — acp-ajudd#40). For the plugin marketplace, slug = `ajudd-claude-plugins`; for a personal project, slug = that project's directory name. Plugin and personal behave identically.
 
 Routing a handoff to a **plugin or personal** slug always targets this consolidated `_inbox.md` (not a per-target file) — see `/session:inbox`. **story / cab** sessions still use a per-session file `_inbox_<key>.md` (e.g. `_inbox_BPT2-6479.md`), since each story/CAB is its own external unit of work.
 
@@ -146,12 +146,12 @@ The record layer = inbox items (their body / requirements / acceptance criteria)
 **The invariant: a given piece of work is EITHER a live inbox item OR a consumed coding session — never both at once.**
 
 - **A coding session *may* edit a live inbox item.** While an item is still in the inbox, editing its body is just **planning-in-the-moment** — free-rein, exactly like `refine`. There is no "coding sessions can't touch requirements" prohibition; a coding session acting as planning is fine.
-- **Picking up an item consumes it — fold-then-delete.** The pickup folds the item body into the session file and **deletes** the item from the inbox (preserving its stable `<id>` in the session's provenance block). After that there is **no item left to edit** — the requirement now lives, and evolves, in the session. So the work can never exist as *both* a divergent live item and an in-flight session: consuming is what makes it session-only. This is **self-enforcing** — nothing needs to forbid double-editing because there is only ever one live copy.
-- **Jira stories keep the "locked once *In Progress*" rule.** A Jira story is **not consumable** — you can't fold-then-delete it — so the exclusivity invariant can't be enforced structurally for stories. Instead, `/story:update` **locks the description once the story moves to *In Progress***, which achieves the same "requirements don't drift mid-build" outcome by a lock rather than by deletion. The exclusivity-by-consumption invariant is therefore **inbox-native only**; stories get the lock as their equivalent.
+- **Picking up an item consumes it — fold-then-archive (acp-ajudd#40).** The pickup folds the item body into the session file and **removes** the item from the *live* inbox — appending a `[CONSUMED <date> → session <name>]` copy to `_inbox_archive.md` first, as a recovery net (preserving its stable `<id>` in the session's provenance block). After that there is **no live item left to edit** — the requirement now lives, and evolves, in the session. So the work can never exist as *both* a divergent live item and an in-flight session: consuming is what makes it session-only. This is **self-enforcing** — nothing needs to forbid double-editing because there is only ever one live copy. The archived copy is **history, not a second live record**, and the `<id>` is **retired, never reused**, so archiving does not reintroduce a competing copy.
+- **Jira stories keep the "locked once *In Progress*" rule.** A Jira story is **not consumable** — you can't fold-then-archive it — so the exclusivity invariant can't be enforced structurally for stories. Instead, `/story:update` **locks the description once the story moves to *In Progress***, which achieves the same "requirements don't drift mid-build" outcome by a lock rather than by deletion. The exclusivity-by-consumption invariant is therefore **inbox-native only**; stories get the lock as their equivalent.
 
 What a coding session **still does freely**: write/update its **own session file**; **post NEW inbox items** — cross-session handoffs (`/session:inbox`), spawns, and inbound captures. Posting new captures is unrelated to the invariant (it creates fresh items, it doesn't fork an in-flight one).
 
-(A `refining`→`ready` **status flip** and the fold-then-delete on pickup are not "forking the work" — they're the normal lifecycle. The thing state-exclusivity rules out is a live item and a session both claiming the *same* work and drifting apart.)
+(A `refining`→`ready` **status flip** and the fold-then-archive on pickup are not "forking the work" — they're the normal lifecycle. The thing state-exclusivity rules out is a live item and a session both claiming the *same* work and drifting apart.)
 
 ## Stable IDs
 
@@ -219,7 +219,7 @@ Drop the slug when same-repo (as above); include it (`↳ <slug> / <session> (<t
 Pickup state is **orthogonal to the maturity `status` above**: `status` = "is this capture promoted and scoped enough to grab" (`capture` → `refining` → `ready`); pickup state = "has a session grabbed it yet." A `refining` or `ready` item is "pending" here; picking either makes it in-progress (`capture`/`refining` just means `pick` warns first).
 
 **Two pickup mechanisms, by inbox kind:**
-- **Item-driven consolidated inbox (plugin / personal — `_inbox.md`):** pickup **consumes** the item — **fold-then-delete** (state-exclusivity, above). The item never sits at "in-progress" in the inbox; it's gone the moment it's picked up, and the session is the paper trail.
+- **Item-driven consolidated inbox (plugin / personal — `_inbox.md`):** pickup **consumes** the item — **fold-then-archive** (state-exclusivity, above): the body folds into the session file, a `[CONSUMED <date> → session <name>]` copy is appended to `_inbox_archive.md` as a recovery net, and the item is removed from the *live* inbox. It never sits at "in-progress" in the inbox; it's gone from the live inbox the moment it's picked up, and the session (with the archived copy as a backstop) is the paper trail.
 - **Per-session inbox (story / cab — `_inbox_<name>.md`):** pickup inserts an **in-progress marker** and the item **stays** in the inbox until done, then archives. This is the pending → in-progress → done flow below.
 
 **Pending** — item has arrived, not yet picked up:

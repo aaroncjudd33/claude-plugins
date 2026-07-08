@@ -161,9 +161,11 @@ Plugin and personal sessions are created ONLY by picking up an inbox item — ne
    ```
    Place this in the session file body after the standard fields (it carries the full context so nothing is lost).
 
-4. **Delete the item from `_inbox.md`** — outright, no archive, no `[DONE]` stamp. The session file is now the paper trail, and `git`/file history on `_inbox.md` records what came in and when. Remove exactly the one picked item; leave all other items byte-identical.
+4. **Consume the item from `_inbox.md` — archive-on-consume (acp-ajudd#40).** Append the picked item (its `## <id> · …` header, `> [status: …]` line, and body, verbatim) to `<session_root>/_inbox_archive.md` — create it with header `# Inbox Archive — <slug>` if it does not exist — stamped `[CONSUMED YYYY-MM-DD → session <name>]`, **then** remove it from the live `_inbox.md`. Remove exactly the one picked item; leave all other items byte-identical. This reuses the existing `[DONE]`/`[CONSUMED]` archive file and its >30-day auto-purge (§ Captures inbound / § Auto-Purge in `references/inbox-convention.md`) — no new machinery. The archived copy is a **recovery net**: a partial fold, a wrong-item delete, or a crash mid-write can be recovered from `_inbox_archive.md`.
 
-This fold-then-delete happens once, at creation. There is no per-session `_inbox_<name>.md` file for these new sessions — the consolidated `_inbox.md` is the only inbox.
+   **State-exclusivity still holds (acp-ajudd#13).** The item is gone from the *live* inbox — there is still exactly **one live copy** (now the session file) — and its stable `<id>` is **retired, never reused**. The archived copy is history, not a second live record, so the work can never exist as both a divergent live item and an in-flight session.
+
+This fold-then-archive happens once, at creation. There is no per-session `_inbox_<name>.md` file for these new sessions — the consolidated `_inbox.md` is the only inbox.
 
 ### 5. Inbox and Loading Questions
 

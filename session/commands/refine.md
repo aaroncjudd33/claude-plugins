@@ -52,6 +52,12 @@ Run `pwd`, extract the repo slug. Read `handle` per the Session Skill's handle l
 
 **Do not warn or block** when refine runs outside a work repo — refine is welcome everywhere; it just graduates to the right kind of record for the zone. **The target is strictly the zone — there is no override and no target picker.** For work repos the Jira **project** is not assumed to be `BPT2` — resolve from context or confirm the project (that is the only thing ever confirmed; the *kind* of record is fixed by zone). For general, no record is created at all.
 
+**One-of-each advisory (read-only — acp-ajudd#41).** After resolving the slug, check `_active` + `_index.md` status for the slug. If an in-progress **coding session** already exists, print exactly this one line and then proceed — refine is sessionless planning, so this never blocks and never changes what refine does:
+
+  `Note: coding session '<name>' is already active for this slug — starting here makes two (one-of-each discipline).`
+
+Read-only, one glance, no monitoring — same category as the captures-waiting glance. It keeps the "one planning + one coding per repo" ceiling (acp-ajudd#30) visible at the planning entry point without any hook (acp-ajudd#1). Omit the line entirely when no coding session is active.
+
 **New, resume, or promote** (from the argument):
 - **An existing inbox item's `<id>`** (e.g. `refine acp-ajudd#12`) → read the item and branch on its `status` line:
   - **`status: capture`** → **promote** (the capture-first promotion step — acp-ajudd#21). A capture is raw inbound; refine is where it becomes tracked work. Flip its status line `capture` → `refining` **in place** — preserve the header, `<id>`, provenance, and any `intent:` hint verbatim; only the status word changes. Surface it plainly: `Promoted <id> (capture → refining) — <one-line summary>`. Then continue scoping from Step 3, editing the same item. (Skip Step 2's record *creation* — the item already exists — but still run its memory scan for context.)
