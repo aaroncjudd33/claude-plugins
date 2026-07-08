@@ -86,10 +86,10 @@
     },
     {
       "name": "pr",
-      "description": "Pull request lifecycle. /pr:review wraps the pr-review-toolkit agents and adds a portable YL OWASP/exploit security pass, producing one consolidated review report over the working diff.",
+      "description": "Pull request lifecycle. /pr:review wraps the pr-review-toolkit agents and adds a portable YL OWASP/exploit security pass, producing one consolidated review report over the working diff — with opt-in post-back of the summary to Teams, Jira, and GitHub.",
       "source": "./pr",
       "category": "development",
-      "keywords": ["pr", "pull request", "review", "code review", "security", "owasp", "diff", "merge"]
+      "keywords": ["pr", "pull request", "review", "code review", "security", "owasp", "diff", "merge", "teams", "jira", "github", "post-back"]
     }
   ]
 }

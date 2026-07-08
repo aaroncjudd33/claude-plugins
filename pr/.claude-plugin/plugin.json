@@ -1,7 +1,7 @@
 {
   "name": "pr",
-  "version": "0.2.0",
-  "description": "Pull request lifecycle at Young Living. /pr:review wraps the pr-review-toolkit review agents and adds a portable YL OWASP/exploit security pass, producing one consolidated review report headed with the detected story/branch and the suggested reviewers from team.json.",
+  "version": "0.3.0",
+  "description": "Pull request lifecycle at Young Living. /pr:review wraps the pr-review-toolkit review agents and adds a portable YL OWASP/exploit security pass, producing one consolidated review report headed with the detected story/branch and suggested reviewers from team.json — and can optionally post the summary back to Teams, Jira, and GitHub (each opt-in).",
   "author": {
     "name": "Aaron Judd",
     "email": "aaroncjudd@gmail.com"

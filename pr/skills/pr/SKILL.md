@@ -18,7 +18,7 @@ exists to add (same shape as story→Jira, release→CAB, comms→Teams):
 1. a **security pass** (OWASP Top 10 + active exploit patterns) — Phase 1;
 2. a **reviewer roster** from `team.json` + story/branch context in the report header —
    Phase 2 (#25, shipped);
-3. **posting results back** to Teams / Jira / GitHub — Phase 3 (#26).
+3. **posting results back** to Teams / Jira / GitHub — Phase 3 (#26, shipped).
 
 Gaps in the bare toolkit that motivate the wrap: no GitHub write-back (terminal output
 only), working-diff only (no PR-number fetch), no team/roster/checklist config, and **no
@@ -42,6 +42,23 @@ failing the whole review.
 The toolkit provides six review agents that `/pr:review` launches via Task:
 `code-reviewer`, `silent-failure-hunter`, `pr-test-analyzer`, `type-design-analyzer`,
 `comment-analyzer`, `code-simplifier`.
+
+### Additional prerequisite — the Teams post-back chain (optional, Phase 3)
+
+The **Teams** leg of post-back (Step 7c) rides a transitive chain: `pr` → the **comms**
+plugin (this marketplace) → the **`yl-msoffice` MCP server** — and yl-msoffice ships in a
+*different* marketplace, `youngliving-claude-plugins`. This chain is only needed if you post a
+review to Teams; the review itself and the Jira/GitHub legs do not depend on it. Enable it
+with:
+
+```
+claude plugin install comms@ajudd-claude-plugins        # this marketplace
+# yl-msoffice MCP — from youngliving-claude-plugins (separate marketplace)
+/setup:onboarding                                        # writes user-config.json (chat lookups)
+```
+
+Step 7c self-checks this chain and **degrades gracefully** — a missing link skips the Teams
+leg only (printing the fix) and never fails the review or the other legs.
 
 ## The embedded security pass (portable)
 
@@ -72,10 +89,41 @@ Step 3 of `/pr:review` builds a **Context block** that heads the report:
   Missing roster degrades to `team.json not found` — it never blocks the review.
 
 This is *context only*: it names the story/branch and *suggests* reviewers. Assigning
-reviewers on a real PR and posting the review back are #26.
+reviewers on a real PR is still out of scope; posting the review summary back shipped in
+Phase 3 (below).
+
+## Post-back to Teams / Jira / GitHub (Phase 3, #26)
+
+Step 7 of `/pr:review` can post the consolidated summary back to three surfaces — the
+connective tissue the bare toolkit lacks entirely (it has zero write-back). It is **strictly
+opt-in and never automatic**, via a **two-gate** model:
+
+1. **Selection** — either a `post` pre-arg (`/pr:review post teams jira`, `post all`) or, if
+   none was passed, a single post-report prompt (`teams · jira · github · all · no`). Default
+   is **post nothing** — with no selection the command stops at the terminal report.
+2. **Preview + confirm** — every leg shows a full preview and waits for explicit approval
+   before the actual write (Teams / Jira / GitHub are external surfaces).
+
+The three legs are independent — one skipping or degrading never blocks the others:
+
+- **Teams** rides the transitive chain `pr → comms → yl-msoffice` (yl-msoffice lives in the
+  *different* `youngliving-claude-plugins` marketplace). Step 7c **self-checks** the chain
+  (comms installed, `user-config.json` present, a `send_chat_message` tool available — matched
+  by suffix, never a hardcoded namespace) and **degrades gracefully** — a missing link skips
+  the Teams leg only and prints the fix, keeping the report + other legs. The send is handed to
+  the **comms** send flow (its SKILL owns the HTML standard + `send_chat_message` →
+  `confirm_action`) — the format is **not** re-invented here. The **No-Duplicates** rule
+  applies: read the chat first, post only the delta, record a one-line note in the session.
+- **Jira** posts a story comment (via the story plugin / `addCommentToJiraIssue`) — only when
+  a story key was detected; otherwise skipped.
+- **GitHub** posts a **PR summary comment** via `gh pr comment` (genuinely net-new — the
+  toolkit has no GitHub write-back). Self-checks `gh` auth + that a PR exists for the branch;
+  inline-per-finding comments are deferred (summary comment is the MVP).
 
 ## Current boundary
 
-`/pr:review` reviews the **local working diff** and prints **one terminal report**
-(Context header + Critical / Important / Suggestions / Strengths). No PR-number fetch,
-no external post-back — those are #26.
+`/pr:review` reviews the **local working diff**, prints **one terminal report** (Context
+header + Critical / Important / Suggestions / Strengths), and can **optionally** post a compact
+summary of it to Teams / Jira / GitHub (Step 7, opt-in). What remains out of scope: fetching a
+PR by number to review something other than the working diff, and assigning reviewers on a
+real PR.

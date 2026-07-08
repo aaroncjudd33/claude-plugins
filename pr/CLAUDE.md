@@ -32,5 +32,9 @@ target repo and its own `CLAUDE.md`, not against a remembered foreign baseline.*
   the suggested reviewers read from `team.json` (the `pr-reviewer` role). Read the roster
   from `~/.claude/plugins/team.json` — never hardcode team data — and degrade gracefully
   when it is absent (`team.json not found`) rather than failing the review.
-
-Later phase (tracked separately): post-back to Teams/Jira/GitHub (#26).
+- **Opt-in post-back** of the summary to Teams / Jira / GitHub (Phase 3, #26): a new
+  additive Step 7, default-off, two-gate (selection → preview + confirm per leg). The Teams
+  leg rides `pr → comms → yl-msoffice` (yl-msoffice is in a different marketplace) and
+  self-checks the chain, degrading gracefully; it hands the send to the **comms** flow rather
+  than re-inventing the Teams HTML standard. GitHub post-back (`gh pr comment`) is net-new —
+  the toolkit has no write-back at all.
