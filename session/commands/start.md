@@ -63,13 +63,20 @@ Resolve `session_root` and `handle` using Path Resolution (see Session Skill). I
 
 The listing is rendered by a helper script so its deterministic formatting (grouping, title truncation, column widths, the active marker) is not generated token-by-token. **Issue the render call and the Step 3 input call(s) together in one response — do not process any result before all are issued.**
 
-1. **Render the listing — run the script and display its stdout verbatim:**
+1. **Render the listing — run the retention prune, then the list script, and display the list stdout verbatim:**
    ```bash
-   SL="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}/scripts/session-list.py"
+   ROOT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}"
+   # Retention prune (acp-ajudd#50) — archive completed sessions >6mo BEFORE listing, so the
+   # table reflects the pruned set. Idempotent, fail-safe, and never touches in-progress/paused.
+   if command -v python3 >/dev/null 2>&1 && [ -f "$ROOT/scripts/session-archive.py" ]; then
+     python3 "$ROOT/scripts/session-archive.py" --session-root "<session_root>" --slug "<slug>"
+   fi
+   SL="$ROOT/scripts/session-list.py"
    if command -v python3 >/dev/null 2>&1 && [ -f "$SL" ]; then
-     python3 "$SL" --session-root "<session_root>" --slug "<slug>" --handle "<handle>"
+     python3 "$SL" --session-root "<session_root>" --slug "<slug>" --handle "<handle>" --rebuild-index
    fi
    ```
+   The prune runs first and completes before the listing (and before any commit a later step such as `migrate` might make). If it prints a `Retention: archived …` line, relay it to the user before the table so an archival is never silent.
    (`${CLAUDE_PLUGIN_ROOT}` is used when set; otherwise the script resolves from the marketplace clone — derive `<pluginMarketplaceName>` as in Step 1.) The script reads `_index.md` (7-col current / 6-col legacy), the per-session inbox files (`_inbox_<name>.md`, archives excluded), the `_active` marker, and the session `.md` filenames itself, then prints the finished, aligned, grouped table — default columns, with completed and `refinement-*` sessions hidden. **Display its stdout exactly as printed: do not re-align, re-order, restate, or wrap it in a code fence.**
 
 2. **Step 3 inputs (same parallel batch):**
@@ -85,7 +92,7 @@ The listing is rendered by a helper script so its deterministic formatting (grou
 
 **Free-text natural-language filters** (`has inbox`, `updated by nivi`, `paused this week`) are not deterministic — read `_index.md` yourself and render the filtered subset inline (the one case the model still formats), then re-show the routing block.
 
-**Index rebuild** — if the listing ends with `(index missing or incomplete …)` and the user types `index`, read all session `.md` files in parallel (no git log), extract `updated-by:`, `updated:`, `created-by:`, `Title:`, write `_index.md` in 7-column format, then re-run the script.
+**Index rebuild — automatic (acp-ajudd#49).** `_index.md` is a derived render cache, gitignored in repo-based sessions and **not committed** — so its absence (e.g. on a fresh clone or after `git pull`) is the **normal case, not an error**. The `--rebuild-index` flag above makes `session-list.py` derive any missing rows straight from the committed session files and silently persist the rebuilt cache, so the listing is always correct with no committed index. The manual `index` command is now rarely needed; if the user types `index`, just re-run the script (it re-derives and re-persists).
 
 **Example of the script's output** (this is what the script prints — echo it as-is, do not regenerate):
 ```

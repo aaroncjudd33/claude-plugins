@@ -61,13 +61,22 @@ Check `~/.claude/memory/sessions/<slug>/`. List all `.md` files not starting wit
 mkdir -p <repo_root>/.claude/sessions
 ```
 
-Write `<repo_root>/.claude/sessions/.gitignore`:
+Write `<repo_root>/.claude/sessions/.gitignore` **exactly as below** — each pattern on its own line with **no inline `#` comment** (a `#` only starts a comment at the start of a line; a trailing `_context_*  # note` is parsed as a literal pattern and silently ignores nothing):
 ```gitignore
 # Per-user state — never commit
 _active
-_context_*  # per-user pre-clear restore stash — always local; ignore defensively so a stray one never gets committed
+# _context_*: per-user pre-clear / planning-resume stash (store + handoff) — always local (acp-ajudd#48)
+_context_*
 *.approved-hash
+
+# Derived caches — rebuilt locally, never committed (acp-ajudd#49)
+# _history.md: local worklog glimpse; duplicates the global worklog at ~/.claude/memory/worklog/
+_history.md
+# _index.md: listing render cache — session-list.py rebuilds it from the committed <name>.md files
+_index.md
 ```
+
+**Only per-ticket `<name>.md` state files, the inbox/backlog records, and `.gitignore` are committed** — the derived caches (`_history.md`, `_index.md`) and the local stashes (`_active`, `_context_*`, `*.approved-hash`) are all gitignored (acp-ajudd#48/#49). The committed session set stays source-of-truth only; everything derivable regenerates locally.
 
 Add to repo root `.gitignore` if `.claude/config/` is not already excluded:
 ```gitignore
@@ -143,6 +152,8 @@ For each line matching the pattern `[YYYY-MM-DD] <name> —` (no handle already 
 - Rewrite as `[YYYY-MM-DD @<handle>] <name> —`
 
 Lines already containing `@` are left unchanged.
+
+**This copy seeds the LOCAL working-tree `_history.md` — it is gitignored (Step 4) and never committed (acp-ajudd#49).** `_history.md` is a per-user worklog glimpse (it duplicates the global worklog at `~/.claude/memory/worklog/`); copying it here just carries the pre-migration glimpse forward on this machine. It stays local — the commit in Step 12 does not include it.
 
 ### 8. Copy and Tag Inbox / Backlog Files
 
@@ -224,6 +235,8 @@ Note: `.git/hooks/` is local only — not committed. Each developer installs by 
 ### 11a. Build `_index.md`
 
 Construct the session index from all written session files. Enables fast, handle-attributed listings without reading individual session files at listing time.
+
+**`_index.md` is a LOCAL render cache — gitignored (Step 4), never committed (acp-ajudd#49).** Building it here just warms the cache so the first post-migrate `/session:start` is fast; it is fully derivable from the committed `<name>.md` files and `session-list.py` rebuilds it on any machine when absent. The commit in Step 12 does not include it.
 
 Write `<repo_root>/.claude/sessions/_index.md`:
 ```
@@ -408,9 +421,8 @@ Show a summary:
 ```
 Ready to commit:
   .claude/sessions/          — N session file(s), transformed (Next steps array, created-by/updated-by, @handle tags, path cleanup)
-  .claude/sessions/_index.md — N sessions indexed (name | @created-by | @updated-by | date | status | title)
-  .claude/sessions/_history.md — N entries tagged @<handle>
-  .claude/sessions/.gitignore  — includes *.approved-hash exclusion
+  .claude/sessions/_inbox*.md / _backlog*.md — inbox + backlog records (shared work records)
+  .claude/sessions/.gitignore  — excludes _active, _context_*, *.approved-hash, _history.md, _index.md
   .gitignore                 — added .claude/config/ exclusion
   .claude/memory/            — J memory file(s) added (K skipped — already present), feature labels applied
   .claude/memory/MEMORY.md   — index regenerated (N entries)
@@ -418,6 +430,8 @@ Ready to commit:
   (no .claude/CLAUDE.md — project memory loads on demand via the memory plugin, never auto-loaded)
 
 Local only (not committed):
+  .claude/sessions/_history.md — seeded in working tree, gitignored (derived cache — acp-ajudd#49)
+  .claude/sessions/_index.md   — render cache warmed, gitignored (rebuilds from session files — acp-ajudd#49)
   ~/.claude/memory/sessions/<slug>/<name>.approved-hash — N files seeded
   ~/.claude/projects/<encoded>/memory/.migrated-to-repo — sentinel written
   .git/hooks/pre-commit — session-commit-guard shim installed (delegates to live plugin; auto-updates)
@@ -427,6 +441,8 @@ Local only (not committed):
 
 Commit and push? (Yes / Edit message / Cancel)
 ```
+
+**Staging note (acp-ajudd#49):** stage `.claude/sessions/` as a directory — the `.gitignore` written in Step 4 keeps `_history.md`, `_index.md`, `_active`, `_context_*`, and `*.approved-hash` out of the commit automatically, so only the `<name>.md` state files, `_inbox*`/`_backlog*` records, and `.gitignore` land. Do not hand-stage the derived caches.
 
 Omit the `.claude/memory/` lines if Step 11b was skipped.
 

@@ -34,6 +34,19 @@ Read `<session_root>/<name>.md` and extract:
 
 If the session name is determined but `<session_root>/<name>.md` does not exist, warn the user: "Session file for `<name>` not found — run `/session:start` to re-establish." and stop.
 
+### 0a. Retention Prune (acp-ajudd#50)
+
+Run the age-based retention prune **before anything else** — it must complete before the git scan (Step 2, which may commit) and well before the deploy (Step 11), so it never races a commit or leaves a half-archived state to be committed. It is idempotent, fail-safe, and never touches in-progress/paused sessions — so it cannot archive the session you are currently finishing (it becomes `completed` only in Step 9, and even then it is fresh, not >6 months old).
+
+```bash
+ROOT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}"
+if command -v python3 >/dev/null 2>&1 && [ -f "$ROOT/scripts/session-archive.py" ]; then
+  python3 "$ROOT/scripts/session-archive.py" --session-root "<session_root>" --slug "<slug>"
+fi
+```
+
+If it prints a `Retention: archived …` line, relay it — archival is never silent. For repo-based sessions the moved files and the trimmed `_index.md` are picked up by this finish's own commit/push (they were archived before staging); for local sessions the archive is local. Either way the prune is done before any commit runs.
+
 ### 1. Header
 
 Output:

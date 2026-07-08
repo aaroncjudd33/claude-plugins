@@ -110,6 +110,10 @@ EOF
 
 For non-plugin types, push after the commit (`git push`). For plugin types, do not run `git push` — the working commit stays local until the finish deploy.
 
+**Committed-sessions discipline (acp-ajudd#48/#49 — see Session Skill § The committed-sessions model).** When staging for a **repo-based** session (`.claude/sessions/` is git-tracked):
+- **Fold session state into the meaningful commit — no standalone `chore: session log` commits.** The derived caches (`_history.md`, `_index.md`) are gitignored and won't stage; the `<name>.md` state file rides along with the code change it describes, never as its own noise commit.
+- **Never write another team's security findings, credentials, tokens, or PII into the session file or any committed record — reference by ticket/PR number.** The `session-commit-guard.py` pre-commit hook backstops this (it blocks staged session/memory files containing secret/PII patterns); if it blocks the commit, scrub the flagged content, don't bypass it.
+
 **After committing — capture the commit reference** for the session record:
 ```bash
 git rev-parse --short HEAD

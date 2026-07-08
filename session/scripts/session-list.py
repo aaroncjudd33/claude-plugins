@@ -20,6 +20,7 @@ on stdout, so the caller falls back to model rendering. Never raises to the shel
 import argparse
 import glob
 import os
+import re
 import sys
 from datetime import datetime
 
@@ -90,6 +91,71 @@ def ensure_at(h):
     return h or "—"
 
 
+def read_session_meta(root, name):
+    """Derive an index row directly from a session <name>.md file.
+
+    Used when _index.md is absent or is missing this row, so the listing renders
+    correctly with NO committed index (acp-ajudd#49 — the index is a derived cache).
+    Returns a dict shaped like a parse_index row, or {} if the file can't be read.
+    """
+    path = os.path.join(root, name + ".md")
+    try:
+        with open(path, encoding="utf-8") as fh:
+            text = fh.read()
+    except OSError:
+        return {}
+    fm_status = fm_updated = ""
+    if text.startswith("---"):
+        end = text.find("\n---", 3)
+        fm = text[3:end] if end != -1 else ""
+        for line in fm.splitlines():
+            m = re.match(r"\s*status\s*:\s*(\S+)", line)
+            if m:
+                fm_status = m.group(1).strip()
+            m = re.match(r"\s*updated\s*:\s*(\S+)", line)
+            if m:
+                fm_updated = m.group(1).strip()
+
+    def body(field):
+        m = re.search(r"^\-\s*\*\*" + field + r":\*\*\s*(.+)$", text, re.MULTILINE)
+        return m.group(1).strip() if m else ""
+
+    status = (fm_status or body("Status") or "in-progress").strip()
+    updated = (fm_updated or "").strip()
+    return dict(
+        created_by=ensure_at(body("created-by") or "—"),
+        created_date=updated or "—",
+        updated_by=ensure_at(body("updated-by") or "—"),
+        updated_date=updated or "—",
+        status=status,
+        title=(body("Title") or "—"),
+    )
+
+
+def write_index(root, slug, meta_by_name):
+    """Persist _index.md from derived/known metadata (the render cache — acp-ajudd#49).
+
+    Guarded by the caller so a write failure never breaks the render. The index is
+    gitignored in repo-based sessions; this just warms the local cache so the next
+    listing is a fast index read instead of a full session-file scan.
+    """
+    lines = [f"# Session Index — {slug}",
+             "# name | created-by | created-date | updated-by | updated-date | status | title"]
+    for name in sorted(meta_by_name):
+        m = meta_by_name[name]
+        lines.append(" | ".join([
+            name,
+            ensure_at(m.get("created_by", "—")),
+            (m.get("created_date") or "—"),
+            ensure_at(m.get("updated_by", "—")),
+            (m.get("updated_date") or "—"),
+            (m.get("status") or "in-progress"),
+            (m.get("title") or "—"),
+        ]))
+    with open(os.path.join(root, "_index.md"), "w", encoding="utf-8") as fh:
+        fh.write("\n".join(lines) + "\n")
+
+
 def count_inbox(session_root, name):
     """Items in _inbox_<name>.md (per-session). Archives excluded. 0 if none."""
     p = os.path.join(session_root, f"_inbox_{name}.md")
@@ -139,6 +205,9 @@ def main():
     ap.add_argument("--status", default="")
     ap.add_argument("--mine", action="store_true")
     ap.add_argument("--stale-days", type=int, default=STALE_DAYS_DEFAULT)
+    ap.add_argument("--rebuild-index", action="store_true",
+                    help="when _index.md is absent/incomplete, derive rows from the "
+                         "session files and persist the rebuilt cache (acp-ajudd#49)")
     args = ap.parse_args()
 
     # Windows consoles default to cp1252; the active marker is U+2190. Force UTF-8.
@@ -151,12 +220,39 @@ def main():
     if not os.path.isdir(root):
         return 1  # caller falls back
 
-    idx = parse_index(os.path.join(root, "_index.md"))
+    index_path = os.path.join(root, "_index.md")
+    index_present = os.path.isfile(index_path)
+    idx = parse_index(index_path)
     file_names, refinement = discover_session_files(root)
 
     # Union of index entries and on-disk session files.
     all_names = set(idx) | set(file_names)
     index_incomplete = bool(set(file_names) - set(idx))
+
+    # The index is a derived render cache (acp-ajudd#49). For any on-disk session
+    # not represented in the index, derive its row straight from the session file
+    # so the listing renders correctly with NO committed index. meta_by_name is the
+    # single source the rest of main() reads from.
+    meta_by_name = {}
+    derived_any = False
+    for name in all_names:
+        meta = idx.get(name)
+        if not meta and name in file_names:
+            meta = read_session_meta(root, name)
+            if meta:
+                derived_any = True
+        meta_by_name[name] = meta or {}
+
+    # Self-heal the cache: if asked to rebuild and the index was absent or missing
+    # rows, persist the freshly derived index. Guarded — a write failure must never
+    # break the render.
+    if args.rebuild_index and (not index_present or index_incomplete) and file_names:
+        try:
+            slug_for_index = args.slug or os.path.basename(root.rstrip("/"))
+            write_index(root, slug_for_index, {n: meta_by_name[n] for n in file_names})
+            index_incomplete = False
+        except Exception:
+            pass
 
     active = ""
     ap_path = os.path.join(root, "_active")
@@ -186,7 +282,7 @@ def main():
 
     rows = []
     for name in all_names:
-        meta = idx.get(name, {})
+        meta = meta_by_name.get(name, {})
         status = (meta.get("status") or "in-progress").strip()
         is_refine = name in refinement
         rows.append(dict(
@@ -239,7 +335,7 @@ def main():
     # Counts for the summary line (computed over the full set, not the filtered view).
     summary = {"in-progress": 0, "paused": 0, "completed": 0}
     for name in all_names:
-        st = (idx.get(name, {}).get("status") or "in-progress").strip()
+        st = (meta_by_name.get(name, {}).get("status") or "in-progress").strip()
         if name in refinement:
             continue
         if st in summary:
@@ -326,8 +422,12 @@ def main():
     if stale_shown:
         out.append(f"  ⚠ {stale_shown} in-progress not updated in >{stale_days}d — "
                    f"consider /session:finish")
-    if index_incomplete:
-        out.append("  (index missing or incomplete — type 'index' to build it)")
+    # Absence is normal, not an error (acp-ajudd#49): rows were derived from the
+    # session files above, so the listing is correct regardless. Show the persist
+    # hint only when the caller did NOT ask to self-heal the cache (--rebuild-index
+    # zeroes index_incomplete on success).
+    if index_incomplete and not args.rebuild_index:
+        out.append("  (index cache rebuilt from session files — type 'index' to persist it)")
 
     sys.stdout.write("\n".join(out) + "\n")
     return 0

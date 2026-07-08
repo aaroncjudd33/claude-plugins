@@ -40,14 +40,20 @@ else:
     session_root = ~/.claude/memory/sessions/<slug>/
     handle = user-config.json → user.handle (fallback: prefix of user.email)
 
-Always local (never in repo, regardless of mode):
-    _active        → ~/.claude/memory/sessions/<slug>/_active
+Always local / never committed (gitignored in repo-based sessions — acp-ajudd#48/#49):
+    _active        → ~/.claude/memory/sessions/<slug>/_active   (per-user pointer — always the local path)
+    _context_*     → <session_root>/_context_*.md               (pre-clear / planning-resume stash — store + handoff)
+    _history.md    → <session_root>/_history.md                 (worklog glimpse — duplicates the global worklog; created on demand)
+    _index.md      → <session_root>/_index.md                   (listing render cache — see below)
+    *.approved-hash → ~/.claude/memory/sessions/<slug>/*.approved-hash
 
-Session index (in session_root — tracked with session files):
+Session index (DERIVED render cache — NOT committed; acp-ajudd#49):
     _index.md      → <session_root>/_index.md
                      One line per session (7 cols): `name | @created-by | created-date | @updated-by | updated-date | status | title`
-                     Written by: start (seed on create; auto-build when missing), checkpoint/finish/commit/switch (update), migrate (build)
-                     created-date/updated-date are ISO dates (YYYY-MM-DD); created-date is never overwritten after first write
+                     Fully derivable from the committed `<name>.md` files' frontmatter/body — it is a cache, not source of truth.
+                     Written by: start (seed on create; rebuild when absent — absence is normal), checkpoint/finish/commit/switch (update), migrate (warm the cache).
+                     `session-list.py` reads each session file directly when a row is missing, so the listing renders correctly with NO committed index.
+                     created-date/updated-date are ISO dates (YYYY-MM-DD); created-date is never overwritten after first write.
 ```
 
 **Scope resolution for the scope guard:** If the session file's `Scope:` value is relative (no leading `/`, `~`, or drive letter), resolve it as `local_cfg.projectRoot + "/" + scope_value`. If absolute (old format), use as-is.
@@ -256,6 +262,27 @@ Project memories can be stored in the repo under `.claude/memory/` for team shar
 **Rollback:** Delete `.claude/` folder. Claude falls back to local memory automatically. Same format both places — no manual steps required.
 
 **Sentinel:** `~/.claude/projects/<encoded>/memory/.migrated-to-repo` — local-only marker with migration date and repo path.
+
+---
+
+## The committed-sessions model — what commits, what doesn't (acp-ajudd#48/#49/#50)
+
+Once a repo is migrated (`/session:migrate`), its `.claude/sessions/` is git-tracked and shared. Three rules keep that committed set **clean, minimal, and bounded** — together they make "commit session files" worth it: nothing sensitive, nothing derived, and the set stays finite over time.
+
+**1. Only source-of-truth files commit; caches and stashes are gitignored (acp-ajudd#48/#49).** The `migrate` `.gitignore` template (`commands/migrate.md` Step 4) excludes:
+- `_active` — per-user "current session" pointer (always the local path anyway).
+- `_context_*` — pre-clear / planning-resume stashes (`store` + `handoff`). Always local, ephemeral, personal — never migrated, never committed. (This is the belt-and-suspenders for the misfiling that put a `_context_*` into git once: `store.md` already writes only the local path and `migrate` never copies `_context_*` in, so the current-code vector is closed — the gitignore makes committing one *impossible* even if a stray is misfiled.)
+- `*.approved-hash` — per-user load-approval baselines (also stored locally).
+- `_history.md` — a per-user worklog **glimpse** that duplicates the global worklog (`~/.claude/memory/worklog/`, what `/session:worklog` reads). Written locally, created on demand, never shared.
+- `_index.md` — the listing **render cache**, fully derivable from the committed `<name>.md` files. `session-list.py --rebuild-index` reconstructs it from the session files whenever it's absent, so its absence (fresh clone, post-pull) is the **normal case, not an error**.
+
+**Committed:** the per-ticket `<name>.md` state files (real handoff value, one file per ticket → rarely conflicts), the `_inbox*`/`_backlog*` shared work records, and `.gitignore`. Everything else regenerates locally.
+
+**2. Sensitive content never enters a committed session artifact (authoring discipline — acp-ajudd#48).** In any file that commits (`<name>.md`, inbox/backlog records, or migrated `_history.md` before it was gitignored), **never quote another team's security findings, credentials, tokens, or PII** — reference them by ticket / PR number instead ("see PR #20's finding", not the finding text). This is a judgment rule, not a path match, so it rides in context whenever a session is active. **The mechanical backstop already exists and needs no new hook:** `session-commit-guard.py` (the git pre-commit hook `migrate` installs) scans the full content of every staged `.claude/sessions/*.md` and `.claude/memory/*.md` — including `_`-prefixed files — for the `SECRET_PATTERNS` (DB creds, `password=`, tokens, AWS keys, JWTs, private keys, PII identity fields) and blocks the commit. Decision on acp-ajudd#48's "optional pre-commit content scan": **already covered — do not build a new hook.**
+
+**3. Retention keeps the committed set bounded (acp-ajudd#50).** `scripts/session-archive.py` runs an idempotent age-based prune on `/session:start` and `/session:finish` (before any commit the triggering command makes): it moves **completed** session files older than **6 months** into `<session_root>/_archive/` (committed, so durable and cross-machine) and drops their rows from `_index.md`. It **never touches in-progress or paused** sessions regardless of age. Archived files stay readable and resurfaceable by story key (`/session:search`), and drop out of the default listing because `session-list.py` globs only the `session_root` top level. The **6-month window is hardcoded and intentionally not configurable** — a configurable window would let one developer set it short and delete shared history others still need. This also subsumes "clean up merged-story sessions": the `/session:finish` → `completed` signal plus the age-grace is the robust source, not a fragile merge-PR hook.
+
+**Commit granularity (acp-ajudd#49).** Session bookkeeping must not generate standalone `chore: session log` commits on a feature branch. The derived caches are gitignored (rule 1), so they can't be committed at all; the committed `<name>.md` state should be **folded into a meaningful commit** (via `/session:commit`, alongside the code it describes) or persisted at `/session:finish` — never committed on its own as noise.
 
 ---
 

@@ -31,7 +31,7 @@ Editing files is never blocked; the session commands are what require a session.
 ```bash
 SL="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}/scripts/session-list.py"
 if command -v python3 >/dev/null 2>&1 && [ -f "$SL" ]; then
-  python3 "$SL" --session-root "<session_root>" --slug "<slug>" --handle "<handle>"   # add --mine when arg is mine
+  python3 "$SL" --session-root "<session_root>" --slug "<slug>" --handle "<handle>" --rebuild-index   # add --mine when arg is mine
 fi
 ```
 The script reads `_index.md` (7-col current / 6-col legacy), the per-session inbox files (`_inbox_<name>.md`, archives excluded), the `_active` marker, and the session `.md` filenames, and prints the finished, aligned, grouped table (default columns; completed + `refinement-*` hidden, active marked `←`). **Echo its stdout exactly — do not re-align or restate.** Then append the routing block:
@@ -50,7 +50,7 @@ The script reads `_index.md` (7-col current / 6-col legacy), the per-session inb
 
 **Filter flags** — re-run the script with the matching flag, re-display, and re-append the routing block: `full`→`--full` · `all`→`--show all` · `status <value>`→`--status <value>` · `mine`→`--mine`. **Free-text** natural-language filters: read `_index.md` yourself and render the subset inline.
 
-**Index rebuild (switch builds eagerly):** if the script output ends with `(index missing or incomplete …)`, read the affected session `.md` files in parallel, extract `updated-by:`/`created-by:`/`updated:`/`Status:`/`Title:`, write `_index.md` in 7-column format, then re-run the script — do not present a degraded table.
+**Index rebuild — automatic (acp-ajudd#49):** the `--rebuild-index` flag makes `session-list.py` derive any missing rows straight from the committed session files and persist the rebuilt `_index.md`, so an absent/incomplete index (fresh clone, post-pull) self-heals silently — the table is never degraded. `_index.md` is a gitignored render cache, not committed; its absence is the normal case, not an error.
 
 **Fallback (script unavailable):** if `python3` is absent, the script exits non-zero, or stdout is empty, render the list yourself — group by status, one row per session `# · name · title (≤32, "..." if longer) · status · in · @updater date` (add `out` + `@creator created-date` only on `full`), mark `_active` with `←`, end with `N in-progress · N paused · N completed`.
 

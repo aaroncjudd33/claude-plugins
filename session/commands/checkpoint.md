@@ -95,6 +95,8 @@ printf "[YYYY-MM-DD @<handle>] <session-name> — <accomplished sentence>\n" >> 
 
 The composed entry is already in context and becomes the value for `Last worked on` in the session file — **do not re-read `_history.md` to retrieve it.**
 
+**`_history.md` and `_index.md` are derived caches, gitignored in repo-based sessions and never committed (acp-ajudd#49 — see Session Skill § The committed-sessions model).** Writing to them here is a local cache update, not a change to commit. Checkpoint never creates a git commit, so nothing stages — but the discipline holds at commit/finish: fold session state into a meaningful commit, and never quote another team's secrets/findings/PII into a committed session file (reference by ticket/PR).
+
 ### 5a / 5b. Jira Progress Comment + Epic Check *(story/cab only)*
 
 **plugin / personal / general:** Skip both — do not read the reference.
