@@ -155,6 +155,8 @@ Review the conversation since the last checkpoint/commit for anything worth savi
 
 Save what's missing. Report: "Saved: [list]" or "Memory: nothing new to save."
 
+**Status → the session file, not other living docs (Session Skill § Record ownership).** Live/ephemeral status — dated events, test counts, blockers, next action — is recorded in the session file here. Do **not** mirror it into a contract/requirements record (spec, ADR, design doc, ticket body) on your own initiative; those are developer-owned and edited only on explicit direction. Link to the record; don't duplicate its content or push status into it.
+
 ### 5. Scope Check
 
 Read the `Scope:` field from the session file. If the field is missing or the session type is `general`, skip this step.

@@ -359,6 +359,26 @@ A coding session still freely writes its **own session file** and **posts NEW in
 
 ---
 
+## Record ownership — contract/requirements docs are developer-owned (extends acp-ajudd#13)
+
+§ State-Exclusivity makes a *live inbox item* developer-owned — a coding session consumes it, it never diverges from it. That same ownership extends to the other **contract/requirements records** a coding session works next to but did not author: a **spec, ADR, design doc, or ticket body**. #13 already established that requirements records are planning/developer-owned and that coding hands off rather than diverging; this section only names specs / ADRs / tickets — which #13 hadn't — as members of that same class. (It does not restate #13; read it there.)
+
+**The rule.** Contract/requirements documents are **developer-owned records**. A coding session edits them **only on explicit developer direction** — including the developer invoking a spec/refine flow — and **never on its own initiative**, not even under a standing "keep the doc current" instruction. Live/ephemeral status — dated events, test counts, blockers, the next action — belongs in the **session file**, not the record: **link to the record, don't mirror it** (neither the record's content into the session nor the session's status into the record). This is phrased deliberately as a *class of document*, not a path — there is no `specs/` or per-repo location baked in, so it holds in any project.
+
+**Precedence tie-breaker — who wins where they seem to overlap.** The record and the session own **separate territory**, so they cannot actually disagree on a reviewable fact:
+- The **record** (spec / ADR / ticket) is authoritative for everything **reviewable** — scope, acceptance criteria, done-criteria, decisions.
+- The **session** is authoritative **only** for **live state** — where the work is, blockers, next action — and **never overrides the record.**
+
+Duplicated status is the *only* thing that ever "drifts" (one fact copied into two files, then updated in just one — the "5/5 vs 6/6" failure). Once status lives only in the session and reviewable facts only in the record, there is nothing left to conflict.
+
+**Session entries are point-in-time snapshots (folds in the staleness concern).** Every session entry is **timestamped and explicitly not a live source of truth** — it records what was true when written. Re-verify a session fact against the record and the code before relying on it. A stale entry can't mislead precisely because the session is never authoritative for a reviewable fact — that is the precedence rule doing its job, not a session-format flaw.
+
+**Authoring note — committed session files are read by teammates (folds in the no-enforcement concern).** Session files are deliberately freeform prose (the record is the linted artifact — the split is intentional, no lint on the journal). One convention: in any session file that commits (see § The committed-sessions model), don't reference personal plugin commands (`/session:commit`, `/session:finish`, etc.) as if they were universal — a teammate reading the committed file may not have the plugins installed. Describe the action plainly ("committed and pushed") or note it's plugin-driven. Convention only — no enforcement mechanism.
+
+**Instruction-only — deliberately no hook.** This is a *judgment* problem (is a given edit illegitimate status-bleed, or a sanctioned developer-directed spec change?), not a pattern-matchable one. A hook could match only on file path — a brittle per-repo list that would *also* block correct spec edits. The instruction rides in context whenever a session is active, so it reaches the AI at authoring time. Same rationale, and the same no-hook stance, as #13 and acp-ajudd#1.
+
+---
+
 ## Captures Inbound (un-promoted captures) — human-driven
 
 The inbox is both a **to-do list** (promoted captures at `refining`/`ready` you pick up and build) and an **inbound stream** (un-promoted `status: capture` items — raw inbound one session drops for another: a heads-up, a payload of values, a stray idea). Reading inbound captures is **human-driven** (acp-ajudd#10): Claude never polls, monitors, or auto-announces them. *(This was the "note/data mailbox"; the behavior is identical — there is no note/data type now, just captures awaiting disposition.)*
