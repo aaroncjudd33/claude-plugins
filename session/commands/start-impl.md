@@ -153,7 +153,13 @@ Plugin and personal sessions are created ONLY by picking up an inbox item — ne
    - **Collision check:** if `<session_root>/<feature-name>.md` already exists, append a disambiguator or pick a distinct name.
    - **Confirm once** (the name is permanent — never silently guess): `Session name: <feature-name>  (reply 'ok' or give a different name)`. Apply any override.
 
-3. **Fold the item into the new session.** When writing the session file in Step 8, seed `Open items` from the item body, and add a provenance block preserving the original header verbatim:
+3. **Determine the session Scope (single- vs multi-plugin — acp-ajudd#54).** Read the item body to decide which plugin(s) the work legitimately touches, and set the session `Scope` (written in Step 8) to cover **all** of them — so `checkpoint`/`finish`'s scope-scan does not false-flag the feature's *own* edits as out-of-scope:
+   - **Single-plugin item** (the common case) → `Scope: <plugin-name>/` exactly as before. No change in behavior.
+   - **Multi-plugin item** (a cross-plugin rule like acp-ajudd#47/#51, or a marketplace-wide change) → set `Scope` to the **touched-plugin set** — a comma-separated list of the plugin dirs the item spans (e.g. `session/, story/, release/`) — or the **marketplace root** (`./`) when the change is genuinely marketplace-wide. Derive the set from the item body where it names the plugins; if the body is ambiguous about the surface, **confirm once**: `Scope: <derived set> — cover these plugins? (reply 'ok' or list the plugins)`. Apply any override.
+
+   This only widens Scope to the item's *declared* surface — it does not disable the scan. Edits **outside** the declared plugin set are still the leakage the scan exists to catch.
+
+4. **Fold the item into the new session.** When writing the session file in Step 8, seed `Open items` from the item body, and add a provenance block preserving the original header verbatim:
    ```
    ## Picked up from inbox
    <original ## [date @handle] from <slug> / <session> (<source-type>) — <description> header, verbatim (including its `> [type: … · status: …]` line, if any)>
@@ -161,7 +167,7 @@ Plugin and personal sessions are created ONLY by picking up an inbox item — ne
    ```
    Place this in the session file body after the standard fields (it carries the full context so nothing is lost).
 
-4. **Consume the item from `_inbox.md` — archive-on-consume (acp-ajudd#40).** Append the picked item (its `## <id> · …` header, `> [status: …]` line, and body, verbatim) to `<session_root>/_inbox_archive.md` — create it with header `# Inbox Archive — <slug>` if it does not exist — stamped `[CONSUMED YYYY-MM-DD → session <name>]`, **then** remove it from the live `_inbox.md`. Remove exactly the one picked item; leave all other items byte-identical. This reuses the existing `[DONE]`/`[CONSUMED]` archive file and its >30-day auto-purge (§ Captures inbound / § Auto-Purge in `references/inbox-convention.md`) — no new machinery. The archived copy is a **recovery net**: a partial fold, a wrong-item delete, or a crash mid-write can be recovered from `_inbox_archive.md`.
+5. **Consume the item from `_inbox.md` — archive-on-consume (acp-ajudd#40).** Append the picked item (its `## <id> · …` header, `> [status: …]` line, and body, verbatim) to `<session_root>/_inbox_archive.md` — create it with header `# Inbox Archive — <slug>` if it does not exist — stamped `[CONSUMED YYYY-MM-DD → session <name>]`, **then** remove it from the live `_inbox.md`. Remove exactly the one picked item; leave all other items byte-identical. This reuses the existing `[DONE]`/`[CONSUMED]` archive file and its >30-day auto-purge (§ Captures inbound / § Auto-Purge in `references/inbox-convention.md`) — no new machinery. The archived copy is a **recovery net**: a partial fold, a wrong-item delete, or a crash mid-write can be recovered from `_inbox_archive.md`.
 
    **State-exclusivity still holds (acp-ajudd#13).** The item is gone from the *live* inbox — there is still exactly **one live copy** (now the session file) — and its stable `<id>` is **retired, never reused**. The archived copy is history, not a second live record, so the work can never exist as both a divergent live item and an in-flight session.
 
@@ -361,7 +367,7 @@ status: in-progress
 ```
 
 **Scope field — relative path rules:**
-- Plugin sessions: `<plugin-name>/` (e.g., `session/`, `release/`)
+- Plugin sessions: `<plugin-name>/` (e.g., `session/`, `release/`) for a single-plugin item. For a **multi-plugin item** (acp-ajudd#54), write the touched-plugin set as a comma-separated list (e.g. `session/, story/, release/`), or the marketplace root `./` for a marketplace-wide change — as determined in Item Pickup step 3. The scope-scan treats every path under any listed plugin dir as in-scope.
 - Story / cab / personal: `./` (whole repo) or a service subdirectory if the session targets one
 - General: omit the field entirely
 

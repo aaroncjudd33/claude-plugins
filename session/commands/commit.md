@@ -161,9 +161,9 @@ Save what's missing. Report: "Saved: [list]" or "Memory: nothing new to save."
 
 Read the `Scope:` field from the session file. If the field is missing or the session type is `general`, skip this step.
 
-If the scope value is relative, resolve it as: `local_cfg.projectRoot + "/" + scope_value` (read `local_cfg` from `~/.claude/config/<slug>.json`). For legacy sessions with absolute scope, use as-is.
+The `Scope:` field may hold **one path or a comma-separated set** (a multi-plugin feature declares every plugin dir it touches — acp-ajudd#54). Split on `,`, trim each entry, and resolve each: if an entry is relative, resolve it as `local_cfg.projectRoot + "/" + entry` (read `local_cfg` from `~/.claude/config/<slug>.json`); for legacy sessions with absolute scope, use as-is.
 
-Review file paths accessed or modified during this conversation. Any path not beginning with the resolved absolute scope is out-of-scope.
+Review file paths accessed or modified during this conversation. A path is in-scope if it begins with **any** of the resolved scope paths; only paths under **none** of them are out-of-scope. A multi-plugin feature's own declared surface is in-scope by design — only edits outside the item's declared plugin set are the leakage this scan is for.
 
 If out-of-scope work is found, warn but do not block. Display the out-of-scope items and output a routing line:
 

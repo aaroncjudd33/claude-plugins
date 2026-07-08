@@ -65,11 +65,11 @@ Write `<repo_root>/.claude/sessions/.gitignore` **exactly as below** — each pa
 ```gitignore
 # Per-user state — never commit
 _active
-# _context_*: per-user pre-clear / planning-resume stash (store + handoff) — always local (acp-ajudd#48)
+# _context_*: per-user pre-clear / planning-resume stash (store + handoff) — always local
 _context_*
 *.approved-hash
 
-# Derived caches — rebuilt locally, never committed (acp-ajudd#49)
+# Derived caches — rebuilt locally, never committed
 # _history.md: local worklog glimpse; duplicates the global worklog at ~/.claude/memory/worklog/
 _history.md
 # _index.md: listing render cache — session-list.py rebuilds it from the committed <name>.md files
