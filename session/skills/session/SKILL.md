@@ -375,7 +375,11 @@ Three paths move work between sessions, and they split on **how the item travels
 - **`<from-stance> (<from-session-name>) ──▶ <to-stance> (<target>)`** — who → who, with each side's **stance** (planning / coding — see § Session Stance). This is the "where it came from" provenance. A sessionless origin is `planning (<slug>)`; a coding origin is `coding (<session-name>)`.
 - **`Re:`** — the topic, plus any inbox IDs the handoff carries (omit the ID clause when there are none).
 - **`Slug` / `Zone`** — so the receiver knows the repo and project type without asking.
-- **Footer** — names the origin session and says to reply back to it on completion.
+- **Footer** — names the origin session and says to reply back to it on completion. **On a planning→coding handoff the footer's return instruction MUST be command-invoking, not vague (acp-ajudd#43):** it explicitly tells the coding session to *run `/session:handoff`* to reply with a SESSION HANDOFF block back to the planning session for verification — **not** to free-form the report. Running the command is what re-emits this block; a vague "report back on done" is what let return handoffs come back as loose prose instead of a block. So a planning→coding footer reads, e.g.:
+  ```
+   END HANDOFF · from <from-session-name> · when done, run /session:handoff to reply with a SESSION HANDOFF block back to <from-session-name> (planning) for verification — do not free-form the report
+  ```
+  (Coding→planning and other directions keep the generic `reply to <from-stance> on done` footer — only the planning→coding *outgoing* footer needs the explicit command invocation, because it is the return leg that must come back as a block.)
 
 **Rules (all required):**
 - **Fenced code block is mandatory.** The fence is what gives the Claude UI its one-click copy button and copies the exact raw text — that one-gesture, exact-fidelity copy is the entire point. Never emit a handoff as loose prose.

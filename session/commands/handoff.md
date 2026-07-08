@@ -98,7 +98,7 @@ Reuse the **existing `_context_<name>.md` convention** so the file is discoverab
 
 Print the block in the **standard handoff format** — the **Session Skill § Cross-Session Paste Handoff** owns the exact template and rules; this command does not restate them (single source of truth). Fill the provenance header from Steps 1–2:
 - **`[YYYY-MM-DD @handle] <from-stance> (<from-session-name>) ──▶ <to-stance> (<target>)`** — the origin's stance is `coding (<session-name>)` on the coding path and `planning (<slug>)` on the sessionless path; `<target>` is the label from Step 2.
-- **`Re:`** = topic + any inbox IDs / story keys carried (omit the ID clause if none). **`Slug` / `Zone`** = current repo slug + session type. **Footer** names this origin and asks the receiver to reply back on done.
+- **`Re:`** = topic + any inbox IDs / story keys carried (omit the ID clause if none). **`Slug` / `Zone`** = current repo slug + session type. **Footer** names this origin and asks the receiver to reply back on done. **On a planning→coding handoff the footer must be command-invoking (acp-ajudd#43):** tell the coding session to *run `/session:handoff`* to reply with a SESSION HANDOFF block back to the planning session for verification — do not have it free-form the report. The SKILL § Cross-Session Paste Handoff owns the exact footer wording (single source of truth); this command does not restate it.
 
 Then write the self-contained, paragraphed body (what we're doing · key decisions · exact next action · guardrails · relevant paths/IDs). Apply the SKILL section's rules as written — fenced block mandatory, heavier outer fence if the body has its own ``` fences, rule-separated header/body/footer — do not re-explain them to the user.
 
