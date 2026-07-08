@@ -83,6 +83,13 @@
       "source": "./user",
       "category": "productivity",
       "keywords": ["user", "member", "custid", "customer", "lookup", "spoof", "persona", "search"]
+    },
+    {
+      "name": "pr",
+      "description": "Pull request lifecycle. /pr:review wraps the pr-review-toolkit agents and adds a portable YL OWASP/exploit security pass, producing one consolidated review report over the working diff.",
+      "source": "./pr",
+      "category": "development",
+      "keywords": ["pr", "pull request", "review", "code review", "security", "owasp", "diff", "merge"]
     }
   ]
 }

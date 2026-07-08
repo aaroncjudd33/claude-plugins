@@ -1,0 +1,13 @@
+{
+  "name": "pr",
+  "version": "0.1.0",
+  "description": "Pull request lifecycle at Young Living. /pr:review wraps the pr-review-toolkit review agents and adds a portable YL OWASP/exploit security pass, producing one consolidated review report.",
+  "author": {
+    "name": "Aaron Judd",
+    "email": "aaroncjudd@gmail.com"
+  },
+  "skills": ["./skills/pr"],
+  "commands": [
+    "./commands/review.md"
+  ]
+}
