@@ -2,6 +2,8 @@
 
 How to leave cross-session or cross-project work for a plugin or session you're not currently working in.
 
+> **Terminology (see SKILL.md § Terminology — acp-ajudd#64).** A **terminal** is a Claude Code conversation; a **coding session** is the file-backed work unit (`<name>.md`). This doc uses "the receiving session" for whichever role picks an entry up — `refine`, `dispatch`, or a `code` session — and reserves the qualified "coding session" for the file-backed unit. No plugin or command is renamed.
+
 ## Location
 
 **Canonical (current model): one consolidated inbox per slug.**

@@ -1,15 +1,15 @@
 ---
 name: handoff
-description: Hand off the current work to another Claude session. From a coding session it prints a paste-ready block (text only). From a sessionless planning context it also writes a durable local resume file a fresh /session:start or /session:restore picks up — planning is the context that most needs to hand off (planning → coding).
+description: Hand off the current work to another terminal (Claude Code conversation). From a coding session it prints a paste-ready block (text only). From a sessionless planning context it also writes a durable local resume file a fresh /session:start or /session:restore picks up — planning is the context that most needs to hand off (planning → coding).
 ---
 
 # Session Handoff
 
-Assemble the current work into the **standard handoff block** (Session Skill § Cross-Session Paste Handoff) so another Claude session can continue it. `handoff` has **two forms**, chosen automatically by whether a coding session is active:
+Assemble the current work into the **standard handoff block** (Session Skill § Cross-Session Paste Handoff) so another terminal can continue it. `handoff` has **two forms**, chosen automatically by whether a coding session is active:
 
 | Context | Primary output | Durable file? | Why |
 |---------|----------------|---------------|-----|
-| **Coding session** (a session file exists) | the paste block — text only | no | the human copies it into a live session elsewhere |
+| **Coding session** (a session file exists) | the paste block — text only | no | the human copies it into a live terminal elsewhere |
 | **Sessionless / planning** (no session file) | a **durable local resume file** a fresh session picks up | **yes** | paste is friction and lost with the clipboard; planning → coding is the crossing that most needs to survive a restart (acp-ajudd#29) |
 
 **The sessionless path is the point.** A planning stance is *deliberately* sessionless (Session Skill § Session Stance) — yet it is the context that most needs to hand off, because the only sanctioned planning→coding path is **handoff into a fresh coding session** (never in-place conversion — acp-ajudd#32). This command is that **cheap exit**: it captures the planning context into a file so starting the coding session costs one command and loses nothing that mattered. Before acp-ajudd#29 this command stopped cold with "no session" — the one context that should produce handoffs couldn't.

@@ -7,6 +7,16 @@ description: "This skill governs session lifecycle across all project types. Loa
 
 Governs session lifecycle across all project types (plugin, story, cab, personal, general).
 
+## Terminology — terminal vs. coding session (acp-ajudd#64)
+
+Three words, kept distinct so the word "session" never has to carry two meanings at once:
+
+- **terminal** — a Claude Code conversation (the CLI window / instance you are typing into). Claude Code itself calls this a "session"; this skill deliberately says **terminal** to remove that collision. Several terminals can run on one machine at once and collaborate through the inbox and copy-paste handoffs (§ The three roles).
+- **coding session** — the **file-backed** work unit this plugin tracks: one `<name>.md` state file under `session_root`, born only by `code`-ing work. **Always call the file-backed unit a "coding session," never a bare "session"** — planning / refine / dispatch are **sessionless** roles (no file). This is "the file dictates the mode": a target that has a session file is a coding session; a target with none is planning.
+- **session** — the umbrella term and the plugin / command name (`/session:*`). It names the whole working system — plan, dispatch, code — which is exactly why the plugin keeps the broad name (renaming it to something narrower like "impl" would mis-fit and carry a huge blast radius). In prose, prefer the qualified **coding session** whenever you mean the file-backed thing.
+
+**Vocabulary only — nothing is renamed. `/session:*` command names and the plugin name are unchanged (acp-ajudd#64).**
+
 **Refine (`/session:refine` or `session:start` → `refine [topic]`)** is the **analyze-then-record** flow: scope raw requirements or a bug against the actual repo before code is written. It creates **no session file in any zone** — the realization is that the *work it produces is itself the work-in-progress store as well as the final deliverable*, so there is nothing separate to persist. A session file is only ever created for **work being done** (a coding session), never for scoping. Refine therefore does **not** touch `_active`, create a session file, or leave anything to migrate/expire — a coding session already active stays active alongside a refine. Both entry points converge on `commands/refine.md`. The work is written **early** (after the first substantive pass) in a "still-scoping" state and iterated in place; graduation is a **status flip** — no new artifact. The target is **strictly the zone — no override, no target picker** (acp-ajudd#17):
 - **plugin / personal** → a **`work` entry** in `_inbox.md` at `status: refining` → flipped to `status: ready` at graduation. Resumable via the `refining` work listing at `/session:start`.
 - **work repo** → a **Jira story** (work's work-repo form) created in *Gathering Requirements* (project resolved-or-confirmed, not assumed `BPT2`) → transitioned to *Ready For Work* at graduation. The project is the only thing ever confirmed; the *kind* of work is fixed by zone. A Jira story is a visible artifact others can grab, so the "first substantive pass" threshold (not the first message) gates creation to avoid half-baked stories on the board.
@@ -216,7 +226,7 @@ This is the behavioral layer above § Session Enforcement (which enforces only "
 
 ## Session Enforcement (command-level — acp-ajudd#1)
 
-**Enforcement lives at the command level, not the file-edit level. Editing is never policed.** The plugins exist to *record work in sessions* — but you cannot actually stop anyone from editing code (anyone can open a plain Claude session in any repo and do whatever, and that is fine). So the thing worth enforcing is not "block edits"; it is: **if you engage the session workflow, a session has to exist.** That is enforced by the session commands themselves.
+**Enforcement lives at the command level, not the file-edit level. Editing is never policed.** The plugins exist to *record work in sessions* — but you cannot actually stop anyone from editing code (anyone can open a plain Claude Code terminal in any repo and do whatever, and that is fine). So the thing worth enforcing is not "block edits"; it is: **if you engage the session workflow, a session has to exist.** That is enforced by the session commands themselves.
 
 **The rule:** any command that operates on "the active session" fails gracefully at the top if none exists for the current slug — a clean stop with the fix, never a crash:
 
@@ -399,7 +409,7 @@ The inbox holds two types (acp-ajudd#62): it is both a **to-do list** (`work` at
 
 ## The three roles — the dispatch model (acp-ajudd#57)
 
-**Scope — inbox zones only (plugin / personal). Work repos are explicitly OUT.** This whole section describes how **multiple live Claude sessions on one machine** collaborate through a local `_inbox.md` and same-machine copy-paste. It applies **only where there is a local inbox to dispatch from** — the plugin and personal zones. **Work repos stay exactly the plain two-move Jira flow:** `refine` in Jira (*Gathering Requirements* → *Ready For Work*), a dev `code`s the story. Jira **is** the queue and the system of record; there is no local inbox, and we do **not** build a dispatch layer over Jira cards. Everything below = inbox zones; work repos = the plain Jira refine→code flow.
+**Scope — inbox zones only (plugin / personal). Work repos are explicitly OUT.** This whole section describes how **multiple live terminals on one machine** collaborate through a local `_inbox.md` and same-machine copy-paste. It applies **only where there is a local inbox to dispatch from** — the plugin and personal zones. **Work repos stay exactly the plain two-move Jira flow:** `refine` in Jira (*Gathering Requirements* → *Ready For Work*), a dev `code`s the story. Jira **is** the queue and the system of record; there is no local inbox, and we do **not** build a dispatch layer over Jira cards. Everything below = inbox zones; work repos = the plain Jira refine→code flow.
 
 § Session Stance splits a working context into two **stances** by file-presence: planning (sessionless) vs coding (has a session file). This section refines the *planning* stance into two distinct **roles** and names the coding stance's role, giving **three roles** total that collaborate in real time. Roles are the operational unit; stance is still the coarse 2-way split ({refine, dispatch} = planning-stance / sessionless; {code} = coding-stance / has a file).
 
@@ -434,6 +444,19 @@ The inbox holds two types (acp-ajudd#62): it is both a **to-do list** (`work` at
 
 **Not a concurrency lock.** With dispatch read-only, `refine` and `code` remain the only inbox writers, and the sequential handoff flow (one session active on a given entry at a time) plus surgical single-entry edits are what keep writes safe — there is no mutex, no hook, no policing (consistent with acp-ajudd#1). Like the rest of the dispatch model, this is **inbox-zone only** (plugin / personal); work repos stay the plain Jira flow with no dispatch layer.
 
+**Dispatch operating discipline — communicate only via notes; validate, don't punt (acp-ajudd#63).** The three-role pilot surfaced dispatch behaviors #57/#59 left implicit: during a live run, the dispatch context kept bouncing decisions back to the human ("holding for your review", "ship or fix?") when it should simply have produced a handoff note. Four rules pin the behavior down (instruction/doc-only, no hook — acp-ajudd#1):
+
+1. **Handoff notes are dispatch's ONLY inter-session channel.** Dispatch talks to the `code` session and the `refine` session through paste-block handoff notes — nothing else. It does **not** ask the human questions or seek the human's approval; the human only *relays* paste-blocks between terminals and is **not a decision endpoint** for dispatch. (Dispatch may still narrate to the human what it is doing — the ban is on routing *decisions / questions / approvals* to the human, not on talking.)
+2. **Dispatch validation REPLACES a human review-gate.** Dispatch validates returned work itself — the actual working tree / files against the entry's Done-whens (§ The dispatch↔code loop) — and *that* validation IS the check. It does **not** escalate a "review" to the human. For an outward-publish / hard-to-reverse item, dispatch's clean validation is the greenlight, emitted as a "publish & complete" note to `code` — it does not punt the review to the human.
+3. **Blocked → a note to PLANNING (`refine`), never a question to the human.** If dispatch hits something it cannot resolve by reading — a genuine blocker, an ambiguity, a cross-item conflict — the resolution is a handoff note to the `refine` role (the spec owner), which answers or re-scopes. Questions get answered by `code` or `refine`, never by the human.
+4. **Dispatch stores nothing in files** (read-only + notes-only, per acp-ajudd#59 — § Inbox write-authority rule 3) but **reads anything and everything freely.**
+
+**The one human gate is keyed on REVERSIBILITY (refines rule 2).** Rule 2 above ("dispatch validation replaces a human review-gate") holds for internal deploys **and** for editable/recoverable outward channels — but **not** for irreversible ones:
+- **Teams messages are IRREVERSIBLE** (can't unsend or edit) → **human PRE-APPROVAL is required** before posting (draft-before-send: the human reviews the exact chat and the exact content — § Teams Messaging). This is the **one hard gate** dispatch/coding routes to the human.
+- **Confluence / Jira / GitHub are editable/recoverable** → **publish without pre-approval, but MUST auto-open the page / PR** for post-hoc review (ties to the standing "auto-open links/PRs" preference); fix in place if the post-hoc look finds something.
+
+So dispatch greenlights everything **except a Teams send**, which always goes to the human first. This **corrects the earlier "Aaron reviews before publish" framing** (e.g. the acp-ajudd#60 Confluence-refresh spec, which mis-stated a draft → human → publish gate): Confluence **publishes + auto-opens**, no pre-gate — the reviewer is dispatch, greenlighting via a note; only an irreversible Teams send pre-gates to the human. Extends acp-ajudd#59 (dispatch read-only + notes-only) with this behavioral layer.
+
 ## Cross-Session Paste Handoff (the handoff block)
 
 Three paths move work between sessions, and they split on **how the item travels**:
@@ -442,9 +465,9 @@ Three paths move work between sessions, and they split on **how the item travels
 |------|-----------|-------------------|---------|
 | **inbox** | writes a capture into a target slug's `_inbox.md` | no — same machine, file-based | `/session:inbox` |
 | **spawn** | writes a `[spawn]` inbox item staging a linked follow-on session | no — same machine, file-based | `/session:spawn` |
-| **handoff** | prints a self-contained block the human **copies and pastes** into another live Claude session (another terminal / another machine) | **yes** — human-carried | `/session:handoff` |
+| **handoff** | prints a self-contained block the human **copies and pastes** into another live terminal (another Claude Code conversation / another machine) | **yes** — human-carried | `/session:handoff` |
 
-`inbox`/`spawn` hand off *through the filesystem* — the next `/session:start` on this machine surfaces them. `handoff` is the **human-carried** case: the block is copied out of this session and pasted into a different live session that has none of this conversation's context. That is why the block must be **self-contained**.
+`inbox`/`spawn` hand off *through the filesystem* — the next `/session:start` on this machine surfaces them. `handoff` is the **human-carried** case: the block is copied out of this terminal and pasted into a different live terminal that has none of this conversation's context. That is why the block must be **self-contained**.
 
 **`handoff` has two forms** (acp-ajudd#29), chosen by whether a coding session is active. From a **coding session** it produces the paste block **text only** — nothing is written or sent. From a **sessionless planning context** it *also* writes **one durable local resume file** (`_context_planning-<topic>.md`, picked up by a fresh `/session:restore`) as the **primary** artifact — paste is friction and lost with the clipboard, and planning → coding is the crossing that most needs to survive a restart. Even then it sends nothing and touches no `_active` / session file / `_index` — writing those would be an in-place planning→coding conversion, which § Session Stance (acp-ajudd#32) forbids. `commands/handoff.md` owns the two-path detail; this section owns only the block format below.
 
