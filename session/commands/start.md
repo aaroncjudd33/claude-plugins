@@ -13,27 +13,31 @@ Begin a working session. Establishes session identity, Teams chat, and routes in
 
 If arguments were passed to `/session:start`, attempt to resolve them before running the full discovery flow.
 
+**Two verbs — `refine` (planning, sessionless) and `code` (coding session).** The mode is never something you set; it is **read from the file you're touching** — a target with no session file is a *record* (planning/refining), a target that already has a session file is *coding*. `code` and `refine` just name which side you're on. (`new`, `resume`, and `pick` are retired — folded into these two.)
+
 **Detect arg type** (checked in order):
 
 | Pattern | Example | Resolves to |
 |---------|---------|-------------|
 | `mine` | `/session:start mine` | full discovery flow with mine filter |
-| `refine [topic]` | `/session:start refine shopify refund` | refinement flow (Step 4 → Refine) |
-| `BPT2-XXXX` (Jira story key) | `/session:start BPT2-6429` | story session |
-| `CAB-XXXX` (CAB key) | `/session:start CAB-9260` | cab session |
-| `cab BPT2-XXXX [...]` | `/session:start cab BPT2-6429 BPT2-6430` | new CAB for those stories |
-| Existing session name | `/session:start release` | resume that session (any type, incl. legacy plugin-named + feature sessions) |
+| `refine [target]` | `/session:start refine shopify refund` | refinement flow (Step 4 → Refine); **sessionless — never creates a session file** |
+| `code <target>` | `/session:start code BPT2-6429` | coding session on `<target>` — the file decides: a **record** graduates into a fresh session, an existing **session** resumes |
+| `BPT2-XXXX` (Jira story key) | `/session:start BPT2-6429` | coding session on that story (bare key = implicit `code`) |
+| `CAB-XXXX` (CAB key) | `/session:start CAB-9260` | coding session on that CAB (bare key = implicit `code`) |
+| `code cab BPT2-XXXX [...]` | `/session:start code cab BPT2-6429 BPT2-6430` | new CAB coding session for those stories (bare `cab BPT2-…` also accepted) |
+| Existing session name | `/session:start release` | coding session — resume it (bare name = implicit `code`; any type, incl. legacy plugin-named + feature sessions) |
 
 **Fast-path flow:**
 1. Run `pwd`, extract slug, read `~/.claude/plugins/user-config.json` (same as Step 1). Resolve `session_root` and `handle` using Path Resolution (see Session Skill).
 2. If arg is `mine`: set `filter_mine = true`, fall through to Step 1 — full discovery with mine filter.
-2a. If arg is `refine` or `refine <topic>`: resolve `session_root`/`handle` (step 1 above), then go directly to Step 4 → **Refine — enter refinement flow**, passing any `<topic>` as the refine argument. Skip Steps 1–3.
-3. Derive session type and target name from the arg (story key → type=story, name=BPT2-XXXX; CAB key → type=cab; any other bare token → treat as a session NAME to resume).
-4. Check whether `<session_root>/<name>.md` exists:
+2a. If arg is `refine` or `refine <target>`: resolve `session_root`/`handle` (step 1 above), then go directly to Step 4 → **Refine — enter refinement flow**, passing any `<target>` as the refine argument. Skip Steps 1–3.
+2b. If arg is `code`, `code <target>`, or `code cab <keys>` (or bare `cab <keys>`): resolve `session_root`/`handle`, strip the `code` verb, and treat `<target>` exactly as a bare token in step 3 below (`code cab <keys>` / `cab <keys>` → new CAB kickoff). Skip Steps 1–3.
+3. Derive session type and target name from the arg (story key → type=story, name=BPT2-XXXX; CAB key → type=cab; `cab <keys>` / `code cab <keys>` → new CAB; any other bare token → the `code` target — a session NAME to resume, or a record to graduate).
+4. Check whether `<session_root>/<name>.md` exists (**this existence check IS "the file decides"** — a session file present means resume-coding; absent means graduate-a-record or kickoff):
    - **Exists + plugin session** → go directly to the Plugin session resume path in Step 4 (no start-impl.md read needed).
    - **Exists + other type** → read start-impl.md, go directly to Step 4 (Resume existing) with that session.
    - **Does not exist + story/cab** → new kickoff: before Step 6, check `<session_root>/_inbox.md` for a `[spawn]` entry whose label matches the target name. If found, archive it immediately with stamp `[PICKED UP YYYY-MM-DD — <target-name>]` to `<session_root>/_inbox_archive.md` (creating the archive file if needed). Read start-impl.md, then go to Step 6.
-   - **Does not exist + plugin/personal** → do NOT blank-create. These types are item-driven: fall through to Step 1 (full discovery + inbox flow) so the name can be picked from the inbox or started via `new <description>`.
+   - **Does not exist + plugin/personal** → do NOT blank-create. These types are item-driven: fall through to Step 1 (full discovery + inbox flow) so the target can be `code`d from the inbox, or scoped fresh via `refine <topic>`.
 5. Skip Steps 2, 3 entirely — no session listing, no inbox counts, no routing block. (Plugin/personal "does not exist" falls through and does NOT skip — it runs the full flow.)
 
 **No argument or unrecognized argument:** fall through to Step 1 — run the full discovery flow as normal.
@@ -121,11 +125,11 @@ If `session_root` does not exist or is empty, skip this section.
 
 Output the routing block and wait for one free-text reply. **Do not use AskUserQuestion.** Output the routing block as plain text — do not wrap it in a fenced code block and do not add a separator line (`---`) before it.
 
-**Free-text and search:** If the user types text that doesn't match a routing action, interpret it as a natural-language filter — match against name, title, handle, status, inbox count, or any session field. Accept plain descriptions like `has inbox`, `updated by nivi`, `created by me`, `paused`, `completed this week`. Re-display the filtered table with `(filtered by '<query>')` and re-show the routing block. If no sessions match and the text looks like intent rather than a filter, proceed naturally. Keywords `mine`, `all`, `backlog`, `index`, `status`, `refine` are handled directly (see Step 2 and the refine entry in the shared inputs below).
+**Free-text and search:** If the user types text that doesn't match a routing action, interpret it as a natural-language filter — match against name, title, handle, status, inbox count, or any session field. Accept plain descriptions like `has inbox`, `updated by nivi`, `created by me`, `paused`, `completed this week`. Re-display the filtered table with `(filtered by '<query>')` and re-show the routing block. If no sessions match and the text looks like intent rather than a filter, proceed naturally. Keywords `mine`, `all`, `backlog`, `index`, `status`, `refine`, `code` are handled directly (see Step 2 and the `refine`/`code` entries in the shared inputs below).
 
-**Parse combinations freely.** A single reply may include multiple signals — session number, modifiers, inbox dispositions. Examples: `1`, `resume 1`, `resume session reviewed work 2`, `start release`, `2 yes 4 skip`. Infer intent; speak up only if genuinely ambiguous.
+**Parse combinations freely.** A single reply may include multiple signals — session number, modifiers, inbox dispositions. Examples: `1`, `code 1`, `code reviewed-work 2`, `code release`, `2 yes 4 skip`. A bare number or session name alone is treated as `code` it. Infer intent; speak up only if genuinely ambiguous.
 
-**Shared across all project types** (defined once — the per-type blocks below add only their type-specific `Start / Resume` lines and inputs):
+**Shared across all project types** (defined once — the per-type blocks below add only their type-specific `Refine / Code` lines and inputs):
 
 Every routing block ends with this same **Search by** section — append it to whichever type block you render:
 ```
@@ -138,23 +142,25 @@ Every routing block ends with this same **Search by** section — append it to w
 ```
 
 Every type also accepts these same inputs (in addition to its type-specific ones):
-- Number or session name alone (`1`, `<name>`) → resume; `resume <n>` / `resume <name>` → resume
+- Number or session name alone (`1`, `<name>`) → `code` it (the file decides — resume if it's an in-progress session, graduate if it's a record)
+- `code <target>` → enter a **coding session** on `<target>` (see the `code` entry below)
 - `mine` → filter to sessions where @created-by or @updated-by matches current user; re-display and re-show routing
 - `all` → re-display including completed sessions; re-show routing
 - `full` → re-display the table with the full 8-column set (adds `out` count + `created` date); re-show routing
 - `status <value>` → filter to that status; re-display and re-show routing
-- `refine [topic]` → enter the **refinement** flow (analyze-then-record; `commands/refine.md`). Applies to every type — `session:start` is the front door to refine. Refine creates **no session file**; it writes the work directly into the record (an inbox item for plugin/personal, a Jira story for work repos). With a topic (`refine shopify refund window`) → scope new work directly. With an existing record reference (`refine acp-ajudd#12`, `refine BPT2-6429`) → resume refining that record in place. Bare `refine` → surface resumable **`refining` records** for the slug (for plugin/personal, the `refining` inbox items; for work repos, stories in *Gathering Requirements* via `/story:dashboard`), then resume one or start new. Direct `/session:refine` and this verb converge on the same flow. The record target is **strictly the zone — no override, no target picker**: plugin/personal → inbox item (unambiguous); work repo → Jira story (project resolved-or-confirmed, not assumed `BPT2`); general → **no record created** (a general repo has no system of record; only a `/session:inbox` note can leave). Graduation = flipping the record to `ready` / *Ready For Work*. See Step 4 → **Refine — enter refinement flow**.
+- `refine [target]` → enter the **refinement** flow (analyze-then-record; `commands/refine.md`) — **planning, sessionless: it never creates a session file**. Applies to every type — `session:start` is the front door to refine. It writes the work directly into the record (an inbox item for plugin/personal, a Jira story for work repos). With a topic (`refine shopify refund window`) → scope new work directly (folds in the old `new`: this is how new work begins — make the record first). With an existing record reference (`refine acp-ajudd#12`, `refine BPT2-6429`) → resume refining that record in place. Bare `refine` → surface resumable **`refining` records** for the slug (for plugin/personal, the `refining` inbox items; for work repos, stories in *Gathering Requirements* via `/story:dashboard`), then resume one or start new. Direct `/session:refine` and this verb converge on the same flow. The record target is **strictly the zone — no override, no target picker**: plugin/personal → inbox item (unambiguous); work repo → Jira story (project resolved-or-confirmed, not assumed `BPT2`); general → **no record created** (a general repo has no system of record; only a `/session:inbox` note can leave). Graduation = flipping the record to `ready` / *Ready For Work* — and **refine stops there; it never offers to `code`** (that is a separate, deliberate gesture). See Step 4 → **Refine — enter refinement flow**.
+- `code <target>` → enter a **coding session** on `<target>` (`commands/start-impl.md` owns the mechanics). **The file decides what happens** — one verb, two outcomes: if `<target>` already has a **session file** (an in-progress session by name, or its sessions-table `#`) → **resume** it; if `<target>` is a **record** (a plugin/personal inbox item by list `<n>` or stable `[id]`; a work-repo Jira `KEY`) → **graduate** it into a *fresh* coding session — Jira story → *In Progress*, inbox item → consume/fold-archive (a session file is born). `code` a not-fully-scoped record (`capture`/`refining`) **warns but never blocks** (acp-ajudd#1) — you scope as you build. This folds in the old `resume` (session) and `pick` (record). Direct `/session:start code <target>` and the fast-path share this path.
 - Any other text → natural-language filter; match against name, title, handle, status, inbox count, or any field; re-display with `(filtered by '<query>')` and re-show routing
 
 ---
 
 **Plugin project:**
 
-Sessions are **item-driven**: new work always starts from an inbox item — there are no blank or plugin-named sessions. The sessions table (above) lists in-progress feature sessions to `resume`; the consolidated inbox below is what you `pick` from.
+Sessions are **item-driven**: new work always starts from an inbox item — there are no blank or plugin-named sessions. The sessions table (above) lists in-progress feature sessions to `code` (resume); the consolidated inbox below holds the records you `code` (graduate). Scoping a new record first is `refine`.
 
 **Show the consolidated inbox.** The items were read in Step 2 from `<session_root>/_inbox.md` (the canonical inbox for this slug). List them numbered, before the routing block, using **layout B** (description-first, provenance dim on a second line — full spec in `references/inbox-convention.md`). Show each item's stable `[<id>]` before its description; flag `[spawn]` entries with ★:
 ```
-Inbox — pick up or describe new work (N):
+Inbox — code a record, or refine new work (N):
   1  [acp-ajudd#7]  <description>
      ↳ <slug> / <session> (<source-type>) · MM-DD
   2  [acp-ajudd#12]  <description>  · refining
@@ -162,7 +168,7 @@ Inbox — pick up or describe new work (N):
   3  [acp-ajudd#5]  ★ [spawn] <label>
      ↳ <slug> / <session> (<source-type>) · MM-DD
 ```
-Rendering rules: the leading `N` is the ephemeral in-view position (for `pick <n>`); `[<id>]` (parsed from the `## <id> · [date...]` header) is the permanent handle — reference items by ID, not position. `pick` accepts either. Omit `[<id>]` for legacy items without one. Drop `<slug>` when it equals the current repo slug (only cross-repo origins show it); omit `(<source-type>)` for legacy items that lack it; tolerate spaced or unspaced `/` in the source. **Status marker:** parse the `> [status: …]` line under each header (legacy `> [type: … · status: …]` still parses — the `type` word is ignored; missing line → `status: ready`). Append `· refining` after the description for `status: refining` items, so still-being-scoped work is visually distinct from pickable `ready` work; `ready` items get no suffix (it's the default). **The pickup list shows only promoted captures — `status: refining` / `status: ready`** (including spawns, which are `ready`). Un-promoted `status: capture` items **never appear here** — they aren't work to grab yet; they surface only via the captures-waiting glance below (acp-ajudd#10, § Captures inbound). If there are no promoted captures: `Inbox: none — describe new work with 'new <description>'`.
+Rendering rules: the leading `N` is the ephemeral in-view position (for `code <n>`); `[<id>]` (parsed from the `## <id> · [date...]` header) is the permanent handle — reference items by ID, not position. `code` accepts either. Omit `[<id>]` for legacy items without one. Drop `<slug>` when it equals the current repo slug (only cross-repo origins show it); omit `(<source-type>)` for legacy items that lack it; tolerate spaced or unspaced `/` in the source. **Status marker:** parse the `> [status: …]` line under each header (legacy `> [type: … · status: …]` still parses — the `type` word is ignored; missing line → `status: ready`). Append `· refining` after the description for `status: refining` items, so still-being-scoped work is visually distinct from pickable `ready` work; `ready` items get no suffix (it's the default). **The pickup list shows only promoted captures — `status: refining` / `status: ready`** (including spawns, which are `ready`). Un-promoted `status: capture` items **never appear here** — they aren't work to grab yet; they surface only via the captures-waiting glance below (acp-ajudd#10, § Captures inbound). If there are no promoted captures: `Inbox: none — scope new work with 'refine <topic>'`.
 
 **Captures-waiting glance (acp-ajudd#10, § Captures inbound).** From the same Step 2 `_inbox.md` read, count un-promoted captures — items at `status: capture` (legacy lines without a modern status also read as `capture` — see `references/inbox-convention.md` § Item Model back-compat). If any exist, show a single line right after the pickup list — one glance, not monitoring:
 ```
@@ -170,21 +176,23 @@ Captures waiting: N — say "check captures" to read them
 ```
 Omit the line entirely when the count is zero. Reading them is **only** on the user's request (`check captures`, or "read the capture from `<repo>`") — never auto-open them here. On that request, follow the read → disposition → archive flow in `references/inbox-convention.md` § Captures inbound: disposition each capture — **promote** (→ `refining`), **discard**, **absorb into the current session**, or **feed a refinement** — the three non-promote fates **archive** the capture.
 
-Then output the routing block — the type-specific `Start / Resume` lines, followed by the shared **Search by** block:
+Then output the routing block — the type-specific `Refine / Code` lines, followed by the shared **Search by** block:
 ```
-  Start / Resume:
-    resume <n>        — resume an in-progress session (table number above)
-    pick <n>          — start a session from inbox item <n>
-    new <description> — start a session for new work (adds it to the inbox, then picks it up)
-    refine [topic]    — scope work first (analyze-then-record → inbox item); lists resumable refinements
+  Refine / Code:
+    refine [target]   — scope work → inbox item (planning, sessionless; never a session file)
+                        bare = new record · refine <n|id> = edit an existing one
+    code <n|id|name>  — open a coding session (the file decides):
+                        an inbox record (by list <n> / [id]) graduates into a fresh session ·
+                        an in-progress session (by name, or its table #) resumes
 ```
 
 **Type-specific accepted inputs** (plus the shared inputs above):
-- `pick <n>` → create a feature-named session from inbox item <n>. Reads start-impl.md, goes to Step 4 (new session): derive a feature name (confirmed once), fold the item body into the new session, then archive-on-consume — remove the item from the live `_inbox.md` after appending a `[CONSUMED …]` copy to `_inbox_archive.md` (fold-then-archive — the session plus the archived copy is the trail; acp-ajudd#40). **If the item is not fully scoped — `status: capture` or `status: refining`** (parsed from its `> [status: …]` line — legacy `type:` tolerated and ignored; keyed on status, *not* on origin), warn and confirm first: `[<id>] is not fully scoped (status: <capture|refining>) — pick it up anyway? You'll scope AND build; refine first if it's big. (yes / leave it)`. A `ready` item (the default) is picked with no warning. **Never blocks** — a capable coding session decides based on size.
-- `new <description>` → append `<description>` as a new item to `<session_root>/_inbox.md` with a `> [status: ready]` line (a quick-captured task is immediately pickable — see `references/inbox-convention.md` § Item Model), then immediately run the same `pick` flow on it — one creation path, no separate ad-hoc branch. (Scaffolding a brand-new plugin is just `new build the <x> plugin`: it creates a feature session, and the plugin folder/marketplace work happens inside it.)
-- `resume <n>` / `<n>` / `<name>` → resume an existing in-progress session.
+- `code <n>` / `code <id>` where the target is an **inbox record** → graduate it into a fresh feature-named coding session. Reads start-impl.md, goes to Step 4 (new session): derive a feature name (confirmed once), fold the item body into the new session, then archive-on-consume — remove the item from the live `_inbox.md` after appending a `[CONSUMED …]` copy to `_inbox_archive.md` (fold-then-archive — the session plus the archived copy is the trail; acp-ajudd#40). `<n>` is the ephemeral inbox list position; `<id>` is the stable handle (e.g. `acp-ajudd#3`) — accept either. **If the item is not fully scoped — `status: capture` or `status: refining`** (parsed from its `> [status: …]` line — legacy `type:` tolerated and ignored; keyed on status, *not* on origin), warn and confirm first: `[<id>] is not fully scoped (status: <capture|refining>) — code it anyway? You'll scope AND build; refine first if it's big. (yes / leave it)`. A `ready` item (the default) codes with no warning. **Never blocks** — a capable coding session decides based on size.
+- `code <n>` / `code <name>` where the target is an **in-progress session** → resume it (the Plugin session resume path in Step 4). `<n>` is the sessions-table row; `<name>` is the feature name. A bare number that matches a row in **both** the sessions table and the inbox is the only genuinely ambiguous case — ask which; otherwise infer.
+- `refine [target]` → scope work first (see shared inputs). **New plugin work begins here** — `refine build the <x> plugin` creates the record; `code` it when it's ready (the plugin folder/marketplace scaffolding then happens inside that coding session). Sessionless — creates no session file.
+- `<n>` / `<name>` alone → `code` it (shorthand for the above).
 - `reviewed` → mark plugin reviewed after loading (when the resumed session targets a plugin).
-- Combinations: `resume 2 reviewed` / `pick 3`.
+- Combinations: `code 2 reviewed` / `code acp-ajudd#12`.
 
 ---
 
@@ -202,20 +210,23 @@ Rendering rules: drop `<slug>` when it equals the current repo slug; omit `(<typ
 
 **Captures-waiting glance (acp-ajudd#10, § Captures inbound).** From the `_inbox.md` read, count un-promoted `status: capture` items; if any, show `Captures waiting: N — say "check captures" to read them` once (omit if zero). Read/disposition them only on request (promote / discard / absorb / feed → the three non-promote fates archive), per `references/inbox-convention.md` § Captures inbound.
 
-Then output the routing block — the type-specific `Start / Resume` lines, followed by the shared **Search by** block:
+Then output the routing block — the type-specific `Refine / Code` lines, followed by the shared **Search by** block:
 ```
-  Start / Resume:
-    resume <n>       — resume by number (e.g. resume 2)
-    start story      — start a new story — you'll give a key or URL
-    start cab        — start a new CAB — you'll give story keys
-    refine [topic]   — scope work first (analyze-then-record → Jira story, project confirmed); lists resumable refinements
+  Refine / Code:
+    refine [target]     — scope a Jira story (Gathering Requirements; planning, sessionless)
+                          bare = list your in-refinement stories · refine BPT2-XXXX = reopen one
+    code <n|KEY>        — open a coding session (the file decides):
+                          a story KEY graduates (→ In Progress) or resumes its session ·
+                          <n> resumes an in-progress session by table row
+    code cab BPT2-XXXX… — open a new CAB coding session for those stories
 ```
 
 **Type-specific accepted inputs** (plus the shared inputs above):
-- `start story` → route to new story; if no key in reply, ask "Story key or URL?" as follow-up
-- `start story BPT2-XXXX` → route directly with that key
-- `start cab` → route to new CAB; if no keys in reply, ask "Story keys? (space-separated)" as follow-up
-- `work <n>` on a global inbox `[spawn]` item → route through spawn flow
+- `code <KEY>` (e.g. `code BPT2-6429`) → open a coding session on that story — the file decides: a session already exists → resume it; no session yet → graduate the story (transition to *In Progress*, create the feature branch, kickoff). If no key in the reply after a bare `code`, ask "Story key or URL?" as follow-up.
+- `code <n>` → resume the in-progress session on sessions-table row `<n>`.
+- `code cab BPT2-XXXX [...]` → new CAB coding session for those stories (routes to `/release:create-cab`); if no keys in the reply, ask "Story keys? (space-separated)" as follow-up. Bare `cab BPT2-…` is accepted as a synonym.
+- `refine [target]` → scope a story first (see shared inputs) — creates/edits a Jira story in *Gathering Requirements*; never a session file. **New story work Heber hands over is already refined upstream — you'll mostly just `code BPT2-XXXX`.**
+- `code <n>` on a global inbox `[spawn]` item → route through the spawn flow.
 
 ---
 
@@ -225,29 +236,31 @@ Identical model to plugin (per design — plugin and personal behave the same). 
 
 **Show the consolidated inbox.** Items were read in Step 2 from `<session_root>/_inbox.md` (canonical inbox for this personal project's slug). List numbered using **layout B** (description-first, provenance dim below — see `references/inbox-convention.md`), stable `[<id>]` before each description, `[spawn]` flagged with ★:
 ```
-Inbox — pick up or describe new work (N):
+Inbox — code a record, or refine new work (N):
   1  [<id>]  <description>
      ↳ <slug> / <session> (<source-type>) · MM-DD
   2  [<id>]  <description>  · refining
      ↳ <slug> / refine (<zone>) · MM-DD
 ```
-Rendering rules: `N` is ephemeral position (for `pick <n>`); `[<id>]` (from the `## <id> · [date...]` header) is the permanent handle — reference by ID; `pick` accepts either; omit `[<id>]` for legacy items. Drop `<slug>` when it equals the current repo slug; omit `(<source-type>)` for legacy items; tolerate spaced/unspaced `/`. **Status marker:** parse the `> [status: …]` line under each header (legacy `> [type: … · status: …]` still parses — `type` ignored; missing → `status: ready`); append `· refining` for `status: refining` items; `ready` gets no suffix. **Pickup list is promoted captures only — `status: refining` / `status: ready`** — exclude un-promoted `status: capture` items; they surface via the captures-waiting glance, not here. See plugin block above for the full rule. If empty: `Inbox: none — describe new work with 'new <description>'`.
+Rendering rules: `N` is ephemeral position (for `code <n>`); `[<id>]` (from the `## <id> · [date...]` header) is the permanent handle — reference by ID; `code` accepts either; omit `[<id>]` for legacy items. Drop `<slug>` when it equals the current repo slug; omit `(<source-type>)` for legacy items; tolerate spaced/unspaced `/`. **Status marker:** parse the `> [status: …]` line under each header (legacy `> [type: … · status: …]` still parses — `type` ignored; missing → `status: ready`); append `· refining` for `status: refining` items; `ready` gets no suffix. **Pickup list is promoted captures only — `status: refining` / `status: ready`** — exclude un-promoted `status: capture` items; they surface via the captures-waiting glance, not here. See plugin block above for the full rule. If empty: `Inbox: none — scope new work with 'refine <topic>'`.
 
 **Captures-waiting glance (acp-ajudd#10, § Captures inbound).** Identical to the plugin block: from the Step 2 `_inbox.md` read, count un-promoted `status: capture` items; if any, show `Captures waiting: N — say "check captures" to read them` once after the pickup list (omit if zero). Read/disposition them only on request, per `references/inbox-convention.md` § Captures inbound.
 
-Then output the routing block — the type-specific `Start / Resume` lines, followed by the shared **Search by** block:
+Then output the routing block — the type-specific `Refine / Code` lines, followed by the shared **Search by** block (identical to the plugin block):
 ```
-  Start / Resume:
-    resume <n>        — resume an in-progress session (table number above)
-    pick <n>          — start a session from inbox item <n>
-    new <description> — start a session for new work (adds it to the inbox, then picks it up)
-    refine [topic]    — scope work first (analyze-then-record → inbox item); lists resumable refinements
+  Refine / Code:
+    refine [target]   — scope work → inbox item (planning, sessionless; never a session file)
+                        bare = new record · refine <n|id> = edit an existing one
+    code <n|id|name>  — open a coding session (the file decides):
+                        an inbox record (by list <n> / [id]) graduates into a fresh session ·
+                        an in-progress session (by name, or its table #) resumes
 ```
 
 **Type-specific accepted inputs** (plus the shared inputs above):
-- `pick <n>` (or `pick <id>`) → create a feature-named session from inbox item <n> / the item with stable id `<id>` (same fold-then-archive flow as plugin: Step 4 → start-impl.md; the item's `<id>` is preserved in the folded provenance block). Same `refining` warn/confirm as plugin — keyed on the item's `status`, not its origin.
-- `new <description>` → issue a stable ID (`inbox-id.py next --slug <slug> --handle <handle>`), append to `<session_root>/_inbox.md` with the `## <id> · [date...]` header plus a `> [status: ready]` line, then run the same `pick` flow.
-- `resume <n>` / `<n>` / `<name>` → resume an existing in-progress session.
+- `code <n>` / `code <id>` where the target is an **inbox record** → graduate it into a feature-named coding session (same fold-then-archive flow as plugin: Step 4 → start-impl.md; the item's `<id>` is preserved in the folded provenance block). Same `refining` warn/confirm as plugin — keyed on the item's `status`, not its origin. Never blocks.
+- `code <n>` / `code <name>` where the target is an **in-progress session** → resume it. Same both-lists disambiguation as plugin (ask only on a genuinely ambiguous bare number).
+- `refine [target]` → scope work first (see shared inputs) — **new personal work begins here**; creates/edits an inbox item, never a session file.
+- `<n>` / `<name>` alone → `code` it (shorthand for the above).
 
 ---
 
@@ -255,16 +268,18 @@ Then output the routing block — the type-specific `Start / Resume` lines, foll
 
 If `_inbox.md` has items, show a compact summary of the promoted captures (`status: refining` / `status: ready`) before the routing line. Exclude un-promoted `status: capture` items; if any exist, show one line `Captures waiting: N — say "check captures" to read them` (captures-waiting glance — acp-ajudd#10; read/disposition only on request, per `references/inbox-convention.md` § Captures inbound).
 
-Then output the routing block — the type-specific `Start / Resume` lines, followed by the shared **Search by** block:
+Then output the routing block — the type-specific `Refine / Code` lines, followed by the shared **Search by** block:
 ```
-  Start / Resume:
-    resume <n>       — resume by number
-    start            — start a new session — you'll give a name and context
-    refine [topic]   — scope work first (analyze-then-record; general repo = no record created, scope only); lists resumable refinements
+  Refine / Code:
+    refine [topic]   — scope work verbally (a general repo has no system of record; planning, sessionless)
+    code [name]      — open a coding session (the file decides):
+                       a name with no session yet → new kickoff · an existing session → resume
 ```
 
 **Type-specific accepted inputs** (plus the shared inputs above):
-- `start` → route to new session; if no name/context in reply, ask "Name and what you're working on?" as follow-up
+- `code <name>` → open a coding session named `<name>` — the file decides: no session file with that name → new kickoff (if no name/context in the reply, ask "Name and what you're working on?" as follow-up); existing session → resume it.
+- `code <n>` → resume the in-progress session on sessions-table row `<n>`.
+- `refine [topic]` → scope verbally (see shared inputs); a general repo creates **no record** — the only outbound is a `/session:inbox` capture to another slug.
 
 ---
 
@@ -272,7 +287,7 @@ Then output the routing block — the type-specific `Start / Resume` lines, foll
 
 Once the user replies, act immediately. **Do not read start-impl.md first** for the plugin resume path below.
 
-**One-of-each advisory (read-only — acp-ajudd#41).** Before acting on a **coding-session** action (`pick` / `new` / `resume`), reuse the in-progress sessions already gathered in Step 2 (or `_active` + `_index.md` status — do **not** run a new scan). If an in-progress **coding session other than the one about to be started or resumed** already exists for this slug, print exactly this one line, then proceed normally:
+**One-of-each advisory (read-only — acp-ajudd#41).** Before acting on a **`code`** action (whether it graduates a record or resumes a session), reuse the in-progress sessions already gathered in Step 2 (or `_active` + `_index.md` status — do **not** run a new scan). If an in-progress **coding session other than the one about to be started or resumed** already exists for this slug, print exactly this one line, then proceed normally:
 
   `Note: coding session '<name>' is already active for this slug — starting here makes two (one-of-each discipline).`
 
@@ -293,7 +308,7 @@ The `session:start` refine verb and the direct `/session:refine` command converg
        1  [acp-ajudd#12]  <summary>   — last touched MM-DD
      Resume one (refine <id> / <n>), or scope new: refine <new topic>
      ```
-     **Work repo:** point at the story tooling instead — refining stories are Jira objects: "Your in-refinement stories are in *Gathering Requirements* — see `/story:dashboard`, or `refine BPT2-XXXX` to reopen one." 
+     **Work repo:** hand straight to `commands/refine.md` — its bare-`refine` path **lists your *Gathering Requirements* stories inline** (assignee OR reporter = me), so no story key need be memorized; pick one to reopen (prints its status first) or `refine <new topic>` to scope new. (refine.md owns the JQL + the status-tiered edit guard — acp-ajudd#55.)
   2. **`refine <id>` / `<n>`** → resume that record (Step 1 resume path). **`refine <new topic>`** → scope new. If there are no `refining` records, skip the list and ask the topic directly ("What are we refining? (a short topic)"), then scope new.
 
 Either path lands in `commands/refine.md` — the front door and the direct command share one implementation.
@@ -365,17 +380,14 @@ Read `<plugin_root>/.claude-plugin/plugin.json` and `<plugin_root>/skills/<plugi
 
 ---
 
-**Plugin / personal — `pick <n>` or `new <description>`** (item-driven session creation):
-- `new <description>`: first **issue a stable ID** (home slug = current slug, namespaced by handle), then append the description as a new item to `<session_root>/_inbox.md` using the standard header format (`## <id> · [YYYY-MM-DD @<handle>] from <slug>/start (<type>) — <description>`, where `<type>` is the current repo's session type), then treat it exactly like `pick` on that just-written item:
-  ```bash
-  IDT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}/scripts/inbox-id.py"
-  if command -v python3 >/dev/null 2>&1; then python3 "$IDT" next --slug "<slug>" --handle "<handle>"; else python "$IDT" next --slug "<slug>" --handle "<handle>"; fi   # e.g. acp-ajudd#7, increments the counter
-  ```
-  (Fallback `<acronym>-<handle>#?` if python3/script unavailable — never block. See `references/inbox-convention.md` § Stable IDs.)
-- `pick <n>` (or `pick <id>`): read `session/commands/start-impl.md` immediately and continue from Step 4 there (New session path). `<n>` is the ephemeral list position shown in Step 3; `<id>` (e.g. `acp-ajudd#3`) is the stable handle — accept either. start-impl.md derives the feature name, folds the item body into the new session (preserving its `<id>` in the provenance block), and archive-on-consumes the item — a `[CONSUMED …]` copy to `_inbox_archive.md`, then removed from the live `_inbox.md`. The retired ID is never reused.
+**Plugin / personal — `code <n>` / `code <id>` on an inbox record** (item-driven session creation — graduation):
+
+`code` a **record** graduates it into a fresh coding session. Read `session/commands/start-impl.md` immediately and continue from Step 4 there (New session path). `<n>` is the ephemeral list position shown in Step 3; `<id>` (e.g. `acp-ajudd#3`) is the stable handle — accept either. start-impl.md derives the feature name, folds the item body into the new session (preserving its `<id>` in the provenance block), and archive-on-consumes the item — a `[CONSUMED …]` copy to `_inbox_archive.md`, then removed from the live `_inbox.md`. The retired ID is never reused.
+
+> **No `new` verb.** New plugin/personal work is not created-and-coded in one gesture (that would be coding-without-a-record). Scope it first with `refine <topic>` — which mints the stable ID and writes the `_inbox.md` record — then `code` that record when it's ready. If the user insists on going straight to code on a brand-new idea, run `refine` to lay down the record first, then `code` it (a still-`refining` record codes with the warn, per the shared `code` input).
 
 **All other cases** — read `session/commands/start-impl.md` immediately, then continue from Step 4 there:
-- Work / story / cab / general session (resume or new)
+- Work / story / cab / general `code` action (the file decides: resume an existing session, or graduate/kickoff when none exists)
 - Any case requiring a follow-up question (story key, session name)
 
 <!-- Steps 4–9 for new sessions and non-plugin types are in start-impl.md -->

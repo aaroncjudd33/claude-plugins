@@ -8,7 +8,7 @@ How to leave cross-session or cross-project work items for a plugin or session y
 
 `~/.claude/memory/sessions/<repo-slug>/_inbox.md`
 
-This single file is THE inbox for the slug. `/session:start` reads it and the plugin/personal flow `pick`s items from it — at pickup, the item body is folded into the new feature session and the item is archived-on-consume (a `[CONSUMED …]` copy is appended to `_inbox_archive.md`, then the item is removed from the live inbox — acp-ajudd#40). For the plugin marketplace, slug = `ajudd-claude-plugins`; for a personal project, slug = that project's directory name. Plugin and personal behave identically.
+This single file is THE inbox for the slug. `/session:start` reads it and the plugin/personal flow `code`s records from it (the old `pick` — acp-ajudd#56) — at graduation, the item body is folded into the new feature session and the item is archived-on-consume (a `[CONSUMED …]` copy is appended to `_inbox_archive.md`, then the item is removed from the live inbox — acp-ajudd#40). For the plugin marketplace, slug = `ajudd-claude-plugins`; for a personal project, slug = that project's directory name. Plugin and personal behave identically.
 
 Routing a handoff to a **plugin or personal** slug always targets this consolidated `_inbox.md` (not a per-target file) — see `/session:inbox`. **story / cab** sessions still use a per-session file `_inbox_<key>.md` (e.g. `_inbox_BPT2-6479.md`), since each story/CAB is its own external unit of work.
 
@@ -67,10 +67,11 @@ capture  ──(promote)──▶  refining  ──▶  ready  ──▶  [picke
 **Creator defaults** (the model — the command wiring lands in acp-ajudd#22/#23):
 - `/session:inbox` handoff / any cross-repo capture → `status: capture` (+ optional `intent:` hint from the sender). This one path replaces the old note/data *and* story/ready handoff defaults — everything arrives as a capture.
 - `refine` → creates/promotes at `status: refining` (written early, matured over sessions, flipped to `ready` at graduation). Refine is also where an existing `capture` gets **promoted**.
-- `new <description>` → a **promote-and-start** gesture: typing it *is* the promote decision ("this is real work"), so it writes `status: ready` and picks up **clean, no warn** — past `capture` (which is for deferred / intent-unknown inbound). Scope any remaining detail as you build.
 - spawn → `status: ready`, plus the `[spawn]` tag (a spawn stages a follow-on coding session, so it's inherently promoted work).
 
-**Picking a not-yet-`ready` capture is guarded, not blocked.** Because a promoted capture doubles as its own WIP store, a half-scoped item must be distinguishable from a ready one — that is what `capture`/`refining` vs `ready` encodes. `pick` on a `capture` or `refining` item **warns and confirms** ("not fully scoped — you'll scope *and* build; refine first if it's big") before folding it into a coding session. It **never blocks** — a capable coding session decides based on size. A `ready` item picks clean.
+(The old start-screen `new <description>` — create-at-`ready`-and-code-immediately — is **retired** under acp-ajudd#56's two-verb model: new work is `refine`d into a record first, then `code`d when ready. Directly-`ready` records now come only from a refine graduation or a spawn, not a one-shot create-and-code gesture.)
+
+**`code`-ing a not-yet-`ready` capture is guarded, not blocked.** Because a promoted capture doubles as its own WIP store, a half-scoped item must be distinguishable from a ready one — that is what `capture`/`refining` vs `ready` encodes. `code` on a `capture` or `refining` record **warns and confirms** ("not fully scoped — you'll scope *and* build; refine first if it's big") before folding it into a coding session. It **never blocks** — a capable coding session decides based on size. A `ready` item codes clean.
 
 **Back-compat (verified against the existing inbox — no lockout).** The `> [status: …]` line is **optional**, and legacy `> [type: … · status: …]` lines still parse:
 - **No line at all** (pre-model items) → reads as **`ready`** — pickable exactly as before.
@@ -203,7 +204,7 @@ Inbox — pick up or describe new work (N):
      ↳ <slug> / <session> (<type>) · MM-DD
 ```
 - **Description leads** — it's the decision driver when picking.
-- **Stable ID before the description**, in `[ ]`. The leading `N` is the **ephemeral in-view position** (for `pick <n>` convenience); the `[<id>]` is the **permanent handle** — use it in conversation and recaps so references don't shift. `pick` accepts either (`pick 1` or `pick acp-ajudd#14`). Omit the `[<id>]` segment entirely for legacy items that have none.
+- **Stable ID before the description**, in `[ ]`. The leading `N` is the **ephemeral in-view position** (for `code <n>` convenience); the `[<id>]` is the **permanent handle** — use it in conversation and recaps so references don't shift. `code` accepts either (`code 1` or `code acp-ajudd#14`). Omit the `[<id>]` segment entirely for legacy items that have none.
 - **Same-repo dimming:** when `<slug>` equals the current repo slug, **drop it** — show `↳ <session> (<type>) · MM-DD`. Only genuinely cross-repo origins show the slug, so they stand out.
 - **Missing type:** omit the `(<type>)` segment; still show `↳ <slug> / <session> · MM-DD`.
 - **Stale source session:** render as-is — historical provenance stays valid, and the description-first line keeps it from looking orphaned.
@@ -234,7 +235,7 @@ When an item leaves the live inbox it gets an archive stamp. There are **three d
 
 ## Item Lifecycle (pickup states)
 
-Pickup state is **orthogonal to the maturity `status` above**: `status` = "is this capture promoted and scoped enough to grab" (`capture` → `refining` → `ready`); pickup state = "has a session grabbed it yet." A `refining` or `ready` item is "pending" here; picking either makes it in-progress (`capture`/`refining` just means `pick` warns first).
+Pickup state is **orthogonal to the maturity `status` above**: `status` = "is this capture promoted and scoped enough to grab" (`capture` → `refining` → `ready`); pickup state = "has a session grabbed it yet." A `refining` or `ready` item is "pending" here; `code`-ing either makes it in-progress (`capture`/`refining` just means `code` warns first).
 
 **Two pickup mechanisms, by inbox kind:**
 - **Item-driven consolidated inbox (plugin / personal — `_inbox.md`):** pickup **consumes** the item — **fold-then-archive** (state-exclusivity, above): the body folds into the session file, a `[CONSUMED <date> → session <name>]` copy is appended to `_inbox_archive.md` as a recovery net, and the item is removed from the *live* inbox. It never sits at "in-progress" in the inbox; it's gone from the live inbox the moment it's picked up, and the session (with the archived copy as a backstop) is the paper trail.

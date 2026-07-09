@@ -37,8 +37,8 @@ fi
 The script reads `_index.md` (7-col current / 6-col legacy), the per-session inbox files (`_inbox_<name>.md`, archives excluded), the `_active` marker, and the session `.md` filenames, and prints the finished, aligned, grouped table (default columns; completed + `refinement-*` hidden, active marked `←`). **Echo its stdout exactly — do not re-align or restate.** Then append the routing block:
 
 ```
-  Start / Resume:
-    <n>              — switch to session by number
+  Switch to:
+    <n>              — switch to an in-progress session by number
 
   Search by:
     mine             — show only your sessions

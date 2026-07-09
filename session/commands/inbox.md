@@ -48,7 +48,7 @@ Where should this go?
 ```
 
 - **Target type decides the file:**
-  - **plugin / personal target** → the slug's consolidated inbox `<target_session_root>/_inbox.md`. These types are item-driven: there is ONE inbox per slug, and `/session:start` `pick`s from it. Do NOT write a per-session `_inbox_<name>.md` for these — the new flow never reads it.
+  - **plugin / personal target** → the slug's consolidated inbox `<target_session_root>/_inbox.md`. These types are item-driven: there is ONE inbox per slug, and `/session:start` `code`s records from it. Do NOT write a per-session `_inbox_<name>.md` for these — the new flow never reads it.
   - **story / cab / general target** → per-session `<target_session_root>/_inbox_<target-name>.md` (route a handoff to a specific story/CAB, as today).
 - **Global** → `<target_session_root>/_inbox.md` (cross-cutting items with no specific target; for plugin/personal slugs this is the same file as a named target).
 - **Cross-repo** → ask for the target repo slug, then show that repo's sessions using the same prompt

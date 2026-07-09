@@ -27,17 +27,17 @@ Show the table or list, then one instructional line. Claude outputs the block an
   <verb> <target>  ·  <verb> <target>  ·  <verb>
 ```
 
-**Plugin example** (item-driven — `pick` from the inbox, never blank/plugin-named):
+**Plugin example** (item-driven — `code` a refined inbox record, never blank/plugin-named; two verbs only — acp-ajudd#56):
 ```
-  resume <n>  ·  pick <n>  ·  new <description>
+  refine [target]  ·  code <n|id|name>
 ```
 
 **Work project example:**
 ```
-  resume <n>  ·  start story  ·  start cab
+  refine [target]  ·  code <n|KEY>  ·  code cab BPT2-XXXX…
 ```
 
-Accepted inputs: number (`1`), session name (`session`), verb+target (`resume 1`, `start release`), or natural language. Claude infers intent. If genuinely ambiguous, ask one clarifying question.
+Accepted inputs: number (`1`), session name (`session`), verb+target (`code 1`, `code release`, `refine BPT2-6429`), or natural language. A bare number/name alone is treated as `code` it (the file decides — resume a session, graduate a record). Claude infers intent. If genuinely ambiguous, ask one clarifying question.
 
 ---
 
@@ -83,11 +83,11 @@ Last active: <name>  [·  ⚠ not reviewed since v<old> (current v<new>)]
     1  <description> — pending
     2  <description> — pending
 
-  resume <n>  ·  pick <n>  ·  new <description>
+  refine [target]  ·  code <n|id|name>
   + reviewed → mark it
 ```
 
-User types `resume 2 reviewed` and Claude handles all of it.
+User types `code 2 reviewed` and Claude handles all of it.
 
 ---
 

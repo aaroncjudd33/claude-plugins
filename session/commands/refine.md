@@ -30,7 +30,7 @@ Both the **write-early** path ("scope some, come back later, keep polishing") an
 
 ## Key properties
 
-- **Read-only toward code.** Refine scopes; it does not implement. Writing/editing the *record* (an inbox item under `~/.claude/memory/`, or a Jira story) is not a code edit — refine writes the record freely. If asked to implement, graduate the record and pick it up as a coding session. (Nothing hard-blocks a code edit either — acp-ajudd#1 removed edit-blocking — but refine's *job* is to scope, not build; keep it that way by convention.)
+- **Read-only toward code.** Refine scopes; it does not implement. Writing/editing the *record* (an inbox item under `~/.claude/memory/`, or a Jira story) is not a code edit — refine writes the record freely. If asked to implement, graduate the record and stop — a *separate* `code` gesture by whoever builds it opens the coding session; refine never opens it itself (§ Graduate HARD RULE). (Nothing hard-blocks a code edit either — acp-ajudd#1 removed edit-blocking — but refine's *job* is to scope, not build; keep it that way by convention.)
 - **Refine owns in-place requirement edits (acp-ajudd#13).** Editing a record's body / requirements / acceptance criteria in place is refine's job — that is exactly what the write-early + iterate loop below does. The mirror boundary: a **coding session must NOT** rewrite the requirements of an existing inbox item or Jira story it (or anyone) picked up. When a coding session finds a requirement needs changing, it hands off — a `/session:inbox` capture, or back to a refine pass — rather than editing the record inline. So requirement changes always flow through refine.
 - **Writing your zone's record vs. firing a capture are separate concerns (acp-ajudd#21).** Refine's *record* target is locked by zone (above). Dropping a **capture** into an inbox via `/session:inbox` — a raw inbound item another session dispositions on read — is independent and available from any context. In a work repo, refine's record is the Jira story, so the only thing refine ever puts in an inbox is a capture (an FYI / handoff aimed at another slug) — never a promoted `refining`/`ready` inbox record. In plugin/personal the inbox item refine writes **is** the record: it lives in `_inbox.md` at `status: refining` and matures to `ready` in place — that's a promoted capture, not an inbound capture-for-someone-else, so it's correct, not a violation. There is no `type` axis (`note`/`data`/`story` are gone) — just captures on one lifecycle; don't conflate writing your own record with firing a capture at another slug.
 - **No session file, no `_active` change.** Refine creates nothing under `<session_root>` and never touches `_active`. A coding session already active stays active *alongside* a refine, unaffected. (This is what decoupled refine from the `_active` redesign.)
@@ -62,8 +62,26 @@ Read-only, one glance, no monitoring — same category as the captures-waiting g
 - **An existing inbox item's `<id>`** (e.g. `refine acp-ajudd#12`) → read the item and branch on its `status` line:
   - **`status: capture`** → **promote** (the capture-first promotion step — acp-ajudd#21). A capture is raw inbound; refine is where it becomes tracked work. Flip its status line `capture` → `refining` **in place** — preserve the header, `<id>`, provenance, and any `intent:` hint verbatim; only the status word changes. Surface it plainly: `Promoted <id> (capture → refining) — <one-line summary>`. Then continue scoping from Step 3, editing the same item. (Skip Step 2's record *creation* — the item already exists — but still run its memory scan for context.)
   - **`status: refining`** → **resume**: continue refining that item in place from Step 3 (skip creation; still load memories).
-- **A Jira key** (`refine BPT2-6429`) → **resume**: `getJiraIssue` and continue refining the story in place from Step 3 (skip creation; still load memories).
-- **A topic / free text** (`refine shopify refund window`) or **nothing** → **new**: proceed to Step 2. If no argument, ask: "What are we refining? (a short topic)".
+- **A Jira key** (`refine BPT2-6429`) → **resume** (work repo): `getJiraIssue`, then **print the story's status first, every time** (`BPT2-6429 — <status> — <summary>`), then apply the **status-tiered edit guard** below before editing, and continue refining in place from Step 3 (skip creation; still load memories).
+- **A topic / free text** (`refine shopify refund window`) → **new**: proceed to Step 2.
+- **Nothing (bare `refine`)** → surface what's resumable for the zone, then route:
+  - **Plugin / personal** → list the slug's `refining` inbox items (from `_inbox.md`); resume one (`refine <id>`) or scope new (`refine <topic>`). If none, ask: "What are we refining? (a short topic)".
+  - **Work repo** → **list your *Gathering Requirements* stories inline** so no key need be memorized. Run this JQL (assignee OR reporter = me — verified status string `Gathering Requirements`, id 581):
+    ```
+    project = <PROJECT> AND status = "Gathering Requirements" AND (assignee = currentUser() OR reporter = currentUser()) ORDER BY updated DESC
+    ```
+    (`<PROJECT>` resolved-or-confirmed per the zone rule — default `defaults.jiraProject`, never hardcoded `BPT2`.) Present:
+    ```
+    Gathering Requirements (yours, resumable):
+      1  BPT2-6541 — <summary>   — updated MM-DD
+    Reopen one (refine <n> / refine BPT2-XXXX), or scope new: refine <new topic>
+    ```
+    `refine <n>` / `refine BPT2-XXXX` resumes that story (the Jira-key resume path above — status printed first, guard applied). If the list is empty, ask the topic directly, then scope new.
+
+**Status-tiered edit guard (work repo — warn, never hard-block; acp-ajudd#55).** When resuming a Jira story, the status you just printed does double duty as index **and** guard — status is the only state consulted; there is no new field and no hook. Gate the *edit*, keyed on the story's current status (strings verified against the BPT2 workflow — `story/skills/story/SKILL.md`):
+- ***Gathering Requirements*** (the refine zone) → edit freely, **no warning**.
+- ***Ready For Work*** → editing is allowed, but **warn once** before the first edit: `BPT2-XXXX is Ready For Work — it's graduated and someone may be about to pick it up. Keep editing requirements? (yes / leave it)`. On `yes`, proceed for the rest of the session (warn only once).
+- ***In Progress* or beyond** (In Progress, Ready for Code Review, Ready For Test, QA In-Progress, Ready for UAT, Failed Testing, Blocked, Done, Cancelled, Released) → **do not silently edit.** This is the existing "locked mid-build" rule from `/story:update`: warn and require an **explicit flip back to *Gathering Requirements*** first — `BPT2-XXXX is <status> — changing requirements now alters an in-flight/closed story. Transition it back to Gathering Requirements to refine? (yes, flip it back / cancel)`. On `yes`, `transitionJiraIssue` → *Gathering Requirements* (id 581), then edit. On `cancel`, make no change. This is a **confirm prompt, not an enforced gate** (acp-ajudd#1) — no hook.
 
 > **Migrating away from the old model:** older versions wrote a local `refinement-<topic>.md` session file. That file is gone from this flow. Any leftover `refinement-*.md` on disk is harmless legacy — it is still hidden from the default listing and skipped by `session:migrate`; delete it whenever convenient. Nothing new is written there.
 
@@ -140,18 +158,18 @@ On `not yet` → leave it `refining` / *Gathering Requirements*; it stays resuma
 
 **Refine never marks work complete (acp-ajudd#42).** Refine is a planning/sessionless flow: its highest disposition is **`ready`** (inbox) / **Ready For Work** (Jira) — *scoped, ready to build*, not built. It may create, update, promote, leave-refining, backlog, or discard a record freely, but it **never** writes a completion stamp (`[DONE]` / "shipped" / *Done*) — that authority belongs only to a coding session's `/session:finish`. If a refine read decides a capture should not be built as-is, that is a **planning disposition** (§ Disposition & completion in `references/inbox-convention.md`): drop it with a `[DISPOSITIONED … — <fate>]` archive or backlog it — never `[DONE]`.
 
-**Offer to pick it up** (inbox-item graduations only — plugin / personal). One optional line, never auto — the dev-sitting-there path:
+**HARD RULE — refine ends at "ready" and STOPS; it never offers to `code` (acp-ajudd#56).** Graduation is refine's terminus. Once the record is `ready` / *Ready For Work*, **confirm that and stop** — do **not** present, suggest, or offer "pick it up now?" / "open a coding session?" / "start coding this?" / any graduation-as-next-step prompt. This holds in **every** zone and is **most** important in a work repo, where the refiner (e.g. Heber) is typically **not** the developer: the refiner's deliverable is the scoped record/handoff, full stop. Crossing into a coding session is always a **separate, deliberate `code` gesture by whoever builds it** — reachable only by explicitly invoking `code`, never surfaced here. In-place graduation stays *possible* in the model (acp-ajudd#1: unpoliced), but it is **invisible and unoffered** from the refine UX.
+
+So a refine terminus reads, in full:
 
 ```
-Pick it into a coding session now?  pick  ·  leave
+Marked <id> ready for pickup.        ← plugin / personal
+Transitioned <KEY> → Ready For Work. ← work repo (Jira)
 ```
 
-- **pick** → run the `pick` flow (`start-impl.md` → Item Pickup): derive a feature name (confirm once), fold the item into a new **coding** session, archive-on-consume it from `_inbox.md` (a `[CONSUMED … → session <name>]` copy to `_inbox_archive.md`, then removed from the live inbox — the exact mechanics live in `start-impl.md` Item Pickup; acp-ajudd#40), set `_active` to the new session. This is the point a session file is finally created — because now it's work being done.
-- **leave** → the item stays `ready` and pending; a later `/session:start` picks it up like any other.
+and nothing more about coding. If the user *themselves* says "and let's build it now," that is their own `code` gesture — hand off / point them at `code <record>`; refine still does not create the session file.
 
-For **work-repo (Jira) graduations**, do not create a story session here — whoever builds it runs `/session:start BPT2-XXXX` later and picks up context from Jira. A `[scoping]` handoff capture via `/session:inbox` is optional.
-
-(There is no `role` logic in refine — the graduation offer is shown the same way to everyone. Security is the repo zone plus source-control write access, never a config-field role.)
+(There is no `role` logic in refine — the terminus reads the same way to everyone. Security is the repo zone plus source-control write access, never a config-field role.)
 
 ### 6. Done
 
