@@ -38,6 +38,30 @@ plugin or an MCP server that isn't installed alongside it (e.g. comms depends on
 required prerequisite in the plugin's README/SKILL and add a runtime self-check that
 points the user at the fix instead of failing silently. Close every hidden step.
 
+## Version bump levels (SemVer discipline)
+
+Every plugin carries a `version` in its `.claude-plugin/plugin.json`, and a plugin
+**deploys on `finish`** — the version bump + push + reinstall *is* the deploy (see the
+`session` plugin's finish flow). Every plugin's `finish` references these tiers; pick the
+level by **what changed**, and **hold the bump until the work is done** (one bump per
+shipped unit of work):
+
+- **PATCH** (`x.y.Z`) — **doc-only / doc-pointer / prose / typo**, plus bug fixes and
+  any change that does not add or alter commands or behavior. **A documentation change
+  is a PATCH** — this is the default and by far the most common case. A one-line
+  doc-pointer edit is a PATCH, **never** a MINOR.
+- **MINOR** (`x.Y.0`) — a **new command, or a new user-facing feature / capability**
+  added to an existing plugin.
+- **MAJOR** (`X.0.0`) — a **redesign**, a breaking change to existing command behavior,
+  or a model / architecture change.
+
+**Refinement discipline — spec the level, don't default to MINOR.** When a work item or
+handoff is **doc-only**, it must **explicitly spec PATCH**. Defaulting a doc-only change
+to MINOR is exactly the mistake this guidance exists to prevent: acp-ajudd#58 shipped a
+doc-pointer one-liner as a MINOR bump (`2.4.2 → 2.5.0`) when it should have been a PATCH
+(`→ 2.4.3`). The `finish` deploy consults these tiers, so getting the level right at
+refinement time keeps the deployed version number honest. (acp-ajudd#61)
+
 ## Hook conventions (precedent: the `session` plugin)
 
 - Layout: `<plugin>/hooks/hooks.json` + `<plugin>/hooks/scripts/*.py`.
