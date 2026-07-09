@@ -62,7 +62,7 @@ Then wait for selection.
 
 Read `<session_root>/<name>.md`.
 Read `<session_root>/_history.md` — count total entries and extract the most recent one.
-Read the inbox file **fresh (acp-ajudd#6)** — **plugin / personal → the canonical `<session_root>/_inbox.md`** (item-driven; there is no per-session `_inbox_<name>.md`); **story / cab / general → `<session_root>/_inbox_<name>.md`** — and collect all items (in-progress and pending). Count **by `## <id>` header lines** and **skip the `> [status: …]` metadata line** under each (legacy `> [type: … · status: …]` tolerated — never miscount it). **Split by status:** promoted captures (`status: refining` / `status: ready`) are inbox work (listed + swept in Step 4); un-promoted `status: capture` items (legacy `status: new`/`unread`) are **captures inbound** (acp-ajudd#10) — count them for the Captures-waiting line, never list or sweep them as pickable.
+Read the inbox file **fresh (acp-ajudd#6)** — **plugin / personal → the canonical `<session_root>/_inbox.md`** (item-driven; there is no per-session `_inbox_<name>.md`); **story / cab / general → `<session_root>/_inbox_<name>.md`** — and collect all entries (in-progress and pending). Count **by `## <id>` header lines** and **skip the `> [type: … · status: …]` metadata line** under each (legacy `> [status: …]` tolerated — never miscount it). **Split by type (acp-ajudd#62):** `work` (`status: new` / `refining` / `ready`) is inbox work (listed + swept in Step 4); `capture`-type entries (legacy `status: capture`/`new`/`unread`, or `type: note`/`data`) are **captures inbound** (acp-ajudd#10) — count them for the Captures-waiting line, never list or sweep them as pickable.
 
 **Security check (repo sessions only):** If `session_root` is inside a repo, run the approval-hash check using the same flow as `session:start` Step 4 — compute SHA-256, compare to `~/.claude/memory/sessions/<slug>/<name>.approved-hash`, handle missing/matching/differing cases with first-time review, normal load, or diff-review flow. See `references/skill-repo-security.md` for the full procedure.
 
@@ -75,7 +75,7 @@ Switching to <name>
     - [date @handle] item
   Teammate notes (N — read-only):
     - [date @other] item
-  Inbox (N):          ← layout B; provenance dim below each item (see inbox-convention.md); promoted captures only (refining/ready)
+  Inbox (N):          ← layout B; provenance dim below each entry (see inbox-convention.md); `work` only (new/refining/ready)
     [1] <description> — in-progress / pending
         ↳ <slug> / <session> (<type>) · MM-DD
   Captures waiting: N — say "check captures" to read them   ← omit line if none; captures-waiting glance (acp-ajudd#10, § Captures inbound)
@@ -88,7 +88,7 @@ If inbox is empty: `Inbox: none`. If no history: `History: none`. Omit Teammate 
 
 ### 4. Check Inbox
 
-Check the same fresh inbox read from Step 3 — **plugin / personal → the canonical `<session_root>/_inbox.md`**; **story / cab / general → `<session_root>/_inbox_<name>.md`**. (Do not fall back to a per-session file for item-driven types — it does not exist for them.) **This batch handles promoted captures (`status: refining` / `status: ready`) only** — un-promoted `status: capture` items are excluded (they surfaced as the Captures-waiting line in Step 3 and are read/archived only on request, per `references/inbox-convention.md` § Captures inbound).
+Check the same fresh inbox read from Step 3 — **plugin / personal → the canonical `<session_root>/_inbox.md`**; **story / cab / general → `<session_root>/_inbox_<name>.md`**. (Do not fall back to a per-session file for item-driven types — it does not exist for them.) **This batch handles `work` (`status: new` / `refining` / `ready`) only** — `capture`-type entries are excluded (they surfaced as the Captures-waiting line in Step 3 and are read/archived only on request, per `references/inbox-convention.md` § Captures inbound).
 
 If the inbox file has content beyond the header, first scan for in-progress items, then handle pending items.
 

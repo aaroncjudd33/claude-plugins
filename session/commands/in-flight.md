@@ -29,11 +29,11 @@ If `filter_mine`, filter to sessions where `updated-by` matches `@<handle>`.
 
 ### 2. Scan Inboxes, Outboxes, and Global Inbox
 
-For each session, count (using the **same capture-first parser** as start / checkpoint / finish, so the `in` count matches theirs for the same file):
-- Inbox items: count `## <id>` header lines in `<session_root>/_inbox_<name>.md`, skipping the `> [status: …]` metadata line under each header (legacy `> [type: … · status: …]` tolerated — the `type` word is ignored). **Exclude un-promoted `status: capture` items** (legacy `type: note` / `type: data` and legacy `status: new`/`unread` all read as `capture`) from this count — they are pickable-work-in-waiting, not in-flight items; surface them, if desired, as a separate "captures: N" tally.
-- Outbox items: lines beginning with `## ` in `<session_root>/_outbox_<name>.md`
+For each session, count (using the **same inbox parser** as start / checkpoint / finish, so the `in` count matches theirs for the same file):
+- `work` entries: count `## <id>` header lines in `<session_root>/_inbox_<name>.md`, skipping the `> [type: … · status: …]` metadata line under each header (legacy `> [status: …]` tolerated — see `references/inbox-convention.md` § Inbox Model back-compat). **Exclude `capture`-type entries** (legacy `type: note` / `type: data` and legacy `status: capture`/`new`/`unread` all read as `capture`) from this count — they are inbound info, not in-flight work; surface them, if desired, as a separate "captures: N" tally.
+- Outbox entries: lines beginning with `## ` in `<session_root>/_outbox_<name>.md`
 
-Read `<session_root>/_inbox.md` and count logical items the same way (`## <id>` headers, skip the `> [status: …]` line, exclude un-promoted `status: capture`). Extract any entries tagged `[spawn]` for separate display.
+Read `<session_root>/_inbox.md` and count `work` the same way (`## <id>` headers, skip the `> [type: … · status: …]` line, exclude `capture`-type entries). Extract any entries tagged `[spawn]` for separate display.
 
 ### 3. Output
 

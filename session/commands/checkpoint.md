@@ -73,7 +73,7 @@ Review the conversation for anything worth saving:
 
 Save what's missing. Report: "Saved: [list]" or "Memory: nothing new to save."
 
-**Status → the session file, not other living docs (Session Skill § Record ownership).** Live/ephemeral status — dated events, test counts, blockers, next action — is recorded in the session file here. Do **not** mirror it into a contract/requirements record (spec, ADR, design doc, ticket body) on your own initiative; those are developer-owned and edited only on explicit direction. Link to the record; don't duplicate its content or push status into it.
+**Status → the session file, not other living docs (Session Skill § Work ownership).** Live/ephemeral status — dated events, test counts, blockers, next action — is recorded in the session file here. Do **not** mirror it into a contract/requirements doc (spec, ADR, design doc, ticket body — all developer-owned **work**) on your own initiative; those are edited only on explicit direction. Link to the work; don't duplicate its content or push status into it.
 
 ### 4. Scope Scan *(plugin/story/cab/personal only)*
 
@@ -149,7 +149,7 @@ CDK_PRESENT=""
      skip / all / <number(s)>
 ```
 
-**(F) In-progress inbox items** — **read the inbox fresh at checkpoint time (acp-ajudd#6), never a session-start snapshot.** File is type-aware: **plugin / personal → the canonical `_inbox.md`** (item-driven — there is no per-session `_inbox_<name>.md`); **story / cab / general → `_inbox_<name>.md`**. Count/list **by `## <id>` header lines** and **skip the `> [status: …]` metadata line** under each (legacy `> [type: … · status: …]` tolerated — never miscount it). **Exclude un-promoted `status: capture` items** (acp-ajudd#10) — they are not pickup work; they're read/archived only on request (§ Captures inbound). Include one per in-progress promoted capture:
+**(F) In-progress `work` entries** — **read the inbox fresh at checkpoint time (acp-ajudd#6), never a session-start snapshot.** File is type-aware: **plugin / personal → the canonical `_inbox.md`** (item-driven — there is no per-session `_inbox_<name>.md`); **story / cab / general → `_inbox_<name>.md`**. Count/list **by `## <id>` header lines** and **skip the `> [type: … · status: …]` metadata line** under each (legacy `> [status: …]` tolerated — never miscount it). **Exclude `capture`-type entries** (acp-ajudd#10) — they are not pickup work; they're read/archived only on request (§ Captures inbound). Include one per in-progress `work` entry:
 ```
   (N) [<id>] Inbox [in-progress]: "<description>"    keep / done
 ```

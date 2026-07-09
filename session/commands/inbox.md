@@ -66,22 +66,23 @@ if command -v python3 >/dev/null 2>&1; then python3 "$IDT" next --slug "<target-
 ```
 If `python3`/script is unavailable, fall back to `<acronym>-<handle>#?` and note the counter wasn't advanced — never block the write. See `references/inbox-convention.md` § Stable IDs.
 
-Append (record the ID, then the **source** slug/session/type — not the target — followed by the `status` line):
+Append (record the ID, then the **source** slug/session/type — not the target — followed by the `type` line):
 ```markdown
 ## <id> · [YYYY-MM-DD @<handle>] from <source-slug> / <source-session> (<source-type>) — <description>
-> [status: capture]
+> [type: capture]
 <body>
 ```
-Omit the `(<source-type>)` segment only when no source session is active (repo-level routing). The `<id>` is permanent — it never changes as the item moves through its lifecycle.
+Omit the `(<source-type>)` segment only when no source session is active (repo-level routing). The `<id>` is permanent — it never changes as the entry moves through its lifecycle.
 
-**Everything routed through `/session:inbox` is a capture (acp-ajudd#21).** There is no `type` axis anymore — an inbox holds **captures** on one lifecycle (`capture` → `refining` → `ready`), and a routed handoff always arrives at the entry state `capture`. Provenance is recorded (the header above); *intent* is deferred to the reader, who dispositions the capture when they read it. Full model in `references/inbox-convention.md` § Item Model.
+**Sender declares the type — `work` or `capture` (acp-ajudd#62).** `/session:inbox` carries two kinds of thing, and the sender declares which (the sending session knows its own intent):
+- **`capture`** (the common case) — a note / message / data / heads-up for the target to read and disposition. Write `> [type: capture]` (no `status` — a capture has no build-lifecycle). This is the default for an FYI or a data payload.
+- **`work`** — a thing the target should build. Write `> [type: work · status: new]` (raw work the target then refines→ready, or `code`s with a warn). Use this only when the handoff is genuinely a build request, not just info.
 
-`/session:inbox` only ever **creates** a capture at `status: capture` — it never marks any item complete, done, or shipped, and it never archives (the outbox is append-only, below). Completion is a coding-session `/session:finish` act alone (acp-ajudd#42, § Disposition & completion) — nothing on this write path can stamp it.
+**When the sender doesn't specify, infer from content and confirm** — spec/acceptance-criteria-shaped → `work`; "FYI / here's what happened / here's the data" → `capture` — then show the label before writing. **Declared intent wins.** (The old `intent:` sub-label — `story`/`fyi`/`data` — is retired; the `work`/`capture` type carries the only distinction now — no sub-labels.) Full model in `references/inbox-convention.md` § Inbox Model.
 
-**The `> [status: …]` line** carries the capture's lifecycle status plus an **optional, non-binding intent hint**:
-- **`status`** — always **`capture`** for a fresh handoff (the single entry state). Do not write `refining`/`ready` here — those are reached by `refine` promoting the capture, not by the sender. (`refine` writes `refining` directly; a spawn writes `ready` — those are separate write sites.)
-- **`intent`** (optional) — a hint the sender may attach so the reader knows what the sender *thinks* it is, without deciding for them: `> [status: capture · intent: story]` ("looks like real work"), `intent: fyi` ("awareness only, no build expected"), or `intent: data` ("a payload to consume as input"). Omit it entirely when unsure — the reader infers from the content. Intent **never binds**; the reader always dispositions (promote / discard / absorb / feed a refinement — see § Captures inbound).
-  - **`intent: data` payload:** inline in the body by default. For a large payload, write it to a file and add a `ref: <path>` line in the body instead (see § Captures inbound for the shape).
+`/session:inbox` only ever **creates** an entry (a fresh `capture`, or `work` at `status: new`) — it never marks any entry complete, done, or shipped, and it never archives (the outbox is append-only, below). Completion is a coding-session `/session:finish` act alone (acp-ajudd#42, § Disposition & completion) — nothing on this write path can stamp it. Nor does it write `refining`/`ready` — those are reached by `refine` promoting/scoping the work (`refine` writes `refining` directly; a spawn writes `ready` — separate write sites).
+
+**Payloads (data captures):** inline in the body by default. For a large payload, write it to a file and add a `ref: <path>` line in the body (see § Captures inbound for the shape).
 
 See Provenance Rendering in `references/inbox-convention.md` for how this header + line is later displayed.
 
