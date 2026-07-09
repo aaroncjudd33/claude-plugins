@@ -207,10 +207,10 @@ A working context is always in one of two **stances**. The stance is a *behavior
 - **One-directional in practice — no ceremony on coding sessions (Aaron).** The lock's real weight is entirely on planning→coding. The containment path (a coding session planning within itself) carries little weight and needs **no guarding** — do **not** add ceremony to coding sessions to honor this.
 - **The cheap exit (acp-ajudd#29).** `/session:handoff` works from a sessionless planning context and writes a **durable resume file** a fresh session picks up, so crossing the boundary costs one command and loses nothing. Without it the lock is friction; with it, immutability is nearly free and strictly cleaner.
 
-**One planning + one coding session per repo, max — two total (acp-ajudd#30).** A documented discipline (instruction-level, **not a hook**), prompted by a live incident: two concurrent planning contexts on one slug raced the shared ID counter and nearly minted a duplicate.
+**One inbox writer + one coding session per repo (acp-ajudd#30, refined by #57).** A documented discipline (instruction-level, **not a hook**), prompted by a live incident: two concurrent planning contexts on one slug raced the shared ID counter and nearly minted a duplicate. The cap's **real meaning is "one *writer* of records," not "one sessionless session"** — a distinction the dispatch model (§ The three roles) makes load-bearing:
 - **Cap coding at 1:** `_active`, `_index.md`, and the git working tree / push are **coding-only writes** → one coding session = one writer, so structural races (a clobbered `_active`, a lost `_index` row, cross-contaminated commits, push races) cannot happen.
-- **Cap planning at 1:** planning mints inbox IDs and writes `_inbox.md`; two planners race the counter (the incident).
-- **Residual (one-of-each):** both stances can touch the counter and `_inbox.md`; the overlap is small and complementary. The counter race itself is closed **in code** by acp-ajudd#31 (atomic increment in `inbox-id.py`), independent of session count. **Immutable stances (acp-ajudd#32) are what keep these counts legible** — a session never morphs from one type into the other, so "one of each" stays a countable invariant rather than a moving target.
+- **Cap inbox writers at 1 — that writer is `refine`.** Minting inbox IDs and writing `_inbox.md` is the `refine` role's job; two writers race the counter (the incident). **A second sessionless context is legal when it does not write records** — that is exactly what the `dispatch` role is (a reader/dispatcher; § The three roles). So "one planning session" is more precisely **one inbox writer (refine) plus non-writing coordinators (dispatch)**.
+- **Residual:** the counter race itself is closed **in code** by acp-ajudd#31 (atomic increment in `inbox-id.py`), independent of session count. **Immutable stances (acp-ajudd#32) keep the counts legible** — a session never morphs from one type into the other, so "one writer of each kind" stays a countable invariant rather than a moving target.
 
 This is the behavioral layer above § Session Enforcement (which enforces only "engage a session command → a session must exist"). Stance is never policed by a hook — like everything here, editing is never blocked (acp-ajudd#1); the stance is a convention that keeps the planning/coding boundary clean.
 
@@ -396,6 +396,34 @@ The inbox is both a **to-do list** (promoted captures at `refining`/`ready` you 
 - **Surface:** a single **"Captures waiting: N"** line at `session:start` (and in the switch/resume blocks) when any `status: capture` item exists. That is the only automatic surfacing — one glance, not monitoring. Un-promoted captures **never** appear in the pickup list or the checkpoint/finish sweeps.
 - **Read → disposition → archive (on request only):** when the user says "check captures" / "read the capture from `<repo>`", read every un-promoted `capture` in the slug inbox and disposition each — **promote** (real work → flip to `refining`), or a read-and-archive fate: **discard**, **absorb into the current session** (fold an FYI or a `data` payload — inline or via a `ref:` file — into the work at hand), or **feed a refinement**. Then **archive** each non-promoted capture to `_inbox_archive.md` with the **bucket-3 planning-disposition stamp** `[DISPOSITIONED YYYY-MM-DD — <fate>]` (`discarded`/`absorbed`/`refined`) and remove it from the live inbox (archived, never deleted; a promoted capture stays live at `refining`/`ready`). This is a **non-completion** stamp — dispositioning a capture is neither completing implemented work (`[DONE]`, coding-finish only) nor a pickup-consume (`[CONSUMED → session]`). Full flow + the three-stamp table: `references/inbox-convention.md` § Disposition & completion and § Captures inbound.
 
+## The three roles — the dispatch model (acp-ajudd#57)
+
+**Scope — inbox zones only (plugin / personal). Work repos are explicitly OUT.** This whole section describes how **multiple live Claude sessions on one machine** collaborate through a local `_inbox.md` and same-machine copy-paste. It applies **only where there is a local inbox to dispatch from** — the plugin and personal zones. **Work repos stay exactly the plain two-move Jira flow:** `refine` in Jira (*Gathering Requirements* → *Ready For Work*), a dev `code`s the story. Jira **is** the queue and the system of record; there is no local inbox, and we do **not** build a dispatch layer over Jira cards. Everything below = inbox zones; work repos = the plain Jira refine→code flow.
+
+§ Session Stance splits a working context into two **stances** by file-presence: planning (sessionless) vs coding (has a session file). This section refines the *planning* stance into two distinct **roles** and names the coding stance's role, giving **three roles** total that collaborate in real time. Roles are the operational unit; stance is still the coarse 2-way split ({refine, dispatch} = planning-stance / sessionless; {code} = coding-stance / has a file).
+
+| Role | Stance | Session file? | What it does | Token profile |
+|------|--------|---------------|--------------|---------------|
+| **refine** | planning | no | *scope work* — edits inbox **records** only; the inbox author (mints IDs via `inbox-id.py`, writes/iterates records). Entered by the `refine` verb (acp-ajudd#56). | long-lived, lean, low-token — retains reasoning across many items |
+| **dispatch** | planning | no | *coordinate work* — pulls `ready` inbox items, bundles related ones, sends implementation notes to `code`, validates the returned tree post-hoc, and **decides done**. A reader/dispatcher: does **NOT** edit plugin code and does **NOT** author inbox records. | long-lived, lean |
+| **code** | coding | **yes** | *implement* — folds in the `ready` record and builds. Fresh every implementation. Entered by the `code` verb. | ephemeral, token-heavy (a clean session per build is deliberate — no giant planning history riding along) |
+
+**Role determination — told, not auto-detected (cheap to tell):**
+- **`code` is self-evident from the file** — a session file exists → coding (the file dictates the mode, acp-ajudd#56). No telling needed.
+- **`refine` is the default** sessionless stance — start with no session file and you are refining (planning has always been the default — § Session Stance).
+- **`dispatch` is explicitly assumed** — it cannot be told apart from `refine` by file state (both sessionless), so it is entered by *being told*: pasting an "assume the dispatch role" briefing. One paste. Dispatch therefore has **no start-screen verb** (the two-verb start screen — refine / code — is unchanged, acp-ajudd#56); it is a posture a sessionless context adopts when briefed.
+- Each session therefore **knows and declares its own role**: file → `code`; told → `dispatch`; else → `refine`. When it emits a handoff it stamps that role as the `from-role` (§ Cross-Session Paste Handoff).
+
+**Two channels — the decoupling that makes it non-blocking:**
+- **Inbox → refine feeds dispatch** (async, pull-based). `refine` drops `ready` records; `dispatch` pulls when free. No note needed — **the inbox IS the refine→dispatch interface.** This is what lets refine keep scoping the next thing while dispatch drives the current one.
+- **Copy-paste notes → dispatch ↔ code** (real-time, push-based). Faster than the inbox, and lets a low-context coding session be handed exact steps / watch-fors / report-back rules.
+
+**Any role → any role is legal** (flexibility, though rare). The sender names `from-role → to-role` and formats the note for the target; each session knows how to structure a note to any other role. **Happy path is silence** — if refinement is good enough, dispatch just forwards and code just implements, nothing said. Cross-links (especially code→refine) are legal but normally routed through dispatch.
+
+**One inbox writer — the real meaning of the acp-ajudd#30 cap.** #30's "one planning session per repo" was really guarding the **shared ID counter and `_inbox.md`** against two concurrent writers. Its intent survives verbatim as **one inbox writer — `refine`.** `dispatch` is a *second sessionless context, and that is legal* precisely because it is a **reader/dispatcher that never authors inbox records** — it cannot race the counter or clobber `_inbox.md`. (The counter race is also closed in code by acp-ajudd#31's atomic minting in `inbox-id.py`.) So the cap is not "one sessionless session"; it is "one writer of records" — refine — plus non-writing coordinators. The coding cap (one `code` session — one writer of `_active` / `_index` / the working tree) is unchanged.
+
+**Token rationale (the "why").** refine and dispatch stay **long-lived and lean** (they carry reasoning, not implementation churn); `code` stays **fresh and ephemeral** (a clean session per build, no planning history dragging along). Decoupling *implement-progress* from *scope-progress* is the whole point: being mid-refinement never stalls the dispatch↔code loop, and a heavy build never bloats the planning context.
+
 ## Cross-Session Paste Handoff (the handoff block)
 
 Three paths move work between sessions, and they split on **how the item travels**:
@@ -410,61 +438,76 @@ Three paths move work between sessions, and they split on **how the item travels
 
 **`handoff` has two forms** (acp-ajudd#29), chosen by whether a coding session is active. From a **coding session** it produces the paste block **text only** — nothing is written or sent. From a **sessionless planning context** it *also* writes **one durable local resume file** (`_context_planning-<topic>.md`, picked up by a fresh `/session:restore`) as the **primary** artifact — paste is friction and lost with the clipboard, and planning → coding is the crossing that most needs to survive a restart. Even then it sends nothing and touches no `_active` / session file / `_index` — writing those would be an in-place planning→coding conversion, which § Session Stance (acp-ajudd#32) forbids. `commands/handoff.md` owns the two-path detail; this section owns only the block format below.
 
-**The standard handoff block format** — every produced handoff (by `/session:handoff`, or any time a session emits one) uses exactly this shape. The header mirrors an **inbox-item header's provenance** (`[date @handle] from <source> (<zone>)`) so the receiver sees *who is handing to whom* without asking; horizontal rules give the block vertical breathing room and the body reads like a Teams message, not a wall:
+**The standard handoff block format** — every produced handoff (by `/session:handoff`, or any time a session emits one) uses exactly this shape, and it is **role-aware** (§ The three roles — the dispatch model): the header names the sender's and receiver's roles, and adds machine-legible `Action` / `State` fields plus a human-facing close-signal. The header mirrors an **inbox-item header's provenance** (`[date @handle] from <source> (<zone>)`) so the receiver sees *who is handing to whom* without asking; horizontal rules give the block vertical breathing room and the body reads like a Teams message, not a wall:
 
 ````
-═══════════════ <FROM-STANCE> HANDOFF ═══════════════
- [YYYY-MM-DD @handle]   <from-stance> (<from-session-name>) ──▶ <to-stance> (<target>)
- Re:    <topic>  ·  <inbox IDs if any, else omit the ID clause>
- Slug:  <slug>  ·  Zone: <plugin|personal|story|cab|general>
+═══════════════ <FROM-ROLE> HANDOFF ═══════════════
+ [YYYY-MM-DD @handle]   <from-role> (<from-session-name>) ──▶ <to-role> (<target>)
+ Re:      <topic>  ·  <inbox IDs if any, else omit the ID clause>
+ Action:  <outbound intent — PICK UP #57 / PICK UP #56,#57 (bundle) / FIX / VALIDATE / CLOSE>   ← on outbound notes
+ State:   <return leg — IMPLEMENTED-DEPLOYED / VALIDATED / FOUND-ISSUE / REQUIREMENTS-CHANGE / BLOCKED-QUESTION>   ← on return notes (use instead of Action)
+ Slug:    <slug>  ·  Zone: <plugin|personal|story|cab|general>
 ───────────────────────────────────────────────
 
  <self-contained body — human-readable paragraphs, like a Teams message, not a wall>
 
 ───────────────────────────────────────────────
- END HANDOFF · from <from-session-name> · reply to <from-stance> on done
+ END HANDOFF · from <from-session-name> · <return instruction — see footer rules>
+ <SAFE-TO-CLOSE / HOLD — terse human-facing close-signal; emitted by dispatch on validation legs>
 ═══════════════════════════════════════════════
 ````
 
-**Provenance header fields** (the meaningful part — mirror the inbox-item header):
-- **Title (`<FROM-STANCE> HANDOFF`)** — the block title names the **origin stance** so the handoff's direction is legible at a glance, without reading the provenance line: a **planning**-origin handoff is titled `PLANNING HANDOFF`, a **coding**-origin handoff `CODING HANDOFF` (acp-ajudd#45). `<FROM-STANCE>` is the origin stance uppercased, and it **always matches the left side of the `──▶` provenance line** directly below it (planning→coding reads `PLANNING HANDOFF`; coding→planning reads `CODING HANDOFF`). (Legacy blocks titled the generic `SESSION HANDOFF` are historical and still read fine — no migration.)
+**Role-aware provenance header fields** (the meaningful part — mirror the inbox-item header). `<role>` is one of **{refinement, dispatch, coding}** (§ The three roles):
+- **Title (`<FROM-ROLE> HANDOFF`)** — the block title names the **origin role** so the handoff's direction is legible at a glance, without reading the provenance line: `REFINEMENT HANDOFF`, `DISPATCH HANDOFF`, or `CODING HANDOFF`. `<FROM-ROLE>` is the origin role uppercased, and it **always matches the left side of the `──▶` provenance line** directly below it (acp-ajudd#45, generalized from the old two-value stance to three roles). (Legacy blocks titled `PLANNING HANDOFF` or the generic `SESSION HANDOFF` are historical and still read fine — a `PLANNING HANDOFF` just reads as refine-or-dispatch origin; no migration.)
 - **`[YYYY-MM-DD @handle]`** — the same stamp an inbox item carries.
-- **`<from-stance> (<from-session-name>) ──▶ <to-stance> (<target>)`** — who → who, with each side's **stance** (planning / coding — see § Session Stance). This is the "where it came from" provenance. A sessionless origin is `planning (<slug>)`; a coding origin is `coding (<session-name>)`.
+- **`<from-role> (<from-session-name>) ──▶ <to-role> (<target>)`** — who → who, with each side's **role** (refinement / dispatch / coding). This is the "where it came from" provenance. A sessionless origin is `refinement (<slug>)` or `dispatch (<slug>)` (whichever role that context declared); a coding origin is `coding (<session-name>)`.
 - **`Re:`** — the topic, plus any inbox IDs the handoff carries (omit the ID clause when there are none).
+- **`Action:` (outbound intent)** — what the sender wants the receiver to *do*: `PICK UP #57`, `PICK UP #56,#57 (bundle)`, `FIX`, `VALIDATE`, `CLOSE`. Present on outbound notes (dispatch→code work orders, dispatch→refine change requests). Omit on pure return legs.
+- **`State:` (return leg)** — what *happened*, reported back: `IMPLEMENTED-DEPLOYED`, `VALIDATED`, `FOUND-ISSUE`, `REQUIREMENTS-CHANGE`, `BLOCKED-QUESTION`. Present on return notes; used **instead of** `Action`. A note carries one or the other — `Action` going out, `State` coming back.
 - **`Slug` / `Zone`** — so the receiver knows the repo and project type without asking.
-- **Footer** — names the origin session and says to reply back to it on completion. **On a planning→coding handoff the footer's return instruction MUST be command-invoking, not vague (acp-ajudd#43):** it explicitly tells the coding session to *run `/session:handoff`* to reply with a handoff block back to the planning session for verification — **not** to free-form the report. Running the command is what re-emits this block; a vague "report back on done" is what let return handoffs come back as loose prose instead of a block. So a planning→coding footer reads, e.g.:
+- **Close-signal (`SAFE-TO-CLOSE` / `HOLD`) — human-facing, emitted by dispatch.** A terse line dispatch shows **the person** so a session can be killed at a glance — it needs no processing on any other end. `SAFE-TO-CLOSE` means "no issues, move on"; `HOLD` names what to look at. It rides in the footer area of a dispatch validation/close note (or is printed alongside it); other roles' notes omit it.
+- **Footer** — names the origin session and says how to reply. **The return instruction MUST be command-invoking, not vague (acp-ajudd#43, generalized):** it explicitly tells the receiver to *run `/session:handoff`* to reply with a handoff **block** — never to free-form the report. Running the command is what re-emits this shape; a vague "report back on done" is what let returns come back as loose prose. So a **dispatch→code work order** footer reads, e.g.:
   ```
-   END HANDOFF · from <from-session-name> · when done, run /session:handoff to reply with a handoff block back to <from-session-name> (planning) for verification — do not free-form the report
+   END HANDOFF · from <from-session-name> · on IMPLEMENTED-DEPLOYED (or a stop-reason), run /session:handoff to reply with a handoff block back to <from-session-name> (dispatch) — do not free-form the report
   ```
-  (Coding→planning and other directions keep the generic `reply to <from-stance> on done` footer — only the planning→coding *outgoing* footer needs the explicit command invocation, because it is the return leg that must come back as a block.)
+  (Other directions keep the generic `reply to <from-role> on done` footer — only notes whose return leg must come back *as a block* need the explicit command invocation.)
 
 **Rules (all required):**
 - **Fenced code block is mandatory.** The fence is what gives the Claude UI its one-click copy button and copies the exact raw text — that one-gesture, exact-fidelity copy is the entire point. Never emit a handoff as loose prose.
 - **Heavier outer fence when the body has its own fences.** If the body contains ``` fences (bash snippets, JSON, nested blocks), wrap the whole handoff in a **four-backtick** (` ```` `) or `~~~~` fence so the inner triple-backticks survive intact. (This document does exactly that — note the four-backtick wrapper above.)
 - **Self-contained body.** Restate all context the receiver needs; never reference "what we decided above" or anything only visible in the originating conversation — the receiving session cannot see it.
-- **Titled header + END footer.** The `═══ <FROM-STANCE> HANDOFF ═══` title tells the receiving Claude what the block is and which stance it came from; the `═══ END HANDOFF ═══` marker tells it where the handoff stops (so trailing chat isn't misread as part of the task).
-- **Rule-separated header / body / footer + provenance header.** The `───` rules separate the provenance header from the body and the body from the footer (vertical breathing room); the header carries the provenance line + `Re` + `Slug`/`Zone` above. Body stays paragraphed for a human skim while remaining self-contained.
+- **Titled header + END footer.** The `═══ <FROM-ROLE> HANDOFF ═══` title tells the receiving Claude what the block is and which role it came from; the `═══ END HANDOFF ═══` marker tells it where the handoff stops (so trailing chat isn't misread as part of the task).
+- **Rule-separated header / body / footer + provenance header.** The `───` rules separate the provenance header from the body and the body from the footer (vertical breathing room); the header carries the provenance line + `Re` + `Action`/`State` + `Slug`/`Zone` above. Body stays paragraphed for a human skim while remaining self-contained.
+
+**The note carries the run; the inbox item carries the spec — a note never regurgitates the item.** These are distinct artifacts with distinct jobs:
+- The **inbox item** is the *spec* — scope, acceptance criteria, file list, Done-whens. `refine` authors it; `code` consumes it. It lives in `_inbox.md`.
+- The **handoff note** is the *run* — what to pick up, how to implement, watch-fors, when/how to report back. It **never restates the item's spec** (the coding session reads the item itself). A dispatch→code work order is essentially **`code #X` plus process instructions** — equivalent to a bare `code #X` except that dispatch is coordinating and can attach watch-fors and a report-back protocol.
+
+**Control lives in dispatch — resolved by who is driving:**
+- **Orchestrated** (dispatch sent a note): the **note dictates** the report-back protocol and watch-fors. Control is in dispatch; nothing hardcoded on the coding side fights it.
+- **Solo** (bare `code #X`, no dispatcher): the documented default applies — run through, finish, done (the solo carve-out — § The dispatch↔code loop). No one to report to.
+So report-back is **carried by the note**, with a sane solo default.
 
 (A matching personal-memory note `feedback_delimit_paste_blocks` exists on the author's machine; **this SKILL section is the load-bearing, portable copy** — behavior ships in the plugin, per the repo principle. `/session:handoff` references this section as the single source of truth for the format and does not restate it.)
 
-## The planning↔coding review loop (handed-off work) (acp-ajudd#44)
+## The dispatch↔code loop — deploy-then-validate (handed-off work) (acp-ajudd#57, revises #44)
 
-§ Session Stance defines the two stances; § Cross-Session Paste Handoff defines the block that moves work between them. This section is the **protocol that ties them together** — the round-trip a planning context and the coding session it spawned run when work is **handed off**, so that "what was decided" is verified against "what was built" *before* anything ships. The stance model and the block format live in their own sections; this one is layered on top and does not restate either.
+§ The three roles defines refine / dispatch / code; § Cross-Session Paste Handoff defines the role-aware block that moves work between them. This section is the **protocol that ties them together** — the round-trip **dispatch** and the **coding** session it hands off to run when work is dispatched. It **revises acp-ajudd#44**, which gated the deploy on a planning greenlight (build → HOLD → validate → greenlight → finish). The new model is **deploy-then-validate**: code ships by default and dispatch confirms afterward. The role model and the block format live in their own sections; this one is layered on top and does not restate either.
 
-**Scope — handed-off work only.** This loop applies when a planning stance hands scoped work to a *fresh* coding session (the sole planning→coding path — § Session Stance, acp-ajudd#32). A **solo coding session with no planning counterpart just finishes normally** (`/session:finish`) — there is no one to greenlight it and none is required. Do **not** impose the round-trip on unpaired sessions.
+**Scope — inbox zones only, handed-off work only.** This loop lives in the dispatch model (§ The three roles) and applies **only** in the plugin / personal zones and **only** when dispatch hands scoped work to a *fresh* coding session. **Work repos never run it** (no local inbox, no dispatch role — the plain Jira flow). A **solo coding session with no dispatcher just finishes normally** (`/session:finish`) — there is no one to report to and no round-trip is imposed. Do **not** impose it on unpaired or work-repo sessions.
 
-**The loop — seven legs:**
-1. **Planning hands off** scoped work via `/session:handoff`, each item carrying explicit **Done-whens** — the checkable acceptance criteria on the inbox item / Jira story it came from (the record layer = requirements + acceptance criteria — see § State-Exclusivity and `references/inbox-convention.md`). The Done-whens **are** the validation contract: the coding session is built to satisfy them, and planning later validates against them.
-2. **Coding builds AND self-verifies**, then **HOLDS** — no commit-to-master, no push, no `/session:finish` deploy. The work sits complete-but-unshipped in the working tree.
-3. **Coding returns a handoff block** to planning (`/session:handoff`, standard block per § Cross-Session Paste Handoff — the planning→coding footer already instructed a command-invoked return, acp-ajudd#43, so the reply comes back *as a block*, not loose prose).
-4. **Planning validates against the Done-whens by inspecting the actual working tree** — reading the diff / the files the coding session produced — **NOT by rubber-stamping the report.** The report says what was *claimed* done; validation confirms it against the tree and the acceptance criteria.
-5. **Planning greenlights** — or flags fixes and hands them back, returning to leg 2. Iterate until the Done-whens are met.
-6. **Only on greenlight does coding run `/session:finish`** — the version bump + push + reinstall (the deploy — § Development Lifecycle). Greenlight is the gate on that terminal action.
-7. **Coding confirms the deploy** back to planning (the close leg — a final handoff or a brief note), so planning knows the work shipped.
+**The loop — five legs (deploy-then-validate):**
+1. **Dispatch hands off** scoped work via `/session:handoff` (a `PICK UP #X` work order), each item carrying explicit **Done-whens** — the checkable acceptance criteria on the inbox item it came from (the record layer = requirements + acceptance criteria — see § State-Exclusivity and `references/inbox-convention.md`). The Done-whens **are** the validation contract: code is built to satisfy them, and dispatch later validates against them. The note carries the *run*; the item carries the *spec* (§ Cross-Session Paste Handoff).
+2. **Code implements.** The **only** reasons to stop and hand a note back (the **escape hatch**) are: a **question**, something **unclear**, **disagreement** with a decision, or a **found problem** — returned as a `State: BLOCKED-QUESTION` / `FOUND-ISSUE` / `REQUIREMENTS-CHANGE` note. Otherwise it does **not** stop.
+3. **Happy path — code self-verifies against the Done-whens and FINALIZES by default.** `/session:finish` runs the deploy (bump + push + reinstall — § Development Lifecycle). **No HOLD.** Code returns a `State: IMPLEMENTED-DEPLOYED` handoff block to dispatch (command-invoked so it comes back *as a block*, acp-ajudd#43), then is free to pick up the next item or close out.
+4. **Dispatch confirms post-hoc.** On the return note, dispatch validates the **actual working tree** against the Done-whens — reading the diff / the files code produced — **NOT by rubber-stamping the report.** This is **NOT a gate**: the deploy already happened. Dispatch then shows the human a `SAFE-TO-CLOSE` / `HOLD` close-signal.
+5. **If the post-hoc look finds something off** → dispatch hands back a `FIX` note → code fixes and runs **one more deployment.** Both checks still happen; they are sequential and non-blocking.
+
+**Rationale (the "why").** Don't freeze code's progress waiting on validation in the common case; the rare miss costs exactly **one extra deploy** — cheap, and two independent checks still occur. Token economy: refine/dispatch stay long/lean, code stays fresh/ephemeral (§ The three roles). Decoupling implement-progress from scope-progress is the whole point — being mid-refinement never stalls the dispatch↔code loop.
 
 **Two load-bearing disciplines** (everything else is mechanics):
-- **Coding HOLDS for greenlight (leg 2).** A handed-off coding session self-verifies but does **not** deploy on its own authority — it stops at complete-in-the-tree and waits. Shipping is greenlight-gated; that is why the plugin `/session:finish` deploy is the terminal step, run only after leg 5.
-- **Planning VALIDATES the working tree, not the report (leg 4).** Greenlight is earned against the actual diff measured against the Done-whens — never against the coding session's self-report. Independent validation is the entire payoff of keeping planning and coding as **separate, immutable stances** (§ Session Stance): a validator that did not write the code confirms the build. A rubber-stamp throws that payoff away.
+- **Code self-verifies and FINALIZES — no HOLD (legs 2-3).** A handed-off coding session ships on its own authority in the happy path; it stops **only** for the escape-hatch reasons (question / unclear / disagreement / found problem). This is the reversal of acp-ajudd#44's greenlight gate — shipping is no longer greenlight-gated.
+- **Dispatch VALIDATES the working tree, not the report (leg 4) — post-hoc, non-gating.** Confirmation is earned against the actual diff measured against the Done-whens — never against code's self-report. Independent validation is the payoff of keeping dispatch and code as **separate roles** (§ The three roles): a validator that did not write the code confirms the build. Only the **timing** moved (after the deploy, not before); the discipline itself is unchanged from #44.
 
 ## Reference Files
 

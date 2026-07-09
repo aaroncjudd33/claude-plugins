@@ -408,7 +408,7 @@ Multiple entries per day are expected — always append, never overwrite.
 
 **For story / cab / personal / general: skip this step entirely.** Those types push during `commit` and have no version/reinstall concept — Step 11 is skipped and their finish ends at deactivation (Step 12).
 
-**When this coding session was handed off from a planning context, this deploy is greenlight-gated.** In the review loop (Session Skill § **The planning↔coding review loop**), the coding session HOLDS after self-verifying and returns a handoff for the planning context to validate the working tree against the Done-whens; only after planning greenlights does this deploy leg run. A **solo** coding session with no planning counterpart is not gated — it deploys here normally.
+**Deploy-then-validate — this deploy is NOT gated (acp-ajudd#57, revises #44).** In the dispatch↔code loop (Session Skill § **The dispatch↔code loop — deploy-then-validate**), a handed-off coding session self-verifies against the Done-whens and **FINALIZES by default — no HOLD, no greenlight gate.** It ships here, reports `State: IMPLEMENTED-DEPLOYED` back to dispatch, and dispatch confirms the working tree **post-hoc** (non-gating; a rare miss costs one extra deploy). The **only** reason a handed-off session does *not* reach this step is the escape hatch — it stopped mid-build for a question / unclear point / disagreement / found problem and handed a note back instead. A **solo** coding session with no dispatcher also deploys here normally.
 
 **No-op guard:** if the Step 2 git scan found nothing to ship (clean tree AND no unpushed local commits from `session:commit`), report `Nothing to deploy — finish complete.` and stop. Do not bump or push.
 
