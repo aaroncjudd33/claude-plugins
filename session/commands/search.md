@@ -18,7 +18,7 @@ Read the argument string passed to the command.
 - **Jira key pattern** (`BPT2-\d+`, `CAB-\d+`) — story key mode: search for that exact key.
 - **Anything else** — keyword mode: treat the argument as a search phrase (strip surrounding quotes if present).
 
-Derive the repo slug from `pwd` (last path component). Resolve `session_root` and `handle` using Path Resolution (see Session Skill). Worklog always stays local at `~/.claude/memory/worklog/`.
+Derive the repo slug from `pwd` (last path component). Resolve `session_root` and `handle` using Path Resolution (`references/path-resolution.md`). Worklog always stays local at `~/.claude/memory/worklog/`.
 
 ---
 

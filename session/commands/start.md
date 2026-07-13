@@ -29,7 +29,7 @@ If arguments were passed to `/session:start`, attempt to resolve them before run
 | Existing session name | `/session:start release` | coding session — resume it (bare name = implicit `code`; any type, incl. legacy plugin-named + feature sessions) |
 
 **Fast-path flow:**
-1. Run `pwd`, extract slug, read `~/.claude/plugins/user-config.json` (same as Step 1). Resolve `session_root` and `handle` using Path Resolution (see Session Skill).
+1. Run `pwd`, extract slug, read `~/.claude/plugins/user-config.json` (same as Step 1). Resolve `session_root` and `handle` using Path Resolution (`references/path-resolution.md`).
 2. If arg is `mine`: set `filter_mine = true`, fall through to Step 1 — full discovery with mine filter.
 2a. If arg is `refine` or `refine <target>`: resolve `session_root`/`handle` (step 1 above), then go directly to Step 4 → **Refine — enter refinement flow**, passing any `<target>` as the refine argument. Skip Steps 1–3.
 2a′. If arg is `dispatch`: resolve `session_root`/`handle`, then read `commands/dispatch.md` and run it from Step 1 (assume the dispatch role, orient on the inbox — sessionless). Skip Steps 1–3. (Dispatch applies only in plugin/personal; `dispatch.md` itself stops cleanly in work/general.)
@@ -63,7 +63,7 @@ Detect session type from the current path:
 - **personal** — `personalProjectsDir` is set and path begins with it; fallback: path contains `/c/claude/`
 - **general** — anything else
 
-Resolve `session_root` and `handle` using Path Resolution (see Session Skill). If repo-based and `~/.claude/config/<slug>.json` is missing, auto-create it silently (see First-Run Auto-Config in Session Skill).
+Resolve `session_root` and `handle` using Path Resolution (`references/path-resolution.md`). If repo-based and `~/.claude/config/<slug>.json` is missing, auto-create it silently (see First-Run Auto-Config in `references/path-resolution.md`).
 
 ### 2. Load Sessions
 

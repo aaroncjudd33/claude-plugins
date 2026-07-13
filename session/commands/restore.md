@@ -15,7 +15,7 @@ Restore is **explicit**: `/session:restore <name>` picks up exactly that session
 
 ### 1. Resolve the Target Session
 
-Resolve the repo slug as `basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"` and use that output verbatim. **Do NOT use the dashed project-directory name from your environment context** (e.g. `C--Users-ajudd--...`) — that is Claude Code's mangled memory-path key, not the slug; using it is exactly why a restore can come up empty when a store succeeded. Resolve `session_root` using Path Resolution (see Session Skill). **Context files are always local** — they live at `~/.claude/memory/sessions/<slug>/`, treated exactly like `_active` (never in a repo, never migrated). A restore point is a personal, ephemeral, local stash.
+Resolve the repo slug as `basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"` and use that output verbatim. **Do NOT use the dashed project-directory name from your environment context** (e.g. `C--Users-ajudd--...`) — that is Claude Code's mangled memory-path key, not the slug; using it is exactly why a restore can come up empty when a store succeeded. Resolve `session_root` using Path Resolution (`references/path-resolution.md`). **Context files are always local** — they live at `~/.claude/memory/sessions/<slug>/`, treated exactly like `_active` (never in a repo, never migrated). A restore point is a personal, ephemeral, local stash.
 
 **If a name was given** (`/session:restore <name>`) — that is the target. No scanning, no guessing. Proceed to Step 2 with `<session-name> = <name>`. (If `_context_<name>.md` turns out not to exist, Step 3 notes it and restores from the session file alone.)
 

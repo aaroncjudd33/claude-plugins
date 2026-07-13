@@ -11,7 +11,7 @@ Full end-of-day close. Runs the complete checklist to ensure nothing is left beh
 
 ### 0. Read Session Context
 
-Run `pwd` and extract the repo slug (last path component). Resolve `session_root` and `handle` using Path Resolution (see Session Skill).
+Run `pwd` and extract the repo slug (last path component). Resolve `session_root` and `handle` using Path Resolution (`references/path-resolution.md`).
 
 Determine the session name from conversation context:
 1. Look back at the current conversation for the most recent "Resuming `<name>`" line (from session:start) OR "Switching to `<name>`" line (from session:switch). Use whichever is most recent.

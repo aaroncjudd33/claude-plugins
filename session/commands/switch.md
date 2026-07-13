@@ -11,7 +11,7 @@ Lightweight context swap for mid-day pivots between sessions. Skips permission m
 
 ### 1. Derive Repo Slug
 
-Run `pwd` and extract the last path component as the repo slug. Resolve `session_root` and `handle` using Path Resolution (see Session Skill).
+Run `pwd` and extract the last path component as the repo slug. Resolve `session_root` and `handle` using Path Resolution (`references/path-resolution.md`).
 
 **Session guard (command-level enforcement — acp-ajudd#1).** `switch` moves focus between existing sessions, so at least one session must exist for the slug. If `session_root` holds no session `.md` files (only `_`-prefixed infra files, or the directory is absent), **stop cleanly** — there is nothing to switch to:
 

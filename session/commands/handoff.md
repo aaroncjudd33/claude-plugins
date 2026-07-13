@@ -32,7 +32,7 @@ Because a receiving session has none of this conversation, every handoff — blo
 
 ### 1. Identify the Context — Coding Session or Sessionless
 
-Run `pwd` and extract the repo slug (last path component). Resolve `session_root` and `handle` using Path Resolution (see Session Skill).
+Run `pwd` and extract the repo slug (last path component). Resolve `session_root` and `handle` using Path Resolution (`references/path-resolution.md`).
 
 Determine whether a **coding session** is active (same pattern as `commit`/`checkpoint`):
 1. Look for the most recent "Resuming `<name>`" (from `session:start`) or "Switching to `<name>`" (from `session:switch`) line. Use whichever is most recent.

@@ -15,7 +15,7 @@ Run this **before** `/clear`. After `/clear` (or from a fresh terminal), run `/s
 
 Read current session from conversation context (most recent `session:start` output — "Resuming `<name>`"). If not found in context, read `~/.claude/memory/sessions/<slug>/_active` as a fallback.
 
-Resolve the repo slug as `basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"` and use that output verbatim. **Do NOT use the dashed project-directory name from your environment context** (e.g. `C--Users-ajudd--...`) — that is Claude Code's mangled memory-path key, not the slug. Resolve `session_root` using Path Resolution (see Session Skill).
+Resolve the repo slug as `basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"` and use that output verbatim. **Do NOT use the dashed project-directory name from your environment context** (e.g. `C--Users-ajudd--...`) — that is Claude Code's mangled memory-path key, not the slug. Resolve `session_root` using Path Resolution (`references/path-resolution.md`).
 
 **Session guard (command-level enforcement — acp-ajudd#1).** `store` dumps the active session's working context, so a session must exist. If neither the conversation context nor `~/.claude/memory/sessions/<slug>/_active` yields a session name, **stop cleanly**:
 

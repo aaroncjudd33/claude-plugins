@@ -11,7 +11,7 @@ Read-only snapshot of all sessions for the current project. Use this mid-session
 
 ### 1. Scan Sessions
 
-Run `pwd` and extract the repo slug (last path component). Resolve `session_root` and `handle` using Path Resolution (see Session Skill).
+Run `pwd` and extract the repo slug (last path component). Resolve `session_root` and `handle` using Path Resolution (`references/path-resolution.md`).
 
 Check for a `mine` argument — if present, set `filter_mine = true`.
 

@@ -14,7 +14,7 @@ Route a work item to a target session's inbox and record it in the source sessio
 
 ### 0. Resolve Context
 
-Run `pwd`, extract slug, resolve `session_root` and `handle` using Path Resolution (see Session Skill).
+Run `pwd`, extract slug, resolve `session_root` and `handle` using Path Resolution (`references/path-resolution.md`).
 
 Determine the current session name from conversation context (most recent "Resuming `<name>`" or "Switching to `<name>`" line). If no session is active, source attribution uses `from <slug>` only — warn: "No active session — routing from repo level. Run `/session:start` first for proper attribution."
 
