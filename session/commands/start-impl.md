@@ -7,6 +7,8 @@ description: Session start — Steps 4–9. Loaded on demand by start.md after t
 
 Loaded by `start.md` after the user makes their selection. Context already in scope: `slug`, `session_root`, `handle`, session type, user's chosen action and target name.
 
+**If this pickup was triggered by a pasted handoff block (a `dispatch ──▶ coding` work order), verify the note is for this terminal BEFORE acting on it (acp-ajudd#69).** Run the receiving-side check — a hard `Slug` match against `pwd` (always, even for this fresh coding terminal), and, since a fresh terminal has no role yet, **skip** the role check (the note legitimately assigns the coding role). **STOP + flag** on a `Slug` mismatch — a wrong-repo mispaste must not be acted on. The rule + mismatch messages live in **Session Skill § Cross-Session Paste Handoff → Receiving side — verify the target before acting**.
+
 ---
 
 ### 4. User Picks — Load or Create Session File

@@ -16,6 +16,7 @@ The dispatch model exists only where there is a **local inbox to dispatch from**
 
 ## Key properties (mirror the dispatch role — § The three roles § Inbox write-authority)
 
+- **The sole hub — strict cycle (acp-ajudd#74).** Dispatch is the **only** relay + validator between planning and coding; **planning and coding never exchange notes directly.** Legal edges are only `planning ──▶ dispatch ──▶ coding` and `coding ──▶ dispatch ──▶ planning`. A coding→planning message is a **two-hop relay** — coding emits `CODING ──▶ DISPATCH`, and dispatch re-emits `DISPATCH ──▶ PLANNING` (each note titled with its own destination, which is the human courier's routing instruction — acp-ajudd#69). Dispatch **relays a coding escape-hatch escalation up to planning without judging its relevance** — coding declares it; dispatch carries it.
 - **Read-only + notes-only.** Dispatch **reads anything and everything** but **writes nothing to files** — it never creates, edits, archives, or consumes an inbox entry, and never edits plugin code. Its only outputs are **handoff notes** (`/session:handoff`) to `code` and `refine`. If a record needs writing, it routes the record-authoring to `refine` (the one inbox writer).
 - **Communicates only via notes; never routes decisions to the human (acp-ajudd#63).** Dispatch talks to other roles through paste-block handoff notes, not by asking the human to decide. The human only *relays* paste-blocks between terminals. Dispatch may narrate what it is doing; it does not seek approval — the one exception is an **irreversible Teams send**, which always pre-gates to the human (§ Dispatch operating discipline).
 - **Validates the tree, doesn't rubber-stamp (acp-ajudd#57/#63).** On a return note, dispatch validates the actual working tree against the entry's Done-whens — post-hoc, non-gating (deploy-then-validate — § The dispatch↔code loop) — then shows the human a `SAFE-TO-CLOSE` / `HOLD` close-signal.
@@ -91,7 +92,13 @@ How this dispatch context gets its marching orders depends on whether planning a
 
 If a planning handoff has been pasted into this terminal, run **planning-directed**. Otherwise default to **dispatch-autonomous** from the board. State which mode you are in.
 
-### 5. Dispatch — Hand Off to Code
+**Before acting on ANY pasted handoff (a planning plan here, or a coding return note in Step 6), verify it is for you (acp-ajudd#69).** Run the receiving-side check — hard `Slug` match against `pwd` (always), plus a `<to-role>` match against this dispatch role (established-role check) — and **STOP + flag** on a mismatch instead of acting. The rule + mismatch messages live in **Session Skill § Cross-Session Paste Handoff → Receiving side — verify the target before acting**.
+
+### 5. Dispatch — Hand Off to Code (and Report Up at Batch Kickoff)
+
+**Report-up cadence — at each batch kickoff (acp-ajudd#74, absorbs #72 facet 4).** Kicking off a new batch is exactly when dispatch also reports on the whole roadmap. Alongside the `dispatch→code` work order below, ALSO produce:
+- **(a) A roadmap status glance for the human** — where everything stands: waves done / in-flight / queued, plus what is still `refining` and any captures. One glance, not a full dump.
+- **(b) A completion handoff back to planning** — a `DISPATCH ──▶ PLANNING HANDOFF` reporting what was **completed + validated** since the last report. This is the third leg of the loop (`dispatch ──▶ planning`), and it keeps planning in flow without planning having to ask. Emit it whenever there is validated work to report; skip only on the very first kickoff when nothing has completed yet.
 
 For the chosen work (single entry or a bundle), emit a **dispatch→code work order** via `/session:handoff` (Session Skill § Cross-Session Paste Handoff owns the block format; this command does not restate it). The order is essentially `code #X` plus process instructions:
 - **`Action: PICK UP #X`** (or `PICK UP #X,#Y (bundle)`), role `dispatch (<slug>) ──▶ coding (fresh)`.

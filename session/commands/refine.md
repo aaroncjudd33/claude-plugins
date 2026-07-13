@@ -36,6 +36,7 @@ Both the **write-early** path ("scope some, come back later, keep polishing") an
 - **No session file, no `_active` change.** Refine creates nothing under `<session_root>` and never touches `_active`. A coding session already active stays active *alongside* a refine, unaffected. (This is what decoupled refine from the `_active` redesign.)
 - **Nothing to expire or migrate.** With no session file there is no `refinement-*.md` to sweep, hide, or exclude from `session:migrate`. The record's own history (git for inbox items, Jira for stories) is the trail.
 - **Resumable through the record itself.** A `refining` inbox item shows up in `/session:start`'s inbox listing as resumable (marked `refining`); a work-repo story in *Gathering Requirements* is a first-class Jira object you reopen with `refine BPT2-XXXX` (or find via `/story:dashboard`).
+- **Verify a pasted handoff is for you before acting on it (acp-ajudd#69).** Refine receives `dispatch ──▶ planning` escalations (a blocked/ambiguous item routed up for re-scoping). Before acting on any pasted handoff block, run the receiving-side check — hard `Slug` match against `pwd`, plus a `<to-role>` match against this refine/planning role — and **STOP + flag** on a mismatch. Rule + messages: **Session Skill § Cross-Session Paste Handoff → Receiving side — verify the target before acting**.
 
 ## Instructions
 

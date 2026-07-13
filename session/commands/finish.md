@@ -76,7 +76,7 @@ Report anything that could be lost.
 
 **Non-plugin types:** if uncommitted changes exist, ask "Want to commit before closing?"
 
-**Plugin type:** do NOT prompt for a separate commit here. Uncommitted changes and unpushed local commits (from `session:commit`) are *expected* at plugin finish — they are the work being shipped, and the **deploy step (Step 11) commits, bumps, pushes, and reinstalls them** (deactivation, Step 12, is the terminal action after it). Report them as informational only, e.g. "Uncommitted changes + N local commits — will ship in the deploy step," never as at-risk. This is the finish half of the polymorphic lifecycle: for plugins, finish = the deploy.
+**Plugin type:** do NOT prompt for a separate commit here. Uncommitted changes and unpushed local commits (from `session:commit`) are *expected* at plugin finish — they are the work being shipped, and the **deploy step (Step 11) commits, bumps, pushes, and reinstalls them** (deactivation, Step 13, is the terminal action after it). Report them as informational only, e.g. "Uncommitted changes + N local commits — will ship in the deploy step," never as at-risk. This is the finish half of the polymorphic lifecycle: for plugins, finish = the deploy.
 
 If clean: "Git: clean" (for plugin, this means there is nothing to deploy — note that Step 11 will be a no-op).
 
@@ -154,7 +154,7 @@ Gather all pending questions and present as **one batched block**. Output and wa
 - **Memory capture (A2):** do not ask `skip / new`. Claude reviews the session itself, decides whether there is project/session knowledge worth saving, and captures it — reporting the outcome (`Captured: <name>` or `Memory: nothing new`). Override honored ("capture X, this way"), but the default is "you assess and do it."
 - **Plugin reviewed (F):** when this finish is deploying (Step 11 will run), the review is **mandatory, not optional** — run it automatically rather than presenting `skip / yes`. A deploy without a review is not acceptable.
 - **Open items completed this session (G/H/I):** items that were *this session's* picked-up `[inbox]` work and got completed are **auto-marked done** (show the reasoning, e.g. "marking done — completed this session"), not left open and re-asked.
-- **Net:** a bare `go` runs capture-if-relevant (Claude's call) → review → mark completed items done → then the deploy (Step 11) → deactivation (Step 12). Aaron overrides only exceptions.
+- **Net:** a bare `go` runs capture-if-relevant (Claude's call) → review → mark completed items done → then the deploy (Step 11) → return handoff if orchestrated (Step 12) → deactivation (Step 13). Aaron overrides only exceptions.
 - **Empty batch → no stop.** After applying these defaults, if no slots remain that genuinely need a decision, do NOT present an empty batch and wait — report the auto-resolutions (captured memory, auto-done items, review result) as informational output and proceed straight through Steps 8–12. Only stop at the batch when at least one ambiguous slot survives.
 
 The slot bodies and apply-logic below note where this default changes behavior for plugin type. **Story / cab / personal / general are unchanged** — they keep their explicit prompts.
@@ -370,7 +370,7 @@ git hash-object "<session_root>/<name>.md" > ~/.claude/memory/sessions/<slug>/<n
 
 **General sessions only:** Also check `~/.claude/memory/sessions/<slug>/<name>/` — if notes, decisions, or outputs were produced today, ensure they are written there before closing.
 
-Print the summary to screen. **For plugin type, this is not the final output** — the deploy (Step 11) runs after the worklog (Step 10) while the session is still active, then deactivation (Step 12) closes out silently, so the deploy's result is the true last line. For all other types, the summary is the final output.
+Print the summary to screen. **For plugin type, this is not the final output** — the deploy (Step 11) runs after the worklog (Step 10) while the session is still active, then deactivation (Step 13) closes out silently, so the deploy's result is the true last line. For all other types, the summary is the final output.
 
 ### 10. Work Log
 
@@ -404,15 +404,15 @@ Multiple entries per day are expected — always append, never overwrite.
 
 ### 11. Deploy — plugin type only (runs before deactivation)
 
-**Plugin finish IS the deploy.** This is where the session's work goes live. It runs after the history entry (8), the session summary + mark-completed (9), and the worklog (10) — but **before deactivation (Step 12), deliberately.** All session state is settled first; the code (version bump + push + reinstall) lands last among the content steps, mirroring the repo-based branch flow (state first, code last). Deactivation (removing `_active`) is the true terminal action, run only after the deploy fully completes — so the active session pointer stays present through the entire deploy and closes out last. (This ordering no longer has an edit-permission dependency — acp-ajudd#1 removed the edit-blocking hook — but keeping the deploy before deactivation is the clean lifecycle sequence and positions for future repo-tracked session state shared across developers.)
+**Plugin finish IS the deploy.** This is where the session's work goes live. It runs after the history entry (8), the session summary + mark-completed (9), and the worklog (10) — but **before deactivation (Step 13), deliberately.** All session state is settled first; the code (version bump + push + reinstall) lands last among the content steps, mirroring the repo-based branch flow (state first, code last). Deactivation (removing `_active`) is the true terminal action, run only after the deploy fully completes — so the active session pointer stays present through the entire deploy and closes out last. (This ordering no longer has an edit-permission dependency — acp-ajudd#1 removed the edit-blocking hook — but keeping the deploy before deactivation is the clean lifecycle sequence and positions for future repo-tracked session state shared across developers.)
 
-**For story / cab / personal / general: skip this step entirely.** Those types push during `commit` and have no version/reinstall concept — Step 11 is skipped and their finish ends at deactivation (Step 12).
+**For story / cab / personal / general: skip this step entirely.** Those types push during `commit` and have no version/reinstall concept — Step 11 is skipped and their finish ends at deactivation (Step 13).
 
 **Deploy-then-validate — this deploy is NOT gated (acp-ajudd#57, revises #44).** In the dispatch↔code loop (Session Skill § **The dispatch↔code loop — deploy-then-validate**), a handed-off coding session self-verifies against the Done-whens and **FINALIZES by default — no HOLD, no greenlight gate.** It ships here, reports `State: IMPLEMENTED-DEPLOYED` back to dispatch, and dispatch confirms the working tree **post-hoc** (non-gating; a rare miss costs one extra deploy). The **only** reason a handed-off session does *not* reach this step is the escape hatch — it stopped mid-build for a question / unclear point / disagreement / found problem and handed a note back instead. A **solo** coding session with no dispatcher also deploys here normally.
 
 **No-op guard:** if the Step 2 git scan found nothing to ship (clean tree AND no unpushed local commits from `session:commit`), report `Nothing to deploy — finish complete.` and stop. Do not bump or push.
 
-Otherwise, present the deploy as the clearly-final, visually distinct step — the last thing the user sees (only the silent deactivation of Step 12 follows it):
+Otherwise, present the deploy as the clearly-final, visually distinct step — the last thing the user sees (only the silent deactivation of Step 13 follows it):
 
 ```
 ────────────────────────────────────────────────
@@ -454,9 +454,21 @@ A Claude Code restart may be required to load the new version — note this if s
 Deployed: session v1.53.0 → v1.54.0 — pushed to master, reinstalled (live)
 ```
 
-### 12. Deactivate Session (terminal action)
+### 12. Return Handoff — if orchestrated (acp-ajudd#74)
 
-The true final action of finish — run **only after the deploy (Step 11) has fully completed** (for plugin type), so the version bump and any other plugin-file edits during the deploy were still authorized by an active coding session. For non-plugin types Step 11 is skipped, so deactivation follows the session summary directly. This step edits no plugin files — it only removes the marker — so it is always safe to run last.
+**Emit a return handoff back to dispatch — but only if this coding session was orchestrated.** Orchestration is **detected, not declared** (Session Skill § The three roles, Pillar 4): a coding session has no knowledge of a dispatch/planning layer above it; it learns it was orchestrated **only because it was fed a handoff note.** The detection cue in this file: the session was **created from a dispatch/planning work order** — recorded in its `## Picked up from inbox` provenance as a `dispatch ──▶ coding` (or `planning ──▶ coding`) handoff. Decide from that:
+
+- **Orchestrated (a work-order note fed this session)** → **ALWAYS emit a return handoff** via `/session:handoff` — a `CODING ──▶ DISPATCH HANDOFF` block (Session Skill § Cross-Session Paste Handoff owns the format; two-ended title per acp-ajudd#69). This is the coding→dispatch leg of the loop:
+  - **Happy path** → `State: IMPLEMENTED-DEPLOYED` (or `IMPLEMENTED` for a non-deploying zone like personal), summarizing what shipped and how to validate it (the diff / files / published artifact), so dispatch can validate the tree post-hoc against the entry's Done-whens and release the next wave.
+  - **Stop-reason** (the escape hatch — the session did NOT finish normally) → `State: BLOCKED-QUESTION` / `FOUND-ISSUE` / `REQUIREMENTS-CHANGE`, flagged for planning where relevant; **dispatch relays it up** (no direct coding→planning edge — Pillar 1). In this case the deploy did not run.
+  - The footer must be **command-invoking** (acp-ajudd#43): tell the reader to paste the block into the dispatch terminal. This return note is also the human's signal that it is safe to clear this implementation terminal and start a fresh coding session on the next work order.
+- **Solo (no handoff note ever received)** → **skip this step** — there is no one to report to (the solo carve-out, unchanged). This is the common case for a session started directly via `code`/`start` with no dispatcher.
+
+For **plugin** type this return block is emitted **after** the deploy (Step 11), so it is the last visible output before the silent deactivation. For **personal** (also an inbox zone, can be orchestrated) there is no deploy, so it follows the session summary. **story / cab / general are never dispatch-orchestrated** (Jira flow / no dispatch layer) — skip.
+
+### 13. Deactivate Session (terminal action)
+
+The true final action of finish — run **only after the deploy (Step 11) and any return handoff (Step 12) are done** (for plugin type), so the version bump and any other plugin-file edits during the deploy were still authorized by an active coding session. For non-plugin types Step 11 is skipped, so deactivation follows the session summary (or the Step 12 return handoff, if orchestrated) directly. This step edits no plugin files — it only removes the marker — so it is always safe to run last.
 
 Remove the active marker so no future conversation inherits stale state. `_active` is always local — do not touch the repo session directory for this step:
 
@@ -466,4 +478,4 @@ rm -f ~/.claude/memory/sessions/<slug>/_active
 
 On PowerShell use: `Remove-Item -ErrorAction SilentlyContinue ~/.claude/memory/sessions/<slug>/_active`
 
-Deactivation is silent — it produces no user-facing output, so for plugin type the Step 11 `Deployed: …` line remains the last thing on screen.
+Deactivation is silent — it produces no user-facing output. The last thing on screen is therefore the **Step 12 return handoff block** if this session was orchestrated, otherwise (solo plugin session) the Step 11 `Deployed: …` line.
