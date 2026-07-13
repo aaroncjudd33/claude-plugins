@@ -72,10 +72,10 @@
     },
     {
       "name": "memory",
-      "description": "Project and feature memory management — load, save, scan, and review git-tracked project memories by feature label. On-demand loading; nothing loads automatically.",
+      "description": "Project and feature memory management — load, save, scan, groom, and localize git-tracked project memories by feature label. On-demand loading; nothing loads automatically.",
       "source": "./memory",
       "category": "productivity",
-      "keywords": ["memory", "project memory", "feature", "label", "load", "save", "scan", "review", "knowledge"]
+      "keywords": ["memory", "project memory", "feature", "label", "load", "save", "scan", "groom", "localize", "knowledge"]
     },
     {
       "name": "user",
