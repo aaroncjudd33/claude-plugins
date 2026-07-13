@@ -168,7 +168,11 @@ Every inbox entry gets a **permanent, per-entry handle** at creation, so it can 
 
 **Counter storage — local, never in a repo.** `~/.claude/config/inbox-seq.json` (`{ "<slug>": <n>, ... }`) on the author's machine. Because the counter is never in the shared repo and is namespaced per user, there is nothing shared to merge-conflict on.
 
-**Permanence.** An ID is assigned once and never reused or renumbered. Folding/deleting an entry **retires** its ID; the counter never goes backward.
+**Self-healing seed — `next` can never hand back a used ID (acp-ajudd#66).** The stored counter is only the fast path; on every `next` the minter also **scans the slug's `_inbox*.md` files** (`_inbox.md`, `_inbox_archive.md`, any `_inbox_<name>.md`) for the highest `#N` already issued to *this* `<acronym>-<handle>` and seeds from `max(stored-counter, that file max) + 1`, computed and persisted atomically inside the mint lock. So a lagging counter — or a header that was written *without* calling the minter — is self-correcting: the next real mint sees the existing number and steps past it. **This retires the old operational caution** ("don't trust `inbox-id.py`; hand-pick max+1"): the script now reconciles against the files itself, so it is always safe to trust. Hand-picking is no longer needed and must stop (see the hard rule below).
+
+**Never hand-write a header — always mint (acp-ajudd#66, half two).** The `## <acronym>-<handle>#<n>` header is issued by `inbox-id.py next` and **nothing else**. Do **not** hand-assign a number by eyeballing the inbox, even when in a hurry or coordinating across terminals — hand-written headers are exactly what desynced the counter and caused the `#63` double-grab. Every creation path routes through the minter: `refine` (new/promoted `work`), `spawn` (the `[spawn]` entry), and `/session:inbox` (handoffs and captures). `dispatch` is read-only and authors no entries — if it needs one written, it routes the record-authoring to `refine`, which mints. The self-heal above is the safety net for a slip, not a license to skip the script.
+
+**Permanence.** An ID is assigned once and never reused or renumbered. Folding/deleting an entry **retires** its ID; the counter never goes backward (the file scan only ever raises the floor).
 
 **Generating an ID at write time** (any inbox write site):
 ```bash

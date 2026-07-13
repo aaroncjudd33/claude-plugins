@@ -21,19 +21,30 @@ Why this shape (see session stable-inbox-ids design):
 Deferred (refine later): acronym collisions across two different repos, and
 multi-user migration. Neither bites for local/single-user use.
 
+Self-healing counter (acp-ajudd#66): `next` never hands back an ID that
+already exists. It seeds from `max(stored-counter, highest #N already present
+across the slug's _inbox*.md files) + 1`, computed and persisted atomically
+inside the mint lock. So even if a header was hand-written without calling this
+script (the bug's other half), the next real mint scans the files, sees it, and
+steps past it. The stored counter is still the fast path; the file scan is the
+safety net that keeps it honest.
+
 Usage:
-  inbox-id.py next   --slug <slug> --handle <handle> [--peek]
+  inbox-id.py next   --slug <slug> --handle <handle> [--peek] [--sessions-root <dir>]
   inbox-id.py get    --slug <slug>
   inbox-id.py set    --slug <slug> --value <n>
   inbox-id.py acronym --slug <slug>
 
-`next`      prints the next ID and increments the stored counter
-            (--peek prints what the next ID WOULD be without incrementing).
-`get`       prints the current counter for the slug (0 if none).
+`next`      prints the next ID, seeding from max(stored, file-max)+1, and
+            persists the counter (--peek prints what the next ID WOULD be
+            without persisting).
+`get`       prints the current STORED counter for the slug (0 if none) — this
+            is the raw counter, not the file-reconciled next value.
 `set`       sets the counter (used by one-time migration).
 `acronym`   prints just the derived acronym for the slug.
 """
 import argparse
+import glob
 import json
 import os
 import re
@@ -41,6 +52,12 @@ import sys
 import time
 
 DEFAULT_SEQ_FILE = os.path.expanduser("~/.claude/config/inbox-seq.json")
+
+# Where a slug's inbox files live, by convention (see inbox-convention.md).
+# `next` scans every `_inbox*.md` here for already-issued IDs and seeds the
+# counter from the true max, so a hand-written header (a mint that bypassed
+# this script) can never make `next` hand back an ID that already exists.
+DEFAULT_SESSIONS_ROOT = os.path.expanduser("~/.claude/memory/sessions")
 
 # Locking for the read-modify-write in `next`. The critical section is a tiny
 # JSON read + write (sub-millisecond), so a live holder is never contended for
@@ -125,6 +142,45 @@ def acronym(slug):
     return letters
 
 
+def scan_file_max(sessions_root, slug, acr, handle):
+    """Highest #N already issued for (acr, handle) across the slug's inbox files.
+
+    Scans every `_inbox*.md` under `<sessions_root>/<slug>/` — the live
+    `_inbox.md`, its `_inbox_archive.md`, and any per-session `_inbox_<name>.md`
+    (and their archives). Matches only headers bearing THIS acronym + handle
+    (`<acr>-<handle>#<n>`), so per-user / per-slug namespacing is preserved.
+
+    Returns the max N found, or 0 if none. Never raises — a missing dir,
+    unreadable file, or malformed header degrades to "found nothing here" so
+    the counter mechanism can never be wedged by the filesystem. This is the
+    self-heal that makes a hand-written header (a mint that skipped this
+    script) self-correcting: the next real mint sees it and steps past it.
+    """
+    if not (acr and handle):
+        return 0
+    id_re = re.compile(re.escape(acr) + "-" + re.escape(handle) + r"#(\d+)")
+    best = 0
+    try:
+        pattern = os.path.join(sessions_root, slug, "_inbox*.md")
+        paths = glob.glob(pattern)
+    except OSError:
+        return 0
+    for path in paths:
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                text = f.read()
+        except (OSError, UnicodeDecodeError):
+            continue  # unreadable file — skip it, never crash the mint
+        for m in id_re.finditer(text):
+            try:
+                n = int(m.group(1))
+            except ValueError:
+                continue
+            if n > best:
+                best = n
+    return best
+
+
 def load_seq(path):
     try:
         with open(path, "r", encoding="utf-8") as f:
@@ -148,6 +204,7 @@ def main():
     ap.add_argument("--value", type=int, default=None)
     ap.add_argument("--peek", action="store_true")
     ap.add_argument("--seq-file", default=DEFAULT_SEQ_FILE)
+    ap.add_argument("--sessions-root", default=DEFAULT_SESSIONS_ROOT)
     args = ap.parse_args()
 
     acr = acronym(args.slug)
@@ -175,15 +232,21 @@ def main():
     if not args.handle:
         ap.error("next requires --handle")
 
-    # --peek never writes, so it needs no lock — report what the next ID would be.
+    # The next ID is seeded from the TRUE max, not the stored counter alone:
+    #   n = max(stored-counter, highest #N already in the inbox files) + 1
+    # so a lagging counter — or a header that was hand-written without calling
+    # this script — can never cause `next` to return an ID that already exists
+    # (acp-ajudd#66). --peek reports the same value without persisting.
     if args.peek:
-        print(f"{acr}-{args.handle}#{current + 1}")
+        file_max = scan_file_max(args.sessions_root, args.slug, acr, args.handle)
+        n = max(current, file_max) + 1
+        print(f"{acr}-{args.handle}#{n}")
         return
 
     # Real mint: serialize the read-modify-write behind an exclusive lock so
     # concurrent callers can't read the same value and collide (or roll the
-    # counter backward). Re-read the sequence INSIDE the lock — the pre-lock
-    # `current` above may be stale by the time we hold it.
+    # counter backward). Re-read the sequence AND re-scan the files INSIDE the
+    # lock — the pre-lock `current` above may be stale by the time we hold it.
     lock_path = args.seq_file + ".lock"
     fd = acquire_lock(lock_path)
     if fd is None:
@@ -198,7 +261,8 @@ def main():
         return
     try:
         seq = load_seq(args.seq_file)
-        n = int(seq.get(args.slug, 0)) + 1
+        file_max = scan_file_max(args.sessions_root, args.slug, acr, args.handle)
+        n = max(int(seq.get(args.slug, 0)), file_max) + 1
         seq[args.slug] = n
         save_seq(args.seq_file, seq)
     finally:
