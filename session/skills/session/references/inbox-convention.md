@@ -23,6 +23,7 @@ Before the item-driven-sessions overhaul, multi-plugin repos used one inbox file
 ```markdown
 ## <id> · [YYYY-MM-DD @<handle>] from <source-slug> / <session-name> (<source-type>) — <short title>
 > [type: work · status: new]
+> [depends-on: <id> — <reason>]        ← optional; see § Sequencing
 <Context: what it is, why it matters, what needs to happen.>
 ```
 
@@ -32,6 +33,7 @@ Before the item-driven-sessions overhaul, multi-plugin repos used one inbox file
 - `<source-type>` — the **provenance** axis: the source session's type (`story` / `cab` / `plugin` / `personal` / `general`). It sits positionally inside `from … (<…>)` and answers *where the entry came from*. (It is named `source-type` to keep it distinct from the entry's own `type` — the `work`/`capture` label below.)
 - **Keep both repo AND session — never collapse to one.** Derive all three from the *source* session context when routing.
 - The `> [type: … · status: …]` line directly under the header carries the entry's **type** (`work` / `capture`) and, for `work`, its **lifecycle status** (`new` → `refining` → `ready`). See the Inbox Model below. It is optional for back-compat; when absent, defaults apply.
+- The optional `> [depends-on: <id> — <reason>]` line declares a **sequencing prerequisite** — this entry must not be picked up until `<id>` is done. See § Sequencing.
 
 Keep it self-contained — the receiving session may pick this up weeks later with no memory of the source conversation.
 
@@ -79,7 +81,25 @@ capture:  (no lifecycle)  ── read ──▶  promote to work · discard · a
 - **Old `> [type: note …]` / `> [type: data …]`** → **`type: capture`** (the info type).
 - **Old `intent:` hint** (`intent: story` / `fyi` / `data`) → the **retired sub-label**; `intent: story` reads as `type: work`, `intent: fyi` / `intent: data` read as `type: capture`. No new entry writes `intent:` — the `work`/`capture` type carries the only distinction.
 - **Old statuses:** `new`/`unread` → `type: capture`; `consumed` → already dispositioned (archived).
+- **No `depends-on` line** → no declared prerequisite; the entry is independently dispatchable (the common case).
 - Parse independently; never break on an absent, partial, or legacy line.
+
+## Sequencing — the `depends-on` marker (acp-ajudd#67)
+
+Some `work` must land in order — a page-refresh that publishes a model can't run until the model's vocab has shipped; a command that reads a marker can't be built until the marker is defined. Before acp-ajudd#67 that ordering lived **only in prose**, so nothing stopped an entry being pulled early: acp-ajudd#60 was dispatched and drafted before its prerequisite #62 landed, then had to be stood down mid-flight (the HALT detour — see SKILL § HALT). The fix makes the ordering **machine-visible** and gives `dispatch` a rule to honor it.
+
+**The marker.** A `work` entry that must not be picked up before another entry is done carries an optional line directly under its `> [type: …]` line:
+
+```markdown
+> [depends-on: acp-ajudd#67 — #65 publishes the model; if #67 adds HALT/depends-on vocab, #65 must carry it. Sequence: #66 -> #67 -> #65.]
+```
+
+- **`<id>`** — the prerequisite entry's stable handle (one or more, comma-separated). Reference by the permanent `<acronym>-<handle>#<n>`, never a list position.
+- **`— <reason>`** — a short human-readable why, so a person reading the inbox understands the ordering without reconstructing it. Optional but strongly encouraged.
+- **Optional and back-compatible** — no line means no declared prerequisite (the common case). Parse it independently of `type`/`status`; never break on its absence.
+- **`refine` writes it; `dispatch` reads it.** The `refine` role (the inbox author) adds the marker when it scopes work it knows is ordered. `dispatch` consults it when deciding what to pull (below). A coding session may add one to a *live* (pre-conversion) entry, same as any other body edit.
+
+**Dispatch prereq-check rule — an entry with an unmet dependency is NOT dispatchable.** Before `dispatch` pulls or bundles a `ready` entry, it checks the entry's `depends-on` line: for each cited `<id>`, the prerequisite is **met** only if that entry is `[DONE]` / `[CONSUMED → session …]` in `_inbox_archive.md` (implemented or in-flight in a coding session), and **unmet** if it is still live (`new` / `refining` / `ready`) or itself blocked. An entry with any unmet dependency is **held, not dispatched** — dispatch moves to the next dispatchable entry and, if the ordering is unclear or contested, routes a note to `refine` (never a question to the human — SKILL § Dispatch operating discipline). This is the machine-readable half that makes dispatch's **autonomous-from-inbox** mode work (SKILL § The three roles; `commands/dispatch.md`). Instruction-level only — no hook (acp-ajudd#1).
 
 ## Captures inbound — reading and dispositioning (acp-ajudd#10)
 
@@ -149,7 +169,7 @@ The work layer = `work` inbox entries (their body / requirements / acceptance cr
 
 - **A coding session *may* edit a live `work` entry.** While it is still in the inbox, editing its body is just **planning-in-the-moment** — free-rein, exactly like `refine`. There is no "coding sessions can't touch requirements" prohibition.
 - **Picking up a `work` entry consumes it — fold-then-archive (acp-ajudd#40).** The pickup folds the body into the session file and **removes** the entry from the *live* inbox — appending a `[CONSUMED <date> → session <name>]` copy to `_inbox_archive.md` first, as a recovery net (preserving its stable `<id>` in the session's provenance block). After that there is **no live entry left to edit** — the requirement now lives, and evolves, in the session. So the work can never exist as *both* a divergent live entry and an in-flight session: consuming is what makes it session-only. **Self-enforcing** — nothing forbids double-editing because there is only ever one live copy. The archived copy is **history, not a second live record**, and the `<id>` is **retired, never reused**.
-- **Consumed = frozen after conversion (acp-ajudd#59).** A consumed entry takes **no writes from any role** once converted — not the refine author, not a dispatcher, not the coding session. There is nothing left to edit by construction, and by rule nobody reopens it: a change the build needs becomes a **new inbox entry / story**, never a re-edit of the retired one. This is the inbox-side statement of the per-role write-authority set (SKILL § The three roles § Inbox write-authority): consumed = frozen, `refine` writes work surgically (single-entry, never a bulk `_inbox.md` rewrite), `dispatch` is read-only, and `code` may edit only a *live* (pre-conversion) entry.
+- **Consumed = frozen after conversion (acp-ajudd#59).** A consumed entry takes **no writes from any role** once converted — not the refine author, not a dispatcher, not the coding session. There is nothing left to edit by construction, and by rule nobody reopens it: a change the build needs becomes a **new inbox entry / story**, never a re-edit of the retired one. This is the inbox-side statement of the per-role write-authority set (SKILL § The three roles § Inbox write-authority): consumed = frozen, `refine` writes work surgically (single-entry, never a bulk `_inbox.md` rewrite), `dispatch` is read-only, and `code` may edit only a *live* (pre-conversion) entry. (Do not confuse with **halted** work — stood down *before* completion — which also never reopens but re-enters as a **new entry citing the halted one**; see SKILL § HALT.)
 - **Jira stories keep the "locked once *In Progress*" rule.** A Jira story is **not consumable** — you can't fold-then-archive it — so the exclusivity invariant can't be enforced structurally for stories. Instead, `/story:update` **locks the description once the story moves to *In Progress***, achieving the same "requirements don't drift mid-build" outcome by a lock rather than by deletion. Exclusivity-by-consumption is therefore **inbox-native only**; stories get the lock as their equivalent.
 
 What a coding session **still does freely**: write/update its **own session file**; **post NEW inbox entries** — cross-session handoffs (`/session:inbox`), spawns, and captures. Posting new entries is unrelated to the invariant (it creates fresh entries, it doesn't fork an in-flight one).
