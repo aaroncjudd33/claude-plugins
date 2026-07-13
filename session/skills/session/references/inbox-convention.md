@@ -41,6 +41,8 @@ Keep it self-contained — the receiving session may pick this up weeks later wi
 
 > **This restores a lightweight, visible type** (superseding the single-lifecycle "everything is a capture" model of acp-ajudd#21, which had removed the type axis entirely). The type is now shown at a glance and answers one question — *build it, or read it?* Back-compat for the older syntax is spelled out at the end of this section.
 
+> **Definitions live in SKILL.md § Terminology (the canonical glossary — acp-ajudd#70).** `work`, `capture`, and the `new → refining → ready` maturity lifecycle are *defined* there in one line each; this section owns their **mechanics** — the entry format, the status line, labeling, and back-compat parsing. Don't re-derive what the words mean here; point to the glossary.
+
 **An inbox holds `work` and `captures`.** The type is a **lightweight, visible label** — nothing more. It is deliberately *not* heavy per-type command branching (that was the old complexity we don't want back).
 
 - **`work`** — a thing to build. It has the scoping lifecycle `new → refining → ready` and is picked up with `code`. **A Jira story is just work's work-repo form** — so the generic word for a buildable unit is **work**, not "story," "record," or "item." (Those umbrella nouns are retired — acp-ajudd#62.)

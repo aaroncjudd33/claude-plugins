@@ -7,7 +7,11 @@ description: "This skill governs session lifecycle across all project types. Loa
 
 Governs session lifecycle across all project types (plugin, story, cab, personal, general).
 
-## Terminology — terminal vs. coding session (acp-ajudd#64)
+## Terminology — the canonical glossary (acp-ajudd#64, #70)
+
+**This section is the single source of truth for what each load-bearing term MEANS.** Every other doc — `references/*.md`, `commands/*.md`, the Confluence page — may describe how a term *behaves in a flow* (its mechanics) but must **not re-define the term**: it points here instead. The payoff is bounded but real (acp-ajudd#70): a **conceptual** change (what a term means, how the roles relate) becomes a one-entry edit here instead of an N-file rewrite. A pure **rename** (e.g. `work` → something else) still needs a find/replace of the term wherever it is *used* — the glossary removes the N re-explanations, not every occurrence.
+
+### The three "session"-family words
 
 Three words, kept distinct so the word "session" never has to carry two meanings at once:
 
@@ -17,12 +21,26 @@ Three words, kept distinct so the word "session" never has to carry two meanings
 
 **Vocabulary only — nothing is renamed. `/session:*` command names and the plugin name are unchanged (acp-ajudd#64).**
 
-**Refine (`/session:refine` or `session:start` → `refine [topic]`)** is the **analyze-then-record** flow: scope raw requirements or a bug against the actual repo before code is written. It creates **no session file in any zone** — the realization is that the *work it produces is itself the work-in-progress store as well as the final deliverable*, so there is nothing separate to persist. A session file is only ever created for **work being done** (a coding session), never for scoping. Refine therefore does **not** touch `_active`, create a session file, or leave anything to migrate/expire — a coding session already active stays active alongside a refine. Both entry points converge on `commands/refine.md`. The work is written **early** (after the first substantive pass) in a "still-scoping" state and iterated in place; graduation is a **status flip** — no new artifact. The target is **strictly the zone — no override, no target picker** (acp-ajudd#17):
-- **plugin / personal** → a **`work` entry** in `_inbox.md` at `status: refining` → flipped to `status: ready` at graduation. Resumable via the `refining` work listing at `/session:start`.
-- **work repo** → a **Jira story** (work's work-repo form) created in *Gathering Requirements* (project resolved-or-confirmed, not assumed `BPT2`) → transitioned to *Ready For Work* at graduation. The project is the only thing ever confirmed; the *kind* of work is fixed by zone. A Jira story is a visible artifact others can grab, so the "first substantive pass" threshold (not the first message) gates creation to avoid half-baked stories on the board.
-- **general** → **no system of record — refine creates nothing.** Scope verbally; the only outbound is a `/session:inbox` capture. (No prompt, no role logic — the graduation offer is shown the same way to everyone; security is repo zone + source-control write access, never a config-field role.)
+### Glossary — one line each; the pointer names the section that owns the term's mechanics
 
-The maturity lifecycle (`new` → `refining` → `ready`) is the same mental model across zones — rough → iterate → ready, exactly Heber's Jira flow — mapped onto whatever the zone uses for **work** (an inbox `work` entry, or a Jira story). Refine never becomes a build session, and it **never offers to `code`** (acp-ajudd#56): it ends at `ready` / *Ready For Work* and stops. `code`-ing `ready` work into a coding session is a **separate, deliberate gesture by whoever builds it** — not a next-step refine surfaces. Legacy `refinement-*.md` files from the old model are harmless — still hidden from the default listing and skipped by `session:migrate` — and can be deleted whenever convenient.
+- **terminal** — a Claude Code conversation; several can run and collaborate on one machine. → *this section, above; collaboration in* § The three roles.
+- **coding session** — the file-backed (`<name>.md`) work unit, born only by `code`-ing work; the sole thing this plugin persists. → § Session Types, § The file dictates the mode.
+- **session** — umbrella term for the whole system and the plugin / command name; qualify as **coding session** when you mean the file. → *this section, above.*
+- **stance** — the behavioral posture of a context, one of **planning** (default, sessionless) or **coding** (explicit, immutable, backed by a session file); read from file-presence, never a stored flag. → § Session Stance.
+- **the three roles** — **refine**, **dispatch**, **code** — the operational unit of the dispatch model; each context knows and declares its own role. → § The three roles.
+  - **refine / refinement** — the **planning role that authors the inbox**: scopes `work`, mints IDs, promotes `capture`→`work`; sessionless; the one inbox writer. Entered by the `refine` verb. → § The three roles, `commands/refine.md`.
+  - **dispatch** — the **planning role that coordinates**: reads/bundles/sequences `ready` `work`, hands notes to `code`, validates the returned tree, decides done; sessionless, read-only + notes-only. → § The three roles, `commands/dispatch.md`.
+  - **code / coding** — the **coding role that implements**: folds in the `ready` `work` and builds; fresh per build; the only role with a session file. Entered by the `code` verb. → § The three roles, § Session Types.
+- **work** — a thing to build (the generic buildable unit; a Jira story is work's work-repo form, an `_inbox.md` `work` entry its plugin/personal form). → `references/inbox-convention.md` § Inbox Model, § State-Exclusivity.
+- **capture** — inbound info handed to a session (a note / data payload / stray idea); read-and-dispositioned, not scoped, unless promoted to `work`. → § Captures Inbound, `references/inbox-convention.md` § Captures inbound.
+- **maturity lifecycle** — the `new` → `refining` → `ready` stages a `work` entry passes through (rough → iterate → ready; Heber's Jira flow); orthogonal to pickup state. → `references/inbox-convention.md` § Inbox Model, `commands/refine.md`.
+- **handoff note / handoff block** — the self-contained, role-aware paste block that carries the **run** (what to do, watch-fors, report-back) between terminals; distinct from the `work` entry, which carries the **spec**. → § Cross-Session Paste Handoff.
+- **capture disposition** — the fate applied to a `capture` on read: **promote** (→ `work`), **discard**, **absorb**, or **feed a refinement**; a non-completion outcome stamped `[DISPOSITIONED … — <fate>]`. → § Captures Inbound, `references/inbox-convention.md` § Disposition & completion.
+- **depends-on** — an optional `> [depends-on: <id> — <reason>]` marker declaring a sequencing prerequisite; `refine` writes it, `dispatch` honors it (an unmet dependency = not dispatchable). → § The three roles (prereq-check), `references/inbox-convention.md` § Sequencing.
+- **HALT / halted** — the clean mid-flight stand-down of dispatched work (`Action: HALT` out / `State: HALTED` back): no publish, no commit, WIP preserved; re-enters as a NEW entry citing the halted one. → § HALT.
+- **consumed = frozen** — the state of a `work` entry after `code` picks it up (fold-then-archive): it takes **no further writes from any role**; changes become a new entry. → § State-Exclusivity, § The three roles § Inbox write-authority.
+
+**Refine, in one line and pointing onward:** the **analyze-then-record** planning flow that scopes raw requirements into `work` before any code is written — sessionless in every zone (the work it produces is itself the WIP store *and* the deliverable), targeting **strictly by zone** (plugin/personal → a `work` entry; work repo → a Jira story; general → nothing), and it **never offers to `code`** (acp-ajudd#56). Full mechanics: § Session Types, § Session Stance, and `commands/refine.md`. Legacy `refinement-*.md` files from the old model are harmless — hidden from the default listing, skipped by `session:migrate` — and can be deleted whenever convenient.
 
 ---
 

@@ -8,6 +8,8 @@ argument-hint: "[optional: a topic or ids to focus on]"
 
 Assume the **dispatch role** (Session Skill § The three roles — the dispatch model). Dispatch is the coordinator of the three-role model: it **reads** `ready` `work`, **bundles** related entries, **sequences** them by their `depends-on` markers, hands implementation notes to fresh `code` sessions, validates the returned tree post-hoc, and decides done. It is **sessionless** — like `refine`, it creates **no session file** and never touches `_active`.
 
+> **Vocabulary:** `dispatch`, `refine`, `code`, `work`, `depends-on`, `HALT`, and the handoff note/block are *defined* in the Session Skill § Terminology glossary (acp-ajudd#70); this command owns the dispatch **mechanics** below.
+
 This command gives dispatch a **first-class start** so it no longer has to be bootstrapped by pasting a briefing note (acp-ajudd#71). Invoking `/session:dispatch` **is** the "told" that determines the role (role determination is told, not auto-detected — § The three roles): the command declares the context as dispatch, loads the discipline, and orients on the inbox.
 
 ## Scope — inbox zones only (plugin / personal)

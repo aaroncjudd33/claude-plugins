@@ -8,6 +8,8 @@ argument-hint: "[topic, story area, or existing record to resume]"
 
 An **analyze-then-record** flow for scoping work before any code is written. Paste in rough requirements or a bug, ask questions, and have Claude ground the answers in the actual repo and its project memories — writing well-scoped **work** that an implementation session later picks up.
 
+> **Vocabulary:** `refine`, `work`, `capture`, `stance`, and the `new → refining → ready` lifecycle are *defined* in the Session Skill § Terminology glossary (acp-ajudd#70); this command owns the refine **mechanics** below.
+
 Refine is universal. What the work *is* — a `work` inbox entry or a Jira story — is decided **strictly by the repo's zone**, never by who runs it, and with no override or target picker:
 
 - **Plugin / personal** (item-driven) → a **`work` entry** in `_inbox.md`.
