@@ -51,7 +51,7 @@ Assemble what a *fresh* receiving session needs. State everything self-contained
 
 **Sessionless path** — there is no session file, so assemble from:
 - the **conversation** — the task, the reasoning, what's decided vs. still open;
-- the **records this planning context produced** — inbox items it wrote/scoped for this slug (their `<acronym>-<handle>#<n>` IDs), Jira stories it created/refined, decisions and rejected options;
+- the **work this planning context produced** — `work` entries it wrote/scoped for this slug (their `<acronym>-<handle>#<n>` IDs), Jira stories it created/refined, decisions and rejected options;
 - the **exact next action** — the single concrete thing the coding session should do first.
 
 Both paths collect the same shape:
@@ -83,8 +83,8 @@ Reuse the **existing `_context_<name>.md` convention** so the file is discoverab
    - <decision> — **Why:** <reasoning>
    - <rejected option> — **Why not:** <reason>
 
-   ## Records Produced This Planning Context
-   - <acronym>-<handle>#<n> — <inbox item summary + status>
+   ## Work Produced This Planning Context
+   - <acronym>-<handle>#<n> — <inbox entry summary + status>
    - <Jira key> — <story summary>   (work repos)
 
    ## Guardrails / Do-NOTs
@@ -100,9 +100,9 @@ Reuse the **existing `_context_<name>.md` convention** so the file is discoverab
 
 ### 4. Emit the Handoff Block (both paths)
 
-Print the block in the **standard handoff format** — the **Session Skill § Cross-Session Paste Handoff** owns the exact template and rules; this command does not restate them (single source of truth). The block is **role-aware** (`<role>` ∈ {refinement, dispatch, coding} — § The three roles). Determine this context's role first: a **session file present** → `coding`; **sessionless + dispatch role assumed** (via `/session:dispatch`, or a pasted briefing on another machine) → `dispatch`; **sessionless otherwise** → `refinement`. Fill the provenance header from Steps 1–2:
+Print the block in the **standard handoff format** — the **Session Skill § Cross-Session Paste Handoff** owns the exact template and rules; this command does not restate them (single source of truth). The block is **role-aware** (`<role>` ∈ {refine/refinement, dispatch, coding} — § The three roles; the planning-side **handoff token** is written `PLANNING`, the canonical name for the refine/refinement role — SKILL § Cross-Session Paste Handoff). Determine this context's role first: a **session file present** → `coding`; **sessionless + dispatch role assumed** (via `/session:dispatch`, or a pasted briefing on another machine) → `dispatch`; **sessionless otherwise** → `refine` (its handoff token is `PLANNING`). Fill the provenance header from Steps 1–2:
 - **Title** — names **both ends**, uppercased: `<FROM-ROLE> ──▶ <TO-ROLE> HANDOFF` (e.g. `CODING ──▶ DISPATCH HANDOFF`, `DISPATCH ──▶ CODING HANDOFF`, `DISPATCH ──▶ PLANNING HANDOFF`) — acp-ajudd#69. `<FROM-ROLE>` is this context's origin role and always matches the left side of the `──▶` provenance line (acp-ajudd#45); `<TO-ROLE>` is the destination and **is the routing instruction** that tells the human which terminal to paste into (load-bearing in the strict-hub topology — § The three roles). The SKILL § Cross-Session Paste Handoff owns the exact title wording; this command does not restate it.
-- **`[YYYY-MM-DD @handle] <from-role> (<from-name>) ──▶ <to-role> (<target>)`** — the origin is `coding (<session-name>)` on the coding path, or `dispatch (<slug>)` / `refinement (<slug>)` on the sessionless path (whichever role this context declared); `<target>` is the label from Step 2.
+- **`[YYYY-MM-DD @handle] <from-role> (<from-name>) ──▶ <to-role> (<target>)`** — the origin is `coding (<session-name>)` on the coding path, or `dispatch (<slug>)` / `planning (<slug>)` (the refine/refinement role — canonical token `planning`) on the sessionless path (whichever role this context declared); `<target>` is the label from Step 2.
 - **`Action:` / `State:`** — add **`Action:`** on an outbound note (the sender's intent: `PICK UP #X`, `FIX`, `VALIDATE`, `CLOSE`, `HALT`) or **`State:`** on a return note (what happened: `IMPLEMENTED-DEPLOYED`, `VALIDATED`, `FOUND-ISSUE`, `REQUIREMENTS-CHANGE`, `BLOCKED-QUESTION`, `HALTED`) — one or the other, never both. `HALT`/`HALTED` stand down dispatched work mid-flight (Session Skill § HALT — no publish, no commit, WIP preserved). Omit if this handoff is neither (a bare informational pass).
 - **Close-signal** — on a **dispatch** validation/close note, add the human-facing `SAFE-TO-CLOSE` / `HOLD` line in the footer area (§ Cross-Session Paste Handoff). Other roles omit it.
 - **`Re:`** = topic + any inbox IDs / story keys carried (omit the ID clause if none). **`Slug` / `Zone`** = current repo slug + session type. **Footer** names this origin and asks the receiver to reply back on done. **When the return leg must come back as a block the footer must be command-invoking (acp-ajudd#43, generalized):** tell the receiver to *run `/session:handoff`* to reply with a handoff block — do not have it free-form the report. This applies to a **dispatch→code work order** (the return `State: IMPLEMENTED-DEPLOYED` / stop-reason must come back as a block). The SKILL § Cross-Session Paste Handoff owns the exact footer wording; this command does not restate it.

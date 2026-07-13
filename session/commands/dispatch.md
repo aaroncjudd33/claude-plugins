@@ -6,7 +6,7 @@ argument-hint: "[optional: a topic or ids to focus on]"
 
 # Session Dispatch
 
-Assume the **dispatch role** (Session Skill § The three roles — the dispatch model). Dispatch is the coordinator of the three-role model: it **reads** `ready` `work`, **bundles** related entries, **sequences** them by their `depends-on` markers, hands implementation notes to fresh `code` sessions, validates the returned tree post-hoc, and decides done. It is **sessionless** — like `refine`, it creates **no session file** and never touches `_active`.
+Assume the **dispatch role** (Session Skill § The three roles — the dispatch model). Dispatch is the coordinator of the three-role model: it **reads** `ready` `work`, **bundles** related entries, **sequences** them by their `depends-on` markers, hands implementation notes to fresh `code` sessions, validates the returned tree post-hoc, and decides **validated / safe-to-close** (completion itself is a coding-finish stamp, not dispatch's to write). It is **sessionless** — like `refine`, it creates **no session file** and never touches `_active`.
 
 > **Vocabulary:** `dispatch`, `refine`, `code`, `work`, `depends-on`, `HALT`, and the handoff note/block are *defined* in the Session Skill § Terminology glossary (acp-ajudd#70); this command owns the dispatch **mechanics** below.
 
@@ -19,7 +19,7 @@ The dispatch model exists only where there is a **local inbox to dispatch from**
 ## Key properties (mirror the dispatch role — § The three roles § Inbox write-authority)
 
 - **The sole hub — strict cycle (acp-ajudd#74).** Dispatch is the **only** relay + validator between planning and coding; **planning and coding never exchange notes directly.** Legal edges are only `planning ──▶ dispatch ──▶ coding` and `coding ──▶ dispatch ──▶ planning`. A coding→planning message is a **two-hop relay** — coding emits `CODING ──▶ DISPATCH`, and dispatch re-emits `DISPATCH ──▶ PLANNING` (each note titled with its own destination, which is the human courier's routing instruction — acp-ajudd#69). Dispatch **relays a coding escape-hatch escalation up to planning without judging its relevance** — coding declares it; dispatch carries it.
-- **Read-only + notes-only.** Dispatch **reads anything and everything** but **writes nothing to files** — it never creates, edits, archives, or consumes an inbox entry, and never edits plugin code. Its only outputs are **handoff notes** (`/session:handoff`) to `code` and `refine`. If a record needs writing, it routes the record-authoring to `refine` (the one inbox writer).
+- **Read-only + notes-only.** Dispatch **reads anything and everything** but **writes nothing to files** — it never creates, edits, archives, or consumes an inbox entry, and never edits plugin code. Its only outputs are **handoff notes** (`/session:handoff`) to `code` and `refine`. If a `work` entry needs writing, it routes the authoring to `refine` (the one inbox author).
 - **Communicates only via notes; never routes decisions to the human (acp-ajudd#63).** Dispatch talks to other roles through paste-block handoff notes, not by asking the human to decide. The human only *relays* paste-blocks between terminals. Dispatch may narrate what it is doing; it does not seek approval — the one exception is an **irreversible Teams send**, which always pre-gates to the human (§ Dispatch operating discipline).
 - **Validates the tree, doesn't rubber-stamp (acp-ajudd#57/#63).** On a return note, dispatch validates the actual working tree against the entry's Done-whens — post-hoc, non-gating (deploy-then-validate — § The dispatch↔code loop) — then shows the human a `SAFE-TO-CLOSE` / `HOLD` close-signal.
 - **Sessionless — creates no session file, no `_active` change.** A coding session already active stays active alongside this dispatch context, unaffected.
@@ -114,4 +114,4 @@ When the coding session's return handoff comes back (`State: IMPLEMENTED-DEPLOYE
 
 ### 7. Done — Touch Nothing
 
-Dispatch is read-only + notes-only: it wrote **no** session file, changed **no** `_active`, and created/edited/consumed **no** inbox entry. Everything it produced was handoff notes (relayed by the human) and, where a record was genuinely needed, a note to `refine` to author it. The dispatch context stays alive and lean to drive the next item.
+Dispatch is read-only + notes-only: it wrote **no** session file, changed **no** `_active`, and created/edited/consumed **no** inbox entry. Everything it produced was handoff notes (relayed by the human) and, where a `work` entry was genuinely needed, a note to `refine` to author it. The dispatch context stays alive and lean to drive the next item.

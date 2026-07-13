@@ -27,7 +27,7 @@ Show the table or list, then one instructional line. Claude outputs the block an
   <verb> <target>  ·  <verb> <target>  ·  <verb>
 ```
 
-**Plugin example** (item-driven — `code` a refined inbox record, never blank/plugin-named; two verbs only — acp-ajudd#56):
+**Plugin example** (item-driven — `code` a refined inbox `work` entry, never blank/plugin-named; two verbs only — acp-ajudd#56):
 ```
   refine [target]  ·  code <n|id|name>
 ```
@@ -37,7 +37,7 @@ Show the table or list, then one instructional line. Claude outputs the block an
   refine [target]  ·  code <n|KEY>  ·  code cab BPT2-XXXX…
 ```
 
-Accepted inputs: number (`1`), session name (`session`), verb+target (`code 1`, `code release`, `refine BPT2-6429`), or natural language. A bare number/name alone is treated as `code` it (the file decides — resume a session, graduate a record). Claude infers intent. If genuinely ambiguous, ask one clarifying question.
+Accepted inputs: number (`1`), session name (`session`), verb+target (`code 1`, `code release`, `refine BPT2-6429`), or natural language. A bare number/name alone is treated as `code` it (the file decides — resume a session, graduate a `work` entry). Claude infers intent. If genuinely ambiguous, ask one clarifying question.
 
 ---
 

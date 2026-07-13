@@ -124,8 +124,8 @@ Loaded by `start.md` after the user makes their selection. Context already in sc
 **New story/plugin/personal/general — session filename:**
 - story → `BPT2-XXXX.md`
 - cab → `CAB-XXX.md`
-- plugin → `<feature-name>.md`   ← derived from the picked inbox item (see Item Pickup below), NOT the plugin name
-- personal → `<feature-name>.md` ← derived from the picked inbox item (same flow as plugin)
+- plugin → `<feature-name>.md`   ← derived from the picked inbox entry (see Item Pickup below), NOT the plugin name
+- personal → `<feature-name>.md` ← derived from the picked inbox entry (same flow as plugin)
 - general → `<name>.md`
 
 **Work Pickup (plugin / personal only — `code <n>` / `code <id>` on a `work` entry):**
@@ -222,7 +222,7 @@ Reply with overrides or "go".
 
 **Applying the answers:**
 
-For inbox items:
+For inbox entries:
 - **done** (in-progress): strip the `[in-progress — ...]` line, archive with `[DONE YYYY-MM-DD]` stamp, remove entry from inbox, remove matching `[inbox] <item>` from session Open items.
 - **keep** (in-progress): no change — stays in inbox, stays in Open items.
 - **work** (pending): insert `[in-progress — <session-name>, YYYY-MM-DD]` on the line immediately after the `## [date]...` header. Do NOT archive yet. Add `[inbox] <short description>` to session Open items.
@@ -251,7 +251,7 @@ Create the archive file if it does not exist. Archive entry format (append, blan
   [Work file: _work_<name>_YYYY-MM-DD-<slug>.md]   ← only if a work file was created
 ```
 
-**Auto-purge archive:** After handling inbox items, if the archive file exists, drop any entries whose `[DONE YYYY-MM-DD]` date is more than 30 days before today. Rewrite the file with only the retained entries (preserving the header line).
+**Auto-purge archive:** After handling inbox entries, if the archive file exists, drop any entries whose `[DONE YYYY-MM-DD]` date is more than 30 days before today. Rewrite the file with only the retained entries (preserving the header line).
 
 **Global inbox (`_inbox.md`):** Check for global items (undirected notes, new plugin ideas, or spawned sessions without a named target). If it has content, show it separately after the batch block result (not folded in — it's separate from the session-specific inbox):
 

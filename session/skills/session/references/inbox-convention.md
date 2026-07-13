@@ -45,8 +45,10 @@ Keep it self-contained — the receiving session may pick this up weeks later wi
 
 **An inbox holds `work` and `captures`.** The type is a **lightweight, visible label** — nothing more. It is deliberately *not* heavy per-type command branching (that was the old complexity we don't want back).
 
-- **`work`** — a thing to build. It has the scoping lifecycle `new → refining → ready` and is picked up with `code`. **A Jira story is just work's work-repo form** — so the generic word for a buildable unit is **work**, not "story," "record," or "item." (Those umbrella nouns are retired — acp-ajudd#62.)
-- **`capture`** — a note / message / data handed to you. **Read / absorb / disposition**, or **promote to `work`** if it turns out to be real work. A capture has **no build-lifecycle** — it is not scoped, it is dispositioned on read.
+*(One-line recap of the glossary above, then the mechanics — this section deliberately does not re-derive the definitions.)*
+
+- **`work`** — carried through the `new → refining → ready` lifecycle and **picked up with `code`** (the buildable unit; a Jira story is its work-repo form — see glossary). The umbrella nouns "story" / "record" / "item" are **retired** for it (acp-ajudd#62).
+- **`capture`** — **read / absorb / disposition** on sight, or **promote to `work`** if it turns out to be real work. It has **no build-lifecycle** — not scoped, dispositioned on read.
 
 **No sub-labels.** Do NOT distinguish note vs message vs data, or story vs spec vs requirement. The only distinction that changes *handling* is **work (build it) vs capture (read it)** — the sub-labels are near-synonyms with identical handling, so they add zero value today. Add one back only if a real handling difference ever appears.
 

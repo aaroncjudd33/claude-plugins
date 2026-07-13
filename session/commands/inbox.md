@@ -8,7 +8,7 @@ argument-hint: "[target-session]"
 
 Route a work item to a target session's inbox and record it in the source session's outbox. All cross-session routing flows through here.
 
-**Free rein, never silent (acp-ajudd#5).** An inbox item is captured intent, not code — so routing one is like writing a session file: you do it **without a propose→approve ceremony.** There is no pre-write approval gate anywhere in this flow. The one rule that survives is *visibility*: every write **surfaces a confirmation line in the conversation as it happens** (Step 5), so the user can read the record and validate it after the fact. "Just do it, but say you did it."
+**Free rein, never silent (acp-ajudd#5).** An inbox entry is captured intent, not code — so routing one is like writing a session file: you do it **without a propose→approve ceremony.** There is no pre-write approval gate anywhere in this flow. The one rule that survives is *visibility*: every write **surfaces a confirmation line in the conversation as it happens** (Step 5), so the user can read the entry and validate it after the fact. "Just do it, but say you did it."
 
 ## Instructions
 
