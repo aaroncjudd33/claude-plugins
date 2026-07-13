@@ -160,11 +160,12 @@ which is what is being probed - not the exact glyphs.
      (command-invoked via `/session:handoff`, acp-ajudd#43).
   2. Dispatch **VALIDATES the actual working tree / diff against the Done-whens** (not a
      rubber-stamp of the report), then shows the human a `SAFE-TO-CLOSE` close-signal.
-  3. Dispatch emits a `DISPATCH --> PLANNING` completion report; **planning does NOT
-     re-validate** the tree.
+  3. The loop **TERMINATES AT DISPATCH** (acp-ajudd#84): dispatch **pulls the next item
+     itself** and sends **NO `DISPATCH --> PLANNING` completion report** on the happy path;
+     planning is left uninterrupted (it hears back only on a genuine escalation).
 - **FAIL signal:** coding HOLDs waiting for a greenlight before deploying; OR coding does
   NOT return a block despite being dispatch-fed; OR dispatch approves without looking at
-  the tree; OR planning re-does the validation.
+  the tree; OR dispatch sends a routine completion report up to planning on the happy path.
 
 ### S6 - Solo bypass (direct planning --> coding) [SINGLE or MULTI]
 

@@ -104,7 +104,7 @@ Print the block in the **standard handoff format** — the **Session Skill § Cr
 - **Title** — names **both ends**, uppercased: `<FROM-ROLE> ──▶ <TO-ROLE> HANDOFF` (e.g. `CODING ──▶ DISPATCH HANDOFF`, `DISPATCH ──▶ CODING HANDOFF`, `DISPATCH ──▶ PLANNING HANDOFF`) — acp-ajudd#69. `<FROM-ROLE>` is this context's origin role and always matches the left side of the `──▶` provenance line (acp-ajudd#45); `<TO-ROLE>` is the destination and **is the routing instruction** that tells the human which terminal to paste into (load-bearing in the strict-hub topology — § The three roles). The SKILL § Cross-Session Paste Handoff owns the exact title wording; this command does not restate it.
 - **`[YYYY-MM-DD HH:MM @handle] <from-role> (<from-name>) ──▶ <to-role> (<target>)`** — the origin is `coding (<session-name>)` on the coding path, or `dispatch (<slug>)` / `planning (<slug>)` (the refine/refinement role — canonical token `planning`) on the sessionless path (whichever role this context declared); `<target>` is the label from Step 2. **The `HH:MM` comes from a real `date` call run at emit time (e.g. `date +"%Y-%m-%d %H:%M"`) — never guessed** (acp-ajudd#82; the SKILL § owns the mechanism). The same stamp is echoed in the footer recap.
 - **`Action:` / `State:`** — add **`Action:`** on an outbound note (the sender's intent: `PICK UP #X`, `FIX`, `VALIDATE`, `CLOSE`, `HALT`) or **`State:`** on a return note (what happened: `IMPLEMENTED-DEPLOYED`, `VALIDATED`, `FOUND-ISSUE`, `REQUIREMENTS-CHANGE`, `BLOCKED-QUESTION`, `HALTED`) — one or the other, never both. `HALT`/`HALTED` stand down dispatched work mid-flight (Session Skill § HALT — no publish, no commit, WIP preserved). Omit if this handoff is neither (a bare informational pass).
-- **Close-signal** — on a **dispatch** validation/close note, fill the close-signal slot of the footer recap (`SAFE-TO-CLOSE` / `HOLD`) and voice it to the human via the fixed courier-line vocabulary (SKILL § Cross-Session Paste Handoff → The courier line — `SAFE-TO-CLOSE` maps to the `[DONE]` line, `HOLD` to `[HOLD]`). Other roles omit it.
+- **Close-signal** — on a **dispatch** validation/close note, fill the close-signal slot of the footer recap (`SAFE-TO-CLOSE` / `HOLD`) and voice it to the human via the fixed courier-line vocabulary (SKILL § Cross-Session Paste Handoff → The courier line — `SAFE-TO-CLOSE` maps to the `✅` line, `HOLD` to `⏸`). Other roles omit it.
 - **`Re:`** = topic + any inbox IDs / story keys carried (omit the ID clause if none). **`Slug` / `Zone`** = current repo slug + session type. **Footer** = the **one-line state recap** (acp-ajudd#82): `END HANDOFF · [YYYY-MM-DD HH:MM @handle] · from ──▶ to · <ids> · <Action/State> · <return instruction> · <close-signal, dispatch legs only>` — one compressed scannable line echoing the header state so the last thing visible in the window orients the human without scrolling up. **When the return leg must come back as a block the return instruction must be command-invoking (acp-ajudd#43, generalized):** tell the receiver to *run `/session:handoff`* to reply with a handoff block — do not have it free-form the report. This applies to a **dispatch→code work order** (the return `State: IMPLEMENTED-DEPLOYED` / stop-reason must come back as a block). The SKILL § Cross-Session Paste Handoff owns the exact footer wording; this command does not restate it.
 
 Then write the self-contained, paragraphed body (what we're doing · key decisions · exact next action · guardrails · relevant paths/IDs). **The note carries the *run*, not the *spec* — never regurgitate the picked-up inbox item's contents; the coding session reads the item itself. A dispatch→code work order is `code #X` plus process instructions (watch-fors, report-back protocol).** Apply the SKILL section's rules as written — fenced block mandatory, heavier outer fence if the body has its own ``` fences, rule-separated header/body/footer — do not re-explain them to the user.
@@ -112,14 +112,14 @@ Then write the self-contained, paragraphed body (what we're doing · key decisio
 Precede the block with the **courier line** — one bold action line, above the block, drawn from the fixed vocabulary (SKILL § Cross-Session Paste Handoff → The courier line; acp-ajudd#81 — no bespoke lead-in phrasings):
 - **Coding-session path:**
   ```
-  **>> PASTE TO <TO-ROLE> — carry the block below to the <to-role> terminal**
+  **▶ PASTE TO <TO-ROLE> — carry the block below to the <to-role> terminal**
   ```
 - **Sessionless path:** name the resume file first, since it's the primary artifact, then the same courier line:
   ```
   Wrote planning resume → _context_planning-<topic-slug>.md
   Pick it up in a fresh session with:  /session:restore planning-<topic-slug>
 
-  **>> PASTE TO <TO-ROLE> — or carry the block below to a live <to-role> terminal elsewhere**
+  **▶ PASTE TO <TO-ROLE> — or carry the block below to a live <to-role> terminal elsewhere**
   ```
 
 ### 5. Finish — Touch Nothing Else
