@@ -461,9 +461,22 @@ Deployed: session v1.53.0 → v1.54.0 — pushed to master, reinstalled (live)
 - **Orchestrated — a `dispatch ──▶ coding` work order fed this session** → **ALWAYS emit a return handoff** via `/session:handoff` — a `CODING ──▶ DISPATCH HANDOFF` block (Session Skill § Cross-Session Paste Handoff owns the format; two-ended title per acp-ajudd#69). This is the topology-legal coding→dispatch leg of the loop:
   - **Happy path** → `State: IMPLEMENTED-DEPLOYED` (or `IMPLEMENTED` for a non-deploying zone like personal), summarizing what shipped and how to validate it (the diff / files / published artifact), so dispatch can validate the tree post-hoc against the entry's Done-whens and release the next wave.
   - **Stop-reason** (the escape hatch — the session did NOT finish normally) → `State: BLOCKED-QUESTION` / `FOUND-ISSUE` / `REQUIREMENTS-CHANGE`, flagged for planning where relevant; **dispatch relays it up** (no direct coding→planning edge — Pillar 1). In this case the deploy did not run.
-  - The footer must be **command-invoking** (acp-ajudd#43): tell the reader to paste the block into the dispatch terminal. This return note is also the human's signal that it is safe to clear this implementation terminal and start a fresh coding session on the next work order.
+  - The footer must be **command-invoking** (acp-ajudd#43): tell the reader to paste the block into the dispatch terminal. The bold `[DONE]` courier header printed above the block (see below, acp-ajudd#80) is the human's one-glance signal that it is safe to clear this implementation terminal and start a fresh one for the next work order.
 - **Solo, planning-fed — a `planning ──▶ coding` (refinement/planning) handoff fed this session, dispatch bypassed (acp-ajudd#75)** → this is a **solo** session, **not** orchestrated (there is no dispatch relay, so no `coding ──▶ dispatch` return exists). Emit a **courtesy** return handoff back to **planning** (a `CODING ──▶ PLANNING` block — `PLANNING` is the canonical planning-side `<to-role>` token, § Cross-Session Paste Handoff) — explicitly a solo report **outside the strict hub**, not a two-hop relay (Session Skill § The dispatch↔code loop, solo carve-out). Same `State:` values apply (`IMPLEMENTED-DEPLOYED` on the happy path; a stop-reason on the escape hatch, handed straight back to planning). Remember the bypass cost: **no independent validator ran** — safe only for the doc-only, crisp-Done-when work such a direct handoff is meant for.
 - **Solo, truly unpaired — no handoff note ever received** → **skip this step** — there is no one to report to (the solo carve-out, unchanged). This is the common case for a session started directly via `code`/`start` with no dispatcher and no planning handoff.
+
+**Lead with the courier header — a BOLD one-glance human line ABOVE the paste-block (acp-ajudd#80).** Whenever this step emits a return block (orchestrated **or** planning-fed solo), print **one bold action line above the block**, drawn from the fixed courier-line vocabulary (Session Skill § Cross-Session Paste Handoff → The courier line) — the human acts on this coding output *first* (carries it to the other terminal), so the close/next cue must be skimmable in one glance, never buried in the summary or the block. ASCII markers only — this is printed output. Two variants:
+
+- **DONE (happy path — the deploy ran):**
+  ```
+  **[DONE] <ids> — deployed v<x.y.z>. Carry the block below to <dispatch|planning>, then close this terminal; open a fresh one for the next handoff.**
+  ```
+- **STOPPED (escape hatch — the session stopped instead of finishing: BLOCKED-QUESTION / FOUND-ISSUE / REQUIREMENTS-CHANGE / disagreement). This is the MORE important variant** — without it the human skims a wall of text and closes a terminal that needed attention:
+  ```
+  **[!] STOPPED <ids> — needs input. Carry the block below to <dispatch|planning>; do NOT close this terminal.**
+  ```
+
+A **truly-unpaired solo** finish emits no return block and gets **no** courier header — its Step 11e `Deployed:` line suffices. This coding-side header is **distinct from dispatch's `SAFE-TO-CLOSE`/`HOLD`** (which fires later, after dispatch validates the tree) — both cues exist because they fire at different points in the human relay (Session Skill, same section).
 
 For **plugin** type this return block is emitted **after** the deploy (Step 11), so it is the last visible output before the silent deactivation. For **personal** (also an inbox zone, can be orchestrated) there is no deploy, so it follows the session summary. **story / cab / general are never dispatch-orchestrated** (Jira flow / no dispatch layer) — skip.
 
@@ -479,4 +492,4 @@ rm -f ~/.claude/memory/sessions/<slug>/_active
 
 On PowerShell use: `Remove-Item -ErrorAction SilentlyContinue ~/.claude/memory/sessions/<slug>/_active`
 
-Deactivation is silent — it produces no user-facing output. The last thing on screen is therefore the **Step 12 return handoff block** whenever this session emitted one (orchestrated → a `CODING ──▶ DISPATCH` block, or planning-fed solo → a courtesy `CODING ──▶ PLANNING` block); otherwise (truly unpaired solo plugin session) it is the Step 11 `Deployed: …` line.
+Deactivation is silent — it produces no user-facing output. The last thing on screen is therefore the **Step 12 return handoff block, led by its bold courier header (acp-ajudd#80)** whenever this session emitted one (orchestrated → a `CODING ──▶ DISPATCH` block, or planning-fed solo → a courtesy `CODING ──▶ PLANNING` block); otherwise (truly unpaired solo plugin session) it is the Step 11 `Deployed: …` line.
