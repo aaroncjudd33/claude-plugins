@@ -45,8 +45,9 @@ Session index (DERIVED render cache — NOT committed; acp-ajudd#49):
 **Cross-repo inbox writes** (e.g., story plugin writing to release plugin inbox): substitute the target slug and re-run path resolution to find the target session_root.
 
 **Inbox / Outbox file naming:**
-- Per-session inbox (any type): `_inbox_<session-name>.md` — e.g., `_inbox_BPT2-6479.md`, `_inbox_release.md`
-- Global inbox (no known target session): `_inbox.md`
+- Per-session inbox (story / cab / general): `_inbox_<session-name>.md` — e.g., `_inbox_BPT2-6479.md`, `_inbox_release.md` (a single file per session)
+- Consolidated / global inbox (plugin / personal, and the global inbox for other types): the per-item dir `_inbox/` — one file per item `_inbox/<id-with-#→->.md>` (acp-ajudd#102), read via `scripts/inbox-render.py`. A legacy single `_inbox.md` auto-migrates into this dir on first access.
+- Archive (append-only): the single `_inbox_archive.md`
 - Outbox (append-only send record): `_outbox_<session-name>.md`
 
 All cross-session routing goes through `/session:inbox` — scope guards invoke it rather than writing directly.

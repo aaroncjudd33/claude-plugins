@@ -62,7 +62,7 @@ Then wait for selection.
 
 Read `<session_root>/<name>.md`.
 Read `<session_root>/_history.md` — count total entries and extract the most recent one.
-Read the inbox file **fresh (acp-ajudd#6)** — **plugin / personal → the canonical `<session_root>/_inbox.md`** (item-driven; there is no per-session `_inbox_<name>.md`); **story / cab / general → `<session_root>/_inbox_<name>.md`** — and collect all entries (in-progress and pending). Count **by `## <id>` header lines** and **skip the `> [type: … · status: …]` metadata line** under each (legacy `> [status: …]` tolerated — never miscount it). **Split by type (acp-ajudd#62):** `work` (`status: new` / `refining` / `ready`) is inbox work (listed + swept in Step 4); `capture`-type entries (legacy `status: capture`/`new`/`unread`, or `type: note`/`data`) are **captures inbound** (acp-ajudd#10) — count them for the Captures-waiting line, never list or sweep them as pickable.
+Read the inbox **fresh (acp-ajudd#6)** — **plugin / personal → render the consolidated `_inbox/` via `inbox-render.py`** (auto-migrates on access — `references/inbox-convention.md` § Per-item storage mechanics; item-driven; there is no per-session `_inbox_<name>.md`); **story / cab / general → read `<session_root>/_inbox_<name>.md`** — and collect all entries (in-progress and pending). Count **by `## <id>` header lines** and **skip the `> [type: … · status: …]` metadata line** under each (legacy `> [status: …]` tolerated — never miscount it). **Split by type (acp-ajudd#62):** `work` (`status: new` / `refining` / `ready`) is inbox work (listed + swept in Step 4); `capture`-type entries (legacy `status: capture`/`new`/`unread`, or `type: note`/`data`) are **captures inbound** (acp-ajudd#10) — count them for the Captures-waiting line, never list or sweep them as pickable.
 
 **Security check (repo sessions only):** If `session_root` is inside a repo, run the approval-hash check using the same flow as `session:start` Step 4 — compute SHA-256, compare to `~/.claude/memory/sessions/<slug>/<name>.approved-hash`, handle missing/matching/differing cases with first-time review, normal load, or diff-review flow. See `references/skill-repo-security.md` for the full procedure.
 
@@ -88,7 +88,7 @@ If inbox is empty: `Inbox: none`. If no history: `History: none`. Omit Teammate 
 
 ### 4. Check Inbox
 
-Check the same fresh inbox read from Step 3 — **plugin / personal → the canonical `<session_root>/_inbox.md`**; **story / cab / general → `<session_root>/_inbox_<name>.md`**. (Do not fall back to a per-session file for item-driven types — it does not exist for them.) **This batch handles `work` (`status: new` / `refining` / `ready`) only** — `capture`-type entries are excluded (they surfaced as the Captures-waiting line in Step 3 and are read/archived only on request, per `references/inbox-convention.md` § Captures inbound).
+Check the same fresh inbox read from Step 3 — **plugin / personal → the consolidated `_inbox/` (rendered via `inbox-render.py`)**; **story / cab / general → `<session_root>/_inbox_<name>.md`**. (Do not fall back to a per-session file for item-driven types — it does not exist for them.) **This batch handles `work` (`status: new` / `refining` / `ready`) only** — `capture`-type entries are excluded (they surfaced as the Captures-waiting line in Step 3 and are read/archived only on request, per `references/inbox-convention.md` § Captures inbound).
 
 If the inbox file has content beyond the header, first scan for in-progress items, then handle pending items.
 
@@ -104,16 +104,16 @@ Reply with overrides or "go".
 
 "go" accepts all defaults. Parse freely: `1 done`, `2 work`, `1 done 2 work`, etc.
 
-- **done** (in-progress): strip `[in-progress — ...]`, archive with `[DONE YYYY-MM-DD]` (archive file is type-aware: `_inbox_archive.md` for plugin / personal, `_inbox_<name>_archive.md` for story / cab / general), remove from inbox, remove `[inbox] <item>` from Open items.
+- **done** (in-progress): strip `[in-progress — ...]`, archive with `[DONE YYYY-MM-DD]` (archive file is type-aware: single `_inbox_archive.md` for plugin / personal, `_inbox_<name>_archive.md` for story / cab / general), remove from inbox (plugin / personal → **delete the item's `_inbox/<id>.md` file**, acp-ajudd#102), remove `[inbox] <item>` from Open items.
 - **keep** (in-progress): no change.
-- **work** (pending): insert `[in-progress — <session-name>, YYYY-MM-DD]` after `## [date]...` header. Do NOT archive. Add `[inbox] <item>` to Open items.
-- **done** (pending): archive with `[DONE YYYY-MM-DD]`, remove from inbox.
-- **backlog**: move to `_backlog_<name>.md` (plugin) or `_backlog.md` (others), remove from inbox.
+- **work** (pending): insert `[in-progress — <session-name>, YYYY-MM-DD]` after `## [date]...` header (plugin / personal → edit that item's `_inbox/<id>.md` file). Do NOT archive. Add `[inbox] <item>` to Open items.
+- **done** (pending): archive with `[DONE YYYY-MM-DD]`, remove from inbox (plugin / personal → delete the item file).
+- **backlog**: move to `_backlog_<name>.md` (plugin) or `_backlog.md` (others), remove from inbox (plugin / personal → delete the item file).
 - **keep** (pending): leave as-is. Do not add to Open items.
 
 Auto-purge archive entries with `[DONE]` dates older than 30 days after handling.
 
-For **story / cab / general** sessions, also check `~/.claude/memory/sessions/<slug>/_inbox.md` for global (undirected) items. Display only — never auto-cleared. (Plugin / personal already read `_inbox.md` as their primary inbox above — there is no separate global file for them.)
+For **story / cab / general** sessions, also render the consolidated `~/.claude/memory/sessions/<slug>/_inbox/` (via `inbox-render.py`) for global (undirected) items. Display only — never auto-cleared. (Plugin / personal already render `_inbox/` as their primary inbox above — there is no separate global file for them.)
 
 ### 5. Write _active and Update Session File
 

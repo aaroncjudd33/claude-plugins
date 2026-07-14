@@ -5,7 +5,7 @@ description: Stage a new linked session from the current one — writes a [spawn
 
 # Session Spawn
 
-Prepares a handoff for a new session by writing a `[spawn]` entry to the global `_inbox.md`. Your active session does not change. The spawned entry appears in the global inbox the next time anyone runs `/session:start` on this project — clearly marked and ready to kick off.
+Prepares a handoff for a new session by writing a `[spawn]` entry as a new per-item file in the global `_inbox/` dir (acp-ajudd#102). Your active session does not change. The spawned entry appears in the global inbox the next time anyone runs `/session:start` on this project — clearly marked and ready to kick off.
 
 **Typical use:** You finish an investigation and want to hand off follow-on scope to a new implementation session — same project, new scope, connected history.
 
@@ -54,10 +54,10 @@ Context:  auto-derive  ·  describe
 
 Pick the target inbox by zone — a spawn must land where `/session:start` will actually surface it:
 
-- **plugin / personal (item-driven):** always the consolidated `<session_root>/_inbox.md` (create with header `# Inbox — <slug>` if needed). These slugs have exactly ONE inbox; `/session:start` reads it and flags `[spawn]` entries with ★. A per-label `_inbox_<label>.md` would never surface — do NOT write one for these types (there is no per-session inbox in the item-driven model).
-- **story / cab / general:** if the `Label` matches an existing session name in `session_root`, append to that session's `<session_root>/_inbox_<label>.md` (create with header `# Inbox — <label>`); otherwise (target session does not exist yet) append to the global `<session_root>/_inbox.md` (create with header `# Inbox — <slug>`).
+- **plugin / personal (item-driven):** always the consolidated dir `<session_root>/_inbox/` — write a **new per-item file** `_inbox/<id-with-#→->.md>` (acp-ajudd#102; create the `_inbox/` dir if needed). These slugs have exactly ONE inbox; `/session:start` renders it and flags `[spawn]` entries with ★. A per-label `_inbox_<label>.md` would never surface — do NOT write one for these types (there is no per-session inbox in the item-driven model).
+- **story / cab / general:** if the `Label` matches an existing session name in `session_root`, append to that session's `<session_root>/_inbox_<label>.md` (create with header `# Inbox — <label>`); otherwise (target session does not exist yet) write the new per-item file into the global `<session_root>/_inbox/` dir.
 
-**Issue a stable ID first** (home slug = the inbox's slug = current `<slug>`; namespaced by `<handle>`): `python3 <session>/scripts/inbox-id.py next --slug <slug> --handle <handle>` (on a box without `python3`, use `python`) — prepend `<id> · ` to the header. Fallback `<acronym>-<handle>#?` if unavailable; never block. See `references/inbox-convention.md` § Stable IDs.
+**Issue a stable ID first** (home slug = the inbox's slug = current `<slug>`; namespaced by `<handle>`): `python3 <session>/scripts/inbox-id.py next --slug <slug> --handle <handle>` (on a box without `python3`, use `python`) — the file is `_inbox/<id-with-#→->.md>` and its header carries `<id> · `. Fallback `<acronym>-<handle>#?` if unavailable; never block. See `references/inbox-convention.md` § Stable IDs and § Per-item storage mechanics. A per-item file holds just this block (no `# Inbox` header, no trailing `---`):
 
 ```markdown
 ## <id> · [YYYY-MM-DD @<handle>] from <slug> / <current-session-name> (<current-type>) [spawn] — <label>

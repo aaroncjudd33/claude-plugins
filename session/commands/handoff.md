@@ -20,7 +20,7 @@ Distinguish `handoff` from the file-based same-machine paths:
 
 | Path | Mechanism | Crosses machines? |
 |------|-----------|-------------------|
-| `/session:inbox` | writes a capture into a target slug's `_inbox.md` | no — same machine |
+| `/session:inbox` | writes a capture into a target slug's `_inbox/` (one file per item) | no — same machine |
 | `/session:spawn` | writes a `[spawn]` inbox item staging a linked session | no — same machine |
 | **`/session:handoff`** | **prints a paste block (both forms) + writes a durable resume file (sessionless form)** | **paste block: yes, you carry it; resume file: no, same machine** |
 

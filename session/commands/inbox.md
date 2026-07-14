@@ -47,17 +47,17 @@ Where should this go?
   [X] Cross-repo — different project
 ```
 
-- **Target type decides the file:**
-  - **plugin / personal target** → the slug's consolidated inbox `<target_session_root>/_inbox.md`. These types are item-driven: there is ONE inbox per slug, and `/session:start` `code`s records from it. Do NOT write a per-session `_inbox_<name>.md` for these — the new flow never reads it.
-  - **story / cab / general target** → per-session `<target_session_root>/_inbox_<target-name>.md` (route a handoff to a specific story/CAB, as today).
-- **Global** → `<target_session_root>/_inbox.md` (cross-cutting items with no specific target; for plugin/personal slugs this is the same file as a named target).
+- **Target type decides the destination:**
+  - **plugin / personal target** → the slug's consolidated inbox dir `<target_session_root>/_inbox/` — one file per item (acp-ajudd#102). These types are item-driven: there is ONE inbox per slug, and `/session:start` `code`s records from it. Do NOT write a per-session `_inbox_<name>.md` for these — the new flow never reads it.
+  - **story / cab / general target** → per-session `<target_session_root>/_inbox_<target-name>.md` (route a handoff to a specific story/CAB, as today — unchanged, single file per session).
+- **Global** → the consolidated dir `<target_session_root>/_inbox/` (cross-cutting items with no specific target; for plugin/personal slugs this is the same dir as a named target).
 - **Cross-repo** → ask for the target repo slug, then show that repo's sessions using the same prompt
 
 ### 3. Write Inbox Entry
 
-Determine target file:
-- plugin / personal target, or Global → `<target_session_root>/_inbox.md` (create with header `# Inbox — <slug>` if needed)
-- story / cab / general named session → `<target_session_root>/_inbox_<target-name>.md` (create with header `# Inbox — <target-name>` if needed)
+Determine destination:
+- plugin / personal target, or Global → a **new per-item file** `<target_session_root>/_inbox/<id-with-#→->.md>` (one file per item — acp-ajudd#102; create the `_inbox/` dir if needed). Writing your own new file never races another session (see `references/inbox-convention.md` § Per-item storage mechanics).
+- story / cab / general named session → `<target_session_root>/_inbox_<target-name>.md` (create with header `# Inbox — <target-name>` if needed — a single per-session file, unchanged)
 
 **Issue a stable ID first.** The ID's home is the **target** slug (where the item will live and get its number), and it is namespaced by the **author's** handle. Determine `<target-slug>` — the slug that owns `<target_session_root>` (the current slug for same-repo, or the chosen repo slug for cross-repo):
 ```bash
@@ -66,7 +66,7 @@ if command -v python3 >/dev/null 2>&1; then python3 "$IDT" next --slug "<target-
 ```
 If `python3`/script is unavailable, fall back to `<acronym>-<handle>#?` and note the counter wasn't advanced — never block the write. See `references/inbox-convention.md` § Stable IDs.
 
-Append (record the ID, then the **source** slug/session/type — not the target — followed by the `type` line):
+Write the item (for plugin/personal/global → the whole `_inbox/<id>.md` file content; for a story/cab/general per-session file → append this block). Record the ID, then the **source** slug/session/type — not the target — followed by the `type` line. A per-item file holds exactly this block (no `# Inbox` header, no trailing `---`):
 ```markdown
 ## <id> · [YYYY-MM-DD @<handle>] from <source-slug> / <source-session> (<source-type>) — <description>
 > [type: capture]

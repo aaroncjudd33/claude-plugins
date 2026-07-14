@@ -91,7 +91,7 @@ Read `handle` from `~/.claude/plugins/user-config.json` (`user.handle`). If abse
 
 **Before copying anything into the repo, scan every candidate file for secrets and PII.** Migration git-tracks these files permanently — a credential committed here lives in the git history forever, even if removed later. The pre-commit guard (`session-commit-guard.py`) is the backstop, but catch it here first, where files can be excluded or scrubbed cleanly before they ever enter the tree.
 
-**Scan the full content of every file about to be migrated** — session `.md` files, `_history.md`, all `_inbox*.md`, and the project memory files from Step 11b. (`_context_*.md` pre-clear dumps are **never migrated** — they are always-local personal stashes, out of migrate scope entirely — so they never need scanning here.)
+**Scan the full content of every file about to be migrated** — session `.md` files, `_history.md`, all top-level `_inbox*.md`, every per-item `_inbox/*.md` (acp-ajudd#102), and the project memory files from Step 11b. (`_context_*.md` pre-clear dumps are **never migrated** — they are always-local personal stashes, out of migrate scope entirely — so they never need scanning here.)
 
 Flag:
 - **Secrets / credentials** — DB connection strings with passwords (e.g. `user/PASS@host:port`), `password=`/`pwd:` assignments, API keys, `AKIA…` AWS keys, JWTs, `-----BEGIN … PRIVATE KEY-----`. (Same patterns as `SECRET_PATTERNS` in the commit guard.)
@@ -157,9 +157,11 @@ Lines already containing `@` are left unchanged.
 
 ### 8. Copy and Tag Inbox / Backlog Files
 
-For each file matching `_inbox*.md`, `_backlog*.md` in `~/.claude/memory/sessions/<slug>/`:
+**The consolidated inbox is a per-item dir (acp-ajudd#102).** Copy the whole `_inbox/` directory — every `_inbox/*.md` item file — to `<repo_root>/.claude/sessions/_inbox/`. These per-item files are shared work records and commit like the old `_inbox.md` did. (A legacy single `_inbox.md`, if one is still present pre-migration, is copied too; the lazy auto-migration in `inbox-render.py` will split it into the dir on first access in the new location.)
 
-1. Copy to `<repo_root>/.claude/sessions/`.
+For each file matching `_inbox*.md`, `_backlog*.md` at the top level of `~/.claude/memory/sessions/<slug>/`, AND each `_inbox/*.md` item file:
+
+1. Copy to `<repo_root>/.claude/sessions/` (item files → `<repo_root>/.claude/sessions/_inbox/`).
 2. For each entry header line matching `## [YYYY-MM-DD] from` (no handle present):
    - Rewrite as `## [YYYY-MM-DD @<handle>] from`
 
@@ -421,7 +423,8 @@ Show a summary:
 ```
 Ready to commit:
   .claude/sessions/          — N session file(s), transformed (Next steps array, created-by/updated-by, @handle tags, path cleanup)
-  .claude/sessions/_inbox*.md / _backlog*.md — inbox + backlog records (shared work records)
+  .claude/sessions/_inbox/ — per-item inbox files (shared work records — acp-ajudd#102)
+  .claude/sessions/_inbox*.md / _backlog*.md — archive + backlog records (shared work records)
   .claude/sessions/.gitignore  — excludes _active, _context_*, *.approved-hash, _history.md, _index.md
   .gitignore                 — added .claude/config/ exclusion
   .claude/memory/            — J memory file(s) added (K skipped — already present), feature labels applied

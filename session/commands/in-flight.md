@@ -33,7 +33,7 @@ For each session, count (using the **same inbox parser** as start / checkpoint /
 - `work` entries: count `## <id>` header lines in `<session_root>/_inbox_<name>.md`, skipping the `> [type: … · status: …]` metadata line under each header (legacy `> [status: …]` tolerated — see `references/inbox-convention.md` § Inbox Model back-compat). **Exclude `capture`-type entries** (legacy `type: note` / `type: data` and legacy `status: capture`/`new`/`unread` all read as `capture`) from this count — they are inbound info, not in-flight work; surface them, if desired, as a separate "captures: N" tally.
 - Outbox entries: lines beginning with `## ` in `<session_root>/_outbox_<name>.md`
 
-Read `<session_root>/_inbox.md` and count `work` the same way (`## <id>` headers, skip the `> [type: … · status: …]` line, exclude `capture`-type entries). Extract any entries tagged `[spawn]` for separate display.
+Render the consolidated inbox via `inbox-render.py` (auto-migrates on access — `references/inbox-convention.md` § Per-item storage mechanics) and count `work` the same way from its stdout (`## <id>` headers, skip the `> [type: … · status: …]` line, exclude `capture`-type entries) — or use `inbox-render.py count` which prints `work=N capture=M` directly. Extract any entries tagged `[spawn]` for separate display.
 
 ### 3. Output
 

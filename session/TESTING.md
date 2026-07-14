@@ -102,9 +102,9 @@ which is what is being probed - not the exact glyphs.
   NOT dispatchable* (acp-ajudd#67); reinforced by *Blocked -> a note to PLANNING, never a
   question to the human* (dispatch operating discipline, acp-ajudd#63).
 - **Setup:** [SINGLE]. One terminal in the dispatch role (`/session:dispatch`). Seed
-  `_inbox.md` with two `ready` `work` entries where **B** carries a
-  `> [depends-on: <A-id> - <reason>]` line and **A** is still live (not `[DONE]`, not
-  `[CONSUMED]`).
+  the consolidated inbox (`_inbox/` — one file per item, acp-ajudd#102) with two `ready`
+  `work` entries where **B** carries a `> [depends-on: <A-id> - <reason>]` line and **A**
+  is still live (not `[DONE]`, not `[CONSUMED]`).
 - **Input:** `/session:dispatch`, then ask it to pull/bundle the next ready work.
 - **PASS:** dispatch **HOLDS B** (does not hand it off), pulls **A first** (or, if the
   ordering is genuinely unclear, routes a `DISPATCH --> PLANNING` note to `refine`). It
@@ -294,7 +294,7 @@ whole recording mechanism; nothing heavier.
 A FAIL (or a surprising PASS) is a **finding**, and findings feed the same
 exercise -> finding -> refine loop we already run:
 
-- Write the finding as a **`work` entry** in this repo's `_inbox.md` via `refine`
+- Write the finding as a **`work` entry** in this repo's consolidated `_inbox/` via `refine`
   (or, from a non-planning context, a `/session:inbox` capture). Cite the scenario ID and
   what diverged from the PASS behavior.
 - Do **not** hand-edit the SKILL from here - the finding gets scoped by `refine` like any

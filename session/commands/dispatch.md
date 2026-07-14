@@ -14,7 +14,7 @@ This command gives dispatch a **first-class start** so it no longer has to be bo
 
 ## Scope — inbox zones only (plugin / personal)
 
-The dispatch model exists only where there is a **local inbox to dispatch from**. In **work / general** repos there is no dispatch layer — work flows through Jira (`refine` → *Ready For Work* → a dev `code`s the story), and there is no local `_inbox.md` to coordinate. This command is therefore **advertised only in plugin/personal** (Session Skill § The three roles — role determination; `commands/start.md`). It stays **invocable** in any zone for the deliberate case, but in work/general it will tell you the model doesn't apply and stop.
+The dispatch model exists only where there is a **local inbox to dispatch from**. In **work / general** repos there is no dispatch layer — work flows through Jira (`refine` → *Ready For Work* → a dev `code`s the story), and there is no local `_inbox/` to coordinate. This command is therefore **advertised only in plugin/personal** (Session Skill § The three roles — role determination; `commands/start.md`). It stays **invocable** in any zone for the deliberate case, but in work/general it will tell you the model doesn't apply and stop.
 
 ## Key properties (mirror the dispatch role — § The three roles § Inbox write-authority)
 
@@ -64,7 +64,13 @@ The authoritative discipline is the Session Skill:
 
 ### 3. Orient on the Inbox
 
-Read `~/.claude/memory/sessions/<slug>/_inbox.md` and present what is dispatchable. Parse each `work` entry's `> [type: work · status: …]` line and its optional `> [depends-on: <id> — <reason>]` line (`references/inbox-convention.md` § Sequencing). Show only `work` (`ready` is dispatchable; `new`/`refining` is still being scoped by `refine` — list it dimmed as not-yet-ready). **Captures never appear** — they are not dispatchable work.
+Render the inbox via `inbox-render.py` (auto-migrates on access; parse its stdout, relay any stderr notice — `references/inbox-convention.md` § Per-item storage mechanics) and present what is dispatchable:
+```bash
+RENDER="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}/scripts/inbox-render.py"
+PY=python3; command -v python3 >/dev/null 2>&1 || PY=python
+"$PY" "$RENDER" render --session-root "~/.claude/memory/sessions/<slug>" --slug "<slug>"
+```
+Parse each `work` entry's `> [type: work · status: …]` line and its optional `> [depends-on: <id> — <reason>]` line (`references/inbox-convention.md` § Sequencing). Show only `work` (`ready` is dispatchable; `new`/`refining` is still being scoped by `refine` — list it dimmed as not-yet-ready). **Captures never appear** — they are not dispatchable work.
 
 **Apply the prereq-check** (§ Dispatch operating discipline, acp-ajudd#67): for each `ready` entry with a `depends-on` line, a cited prerequisite is **met** only if it is `[DONE]` / `[CONSUMED → session …]` in `_inbox_archive.md`, else **unmet**. Mark an entry with any unmet dependency as **held** — not dispatchable until its prerequisite lands.
 
@@ -108,7 +114,7 @@ For the chosen work (single entry or a bundle), emit a **dispatch→code work or
 - **The note carries the *run*, not the *spec*** — never regurgitate the entry's body; the coding session reads the entry itself. Attach watch-fors, the bundle sequencing, and the report-back protocol.
 - **Include the ship-by-default instruction — and do NOT self-close (acp-ajudd#94)** — tell the coding session to self-verify against the entry's Done-whens and **deploy on its own authority (NO HOLD)** unless it hits an escape-hatch reason (question / unclear / disagreement / found-problem), then **report `State: IMPLEMENTED-DEPLOYED` and STOP — it does NOT run `/session:finish` and does NOT mark itself `completed`; shipping is not closing.** The session stays open awaiting your validation. The footer must be **command-invoking** — run `/session:handoff` to reply with the `IMPLEMENTED-DEPLOYED` (or stop-reason) block back to dispatch (acp-ajudd#43). The **close** is your call in Step 6, not the coding session's.
 - If ordering is blocked or a `depends-on` is unmet and the sequence is unclear, route a note to **`refine`** (never a question to the human).
-- **If coordinating reveals the work should SPLIT into clear, ready-to-run sub-tasks** (e.g. one Confluence-refresh entry that is really eight per-page refreshes), dispatch **may author those splits directly as new `work` entries** (acp-ajudd#95 — § Key properties, Session Skill § Inbox write-authority rule 3): mint each via `inbox-id.py`, stamp `from <slug> / dispatch`, keep them **within the scope of the work in hand**, and dispatch the resulting sub-tasks. **Only when a split needs no refinement.** If any split needs real requirements work — or the idea is unrelated to the work in hand — dispatch does **not** author it: it routes that to `refine` (or a capture) and lets planning hand it back `ready`.
+- **If coordinating reveals the work should SPLIT into clear, ready-to-run sub-tasks** (e.g. one Confluence-refresh entry that is really eight per-page refreshes), dispatch **may author those splits directly as new `work` entries** (acp-ajudd#95 — § Key properties, Session Skill § Inbox write-authority rule 3): mint each via `inbox-id.py`, **write a new per-item file** `_inbox/<id>.md` (acp-ajudd#102 — never edit an existing entry, which stays frozen), stamp `from <slug> / dispatch`, keep them **within the scope of the work in hand**, and dispatch the resulting sub-tasks. **Only when a split needs no refinement.** If any split needs real requirements work — or the idea is unrelated to the work in hand — dispatch does **not** author it: it routes that to `refine` (or a capture) and lets planning hand it back `ready`.
 
 ### 6. Validate the Return — Post-Hoc, Non-Gating — then Order the Close (acp-ajudd#94)
 

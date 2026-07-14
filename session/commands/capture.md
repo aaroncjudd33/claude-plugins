@@ -88,7 +88,7 @@ Do **not** design, scope, or produce acceptance criteria — that is refine's jo
 python3 "<session>/scripts/inbox-id.py" next --slug <slug> --handle <handle>
 # on a box without python3, use: python
 ```
-Then **append** a self-contained `capture`-type entry to `~/.claude/memory/sessions/<slug>/_inbox.md` (create with header `# Inbox — <slug>` if missing). Use the exact `_inbox.md` header format, the `> [type: capture]` line (no `status` — captures have no lifecycle), the raw idea ~verbatim, and the **one-line viability note**. The provenance surrogate is the command itself (there is no originating session): `from <slug> / capture (<zone>)`:
+Then **write a new per-item file** `~/.claude/memory/sessions/<slug>/_inbox/<id-with-#→->.md>` — one file per item (e.g. id `acp-ajudd#110` → `_inbox/acp-ajudd-110.md`); create the `_inbox/` dir if missing (`mkdir -p`). Writing your OWN new file never races another session's item (acp-ajudd#102 — see `references/inbox-convention.md` § Per-item storage mechanics). The file holds the item verbatim — the canonical `## <id> · …` header, the `> [type: capture]` line (no `status` — captures have no lifecycle), the raw idea ~verbatim, and the **one-line viability note** — with **no** `# Inbox` header and **no** trailing `---`. The provenance surrogate is the command itself (there is no originating session): `from <slug> / capture (<zone>)`:
 
 ```markdown
 ## <id> · [YYYY-MM-DD @<handle>] from <slug> / capture (<zone>) — <Summary>

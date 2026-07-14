@@ -30,7 +30,7 @@ After every session file write (checkpoint, finish, commit, switch), recompute a
 ## Pre-commit hook (`session-commit-guard.py`)
 
 Installed via `session:migrate` into `.git/hooks/pre-commit`. Scans staged `.claude/sessions/*.md` and `.claude/memory/*.md` files before the commit lands, on two axes:
-- **Secrets / credentials / PII** — full content of **every** staged file, *including* `_`-prefixed ones (`_history.md`, `_context_*.md`, `_inbox*.md`). These are the highest-risk for stranded DB connection strings, API keys, private keys, and name↔custid PII, and they are exactly the files the injection scan skips. A secret match blocks the commit.
+- **Secrets / credentials / PII** — full content of **every** staged file, *including* `_`-prefixed ones (`_history.md`, `_context_*.md`, `_inbox*.md`) and the per-item `_inbox/*.md` inbox files (acp-ajudd#102). These are the highest-risk for stranded DB connection strings, API keys, private keys, and name↔custid PII, and they are exactly the files the injection scan skips. A secret match blocks the commit.
 - **Injection patterns** — free-form sections of non-`_` session files (as before).
 
 ## Three-layer secrets/PII defense (front line to backstop)

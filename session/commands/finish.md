@@ -139,7 +139,7 @@ Before assembling the batch, gather contextual data needed to build the batch it
 Universal reads (all types):
 
 1. **Inbox file — fresh read at close (acp-ajudd#6).** The recap must reflect the *live* inbox, not a snapshot taken at session start — a concurrent `refine` pass or another terminal may have added items while this session ran.
-   - **plugin / personal (item-driven):** read the **canonical `<session_root>/_inbox.md` fresh, now** — do NOT reuse a session-start snapshot, and do NOT look for a per-session `_inbox_<name>.md` (item-driven sessions are fold-then-archive; that file does not exist for them). **Exclude** any item this session folded at pickup or marked completed; **include** everything else currently in the file (so concurrently-added items appear).
+   - **plugin / personal (item-driven):** **render the consolidated inbox fresh, now** via `inbox-render.py` (auto-migrates on access; parse stdout, relay any stderr notice — `references/inbox-convention.md` § Per-item storage mechanics) — do NOT reuse a session-start snapshot, and do NOT look for a per-session `_inbox_<name>.md` (item-driven sessions are fold-then-archive; that file does not exist for them). **Exclude** any item this session folded at pickup or marked completed; **include** everything else currently in the dir (so concurrently-added items appear).
    - **story / cab / general:** read the per-session `<session_root>/_inbox_<name>.md` (these are not item-driven — a per-session handoff file is correct). Same fresh-read discipline.
    - **Parser (both):** count and list **by the `## <id> · [date…]` header lines**. **Skip the `> [type: … · status: …]` metadata line** under each header (legacy `> [status: …]` and older `> [type: story/note/data · status: …]` all tolerated — see `references/inbox-convention.md` § Inbox Model back-compat) — it is entry metadata, not a separate entry and not body content; never miscount it. Tolerate legacy entries with no `<id>` prefix and no metadata line. **Exclude `capture`-type entries** from the pickup sweep (acp-ajudd#10) — they are not work to close out; they're read/archived only on request (§ Captures inbound). Categorize each `work` entry (`status: new` / `refining` / `ready`) as in-progress (has an `[in-progress — …]` marker) or pending.
 2. **Plugin version:** if type is plugin, read current version from `plugin.json`.
@@ -282,7 +282,7 @@ For **story/cab slots (A, B, B2, C, D, E, K)** the apply-logic lives in `referen
 - **skip:** keep all open.
 
 *(H) In-progress inbox items:*
-- **done:** strip `[in-progress — ...]`, archive with `[DONE YYYY-MM-DD]`, remove from inbox, remove `[inbox] <item>` from Open items. **Archive file is type-aware:** `_inbox_archive.md` for plugin / personal (item-driven — the canonical inbox is `_inbox.md`), `_inbox_<name>_archive.md` for story / cab / general.
+- **done:** strip `[in-progress — ...]`, archive with `[DONE YYYY-MM-DD]`, remove from inbox, remove `[inbox] <item>` from Open items. **Archive file is type-aware:** the single `_inbox_archive.md` for plugin / personal (item-driven — "remove from inbox" = **delete the item's `_inbox/<id>.md` file**, acp-ajudd#102), `_inbox_<name>_archive.md` for story / cab / general.
 - **keep:** no change. Will carry as in-progress to next session.
 
 *(I) Legacy [inbox] items:*
@@ -290,8 +290,8 @@ For **story/cab slots (A, B, B2, C, D, E, K)** the apply-logic lives in `referen
 - **keep:** no change.
 
 *(J) Pending inbox sweep:*
-- **done:** archive with `[DONE YYYY-MM-DD]`, remove from inbox.
-- **picked-up:** insert `[in-progress — <session-name>, YYYY-MM-DD]` after `## [date]...` header; add `[inbox] <item>` to Open items.
+- **done:** archive with `[DONE YYYY-MM-DD]`, remove from inbox (plugin / personal → **delete the item's `_inbox/<id>.md` file**, acp-ajudd#102).
+- **picked-up:** insert `[in-progress — <session-name>, YYYY-MM-DD]` after `## [date]...` header (plugin / personal → edit that item's `_inbox/<id>.md` file); add `[inbox] <item>` to Open items.
 - **nothing:** skip.
 
 **Auto-purge archive:** After handling inbox items, if the archive file exists, drop entries whose `[DONE YYYY-MM-DD]` date is more than 30 days before today. Rewrite with only retained entries (preserving the header line).
@@ -326,7 +326,7 @@ Compose a 1-sentence description of the work accomplished this session. Write it
 **Story type only — post-deployment checks:** Run the post-deployment-checks prompt from `references/finish-story-cab.md` (Step 9 section, already in context). Skip entirely for non-story types.
 
 **Derive `Next steps` — do not ask.** Use only mine-tagged items. Check in order:
-1. Remaining items in the fresh inbox read from Step 6 (pending or in-progress) — **plugin / personal → the canonical `_inbox.md`**; **story / cab / general → `_inbox_<name>.md`** → `[today @<handle>] See inbox — N items pending` (N counted by `## <id>` header lines, not the metadata line)
+1. Remaining items in the fresh inbox read from Step 6 (pending or in-progress) — **plugin / personal → the consolidated `_inbox/` (rendered via `inbox-render.py`)**; **story / cab / general → `_inbox_<name>.md`** → `[today @<handle>] See inbox — N items pending` (N counted by `## <id>` header lines in the rendered stream, not the metadata line)
 2. Non-`[inbox]`-tagged Open items → use the first mine-tagged item's text as the next step
 3. Story/CAB type → check Jira status and branch state for a concrete action. **Never suggest "create PR to master", "merge to master", or any variant.** If the story is otherwise complete: "Hand off to /release:create when ready to deploy."
 4. If none of the above apply → ask: "What's the first thing to pick up next time? (or 'skip')"

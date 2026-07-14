@@ -23,11 +23,13 @@ multi-user migration. Neither bites for local/single-user use.
 
 Self-healing counter (acp-ajudd#66): `next` never hands back an ID that
 already exists. It seeds from `max(stored-counter, highest #N already present
-across the slug's _inbox*.md files) + 1`, computed and persisted atomically
-inside the mint lock. So even if a header was hand-written without calling this
-script (the bug's other half), the next real mint scans the files, sees it, and
-steps past it. The stored counter is still the fast path; the file scan is the
-safety net that keeps it honest.
+across the slug's inbox files) + 1`, computed and persisted atomically inside
+the mint lock. The scan covers both the top-level `_inbox*.md` (archive + any
+legacy/per-session files) and the per-item `_inbox/*.md` dir (the live
+consolidated inbox after acp-ajudd#102). So even if a header was hand-written
+without calling this script (the bug's other half), the next real mint scans the
+files, sees it, and steps past it. The stored counter is still the fast path;
+the file scan is the safety net that keeps it honest.
 
 Usage:
   inbox-id.py next   --slug <slug> --handle <handle> [--peek] [--sessions-root <dir>]
@@ -145,10 +147,13 @@ def acronym(slug):
 def scan_file_max(sessions_root, slug, acr, handle):
     """Highest #N already issued for (acr, handle) across the slug's inbox files.
 
-    Scans every `_inbox*.md` under `<sessions_root>/<slug>/` — the live
-    `_inbox.md`, its `_inbox_archive.md`, and any per-session `_inbox_<name>.md`
-    (and their archives). Matches only headers bearing THIS acronym + handle
-    (`<acr>-<handle>#<n>`), so per-user / per-slug namespacing is preserved.
+    Scans, under `<sessions_root>/<slug>/`:
+    - every `_inbox*.md` at the top level — the retired legacy `_inbox.md` (if any),
+      the single `_inbox_archive.md`, and any per-session `_inbox_<name>.md` / archive;
+    - every `_inbox/*.md` — the per-item consolidated inbox (acp-ajudd#102), which is
+      the live location now that `_inbox.md` is split one-file-per-item.
+    Matches only headers bearing THIS acronym + handle (`<acr>-<handle>#<n>`), so
+    per-user / per-slug namespacing is preserved.
 
     Returns the max N found, or 0 if none. Never raises — a missing dir,
     unreadable file, or malformed header degrades to "found nothing here" so
@@ -161,8 +166,11 @@ def scan_file_max(sessions_root, slug, acr, handle):
     id_re = re.compile(re.escape(acr) + "-" + re.escape(handle) + r"#(\d+)")
     best = 0
     try:
-        pattern = os.path.join(sessions_root, slug, "_inbox*.md")
-        paths = glob.glob(pattern)
+        base = os.path.join(sessions_root, slug)
+        # Top-level _inbox*.md (legacy live file, archive, per-session files) PLUS the
+        # per-item dir _inbox/*.md (the live consolidated inbox after acp-ajudd#102).
+        paths = glob.glob(os.path.join(base, "_inbox*.md")) \
+            + glob.glob(os.path.join(base, "_inbox", "*.md"))
     except OSError:
         return 0
     for path in paths:

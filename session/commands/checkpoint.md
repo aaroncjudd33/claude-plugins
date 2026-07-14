@@ -149,7 +149,7 @@ CDK_PRESENT=""
      skip / all / <number(s)>
 ```
 
-**(F) In-progress `work` entries** — **read the inbox fresh at checkpoint time (acp-ajudd#6), never a session-start snapshot.** File is type-aware: **plugin / personal → the canonical `_inbox.md`** (item-driven — there is no per-session `_inbox_<name>.md`); **story / cab / general → `_inbox_<name>.md`**. Count/list **by `## <id>` header lines** and **skip the `> [type: … · status: …]` metadata line** under each (legacy `> [status: …]` tolerated — never miscount it). **Exclude `capture`-type entries** (acp-ajudd#10) — they are not pickup work; they're read/archived only on request (§ Captures inbound). Include one per in-progress `work` entry:
+**(F) In-progress `work` entries** — **read the inbox fresh at checkpoint time (acp-ajudd#6), never a session-start snapshot.** Type-aware: **plugin / personal → render the consolidated `_inbox/` via `inbox-render.py`** (auto-migrates on access — `references/inbox-convention.md` § Per-item storage mechanics; item-driven — there is no per-session `_inbox_<name>.md`); **story / cab / general → read `_inbox_<name>.md`**. Count/list **by `## <id>` header lines** and **skip the `> [type: … · status: …]` metadata line** under each (legacy `> [status: …]` tolerated — never miscount it). **Exclude `capture`-type entries** (acp-ajudd#10) — they are not pickup work; they're read/archived only on request (§ Captures inbound). Include one per in-progress `work` entry:
 ```
   (N) [<id>] Inbox [in-progress]: "<description>"    keep / done
 ```
@@ -201,7 +201,7 @@ For **story/cab slots (A, C)** the apply-logic lives in `references/checkpoint-s
 - **skip:** keep all open.
 
 *(F) In-progress inbox items:*
-- **done:** strip the `[in-progress — ...]` line, archive with `[DONE YYYY-MM-DD]` stamp, remove entry from inbox, remove matching `[inbox] <item>` from Open items. **Archive file is type-aware:** `_inbox_archive.md` for plugin / personal (item-driven), `_inbox_<name>_archive.md` for story / cab / general (create with the matching `# Inbox Archive — …` header if needed).
+- **done:** strip the `[in-progress — ...]` line, archive with `[DONE YYYY-MM-DD]` stamp, remove entry from inbox, remove matching `[inbox] <item>` from Open items. **Archive file is type-aware:** the single `_inbox_archive.md` for plugin / personal (item-driven — "remove from inbox" = **delete the item's `_inbox/<id>.md` file**, acp-ajudd#102), `_inbox_<name>_archive.md` for story / cab / general (create with the matching `# Inbox Archive — …` header if needed).
 - **keep:** no change.
 
 *(G) Legacy [inbox] items:*
@@ -209,8 +209,8 @@ For **story/cab slots (A, C)** the apply-logic lives in `references/checkpoint-s
 - **keep:** no change.
 
 *(H) Pending inbox sweep:*
-- **done:** archive with `[DONE YYYY-MM-DD]`, remove from inbox. Rewrite inbox.
-- **picked-up:** insert `[in-progress — <session-name>, YYYY-MM-DD]` after `## [date]...` header; add `[inbox] <item>` to Open items.
+- **done:** archive with `[DONE YYYY-MM-DD]`, remove from inbox (plugin / personal → **delete the item's `_inbox/<id>.md` file**, acp-ajudd#102; story/cab/general → rewrite `_inbox_<name>.md` without it).
+- **picked-up:** insert `[in-progress — <session-name>, YYYY-MM-DD]` after `## [date]...` header (plugin / personal → edit that item's `_inbox/<id>.md` file); add `[inbox] <item>` to Open items.
 - **nothing:** skip.
 
 **Auto-purge archive:** After handling inbox items, if the archive file exists, drop entries whose `[DONE YYYY-MM-DD]` date is more than 30 days before today. Rewrite with only retained entries (preserving the header line).

@@ -30,7 +30,7 @@ Collect files to search across:
 
 **Worklog files:** all `*.md` files in `~/.claude/memory/worklog/`.
 
-**Global inbox:** `<session_root>/_inbox.md` (include only in keyword/story mode, not discovery mode).
+**Global inbox:** the consolidated per-item dir `<session_root>/_inbox/*.md` — search each item file (acp-ajudd#102); also include a legacy `<session_root>/_inbox.md` if one is still present (pre-migration). Include only in keyword/story mode, not discovery mode.
 
 ---
 
@@ -52,7 +52,7 @@ Collect all matches. If nothing found: print `No sessions or worklog entries fou
 
 List all session files from `session_root` (no searching). For each:
 - Read `Name`, `Branch`, `Last worked on`, `Status`, `updated-by` (from session file fields).
-- Count logical inbox items: **plugin / personal (item-driven) use the canonical `<session_root>/_inbox.md`** (there is no per-session `_inbox_<name>.md`); **story / cab / general use `<session_root>/_inbox_<name>.md`**. Count lines beginning with `[20` or `## ` (the `> [type: … · status: …]` metadata line starts with `> ` and is naturally excluded — never count it as an item).
+- Count logical inbox items: **plugin / personal (item-driven) use the consolidated `<session_root>/_inbox/`** — the item count is the number of `_inbox/*.md` files (each file is one item; there is no per-session `_inbox_<name>.md`); **story / cab / general use `<session_root>/_inbox_<name>.md`** — count lines beginning with `[20` or `## ` (the `> [type: … · status: …]` metadata line starts with `> ` and is naturally excluded — never count it as an item).
 
 Print:
 

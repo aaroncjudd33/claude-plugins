@@ -12,7 +12,7 @@ An **analyze-then-scope** flow for scoping work before any code is written. Past
 
 Refine is universal. What the work *is* — a `work` inbox entry or a Jira story — is decided **strictly by the repo's zone**, never by who runs it, and with no override or target picker:
 
-- **Plugin / personal** (item-driven) → a **`work` entry** in `_inbox.md`.
+- **Plugin / personal** (item-driven) → a **`work` entry** in `_inbox/`.
 - **Work repo (story/cab)** → a **Jira story** (work's work-repo form; project resolved-or-confirmed, never hardcoded).
 - **General** → **no system of record — refine creates nothing.** A general repo has nothing to graduate into; the only thing that can leave a refine here is a `/session:inbox` capture aimed at another slug (a separate concern — see below). Scope verbally, hand off via a capture if needed.
 
@@ -24,7 +24,7 @@ This is exactly Heber's Jira flow — rough story → iterate → *Ready For Wor
 
 | Zone | The work (= WIP store = deliverable) | "still scoping" state | graduation trigger |
 |------|--------------------------------------|-----------------------|--------------------|
-| plugin / personal | `work` entry in `_inbox.md` | `type: work · status: refining` | flip to `status: ready` |
+| plugin / personal | `work` entry in `_inbox/` | `type: work · status: refining` | flip to `status: ready` |
 | work repo | Jira story | *Gathering Requirements* | transition to *Ready For Work* |
 | general | none — nothing is created | n/a | n/a (verbal scope; hand off via a `/session:inbox` capture) |
 
@@ -34,7 +34,7 @@ Both the **write-early** path ("scope some, come back later, keep polishing") an
 
 - **Read-only toward code.** Refine scopes; it does not implement. Writing/editing the *work* (a `work` entry under `~/.claude/memory/`, or a Jira story) is not a code edit — refine writes the work freely. If asked to implement, graduate the work and stop — a *separate* `code` gesture by whoever builds it opens the coding session; refine never opens it itself (§ Graduate HARD RULE). (Nothing hard-blocks a code edit either — acp-ajudd#1 removed edit-blocking — but refine's *job* is to scope, not build; keep it that way by convention.)
 - **Refine owns in-place requirement edits (acp-ajudd#13).** Editing a `work` entry's body / requirements / acceptance criteria in place is refine's job — that is exactly what the write-early + iterate loop below does. The mirror boundary: a **coding session must NOT** rewrite the requirements of an existing `work` entry or Jira story it (or anyone) picked up. When a coding session finds a requirement needs changing, it hands off — a `/session:inbox` capture, or back to a refine pass — rather than editing the work inline. So requirement changes always flow through refine.
-- **Writing your zone's work vs. firing a capture are separate concerns (acp-ajudd#21).** Refine's *work* target is locked by zone (above). Dropping a **capture** into an inbox via `/session:inbox` — a raw inbound entry another session dispositions on read — is independent and available from any context. In a work repo, refine's work is the Jira story, so the only thing refine ever puts in an inbox is a capture (an FYI / handoff aimed at another slug) — never a promoted `refining`/`ready` inbox entry. In plugin/personal the `work` entry refine writes **is** the work: it lives in `_inbox.md` at `status: refining` and matures to `ready` in place — that's a promoted capture, not an inbound capture-for-someone-else, so it's correct, not a violation. There is no `type` axis (`note`/`data`/`story` are gone) — just captures on one lifecycle; don't conflate writing your own work with firing a capture at another slug.
+- **Writing your zone's work vs. firing a capture are separate concerns (acp-ajudd#21).** Refine's *work* target is locked by zone (above). Dropping a **capture** into an inbox via `/session:inbox` — a raw inbound entry another session dispositions on read — is independent and available from any context. In a work repo, refine's work is the Jira story, so the only thing refine ever puts in an inbox is a capture (an FYI / handoff aimed at another slug) — never a promoted `refining`/`ready` inbox entry. In plugin/personal the `work` entry refine writes **is** the work: it lives in `_inbox/` at `status: refining` and matures to `ready` in place — that's a promoted capture, not an inbound capture-for-someone-else, so it's correct, not a violation. There is no `type` axis (`note`/`data`/`story` are gone) — just captures on one lifecycle; don't conflate writing your own work with firing a capture at another slug.
 - **No session file, no `_active` change.** Refine creates nothing under `<session_root>` and never touches `_active`. A coding session already active stays active *alongside* a refine, unaffected. (This is what decoupled refine from the `_active` redesign.)
 - **Nothing to expire or migrate.** With no session file there is no `refinement-*.md` to sweep, hide, or exclude from `session:migrate`. The work's own history (git for inbox entries, Jira for stories) is the trail.
 - **Resumable through the work itself.** A `refining` `work` entry shows up in `/session:start`'s inbox listing as resumable (marked `refining`); a work-repo story in *Gathering Requirements* is a first-class Jira object you reopen with `refine BPT2-XXXX` (or find via `/story:dashboard`).
@@ -48,8 +48,8 @@ Run `pwd`, extract the repo slug. Read `handle` per the Session Skill's handle l
 
 | Zone | Detection | Produces |
 |------|-----------|--------|
-| **plugin** | pwd contains `pluginMarketplaceName` | `work` entry in `_inbox.md` (unambiguous — no target confirmation) |
-| **personal** | pwd begins with `personalProjectsDir` (fallback: contains `/c/claude/`) | `work` entry in `_inbox.md` (unambiguous — no target confirmation) |
+| **plugin** | pwd contains `pluginMarketplaceName` | `work` entry in `_inbox/` (unambiguous — no target confirmation) |
+| **personal** | pwd begins with `personalProjectsDir` (fallback: contains `/c/claude/`) | `work` entry in `_inbox/` (unambiguous — no target confirmation) |
 | **work repo (story/cab)** | pwd begins with `workReposDir` (fallback: contains `/dev/`) | Jira story — project resolved-or-confirmed, **never hardcoded** |
 | **general** | anything else | **no system of record — nothing is created** (scope verbally; hand off via a `/session:inbox` capture if needed) |
 
@@ -63,16 +63,16 @@ Read-only, one glance, no monitoring — same category as the captures-waiting g
 
 **New, resume, or promote** (from the argument):
 - **An existing inbox entry's `<id>`** (e.g. `refine acp-ajudd#12`) → read the entry and branch on its `type`/`status` line:
-  - **`type: capture`** → **promote to `work`** (acp-ajudd#62). A capture is raw inbound; refine is where it becomes tracked work. Rewrite its metadata line `> [type: capture]` → `> [type: work · status: refining]` **in place** — preserve the header, `<id>`, and provenance verbatim; only the type/status line changes. Surface it plainly: `Promoted <id> (capture → work, refining) — <one-line summary>`. Then continue scoping from Step 3, editing the same entry. (Skip Step 2's *creation* — the entry already exists — but still run its memory scan for context.)
-  - **`type: work · status: refining`** (or legacy `status: refining`) → **resume**: continue refining that entry in place from Step 3 (skip creation; still load memories).
+  - **`type: capture`** → **promote to `work`** (acp-ajudd#62). A capture is raw inbound; refine is where it becomes tracked work. Rewrite its metadata line `> [type: capture]` → `> [type: work · status: refining]` **in place** by editing that item's `_inbox/<id>.md` file — preserve the header, `<id>`, and provenance verbatim; only the type/status line changes. Surface it plainly: `Promoted <id> (capture → work, refining) — <one-line summary>`. Then continue scoping from Step 3, editing the same file. (Skip Step 2's *creation* — the entry already exists — but still run its memory scan for context.)
+  - **`type: work · status: refining`** (or legacy `status: refining`) → **resume**: continue refining that entry in place (edit its `_inbox/<id>.md` file) from Step 3 (skip creation; still load memories).
 - **A Jira key** (`refine BPT2-6429`) → **resume** (work repo): `getJiraIssue`, then **print the story's status first, every time** (`BPT2-6429 — <status> — <summary>`), then apply the **status-tiered edit guard** below before editing, and continue refining in place from Step 3 (skip creation; still load memories).
 - **A topic / free text** (`refine shopify refund window`) → **new**: proceed to Step 2.
 - **Nothing (bare `refine`)** → surface what's resumable for the zone, then route:
-  - **Plugin / personal** → read `_inbox.md` and **first surface any waiting captures** — this is where the `capture ─▶ refine` loop closes (acp-ajudd#96): the `capture` window fills the hopper, and bare `refine` is where planning drains it. Count `capture`-type entries (`> [type: capture]`; legacy `type: note` / `type: data` / `status: capture` also count — `references/inbox-convention.md` § Inbox Model back-compat) and, if any, show one line before the resumable list:
+  - **Plugin / personal** → render the inbox via `inbox-render.py` (auto-migrates on access; parse stdout, relay any stderr notice — `references/inbox-convention.md` § Per-item storage mechanics) and **first surface any waiting captures** — this is where the `capture ─▶ refine` loop closes (acp-ajudd#96): the `capture` window fills the hopper, and bare `refine` is where planning drains it. Count `capture`-type entries (`> [type: capture]`; legacy `type: note` / `type: data` / `status: capture` also count — `references/inbox-convention.md` § Inbox Model back-compat) and, if any, show one line before the resumable list:
     ```
     Captures waiting: N — say "check captures" to triage them
     ```
-    Omit the line entirely when the count is zero; reading/dispositioning them stays on request (promote → `work` at `refining`, or discard/absorb/feed — `references/inbox-convention.md` § Captures inbound). Then list the slug's `refining` inbox entries (from `_inbox.md`); resume one (`refine <id>`) or scope new (`refine <topic>`). If there are no captures and no `refining` work, ask: "What are we refining? (a short topic)".
+    Omit the line entirely when the count is zero; reading/dispositioning them stays on request (promote → `work` at `refining`, or discard/absorb/feed — `references/inbox-convention.md` § Captures inbound). Then list the slug's `refining` inbox entries (from the rendered stream); resume one (`refine <id>`) or scope new (`refine <topic>`). If there are no captures and no `refining` work, ask: "What are we refining? (a short topic)".
   - **Work repo** → **list your *Gathering Requirements* stories inline** so no key need be memorized. Run this JQL (assignee OR reporter = me — verified status string `Gathering Requirements`, id 581):
     ```
     project = <PROJECT> AND status = "Gathering Requirements" AND (assignee = currentUser() OR reporter = currentUser()) ORDER BY updated DESC
@@ -110,7 +110,7 @@ Created <KEY> in Gathering Requirements — <one-line summary>   ← work repo (
 
 **A. Plugin / personal → a `work` entry at `status: refining`.**
 
-Issue a stable ID (`python3 <session>/scripts/inbox-id.py next --slug <slug> --handle <handle>` — on a box without `python3`, use `python`), then append a self-contained `work` entry to `~/.claude/memory/sessions/<slug>/_inbox.md` (create with header `# Inbox — <slug>` if needed). Use the **exact `_inbox.md` header format** the `/session:inbox` write uses, plus the `> [type: work · status: refining]` line and a freeform body carrying the refinement report. The provenance surrogate is the command itself (there is no originating session): `from <slug> / refine (<zone>)`, with `<zone>` as the `source-type`:
+Issue a stable ID (`python3 <session>/scripts/inbox-id.py next --slug <slug> --handle <handle>` — on a box without `python3`, use `python`), then **write a new per-item file** `~/.claude/memory/sessions/<slug>/_inbox/<id-with-#→->.md>` (one file per item — acp-ajudd#102; create the `_inbox/` dir if needed). Writing your own new file never races another session (see `references/inbox-convention.md` § Per-item storage mechanics). The file holds just the item — the canonical `## <id> · …` header (same format the `/session:inbox` write uses), the `> [type: work · status: refining]` line, and a freeform body carrying the refinement report — with **no** `# Inbox` header and **no** trailing `---`. The provenance surrogate is the command itself (there is no originating session): `from <slug> / refine (<zone>)`, with `<zone>` as the `source-type`:
 
 ```markdown
 ## <id> · [YYYY-MM-DD @<handle>] from <slug> / refine (<zone>) — <Summary>
@@ -140,7 +140,7 @@ Scope it in the conversation; to hand it off, drop a /session:inbox capture to a
 ### 4. Iterate In Place
 
 As the conversation continues, **keep editing the same work** — this is the WIP store doing its job:
-- **`work` entry** → edit its body in `_inbox.md` (Affected areas, Estimate, Risks, Open questions, Acceptance criteria). Leave `type: work · status: refining` until graduation.
+- **`work` entry** → edit its `_inbox/<id>.md` file (Affected areas, Estimate, Risks, Open questions, Acceptance criteria). Editing one item file never touches another (acp-ajudd#102). Leave `type: work · status: refining` until graduation.
 - **Jira story** → `editJiraIssue` to update the description; leave it in *Gathering Requirements*.
 
 Update freely and as often as the refinement needs — no per-edit approval, no one-entry cap (a single refine session may create/update several `work` entries). After each substantive edit, surface it plainly (`Updated <id> — <what changed>`) so the work write is never silent.
@@ -158,7 +158,7 @@ Mark ready for pickup?  ready  ·  not yet
 ```
 
 On `ready`:
-- **`work` entry** → change its metadata line to `> [type: work · status: ready]`. Nothing else moves — it's already a normal, pickable `work` entry. Surface it: `Marked <id> ready for pickup.`
+- **`work` entry** → change its metadata line to `> [type: work · status: ready]` by editing its `_inbox/<id>.md` file. Nothing else moves — it's already a normal, pickable `work` entry. Surface it: `Marked <id> ready for pickup.`
 - **Jira story** → `transitionJiraIssue` to **Ready For Work** (add a short comment noting refinement is complete, per the story plugin's transition convention). Surface it: `Transitioned <KEY> → Ready For Work.`
 
 On `not yet` → leave it `refining` / *Gathering Requirements*; it stays resumable.

@@ -85,9 +85,14 @@ def main():
     if not (is_session or is_memory) or not normalized.endswith(".md"):
         return
 
-    # Skip underscore-prefixed files (_active, _inbox, _history, etc.)
+    # Skip underscore-prefixed files (_active, _inbox.md, _history, etc.) AND any file
+    # under an underscore-prefixed dir — notably the per-item consolidated inbox
+    # `_inbox/<id>.md` (acp-ajudd#102), whose basenames are NOT underscore-prefixed.
+    # Inbox items are captured content scanned at FOLD time (start-impl.md injection
+    # scan), not by this Read guard — "the guard cannot reach it by design."
     basename = os.path.basename(normalized)
-    if basename.startswith("_"):
+    parent = os.path.basename(os.path.dirname(normalized))
+    if basename.startswith("_") or parent.startswith("_"):
         return
 
     # Skip local ~/.claude/ paths - only scan repo paths
