@@ -414,6 +414,34 @@ The human courier's cues were patched one at a time (the two-ended title #69, di
 
 The emitters (`commands/finish.md`, `commands/dispatch.md`, `commands/handoff.md`) draw their cues **from this vocabulary** — this section is the single source of truth for the wording.
 
+### The close-safety cue — one glyph vocabulary, two always-on mechanisms (acp-ajudd#97)
+
+The courier line above fires at a handoff/ship/close **moment**. This is its **persistent** companion: a per-window, always-on answer to *"can I close this terminal — and in what sense?"* for a human round-robining 3–4 role windows. It protects **unsaved work**; the decision is **pause vs. done-for-good**, per window — so at a glance you know which window to save, which to close, which needs you. ("Busy/working" is deliberately **not** a state — the harness already indicates that.)
+
+**The glyph vocabulary — LOCKED. This one table is the single source of truth; both mechanisms below draw from it — no divergent glyphs anywhere:**
+
+| Glyph | State | Meaning | Close? |
+|-------|-------|---------|--------|
+| 🛑 | Unsaved — save first | changed work not yet persisted; closing loses it | NO — commit/checkpoint first |
+| ⚠️ | Needs you | question / decision / can't-proceed pending (absorbs "blocked") | no — respond |
+| ✅ | Saved — safe to close, resume later | persisted (post commit/checkpoint); nothing unsaved; work continues later | yes — pausable |
+| 🏆 | Finished — done & validated | complete + validated + archived; won't reopen barring QA (still editable if truly needed — hence trophy, not a lock) | yes — for good |
+| 📋 | Carry this | a handoff block is ready to paste into another terminal | carry it first |
+
+The core three are the traffic light: 🛑 red (stop/don't close) · ⚠️ yellow (caution/attention) · ✅ green (go/clear). **"Idle" is not a separate state — "nothing to save" IS ✅.**
+
+**Two complementary mechanisms — they own different glyphs, so they don't collide:**
+- **B — the `statusLine` script (`~/.claude/statusline-command.sh`)** owns the **close-safety light (🛑 / ✅ / 🏆)**, derived deterministically from git working-tree state + the active-session `status:`: dirty tree → 🛑; clean tree → ✅; session `completed` → 🏆. Persistent, ANSI-colored (red/green/gold), leading the status line. This is the reliable, safety-critical half. It reads the slug's active-session pointer (`_active` → `<name>.md`); a window with **no active session file** shows **no save-state** — which is exactly the dispatch carve-out, and also why the sessionless save-states below are carried by A instead.
+- **A — a Claude-appended reply footer** owns the **attention states (⚠️ needs-you, 📋 carry-this)** — only Claude knows it just asked a question/decision or just emitted a handoff block. **End each reply with the footer cue** drawn from the table above. This is the **always-on generalization of the courier line** (§ above): the courier line fires once, at a handoff moment; this footer carries the window's live state on **every** reply. In a **coding** window B already shows the save-state, so A's footer adds only ⚠️ / 📋 when they apply; in a **sessionless** window (planning / capture) where B is dark, A's footer also carries 🛑 / ✅ for that window's save target.
+
+**Role → save target — same look/feel; only the target behind 🛑/✅ differs:**
+- **coding** → session file + git (commit / checkpoint / finish). Carried by **B** (git + `status:`).
+- **planning (refine)** → the inbox `work` item — scoped but not yet written = 🛑; written = ✅. Sessionless → carried by **A**.
+- **capture** → the capture entry — idea sniffed but not banked = 🛑; written = ✅ (lighter; one-liners). Sessionless → carried by **A**.
+- **dispatch** → **carve-out:** read-only + notes-only, nothing to persist → the save-states (🛑 / ✅ / 🏆) **never light**; only ⚠️ / 📋 ever apply.
+
+Where the two overlap (finish), acp-ajudd#94's consistent `status:` flip keeps B's 🏆 and A's finish cue in agreement. **Fast-follow (out of scope here):** Claude-**elevation** of 🛑 when it knows an important change is unsaved though git looks clean (an unwritten decision / memory) — v1 is git-derived save-states (B) + Claude-emitted attention states (A); the smart-elevation overlay lands later.
+
 ### Receiving side — verify the target before acting (acp-ajudd#69)
 
 The whole model runs on **human copy-paste between terminals**, so a mis-paste — a note dropped into the wrong terminal — is inevitable, and a receiver that **blindly acts** on it can edit or commit in the **wrong repo** (a real 2026-07-13 incident: a dispatch note meant for one repo was pasted into another terminal, which just did the work). The note already **declares its target** in the header (`Slug:` + the `<to-role>` in the title / `──▶` line); the fix is that the receiver must **check that declaration before doing ANY of the note's work.** This is the **receiver-side** guard that pairs with the sender-side two-ended title above.
