@@ -22,6 +22,7 @@ If arguments were passed to `/session:start`, attempt to resolve them before run
 | `mine` | `/session:start mine` | full discovery flow with mine filter |
 | `refine [target]` | `/session:start refine shopify refund` | refinement flow (Step 4 → Refine); **sessionless — never creates a session file** |
 | `dispatch` | `/session:start dispatch` | dispatch flow (`commands/dispatch.md`); **sessionless — assume the dispatch role, orient on the inbox.** Plugin/personal only |
+| `capture` | `/session:start capture` | capture flow (`commands/capture.md`); **sessionless — assume the capture role, bank ideas into `capture`-type inbox entries.** Plugin/personal only |
 | `code <target>` | `/session:start code BPT2-6429` | coding session on `<target>` — the file decides: a **`work` entry** graduates into a fresh session, an existing **session** resumes |
 | `BPT2-XXXX` (Jira story key) | `/session:start BPT2-6429` | coding session on that story (bare key = implicit `code`) |
 | `CAB-XXXX` (CAB key) | `/session:start CAB-9260` | coding session on that CAB (bare key = implicit `code`) |
@@ -33,6 +34,7 @@ If arguments were passed to `/session:start`, attempt to resolve them before run
 2. If arg is `mine`: set `filter_mine = true`, fall through to Step 1 — full discovery with mine filter.
 2a. If arg is `refine` or `refine <target>`: resolve `session_root`/`handle` (step 1 above), then go directly to Step 4 → **Refine — enter refinement flow**, passing any `<target>` as the refine argument. Skip Steps 1–3.
 2a′. If arg is `dispatch`: resolve `session_root`/`handle`, then read `commands/dispatch.md` and run it from Step 1 (assume the dispatch role, orient on the inbox — sessionless). Skip Steps 1–3. (Dispatch applies only in plugin/personal; `dispatch.md` itself stops cleanly in work/general.)
+2a″. If arg is `capture` or `capture <idea>`: resolve `session_root`/`handle`, then read `commands/capture.md` and run it from Step 1 (assume the capture role, bank ideas as `capture`-type inbox entries — sessionless), passing any `<idea>` as the first idea to sniff. Skip Steps 1–3. (Capture applies only in plugin/personal; `capture.md` itself stops cleanly in work/general.)
 2b. If arg is `code`, `code <target>`, or `code cab <keys>` (or bare `cab <keys>`): resolve `session_root`/`handle`, strip the `code` verb, and treat `<target>` exactly as a bare token in step 3 below (`code cab <keys>` / `cab <keys>` → new CAB kickoff). Skip Steps 1–3.
 3. Derive session type and target name from the arg (story key → type=story, name=BPT2-XXXX; CAB key → type=cab; `cab <keys>` / `code cab <keys>` → new CAB; any other bare token → the `code` target — a session NAME to resume, or a `work` entry to graduate).
 4. Check whether `<session_root>/<name>.md` exists (**this existence check IS "the file decides"** — a session file present means resume-coding; absent means graduate-work or kickoff):
@@ -192,11 +194,15 @@ Then output the routing block — the type-specific `Refine / Code` lines, follo
   Coordinate (advanced):
     dispatch          — assume the dispatch role: read the inbox, sequence/bundle ready work,
                         hand notes to coding sessions (sessionless; runs /session:dispatch)
+    capture           — assume the capture role: bank a raw idea (with an optional viability
+                        sniff) as a `capture`-type entry for refine to triage
+                        (sessionless; runs /session:capture)
 ```
-The `dispatch` line is a **secondary/advanced line under the primary two verbs** — keep the refine/code headline clean; dispatch is discoverable in-zone without cluttering it (acp-ajudd#71). It appears **only in plugin/personal** (the inbox zones where the dispatch model applies), never in work/general.
+The `dispatch` and `capture` lines are **secondary/advanced lines under the primary two verbs** — keep the refine/code headline clean; the coordination/ideation stations are discoverable in-zone without cluttering it (acp-ajudd#71 / #96). They appear **only in plugin/personal** (the inbox zones where the dispatch model applies), never in work/general.
 
 **Type-specific accepted inputs** (plus the shared inputs above):
 - `dispatch` → read `commands/dispatch.md` and run it (assume the dispatch role, orient on the inbox — sessionless; creates no session file).
+- `capture` → read `commands/capture.md` and run it (assume the capture role, bank ideas as `capture`-type entries — sessionless; creates no session file).
 - `code <n>` / `code <id>` where the target is a **`work` entry** → graduate it into a fresh feature-named coding session. Reads start-impl.md, goes to Step 4 (new session): derive a feature name (confirmed once), fold the entry body into the new session, then archive-on-consume — remove the entry from the live `_inbox.md` after appending a `[CONSUMED …]` copy to `_inbox_archive.md` (fold-then-archive — the session plus the archived copy is the trail; acp-ajudd#40). `<n>` is the ephemeral inbox list position; `<id>` is the stable handle (e.g. `acp-ajudd#3`) — accept either. **If the work is not fully scoped — `status: new` or `refining`** (parsed from its `> [type: work · status: …]` line — keyed on status, *not* on origin), warn and confirm first: `[<id>] is not fully scoped (status: <new|refining>) — code it anyway? You'll scope AND build; refine first if it's big. (yes / leave it)`. A `ready` entry (the default) codes with no warning. **Never blocks** — a capable coding session decides based on size. (A `capture`-type entry isn't in this list — `code` a capture only after it's promoted to `work`.)
 - `code <n>` / `code <name>` where the target is an **in-progress session** → resume it (the Plugin session resume path in Step 4). `<n>` is the sessions-table row; `<name>` is the feature name. A bare number that matches a row in **both** the sessions table and the inbox is the only genuinely ambiguous case — ask which; otherwise infer.
 - `refine [target]` → scope work first (see shared inputs). **New plugin work begins here** — `refine build the <x> plugin` creates the `work` entry; `code` it when it's ready (the plugin folder/marketplace scaffolding then happens inside that coding session). Sessionless — creates no session file.
@@ -268,11 +274,15 @@ Then output the routing block — the type-specific `Refine / Code` lines, follo
   Coordinate (advanced):
     dispatch          — assume the dispatch role: read the inbox, sequence/bundle ready work,
                         hand notes to coding sessions (sessionless; runs /session:dispatch)
+    capture           — assume the capture role: bank a raw idea (with an optional viability
+                        sniff) as a `capture`-type entry for refine to triage
+                        (sessionless; runs /session:capture)
 ```
-Same as the plugin block: the `dispatch` line is a secondary/advanced line under refine/code, shown only in plugin/personal (acp-ajudd#71).
+Same as the plugin block: the `dispatch` and `capture` lines are secondary/advanced lines under refine/code, shown only in plugin/personal (acp-ajudd#71 / #96).
 
 **Type-specific accepted inputs** (plus the shared inputs above):
 - `dispatch` → read `commands/dispatch.md` and run it (assume the dispatch role, orient on the inbox — sessionless; creates no session file).
+- `capture` → read `commands/capture.md` and run it (assume the capture role, bank ideas as `capture`-type entries — sessionless; creates no session file).
 - `code <n>` / `code <id>` where the target is a **`work` entry** → graduate it into a feature-named coding session (same fold-then-archive flow as plugin: Step 4 → start-impl.md; the entry's `<id>` is preserved in the folded provenance block). Same `new`/`refining` warn/confirm as plugin — keyed on the entry's `status`, not its origin. Never blocks.
 - `code <n>` / `code <name>` where the target is an **in-progress session** → resume it. Same both-lists disambiguation as plugin (ask only on a genuinely ambiguous bare number).
 - `refine [target]` → scope work first (see shared inputs) — **new personal work begins here**; creates/edits a `work` entry, never a session file.
@@ -318,7 +328,7 @@ The `session:start` refine verb and the direct `/session:refine` command converg
 - **`refine <topic>`** → scope new work on `<topic>` directly: read `commands/refine.md` and run it from Step 1, passing `<topic>` as the argument.
 - **`refine <target>`** (a `work` entry `<id>` like `acp-ajudd#12`, or a Jira key like `BPT2-6429`) → resume refining that existing work: read `commands/refine.md` and run its Step 1 resume path with the reference. (A `capture` given here is promoted to `work` first.)
 - **bare `refine`** → first surface resumable `refining` work for the slug, then route:
-  1. **Plugin / personal:** list the `refining` `work` entries already read from `<session_root>/_inbox.md` in Step 2 — the entries whose `> [type: work · status: refining]` line marks them still-being-scoped (legacy `> [status: refining]` still parses; missing type/status → `type: work · status: ready`, so those are NOT listed here). Present:
+  1. **Plugin / personal:** first, if any `capture`-type entries exist in the Step 2 `_inbox.md` read, show the captures-waiting glance so the `capture ─▶ refine` loop closes here (acp-ajudd#96 — bare refine is where planning drains the hopper): `Captures waiting: N — say "check captures" to triage them` (omit if zero; this mirrors the glance `refine.md`'s bare path owns). Then list the `refining` `work` entries already read from `<session_root>/_inbox.md` in Step 2 — the entries whose `> [type: work · status: refining]` line marks them still-being-scoped (legacy `> [status: refining]` still parses; missing type/status → `type: work · status: ready`, so those are NOT listed here). Present:
      ```
      Refining (resumable):
        1  [acp-ajudd#12]  <summary>   — last touched MM-DD

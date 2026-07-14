@@ -31,8 +31,9 @@ Three words, kept distinct so the word "session" never has to carry two meanings
   - **refine / refinement** — the **planning role that authors the inbox**: scopes `work`, mints IDs, promotes `capture`→`work`; sessionless; the one inbox writer. Entered by the `refine` verb. → § The three roles, `commands/refine.md`.
   - **dispatch** — the **planning role that coordinates**: reads/bundles/sequences `ready` `work`, hands notes to `code`, validates the returned tree, decides **validated / safe-to-close**; sessionless, read-only + notes-only. → § The three roles, `commands/dispatch.md`.
   - **code / coding** — the **coding role that implements**: folds in the `ready` `work` and builds; fresh per build; the only role with a session file. Entered by the `code` verb. → § The three roles, § Session Types.
+- **capture (the role)** — the sessionless **ideation station *upstream* of the three roles** (the head of the pipe `capture ─▶ refine ─▶ dispatch ─▶ code`): banks a raw idea, optionally peeks for a **one-line viability sniff**, and writes a `capture`-type entry (or drops it) — never scopes, designs, or codes. Distinct from **capture (the type)** below, which is the entry it produces. Entered by the `capture` verb / `/session:capture`; plugin/personal only. → § The three roles (the ideation station, acp-ajudd#96), `commands/capture.md`.
 - **work** — a thing to build (the generic buildable unit; a Jira story is work's work-repo form, an `_inbox.md` `work` entry its plugin/personal form). → `references/inbox-convention.md` § Inbox Model, § State-Exclusivity.
-- **capture** — inbound info handed to a session (a note / data payload / stray idea); read-and-dispositioned, not scoped, unless promoted to `work`. → § Captures Inbound, `references/inbox-convention.md` § Captures inbound.
+- **capture (the type)** — inbound info handed to a session (a note / data payload / stray idea); read-and-dispositioned, not scoped, unless promoted to `work`. The output the **capture role** (above) produces, and what a `/session:inbox` capture drops. → § Captures Inbound, `references/inbox-convention.md` § Captures inbound.
 - **maturity lifecycle** — the `new` → `refining` → `ready` stages a `work` entry passes through (rough → iterate → ready; Heber's Jira flow); orthogonal to pickup state. → `references/inbox-convention.md` § Inbox Model, `commands/refine.md`.
 - **handoff note / handoff block** — the self-contained, role-aware paste block that carries the **run** (what to do, watch-fors, report-back) between terminals; distinct from the `work` entry, which carries the **spec**. → § Cross-Session Paste Handoff.
 - **capture disposition** — the fate applied to a `capture` on read: **promote** (→ `work`), **discard**, **absorb**, or **feed a refinement**; a non-completion outcome stamped `[DISPOSITIONED … — <fate>]`. → § Captures Inbound, `references/inbox-convention.md` § Disposition & completion.
@@ -316,6 +317,30 @@ So dispatch greenlights everything **except a Teams send**, which always goes to
 
 - **`dispatch ──▶ planning` is ESCALATION-ONLY.** The sole traffic up to planning is a genuine escalation that needs planning's design authority — a coding-flagged question / unclear / disagreement / found-problem / requirements-change that dispatch relays up (the escape-hatch, § Validation is Done-when-checking; coding declares it via `State: FOUND-ISSUE` / `REQUIREMENTS-CHANGE` and dispatch relays without judging its relevance). Routine validated completions never reach planning.
 - **What STAYS (do not overcorrect — decision A):** dispatch still **fully validates the returned tree against the entry's Done-whens** — the independent-validator payoff (§ The dispatch↔code loop, leg 4) is unchanged; only the *report-up on success* is removed, not the validation. And the **dispatch → human roadmap status glance stays** — where the whole roadmap stands (waves done / in-flight / queued, plus `refining` and captured items) is for the *person* at a glance, not a note to planning; emit it at batch kickoff. `commands/dispatch.md` owns the cadence.
+
+### The ideation station — `capture`, upstream of the three roles (acp-ajudd#96)
+
+The three roles (refine / dispatch / code) turn a *scoped* idea into shipped work. **`capture` sits one step further upstream** — it is the **ideation station that feeds `refine`**, not a fourth member of the trio (the section name and its many cross-references stay stable — this is deliberately **additive, not a rename**). The full pipeline:
+
+```
+  capture  ─▶  refine   ─▶  dispatch   ─▶  code
+ (ideation)   (planning)  (coordinate)  (implement)
+ sessionless  sessionless  sessionless   session-backed
+```
+
+**Why it exists — the last bottleneck.** The multi-window model removes one bottleneck per split: `code` split from planning (plan the next thing while code runs), then `dispatch` split out (stop interrupting planning to feed the coder — acp-ajudd#57). The residual: **banking a new idea forces you to interrupt whatever window is busy.** The only in-zone way to record one was `refine` — full planning (explore, scope, produce `refining`/`ready` work), far too heavy for "jot this for later." `capture` is a free-sitting window you fire ideas at anytime without touching the other three; the thesis is **invert the wait** — the windows wait on the human, not the reverse.
+
+**Sessionless, plugin/personal only, writes `capture`-type entries.** Like `refine` and `dispatch`, capture is a planning-stance context with **no session file** and no `_active` touch. It applies **only in the inbox zones** (plugin / personal) — a work/general repo has no local inbox, so a stray idea there leaves via a `/session:inbox` capture aimed at a repo that has a system of record. Its **only durable output** is a `> [type: capture]` entry (the *capture type* — § Captures Inbound), minted via the atomic `inbox-id.py` and appended to `_inbox.md`; it emits **no handoff blocks** (it is outside the planning↔dispatch↔coding relay).
+
+**The load-bearing boundary — triage vs. spec, NOT read vs. no-read.** Capture and refine are separated by **output and commitment, not tool access** — both may read the repo:
+- **Capture answers "is this worth planning's time?"** — a viability gate; it **MAY read/search code** to answer that, so planning's hopper isn't flooded with non-viable ideas.
+- **Refine answers "here's exactly what to build."** — a scoped spec.
+
+So capture **MAY** read/search code, assess rough difficulty/cost-benefit, and give a **one-line** viability verdict; it **MUST NOT** edit or write code, produce a design or scoped spec, set any status past `capture`, or "start refining" — the hard rule mirrors "refine never offers to code" as **"capture never refines."** A **depth guard** keeps the peek a *sniff*: if "is this viable?" turns into a deep read, capture notes "worth a proper look" and **stops** — the hard cap is on **output** (a note or nothing, never a spec). Two exits only: **write a `capture` entry** (raw idea + one-line viability note) or **drop it** (a cheap death is a win). The viability note earns the read-access — it is an **artifact** that lets `refine` pick the capture up **pre-warmed** instead of cold.
+
+**How the loop closes — bare `refine` drains the hopper.** Capture fills the inbox with `capture`-type entries; the **`refine` window's bare-`refine` path surfaces "Captures waiting: N — say 'check captures' to triage them"** so planning naturally drains what capture filled. Reading/dispositioning captures is the human-driven flow already defined in § Captures Inbound and `references/inbox-convention.md` § Captures inbound (acp-ajudd#10) — promote to `work` (`refining`), or discard/absorb/feed. Capture never dispositions its own entries; **writing and draining are different stations.**
+
+**Concurrency-safe as a 4th window.** Capture only **appends new items** — it never forks or mutates an in-flight entry (consumed = frozen, item-immutability hold — § State-Exclusivity). It is safe as a fourth concurrent window because the atomic ID mint already landed (acp-ajudd#31 atomic mint, #66 self-heal); a pre-#31 fourth window appending IDs would have raced. `commands/capture.md` owns the mechanics.
 
 ## Cross-Session Paste Handoff (the handoff block)
 

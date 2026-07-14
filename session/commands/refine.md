@@ -68,7 +68,11 @@ Read-only, one glance, no monitoring — same category as the captures-waiting g
 - **A Jira key** (`refine BPT2-6429`) → **resume** (work repo): `getJiraIssue`, then **print the story's status first, every time** (`BPT2-6429 — <status> — <summary>`), then apply the **status-tiered edit guard** below before editing, and continue refining in place from Step 3 (skip creation; still load memories).
 - **A topic / free text** (`refine shopify refund window`) → **new**: proceed to Step 2.
 - **Nothing (bare `refine`)** → surface what's resumable for the zone, then route:
-  - **Plugin / personal** → list the slug's `refining` inbox entries (from `_inbox.md`); resume one (`refine <id>`) or scope new (`refine <topic>`). If none, ask: "What are we refining? (a short topic)".
+  - **Plugin / personal** → read `_inbox.md` and **first surface any waiting captures** — this is where the `capture ─▶ refine` loop closes (acp-ajudd#96): the `capture` window fills the hopper, and bare `refine` is where planning drains it. Count `capture`-type entries (`> [type: capture]`; legacy `type: note` / `type: data` / `status: capture` also count — `references/inbox-convention.md` § Inbox Model back-compat) and, if any, show one line before the resumable list:
+    ```
+    Captures waiting: N — say "check captures" to triage them
+    ```
+    Omit the line entirely when the count is zero; reading/dispositioning them stays on request (promote → `work` at `refining`, or discard/absorb/feed — `references/inbox-convention.md` § Captures inbound). Then list the slug's `refining` inbox entries (from `_inbox.md`); resume one (`refine <id>`) or scope new (`refine <topic>`). If there are no captures and no `refining` work, ask: "What are we refining? (a short topic)".
   - **Work repo** → **list your *Gathering Requirements* stories inline** so no key need be memorized. Run this JQL (assignee OR reporter = me — verified status string `Gathering Requirements`, id 581):
     ```
     project = <PROJECT> AND status = "Gathering Requirements" AND (assignee = currentUser() OR reporter = currentUser()) ORDER BY updated DESC
