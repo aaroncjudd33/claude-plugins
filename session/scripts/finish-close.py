@@ -29,6 +29,18 @@ status, ensure-line-present appends, rm -f) so re-running on a partial-failure r
 converges to the same end state without duplicating anything. The shared-file writes
 run under the same advisory lock primitive inbox-id.py uses.
 
+Self-verifying (acp-ajudd#107 FIX 0): the writes are sequential, so "all-or-nothing"
+was still aspirational — the script could stop or skip mid-way and STILL exit 0. So
+after writing, it re-reads every surface and confirms the expected end state (status
+flips, _index row, _active gone, history + worklog lines, and the [DONE] stamp in the
+target id's archive block) BEFORE exit 0. Any miss exits non-zero with the precise
+surface — the caller (and the #97 close-safety cue, gated on exit 0) sees a real
+failure, not a false success. Hardened alongside FIX 0: UTF-8-decode stdin as bytes
+(Defect 1 — Git-Bash cp1252 mangled em-dash/emoji payloads); stable-key idempotency
+for history/worklog (Defect 2 — reworded re-run rows no longer double-append); and
+header-bounded archive-block resolution (Defect 3 — never key the [DONE] insert off
+the nearest CONSUMED line, which mis-resolved stamp-before-## entries).
+
 Free text (which may contain newlines / em-dashes) is read from a JSON object on
 stdin: {"history_line": "...", "worklog_entry": "...", "done_note": "..."}. Structured
 identifiers are flags.
@@ -194,52 +206,226 @@ def compute_index(text, name, handle, date, title):
     return "\n".join(out) + "\n"
 
 
-def compute_archive_stamp(text, name, date, done_note):
-    """Return (new_text, note). Stamp `[DONE <date> — <note>]` after the CONSUMED line.
+# A marker line = one of the archive's bracketed lifecycle stamps.
+MARKER_RE = re.compile(r"^\s*\[(CONSUMED|DONE|DISPOSITIONED)\b")
+CONSUMED_RE = re.compile(r"^\s*\[CONSUMED\b")
+DONE_RE = re.compile(r"^\s*\[DONE\b")
 
-    Locates the `[CONSUMED … session <name>]` line (tolerates both `->` and `→`
-    arrows). Idempotent: if the enclosing entry block already carries a `[DONE …]`
-    line, leaves the file unchanged. If no CONSUMED line for this session is found,
-    returns the text unchanged with an explanatory note (a soft anomaly — the record
-    close must not be blocked by a missing ledger entry; the note is surfaced).
+
+def _id_header_re(item_id):
+    """Line-regex matching the archive header `## <item_id> ·` for the exact id.
+
+    Anchors on the id with `#` preserved and tolerates `#`/`-` at the number
+    separator (the header uses `acp-ajudd#107`; a provenance value might carry the
+    filename form `acp-ajudd-107`). The negative lookahead stops `#10` matching
+    `#102` — never key off the nearest CONSUMED line (that mis-resolved #102 to
+    #97's block; acp-ajudd#107 Defect 3).
     """
-    consumed_re = re.compile(
-        r"^.*\[CONSUMED\b[^\]]*\bsession\s+" + re.escape(name) + r"\b[^\]]*\].*$",
-        re.MULTILINE)
-    m = consumed_re.search(text)
-    if not m:
-        return text, "no [CONSUMED … session %s] line found — [DONE] NOT stamped" % name
+    esc = re.escape(item_id.strip()).replace(r"\#", "[#-]")
+    return re.compile(r"^##\s+" + esc + r"(?![0-9A-Za-z]).*$")
 
-    # Entry block = from the preceding "## " header (or file start) to the next one.
-    start = text.rfind("\n## ", 0, m.start())
-    start = 0 if start == -1 else start + 1
-    nxt = text.find("\n## ", m.end())
-    end = len(text) if nxt == -1 else nxt
-    block = text[start:end]
-    if re.search(r"^\s*\[DONE\b", block, re.MULTILINE):
-        return text, "already stamped (idempotent no-op)"
+
+def _locate_entry(lines, item_id):
+    """Return (header_idx, block_start, block_end) for the entry whose header is
+    `## <item_id> ·`, or None.
+
+    The block is bounded by the header: it runs from the header line DOWN to the
+    next `## ` header (or EOF), and is extended UPWARD over any contiguous marker
+    lines directly above the header (the older stamp-before-`##` convention) so the
+    idempotency check sees a `[DONE]` in either placement. block_start is the first
+    such marker (or the header itself); block_end is exclusive.
+    """
+    hre = _id_header_re(item_id)
+    header_idx = next((i for i, ln in enumerate(lines) if hre.match(ln)), None)
+    if header_idx is None:
+        return None
+    block_start = header_idx
+    j = header_idx - 1
+    while j >= 0 and MARKER_RE.match(lines[j]):
+        block_start = j
+        j -= 1
+    block_end = len(lines)
+    for k in range(header_idx + 1, len(lines)):
+        if lines[k].startswith("## "):
+            block_end = k
+            break
+    return header_idx, block_start, block_end
+
+
+def compute_archive_stamp(text, item_id, date, done_note):
+    """Return (new_text, note, expect_done). Stamp `[DONE <date> — <note>]` inside the
+    header-bounded block for `item_id` (acp-ajudd#107 Defect 3).
+
+    - Locates the entry by its `## <id> ·` header — never by the nearest CONSUMED
+      line (that mis-resolved a stamp-before-`##` entry to the previous entry's block
+      and false-positived "already stamped", silently dropping the real [DONE]).
+    - Self-heals placement for the target entry: any CONSUMED/DONE markers that sat
+      ABOVE the header are moved to just below it (the new convention), keeping each
+      entry's markers together.
+    - Idempotent: if the block already carries a `[DONE …]` (in either placement),
+      returns unchanged with expect_done=True (read-back still confirms it).
+    - `expect_done` tells FIX-0 read-back whether to require a [DONE] for this id: True
+      when the entry was located (stamped or already-stamped), False when no `## <id>`
+      header exists (a soft anomaly — surfaced, but the close is not blocked on it).
+    """
+    lines = text.split("\n")
+    loc = _locate_entry(lines, item_id)
+    if loc is None:
+        return (text,
+                "no `## %s` header in archive — [DONE] NOT stamped" % item_id,
+                False)
+    header_idx, block_start, block_end = loc
+    block = lines[block_start:block_end]
+    if any(DONE_RE.match(ln) for ln in block):
+        return text, "already stamped (idempotent no-op)", True
 
     stamp = "[DONE %s — %s]" % (date, done_note) if done_note else "[DONE %s]" % date
-    line_end = text.find("\n", m.end())
-    line_end = len(text) if line_end == -1 else line_end
-    new_text = text[:line_end] + "\n" + stamp + text[line_end:]
-    return new_text, "stamped %s" % stamp
+    # Reassemble the block with the header first, then any markers that were above it,
+    # then the rest — so a stamp-before-`##` CONSUMED lands below the header.
+    above = lines[block_start:header_idx]
+    header = lines[header_idx]
+    below = lines[header_idx + 1:block_end]
+    body = [header] + above + below
+    # Insert immediately after the last marker line in the body, else after the header.
+    insert_idx = 1
+    for k in range(1, len(body)):
+        if MARKER_RE.match(body[k]):
+            insert_idx = k + 1
+    body.insert(insert_idx, stamp)
+    new_lines = lines[:block_start] + body + lines[block_end:]
+    return "\n".join(new_lines), "stamped %s" % stamp, True
 
 
-def compute_append(existing, entry):
+def normalize_consumed_placement(text):
+    """Relocate every stray stamp-before-`##` marker cluster below its header.
+
+    A contiguous run of marker lines (CONSUMED/DONE/DISPOSITIONED) sitting directly
+    above a `## ` header — with no blank line between — is the older stamp-before-`##`
+    convention and unambiguously belongs to that header; move it to just below the
+    header, order preserved. Whole-archive, idempotent (already-correct markers have a
+    blank or body line above the header, so nothing moves). This is the one-time
+    migration half of acp-ajudd#107 Defect 3-ii (absorbs #100's secondary note); run
+    via --migrate-archive, kept out of the hot close path.
+    """
+    lines = text.split("\n")
+    out = []
+    i = 0
+    n = len(lines)
+    while i < n:
+        if MARKER_RE.match(lines[i]):
+            j = i
+            while j < n and MARKER_RE.match(lines[j]):
+                j += 1
+            if j < n and lines[j].startswith("## "):
+                out.append(lines[j])           # header first
+                out.extend(lines[i:j])         # then its markers
+                i = j + 1
+                continue
+        out.append(lines[i])
+        i += 1
+    return "\n".join(out)
+
+
+def _key_present(existing, structural_re, name):
+    """True if a structural line already names this session — a STABLE-KEY match that
+    survives rewording (acp-ajudd#107 Defect 2).
+
+    Keys off (structural line + session name), not the full rendered text, so a
+    reworded second-pass `_history`/worklog line still dedups. `structural_re` anchors
+    the kind of line (a `[<date> …]` history row or a `## …` worklog header); the name
+    must appear as a whole token (hyphens are part of names, so they bound too).
+    """
+    if not name:
+        return False
+    name_re = re.compile(r"(?<![\w-])" + re.escape(name) + r"(?![\w-])")
+    for line in existing.splitlines():
+        if structural_re.match(line) and name_re.search(line):
+            return True
+    return False
+
+
+def compute_append(existing, entry, structural_re=None, dedup_name=None):
     """Return (new_text, changed) ensuring `entry` is present at the end of `existing`.
 
-    Idempotent: if the exact entry block is already present, returns unchanged. This is
-    what makes a retry after a partial failure safe — appends never duplicate.
+    Idempotent two ways: an exact-text match, OR — when structural_re/dedup_name are
+    given — a stable-key match (same session named on the same kind of structural
+    line), so a RE-run whose free text was reworded does not append a duplicate
+    (acp-ajudd#107 Defect 2). This is what makes a retry after a partial failure safe.
     """
     entry = entry.rstrip("\n")
     if not entry:
         return existing, False
     if entry in existing:
         return existing, False
+    if structural_re is not None and _key_present(existing, structural_re, dedup_name):
+        return existing, False
     if existing and not existing.endswith("\n"):
         existing += "\n"
     return existing + entry + "\n", True
+
+
+# ---- self-verification (FIX 0) --------------------------------------------------
+
+def _index_row_completed(text, name):
+    """True if the `_index.md` row for `name` has status column == 'completed'."""
+    for line in text.splitlines():
+        if line.startswith("#") or not line.strip():
+            continue
+        cols = [c.strip() for c in line.split("|")]
+        if cols and cols[0] == name:
+            return len(cols) > 5 and cols[5] == "completed"
+    return False
+
+
+def verify_close(paths, name, item_id, date, set_fm,
+                 expect_history, expect_worklog, expect_done):
+    """Re-read every surface and confirm the expected end state (acp-ajudd#107 FIX 0).
+
+    Returns a list of human-readable failure strings (empty == all confirmed). The
+    close is NOT actually all-or-nothing — it does N sequential writes and can stop or
+    skip mid-way — so before exit 0 we prove each surface landed. Every defect (1/2/3)
+    produced the same signature: the script claimed success on a partial close and only
+    an external check caught it. This read-back is that check, moved in-process.
+    """
+    failures = []
+
+    session_text = read_text(paths["session"]) if os.path.isfile(paths["session"]) else ""
+    if not re.search(r"^\s*-\s*\*\*Status:\*\*\s*completed\b", session_text, re.MULTILINE):
+        failures.append("session body `- **Status:**` not 'completed'")
+    if set_fm:
+        end = session_text.find("\n---", 3)
+        fm = session_text[3:end + 1] if session_text.startswith("---") and end != -1 else ""
+        if not re.search(r"^\s*status\s*:\s*completed\b", fm, re.MULTILINE):
+            failures.append("session frontmatter `status:` not 'completed'")
+
+    index_text = read_text(paths["index"]) if os.path.isfile(paths["index"]) else ""
+    if not _index_row_completed(index_text, name):
+        failures.append("_index.md row '%s' not 'completed'" % name)
+
+    if os.path.exists(paths["active"]):
+        failures.append("_active marker still present")
+
+    if expect_history:
+        htext = read_text(paths["history"]) if os.path.isfile(paths["history"]) else ""
+        if not _key_present(htext, re.compile(r"^\[" + re.escape(date)), name):
+            failures.append("_history.md entry for '%s' not found" % name)
+
+    if expect_worklog:
+        wtext = read_text(paths["worklog"]) if os.path.isfile(paths["worklog"]) else ""
+        if not _key_present(wtext, re.compile(r"^##\s"), name):
+            failures.append("worklog entry for '%s' not found" % name)
+
+    if expect_done:
+        atext = read_text(paths["archive"]) if os.path.isfile(paths["archive"]) else ""
+        loc = _locate_entry(atext.split("\n"), item_id)
+        if loc is None:
+            failures.append("archive entry '%s' not found on read-back" % item_id)
+        else:
+            _, bstart, bend = loc
+            if not any(DONE_RE.match(ln) for ln in atext.split("\n")[bstart:bend]):
+                failures.append("[DONE] stamp not present in '%s' archive block" % item_id)
+
+    return failures
 
 
 # ---- orchestration --------------------------------------------------------------
@@ -263,6 +449,9 @@ def main():
                     help="root holding <slug>/_active (always local)")
     ap.add_argument("--dry-run", action="store_true",
                     help="validate + report what WOULD change, write nothing")
+    ap.add_argument("--migrate-archive", action="store_true",
+                    help="one-time: normalize stray stamp-before-## CONSUMED lines in "
+                         "_inbox_archive.md below their header, then exit (acp-ajudd#107)")
     args = ap.parse_args()
 
     try:
@@ -271,11 +460,38 @@ def main():
     except Exception:
         pass
 
-    # Free text via stdin JSON (may be empty if nothing piped).
+    # --- one-time archive placement migration (acp-ajudd#107 Defect 3-ii) ---
+    if args.migrate_archive:
+        archive_path = os.path.join(os.path.expanduser(args.session_root),
+                                    "_inbox_archive.md")
+        if not os.path.isfile(archive_path):
+            print("finish-close --migrate-archive: no _inbox_archive.md, nothing to do.")
+            return 0
+        before = read_text(archive_path)
+        after = normalize_consumed_placement(before)
+        if after == before:
+            print("finish-close --migrate-archive: already normalized (no-op).")
+            return 0
+        if args.dry_run:
+            print("finish-close --migrate-archive DRY-RUN: %d line(s) would be relocated."
+                  % sum(1 for a, b in zip(before.split("\n"), after.split("\n")) if a != b))
+            return 0
+        atomic_write(archive_path, after)
+        print("finish-close --migrate-archive: normalized CONSUMED placement in %s."
+              % archive_path)
+        return 0
+
+    # Free text via stdin JSON (may be empty if nothing piped). Read stdin as BYTES and
+    # decode UTF-8 explicitly (acp-ajudd#107 Defect 1): Git-Bash's locale defaults to
+    # cp1252, so the text layer would mangle an em-dash/emoji in the payload into a lone
+    # surrogate and leave a partial close. Bytes->utf-8 is locale-proof.
     payload = {}
     raw = ""
     if not sys.stdin.isatty():
-        raw = sys.stdin.read()
+        try:
+            raw = sys.stdin.buffer.read().decode("utf-8")
+        except (AttributeError, UnicodeDecodeError):
+            raw = sys.stdin.read()
     if raw.strip():
         try:
             payload = json.loads(raw)
@@ -314,11 +530,12 @@ def main():
 
         archive_note = "skipped (no --item-id)"
         new_archive = None
+        expect_done = False
         if args.item_id.strip():
             if os.path.isfile(archive_path):
                 archive_text = read_text(archive_path)
-                new_archive, archive_note = compute_archive_stamp(
-                    archive_text, args.name, args.date, done_note)
+                new_archive, archive_note, expect_done = compute_archive_stamp(
+                    archive_text, args.item_id.strip(), args.date, done_note)
                 if new_archive == archive_text:
                     new_archive = None  # nothing to write (idempotent / not found)
             else:
@@ -326,10 +543,13 @@ def main():
 
         history_existing = read_text(history_path) if os.path.isfile(history_path) \
             else "# History — %s\n" % args.slug
-        new_history, history_changed = compute_append(history_existing, history_line)
+        new_history, history_changed = compute_append(
+            history_existing, history_line,
+            re.compile(r"^\[" + re.escape(args.date)), args.name)
 
         worklog_existing = read_text(worklog_path) if os.path.isfile(worklog_path) else ""
-        new_worklog, worklog_changed = compute_append(worklog_existing, worklog_entry)
+        new_worklog, worklog_changed = compute_append(
+            worklog_existing, worklog_entry, re.compile(r"^##\s"), args.name)
     except CloseError as exc:
         sys.stderr.write("finish-close: ABORTED (nothing written) - %s\n" % exc)
         return 1
@@ -389,11 +609,37 @@ def main():
         sys.stderr.write(
             "finish-close: write error after committing [%s] - %s. "
             "Re-run to converge (idempotent).\n" % (", ".join(written), exc))
+        release_lock(fd, lock_path)
         return 4
+
+    # ---- PHASE 3: self-verify BEFORE reporting success (acp-ajudd#107 FIX 0) ----
+    # Re-read every surface and confirm the expected end state. Done while still
+    # holding the lock so a concurrent writer can't race the read-back. Any miss is a
+    # REAL partial close — exit non-zero with the precise surface so the caller (and
+    # the #97 close-safety cue, gated on exit 0) sees a failure, not a false success.
+    paths = {
+        "session": session_path, "index": index_path, "active": active_path,
+        "history": history_path, "worklog": worklog_path, "archive": archive_path,
+    }
+    try:
+        failures = verify_close(
+            paths, args.name, args.item_id.strip(), args.date, set_fm,
+            expect_history=bool(history_line), expect_worklog=bool(worklog_entry),
+            expect_done=expect_done)
     finally:
         release_lock(fd, lock_path)
 
-    print("finish-close: closed %s (%s) — atomic tie-out complete." % (args.name, args.slug))
+    if failures:
+        sys.stderr.write(
+            "finish-close: read-back FAILED — close is NOT confirmed (wrote [%s]).\n"
+            % ", ".join(written))
+        for f in failures:
+            sys.stderr.write("  - surface not confirmed: %s\n" % f)
+        sys.stderr.write("Re-run to converge (idempotent); do NOT hand-edit surfaces.\n")
+        return 5
+
+    print("finish-close: closed %s (%s) — atomic tie-out complete + self-verified."
+          % (args.name, args.slug))
     for a in actions:
         print("  - " + a)
     return 0
