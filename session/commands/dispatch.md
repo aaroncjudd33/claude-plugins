@@ -58,7 +58,7 @@ before pulling.
 The authoritative discipline is the Session Skill:
 - **§ The three roles — the dispatch model** (roles, channels, one-inbox-writer, write-authority).
 - **§ Dispatch operating discipline** (notes-only, validate-don't-punt, blocked→refine, reversibility-keyed human gate, **depends-on prereq-check**).
-- **§ The dispatch↔code loop — deploy-then-validate** (the round-trip: hand off with Done-whens → code finalizes by default, NO HOLD → return `IMPLEMENTED-DEPLOYED` → dispatch validates post-hoc).
+- **§ The dispatch↔code loop — deploy-then-validate** (the round-trip: hand off with Done-whens → code ships by default, NO HOLD, reports `IMPLEMENTED-DEPLOYED` but does NOT self-close → dispatch validates post-hoc → dispatch orders the close via `SAFE-TO-CLOSE` / `Action: CLOSE` — acp-ajudd#94).
 - **§ HALT** (standing down dispatched work cleanly — `Action: HALT` / `State: HALTED`).
 - **§ Cross-Session Paste Handoff** (the role-aware block format dispatch emits).
 
@@ -106,12 +106,18 @@ If a planning handoff has been pasted into this terminal, run **planning-directe
 For the chosen work (single entry or a bundle), emit a **dispatch→code work order** via `/session:handoff` (Session Skill § Cross-Session Paste Handoff owns the block format; this command does not restate it). The order is essentially `code #X` plus process instructions:
 - **`Action: PICK UP #X`** (or `PICK UP #X,#Y (bundle)`), role `dispatch (<slug>) ──▶ coding (fresh)`.
 - **The note carries the *run*, not the *spec*** — never regurgitate the entry's body; the coding session reads the entry itself. Attach watch-fors, the bundle sequencing, and the report-back protocol.
-- **Include the finalize-by-default instruction** — tell the coding session to self-verify against the entry's Done-whens and **finish/deploy on its own authority (NO HOLD)** unless it hits an escape-hatch reason (question / unclear / disagreement / found-problem); the footer must be **command-invoking** — run `/session:handoff` to reply with a `State: IMPLEMENTED-DEPLOYED` (or stop-reason) block back to dispatch (acp-ajudd#43).
+- **Include the ship-by-default instruction — and do NOT self-close (acp-ajudd#94)** — tell the coding session to self-verify against the entry's Done-whens and **deploy on its own authority (NO HOLD)** unless it hits an escape-hatch reason (question / unclear / disagreement / found-problem), then **report `State: IMPLEMENTED-DEPLOYED` and STOP — it does NOT run `/session:finish` and does NOT mark itself `completed`; shipping is not closing.** The session stays open awaiting your validation. The footer must be **command-invoking** — run `/session:handoff` to reply with the `IMPLEMENTED-DEPLOYED` (or stop-reason) block back to dispatch (acp-ajudd#43). The **close** is your call in Step 6, not the coding session's.
 - If ordering is blocked or a `depends-on` is unmet and the sequence is unclear, route a note to **`refine`** (never a question to the human).
 
-### 6. Validate the Return — Post-Hoc, Non-Gating
+### 6. Validate the Return — Post-Hoc, Non-Gating — then Order the Close (acp-ajudd#94)
 
-When the coding session's return handoff comes back (`State: IMPLEMENTED-DEPLOYED` or a stop-reason), validate the **actual working tree** against the entry's Done-whens — read the diff / the files, do **not** rubber-stamp the report (§ The dispatch↔code loop, leg 4). This is not a gate; the deploy already happened. Then show the human the close-signal as **one bold leading courier line** from the fixed vocabulary (Session Skill § Cross-Session Paste Handoff → The courier line, acp-ajudd#81 — no bespoke phrasings): clean validation → `**✅ <ids> SAFE-TO-CLOSE — validated; the coding terminal can be closed.**`; something to look at → `**⏸ <ids> — <what to look at>**`. (This dispatch-side signal is distinct from the coding-finish `✅`/`⚠ STOPPED` header, which fired earlier — acp-ajudd#80.) If the post-hoc look finds something off, hand back a `FIX` note (one more deployment). Release any work that was **held** on this entry as a dependency once it is `[DONE]` / consumed.
+When the coding session's return handoff comes back (`State: IMPLEMENTED-DEPLOYED` or a stop-reason), validate the **actual working tree** against the entry's Done-whens — read the diff / the files, do **not** rubber-stamp the report (§ The dispatch↔code loop, leg 4). This is not a gate; the deploy already happened. **On a clean validation, order the close** — the coding session shipped but did NOT close itself (acp-ajudd#94), so the record is still `active` until `/session:finish` runs. Signal it two equivalent ways (pick per how the human is working):
+- **Show `SAFE-TO-CLOSE`** as **one bold leading courier line** from the fixed vocabulary (Session Skill § Cross-Session Paste Handoff → The courier line, acp-ajudd#81 — no bespoke phrasings): `**✅ <ids> SAFE-TO-CLOSE — validated; run /session:finish to close.**` The human returns to the still-open coding terminal and runs it.
+- **Or send an `Action: CLOSE` note** ("validated — run `/session:finish`") the human pastes into the coding terminal — the note-form of the same signal; it triggers the full all-or-nothing close.
+
+Something to look at instead → `**⏸ <ids> — <what to look at>**`, and if the post-hoc look finds something off, hand back a `FIX` note (one more deployment, in the still-open session). Release any work that was **held** on this entry as a dependency once it is `[DONE]` / consumed.
+
+**Wait for the CLOSE to be confirmed before releasing the next work order (companion to acp-ajudd#95).** Do not emit the next `PICK UP` work order (or otherwise treat this entry as done and pull its dependents) until the coding session **confirms `/session:finish` ran** — a draft-for-review or a bare `IMPLEMENTED-DEPLOYED` return is a **ship, not a finish** (acp-ajudd#94: shipping ≠ closing). A `[DONE]` archive stamp on the entry is the reliable done-signal. Sequencing off a merely-shipped-but-unclosed session is exactly the drift #94 removes.
 
 ### 7. Done — Touch Nothing
 

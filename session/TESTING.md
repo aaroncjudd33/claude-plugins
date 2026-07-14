@@ -153,19 +153,27 @@ which is what is being probed - not the exact glyphs.
 - **Setup:** [MULTI]. Three terminals - planning (`refine`), dispatch (`/session:dispatch`),
   and a fresh coding terminal - on a **trivial** item with crisp Done-whens.
 - **Input:** run the full round-trip: planning hands the plan to dispatch; dispatch sends
-  a `PICK UP` work order to coding; coding builds and runs `/session:finish`.
+  a `PICK UP` work order to coding; coding builds, **ships** (deploy), reports back, and
+  then (only on the validated signal) **closes** via `/session:finish`.
 - **PASS, in order:**
-  1. Coding **FINALIZES by default (no HOLD)** and, because it was fed a **dispatch**
-     note, emits a `State: IMPLEMENTED-DEPLOYED` block back to dispatch on finish
-     (command-invoked via `/session:handoff`, acp-ajudd#43).
+  1. Coding **SHIPS by default (no HOLD)** — deploys on its own authority — and, because it
+     was fed a **dispatch** note, emits a `State: IMPLEMENTED-DEPLOYED` block back to
+     dispatch **at build-end** (command-invoked via `/session:handoff`, acp-ajudd#43). It
+     does **NOT** run `/session:finish` and does **NOT** mark itself `completed`; the
+     session stays **active** — *shipping is not closing* (acp-ajudd#94).
   2. Dispatch **VALIDATES the actual working tree / diff against the Done-whens** (not a
-     rubber-stamp of the report), then shows the human a `SAFE-TO-CLOSE` close-signal.
-  3. The loop **TERMINATES AT DISPATCH** (acp-ajudd#84): dispatch **pulls the next item
+     rubber-stamp of the report), then **orders the close**: shows `SAFE-TO-CLOSE` or sends
+     an `Action: CLOSE` note.
+  3. The still-open coding terminal runs `/session:finish` (the all-or-nothing close) which
+     flips the record to `completed`; only then is the session done.
+  4. The loop **TERMINATES AT DISPATCH** (acp-ajudd#84): dispatch **pulls the next item
      itself** and sends **NO `DISPATCH --> PLANNING` completion report** on the happy path;
      planning is left uninterrupted (it hears back only on a genuine escalation).
-- **FAIL signal:** coding HOLDs waiting for a greenlight before deploying; OR coding does
-  NOT return a block despite being dispatch-fed; OR dispatch approves without looking at
-  the tree; OR dispatch sends a routine completion report up to planning on the happy path.
+- **FAIL signal:** coding HOLDs waiting for a greenlight before deploying; OR coding
+  **runs `/session:finish` / marks itself `completed` on the happy path** (should ship + stay
+  active, acp-ajudd#94); OR coding does NOT return a block despite being dispatch-fed; OR
+  dispatch approves without looking at the tree; OR dispatch sends a routine completion
+  report up to planning on the happy path.
 
 ### S6 - Solo bypass (direct planning --> coding) [SINGLE or MULTI]
 
@@ -200,6 +208,36 @@ which is what is being probed - not the exact glyphs.
 - **FAIL signal:** a single-ended or generic title with no destination role, or a missing
   `Slug:` field (the courier then cannot route the paste).
 
+### S8 - Finish tie-out consistency (ship un-bundled from close) [SINGLE or MULTI]
+
+- **Probes:** *Ship and close are un-bundled* + *finish is the all-or-nothing close*
+  (acp-ajudd#94): a shipped session stays `active` until `/session:finish`; the close writes
+  frontmatter + body `Status:` + `_index.md` **together** + the `[DONE]` archive stamp +
+  clears `_active`; a gated outward leg is never silently closed; `/session:start` heals a
+  stale `_active`.
+- **Setup:** [SINGLE] works — pick up a `work` entry into a coding terminal (`code #X`),
+  build it. A **doc-only** item with a crisp Done-when is ideal.
+- **Input:** let the session build and **ship** (deploy + `IMPLEMENTED-DEPLOYED`). Inspect
+  state, then run `/session:finish`, then run `/session:start`.
+- **PASS, in order:**
+  1. **After ship, the session is NOT `completed`** — frontmatter `status:`, body
+     `- **Status:**`, and the `_index.md` row all read in-progress; `_active` still points
+     at it. (Shipping is not closing.)
+  2. **`/session:finish` closes atomically** — the three status copies flip to `completed`
+     together, the consumed entry in `_inbox_archive.md` gains a `[DONE <date>]` stamp
+     (alongside its `[CONSUMED … → session <name>]`), `_active` is cleared, and history +
+     worklog are appended. It ends on the `✅ ... safe to close this terminal` cue.
+  3. **A pending gated outward leg blocks the close** — if a Confluence publish / Teams send
+     the session owed is still unshipped, `/session:finish` refuses to mark `completed` and
+     surfaces it (resolve / carry-forward / route), rather than swallowing it.
+  4. **`/session:start` heals a stale `_active`** — if `_active` names a session whose status
+     is `completed`, the rebuild-index pass clears it.
+- **FAIL signal:** the happy path marks the session `completed` without `/session:finish`
+  running; finish flips one status copy but not another (body says completed, frontmatter /
+  `_index` lag — the original acp-ajudd#77/#78 drift); the `[DONE]` stamp is missing while the
+  session is `completed`; a pending Confluence publish is silently closed over; or a completed
+  session survives as the `_active` pointer after `start`.
+
 ---
 
 ## Coverage at a glance
@@ -213,10 +251,12 @@ which is what is being probed - not the exact glyphs.
 | S5       | MULTI     | Deploy-then-validate loop; detected orchestration (#57, #74/#75) |
 | S6       | SINGLE/MULTI | Solo bypass carve-out + validator cost (#75)           |
 | S7       | SINGLE    | Two-ended-title routing, sender side (#69)                |
+| S8       | SINGLE/MULTI | Ship un-bundled from close; finish all-or-nothing tie-out + `[DONE]` stamp + `_active` heal (#94) |
 
-Run S1 and S7 anytime (cheap, single-terminal). Run S2 whenever the `depends-on` logic
+Run S1, S7, and S8 anytime (cheap, single-terminal). Run S2 whenever the `depends-on` logic
 changes. Reserve S3/S4/S5 (and the MULTI form of S6) for validating the full loop after a
-change to the dispatch model, the handoff block, or `finish.md`.
+change to the dispatch model, the handoff block, or `finish.md`. Run **S8 after any change to
+`finish.md` or the ship/close model** (acp-ajudd#94).
 
 ---
 

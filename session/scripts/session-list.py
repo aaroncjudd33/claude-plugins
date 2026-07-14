@@ -260,6 +260,23 @@ def main():
         with open(ap_path, encoding="utf-8") as fh:
             active = fh.read().strip()
 
+    # Heal a stale _active that points at a completed session (acp-ajudd#94). A
+    # completed session can never be the active pointer -- shipping no longer
+    # closes, so a session may sit shipped-but-active, but once /session:finish
+    # marks it completed the pointer must not survive. Clear it during the
+    # rebuild-index pass (run by session:start). Guarded and fail-safe: a stat
+    # or unlink error must never break the render.
+    if args.rebuild_index and active:
+        active_meta = meta_by_name.get(active)
+        if not active_meta and active in file_names:
+            active_meta = read_session_meta(root, active)
+        if active_meta and (active_meta.get("status") or "").strip() == "completed":
+            try:
+                os.remove(ap_path)
+                active = ""
+            except OSError:
+                pass
+
     handle = args.handle.lstrip("@")
 
     # Stale detection: an in-progress session whose updated-date is older than the
