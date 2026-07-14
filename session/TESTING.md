@@ -208,13 +208,17 @@ which is what is being probed - not the exact glyphs.
 - **FAIL signal:** a single-ended or generic title with no destination role, or a missing
   `Slug:` field (the courier then cannot route the paste).
 
-### S8 - Finish tie-out consistency (ship un-bundled from close) [SINGLE or MULTI]
+### S8 - Finish tie-out consistency (ship un-bundled from close; script-backed) [SINGLE or MULTI]
 
-- **Probes:** *Ship and close are un-bundled* + *finish is the all-or-nothing close*
-  (acp-ajudd#94): a shipped session stays `active` until `/session:finish`; the close writes
-  frontmatter + body `Status:` + `_index.md` **together** + the `[DONE]` archive stamp +
-  clears `_active`; a gated outward leg is never silently closed; `/session:start` heals a
-  stale `_active`.
+- **Probes:** *Ship and close are un-bundled* + *finish is the all-or-nothing close, backed
+  by `finish-close.py`* (acp-ajudd#94/#103): a shipped session stays `active` until
+  `/session:finish`; the close is performed by a SINGLE deterministic call
+  (`session/scripts/finish-close.py`) that writes frontmatter + body `Status:` + `_index.md`
+  **together** + the `[DONE]` archive stamp + `_history.md` + worklog and clears `_active` —
+  or exits non-zero having changed nothing; the **safe-to-close cue is GATED on that call's
+  success** (acp-ajudd#103); a gated outward leg is never silently closed; `/session:start`
+  heals a stale `_active`. Run **S8 after any change to `finish.md`, `finish-close.py`, or the
+  ship/close model** - it is the check #94 asked for, now backed by the script (#103).
 - **Setup:** [SINGLE] works — pick up a `work` entry into a coding terminal (`code #X`),
   build it. A **doc-only** item with a crisp Done-when is ideal.
 - **Input:** let the session build and **ship** (deploy + `IMPLEMENTED-DEPLOYED`). Inspect
@@ -223,10 +227,16 @@ which is what is being probed - not the exact glyphs.
   1. **After ship, the session is NOT `completed`** — frontmatter `status:`, body
      `- **Status:**`, and the `_index.md` row all read in-progress; `_active` still points
      at it. (Shipping is not closing.)
-  2. **`/session:finish` closes atomically** — the three status copies flip to `completed`
-     together, the consumed entry in `_inbox_archive.md` gains a `[DONE <date>]` stamp
-     (alongside its `[CONSUMED … → session <name>]`), `_active` is cleared, and history +
-     worklog are appended. It ends on the `✅ ... safe to close this terminal` cue.
+  2. **`/session:finish` closes atomically via `finish-close.py`** — a single script call
+     flips the three status copies to `completed` together, the consumed entry in
+     `_inbox_archive.md` gains a `[DONE <date> — <note>]` stamp (alongside its
+     `[CONSUMED … → session <name>]`), `_active` is cleared, and `_history.md` + worklog are
+     appended. The script prints a per-surface summary; re-running it is idempotent (no
+     duplicate history/worklog/`[DONE]`). The finish ends on the `✅ ... safe to close this
+     terminal` cue — printed **only after** the script exits 0.
+  2b. **The close cue is gated on the script (acp-ajudd#103)** — if `finish-close.py` fails
+     (e.g. a hard precondition or malformed JSON), the finish STOPS: no `✅` cue, the session
+     is reported still-open, and the surfaces are NOT hand-edited as a fallback.
   3. **A pending gated outward leg blocks the close** — if a Confluence publish / Teams send
      the session owed is still unshipped, `/session:finish` refuses to mark `completed` and
      surfaces it (resolve / carry-forward / route), rather than swallowing it.
@@ -235,8 +245,10 @@ which is what is being probed - not the exact glyphs.
 - **FAIL signal:** the happy path marks the session `completed` without `/session:finish`
   running; finish flips one status copy but not another (body says completed, frontmatter /
   `_index` lag — the original acp-ajudd#77/#78 drift); the `[DONE]` stamp is missing while the
-  session is `completed`; a pending Confluence publish is silently closed over; or a completed
-  session survives as the `_active` pointer after `start`.
+  session is `completed`; a pending Confluence publish is silently closed over; a completed
+  session survives as the `_active` pointer after `start`; the `✅` cue prints even though
+  `finish-close.py` exited non-zero (the #103 gate was bypassed); or the surfaces are
+  hand-edited piecemeal instead of routed through the single script call.
 
 ---
 
@@ -251,12 +263,12 @@ which is what is being probed - not the exact glyphs.
 | S5       | MULTI     | Deploy-then-validate loop; detected orchestration (#57, #74/#75) |
 | S6       | SINGLE/MULTI | Solo bypass carve-out + validator cost (#75)           |
 | S7       | SINGLE    | Two-ended-title routing, sender side (#69)                |
-| S8       | SINGLE/MULTI | Ship un-bundled from close; finish all-or-nothing tie-out + `[DONE]` stamp + `_active` heal (#94) |
+| S8       | SINGLE/MULTI | Ship un-bundled from close; script-backed all-or-nothing tie-out + `[DONE]` stamp + `_active` heal + gated cue (#94/#103) |
 
 Run S1, S7, and S8 anytime (cheap, single-terminal). Run S2 whenever the `depends-on` logic
 changes. Reserve S3/S4/S5 (and the MULTI form of S6) for validating the full loop after a
 change to the dispatch model, the handoff block, or `finish.md`. Run **S8 after any change to
-`finish.md` or the ship/close model** (acp-ajudd#94).
+`finish.md`, `finish-close.py`, or the ship/close model** (acp-ajudd#94/#103).
 
 ---
 

@@ -7,11 +7,11 @@ description: End-of-day close — full checklist; Jira, Teams, Confluence, and b
 
 Full end-of-day close. Runs the complete checklist to ensure nothing is left behind.
 
-## Finish is the explicit close — all-or-nothing (acp-ajudd#94)
+## Finish is the explicit close — all-or-nothing, backed by a deterministic helper (acp-ajudd#94/#103)
 
 **`/session:finish` is the ONE thing that declares a coding session done.** It is un-bundled from the deploy (Session Skill § The dispatch↔code loop — deploy stays automatic/code's authority; the *close* is this command). Two hard rules govern it:
 
-1. **All-or-nothing tie-out — either the whole command runs, or the session has NOT finished.** Marking a session `completed` means running this command end-to-end so that **frontmatter `status:` + body `Status:` + `_index.md` flip together**, the `[DONE]` archive stamp is written, `_active` is cleared, and history + worklog are appended — as one atomic act. **Never approximate the close with a manual commit + a prose edit** — that approximation IS the bug this fixes (acp-ajudd#94: two sessions shipped but stayed `active` for days because only the body prose was hand-edited "completed" while frontmatter / `_index` / `_active` drifted). A coding session either runs `/session:finish` in full or it is still open.
+1. **All-or-nothing tie-out — performed by `finish-close.py`, not by prose (acp-ajudd#103).** The record close touches five surfaces — **frontmatter `status:` + body `Status:` + `_index.md` row flip together**, the `[DONE]` archive stamp is written, `_active` is cleared, and history + worklog are appended. #94 shipped this as a *prose* rule and it still did not land: three sessions in a row (#85, #96, #95) needed a manual dispatch tie-out because the model did the loud half (deploy + return block) and dropped the quiet half (the record close) — prose cannot make a multi-step write atomic. So the whole close now runs through **one deterministic call** (`session/scripts/finish-close.py`, Step 12a): the model composes the *content*, the script performs *all five writes* in one all-or-nothing act, or exits non-zero having changed nothing. **Never approximate the close with a manual commit + a prose edit, and never hand-write the surfaces piecemeal** — that approximation IS the bug this fixes (acp-ajudd#94: two sessions shipped but stayed `active` for days because only the body prose was hand-edited "completed" while frontmatter / `_index` / `_active` drifted). The **safe-to-close cue is gated on the script's success** (Step 12a) — a session cannot signal "done" unless the close actually ran. A coding session either completes `finish-close.py` or it is still open.
 
 2. **Close fires only on the validated signal — never auto-fired by a build.** The happy path is *build → deploy → report `State: IMPLEMENTED-DEPLOYED`* and **stops there, session still active** (Session Skill § The dispatch↔code loop, legs 3–4′). This command runs afterward, triggered by **either**: (a) the **human** running `/session:finish` on seeing `SAFE-TO-CLOSE`; or (b) a dispatch/planning handoff note carrying **`Action: CLOSE`** ("validated — run `/session:finish`") pasted into this terminal — a `CLOSE` note reliably triggers this full close. A coding session **never** flips its own status to `completed` as a side-effect of shipping.
 
@@ -86,7 +86,7 @@ Report anything that could be lost.
 
 **Non-plugin types:** if uncommitted changes exist, ask "Want to commit before closing?"
 
-**Plugin type:** do NOT prompt for a separate commit here. Uncommitted changes and unpushed local commits (from `session:commit`) at plugin finish are the work being shipped, and the **deploy step (Step 11) commits, bumps, pushes, and reinstalls them IF NOT ALREADY SHIPPED** (deactivation, Step 13, is the terminal action after it). Report them as informational only, e.g. "Uncommitted changes + N local commits — will ship in the deploy step," never as at-risk. Note (acp-ajudd#94): on the orchestrated happy path the ship already ran at build-end, so at close the tree is usually **clean** and Step 11 is a no-op — a clean tree here is normal, not a problem; finish is then the close, not the deploy.
+**Plugin type:** do NOT prompt for a separate commit here. Uncommitted changes and unpushed local commits (from `session:commit`) at plugin finish are the work being shipped, and the **deploy step (Step 11) commits, bumps, pushes, and reinstalls them IF NOT ALREADY SHIPPED** (the atomic close, Step 12a, is the terminal write after it — it flips status, stamps `[DONE]`, appends history + worklog, and clears `_active`). Report them as informational only, e.g. "Uncommitted changes + N local commits — will ship in the deploy step," never as at-risk. Note (acp-ajudd#94): on the orchestrated happy path the ship already ran at build-end, so at close the tree is usually **clean** and Step 11 is a no-op — a clean tree here is normal, not a problem; finish is then the close, not the deploy.
 
 If clean: "Git: clean" (for plugin, this means there is nothing to deploy — note that Step 11 will be a no-op).
 
@@ -164,7 +164,7 @@ Gather all pending questions and present as **one batched block**. Output and wa
 - **Memory capture (A2):** do not ask `skip / new`. Claude reviews the session itself, decides whether there is project/session knowledge worth saving, and captures it — reporting the outcome (`Captured: <name>` or `Memory: nothing new`). Override honored ("capture X, this way"), but the default is "you assess and do it."
 - **Plugin reviewed (F):** when this finish is deploying (Step 11 will run), the review is **mandatory, not optional** — run it automatically rather than presenting `skip / yes`. A deploy without a review is not acceptable.
 - **Open items completed this session (G/H/I):** items that were *this session's* picked-up `[inbox]` work and got completed are **auto-marked done** (show the reasoning, e.g. "marking done — completed this session"), not left open and re-asked.
-- **Net:** a bare `go` runs capture-if-relevant (Claude's call) → review → mark completed items done → then the deploy (Step 11) → return handoff if this session was fed a note — to dispatch if orchestrated, a courtesy note to planning if planning-fed solo (Step 12) → deactivation (Step 13). Aaron overrides only exceptions.
+- **Net:** a bare `go` runs capture-if-relevant (Claude's call) → review → mark completed items done → then the deploy (Step 11) → the atomic close (Step 12a — status flips + `[DONE]` + history + worklog + `_active`, one all-or-nothing call) → return handoff if this session was fed a note (to dispatch if orchestrated, a courtesy note to planning if planning-fed solo) → the ✅ close cue (Step 12c, gated on the close). Aaron overrides only exceptions.
 - **Empty batch → no stop.** After applying these defaults, if no slots remain that genuinely need a decision, do NOT present an empty batch and wait — report the auto-resolutions (captured memory, auto-done items, review result) as informational output and proceed straight through Steps 8–12. Only stop at the batch when at least one ambiguous slot survives.
 
 The slot bodies and apply-logic below note where this default changes behavior for plugin type. **Story / cab / personal / general are unchanged** — they keep their explicit prompts.
@@ -296,17 +296,15 @@ For **story/cab slots (A, B, B2, C, D, E, K)** the apply-logic lives in `referen
 
 **Auto-purge archive:** After handling inbox items, if the archive file exists, drop entries whose `[DONE YYYY-MM-DD]` date is more than 30 days before today. Rewrite with only retained entries (preserving the header line).
 
-### 8. History Entry
+### 8. History Entry — compose only (the close script appends it)
 
-Compose a 1-sentence description of the work accomplished this session. Write it as a complete thought that stands alone without conversation context.
+Compose a 1-sentence description of the work accomplished this session. Write it as a complete thought that stands alone without conversation context. Format the full line as:
 
-Append to `<session_root>/_history.md` via Bash — **do not Read the file first:**
-```bash
-[ -f "<session_root>/_history.md" ] || printf "# History — <slug>\n" > "<session_root>/_history.md"
-printf "[YYYY-MM-DD @<handle>] <session-name> — <accomplished sentence>\n" >> "<session_root>/_history.md"
+```
+[YYYY-MM-DD @<handle>] <session-name> — <accomplished sentence>
 ```
 
-The composed entry is already in context and becomes the value for `Last worked on` in the session file — **do not re-read `_history.md` to retrieve it.**
+**Do NOT append it to `_history.md` here.** The atomic close (Step 12a) appends it — `_history.md` is one of the five surfaces `finish-close.py` writes as a single all-or-nothing act (acp-ajudd#103), so a separate prose append here would double-write and re-open the drift #103 closes. Hold the composed line in context; it is also the value for `Last worked on` in the session file (Step 9). **Do not re-read `_history.md`.**
 
 ### 9. Session Summary
 
@@ -321,13 +319,7 @@ The composed entry is already in context and becomes the value for `Last worked 
   This is the acp-ajudd#94 live case: `session-confluence-rewrite` was flipped `completed` while the Confluence publish (a gated outward leg) had not happened — the session reported done while the deliverable didn't exist. Treat a pending outward leg exactly like an out-of-scope item in Step 5: resolve, carry-forward, or route — never close silently over it.
 - **No unresolved Open item is closed over silently.** Any Open item still open at this point is either (a) resolved now, (b) explicitly carried forward (written into the completed session's `Open items:` / `Next steps:` as a deliberate hand-off), or (c) acknowledged by the human. Carrying an item forward is a legitimate acknowledgement; *dropping* one without a trace is not.
 
-**Coding-finish writes the `[DONE]` completion stamp (acp-ajudd#94, #42 completion-authority).** Completion authority is coding-finish's alone (Session Skill § State-Exclusivity). This session's picked-up `work` entry was folded-and-archived at pickup as a `[CONSUMED <date> → session <name>]` line in `_inbox_archive.md`; at this close, **upgrade that entry to also carry `[DONE YYYY-MM-DD]`** so the archive ledger and the session file's `status: completed` stay consistent — no divergence (in the #94 live case this stamp had to be written by hand afterward). Find the entry by the item `<id>` recorded in the session file's `## Picked up from inbox` provenance:
-```bash
-# plugin / personal — canonical archive is _inbox_archive.md
-ARCH="<session_root>/_inbox_archive.md"
-# locate the [CONSUMED … → session <name>] line for <id> and add a [DONE <today>] marker to it.
-```
-Do this for **plugin / personal** (item-driven; `_inbox_archive.md`). For **story / cab / general** the archive is `_inbox_<name>_archive.md` and the existing Step 7 `[DONE]` handling covers per-session items. If this session picked up no inbox entry (a bare `code <name>` with no provenance), there is nothing to stamp — skip.
+**Coding-finish writes the `[DONE]` completion stamp — compose the note; the close script stamps it (acp-ajudd#94/#103, #42 completion-authority).** Completion authority is coding-finish's alone (Session Skill § State-Exclusivity). This session's picked-up `work` entry was folded-and-archived at pickup as a `[CONSUMED <date> → session <name>]` line in `_inbox_archive.md`; at this close it must **also carry `[DONE YYYY-MM-DD — <note>]`** so the archive ledger and the session file's `status: completed` stay consistent. **Do NOT hand-edit `_inbox_archive.md` here** — the atomic close (Step 12a) locates the `[CONSUMED … session <name>]` line and inserts the `[DONE]` stamp as part of its one all-or-nothing write (this is exactly the stamp that had to be written by hand in the #94/#96/#95 live cases — #103 makes it deterministic). Your job now is only to **compose the `done_note`** — a short completion note, e.g. `shipped v1.82.0 via session <name>`. Record the item `<id>` from the session file's `## Picked up from inbox` provenance; it is passed to the script as `--item-id`. If this session picked up no inbox entry (a bare `code <name>` with no provenance), `--item-id` is empty and the stamp is skipped. (For **story / cab / general** the per-session `_inbox_<name>_archive.md` is still covered by the Step 7 `[DONE]` handling; the close script's stamp is the plugin/personal item-driven path.)
 
 **Before writing — tag any untagged items:** For each Open item that does not already start with `[YYYY-MM-DD @`, prepend `[today @<handle>] `. Preserve existing tags as-is.
 
@@ -390,31 +382,22 @@ status: completed       ← plugin/personal only; marks the session done (file k
 
 **Backward compat:** If the existing session file has a `Project:` field, preserve it. If `- **Next step:** <text>` (scalar), re-write as `- **Next steps:**` array tagged `[today @<handle>]`. `Commits:` is preserve-only at this step (written by session:commit) — for plugin type, the deploy (Step 11) appends its deploy commit afterward. `Loaded memories:` carries forward minus anything deleted during the Step 7 memory-validation item.
 
-**After writing — update approved-hash (repo sessions only):** Recompute hash and overwrite `~/.claude/memory/sessions/<slug>/<name>.approved-hash`:
+Write the session file **body** with all its semantic fields (Open items, Next steps, Loaded memories, Commits, etc.). Write `status: completed` / `- **Status:** completed` per the template — but the **authoritative** flip across all three status surfaces (frontmatter + body + `_index.md` row) is performed by the atomic close in Step 12a, not by hand here.
+
+**Do NOT hand-write `_index.md` and do NOT hand-flip the status lines as separate steps (acp-ajudd#103).** The `_index.md` row update, the frontmatter/body status flips, the `[DONE]` archive stamp, and the `_history.md` + worklog appends are **all performed together by `finish-close.py`** in Step 12a — as one all-or-nothing call, or nothing. This replaces the old ~5 separate prose write-steps whose piecemeal nature was exactly what let the close drift (frontmatter flipped while `_index` lagged; the `[DONE]` stamp dropped; `_active` left set — the #94/#96/#95 live cases). The model composes the *content* (history line, worklog block, `done_note`, and this session-file body); the script performs the *writes*.
+
+**After the atomic close runs (Step 12a) — update approved-hash (repo sessions only):** because the hash must cover the final, status-flipped file, recompute it **after** Step 12a, not here:
 ```bash
 git hash-object "<session_root>/<name>.md" > ~/.claude/memory/sessions/<slug>/<name>.approved-hash
 ```
 
-**Update `_index.md`:** Find the line for `<name>`: extract `@created-by` and `created-date` to preserve. Replace or append: `<name> | @<created-by> | <created-date> | @<handle> | <today> | completed | <title-or-dash>`.
-
-**All-or-nothing (acp-ajudd#94):** the frontmatter `status: completed`, the body `- **Status:** completed`, and this `_index.md` row are **one atomic write** — never leave the session file flipped while `_index.md` lags, or vice versa. If any of the three can't be written, the close has not happened; do not report the session as finished.
-
 **General sessions only:** Also check `~/.claude/memory/sessions/<slug>/<name>/` — if notes, decisions, or outputs were produced today, ensure they are written there before closing.
 
-Print the summary to screen. **For plugin type, this is not the final output** — the deploy (Step 11) runs after the worklog (Step 10) while the session is still active, then deactivation (Step 13) closes out silently, so the deploy's result is the true last line. For all other types, the summary is the final output.
+Print the summary to screen. **For plugin type, this is not the final output** — the deploy (Step 11) runs while the session is still active, then the atomic close (Step 12a) ties out the record and clears `_active`, and the ✅ close cue (Step 12c) is the true last line. For all other types, the atomic close (Step 12a) followed by the ✅ cue is the final output.
 
-### 10. Work Log
+### 10. Work Log — compose only (the close script appends it)
 
-Append to `~/.claude/memory/worklog/<YYYY-MM-DD>.md` via Bash — **do not Read the file first.** Worklog is append-only; existing content is never examined.
-
-```bash
-mkdir -p ~/.claude/memory/worklog
-cat >> ~/.claude/memory/worklog/<YYYY-MM-DD>.md << 'ENTRY'
-[entry content here]
-ENTRY
-```
-
-Use today's date for the filename. Use the current local time (HH:MM) for the entry header.
+**Compose** the worklog entry now; **do NOT append it here.** The atomic close (Step 12a) writes it to `~/.claude/memory/worklog/<YYYY-MM-DD>.md` — the worklog is the fifth surface `finish-close.py` writes, so a separate append here would double-write. Use today's date for the target filename and the current local time (HH:MM) for the entry header. Hold the composed block in context for the close call.
 
 Entry format varies by type:
 
@@ -433,17 +416,17 @@ Entry format varies by type:
 
 Multiple entries per day are expected — always append, never overwrite.
 
-### 11. Deploy — plugin type only, IF NOT ALREADY SHIPPED (runs before deactivation)
+### 11. Deploy — plugin type only, IF NOT ALREADY SHIPPED (runs before the atomic close)
 
 **Deploy is un-bundled from close (acp-ajudd#94).** On the orchestrated happy path the coding session **already deployed at build-end** (the ship — bump + push + reinstall, code's own authority — Session Skill § The dispatch↔code loop, leg 3) and reported `State: IMPLEMENTED-DEPLOYED` **before** this close was triggered. So for an orchestrated session this step is normally a **no-op** — the work is already live; the close just ties out the record. For a **solo** session (a bare `code <name>`, or a direct planning-fed handoff) where no separate ship ran, this step performs the deploy — finish is then the ship *and* the close in one. Either way, this step **deploys only if there is undeployed work**, then deactivation (Step 13) is the terminal action.
 
-It runs after the history entry (8), the session summary + mark-completed (9), and the worklog (10) — but **before deactivation (Step 13), deliberately.** All session state is settled first; the code (version bump + push + reinstall) lands last among the content steps, mirroring the repo-based branch flow (state first, code last). Deactivation (removing `_active`) is the true terminal action, run only after the deploy fully completes.
+It runs after the history line is composed (8), the session-file body is written (9), and the worklog is composed (10) — but **before the atomic close (Step 12a), deliberately.** The version bump + push + reinstall land while the session is still active; then Step 12a performs the record close (status flips + `[DONE]` + history + worklog + `_active` removal) as the true terminal write, so `_active` is cleared only once the deploy has fully completed.
 
-**For story / cab / personal / general: skip this step entirely.** Those types push during `commit` and have no version/reinstall concept — Step 11 is skipped and their finish ends at deactivation (Step 13).
+**For story / cab / personal / general: skip this step entirely.** Those types push during `commit` and have no version/reinstall concept — Step 11 is skipped and their finish ends at the atomic close (Step 12a) + the ✅ cue.
 
 **No-op guard (now doubles as the already-shipped guard):** if the Step 2 git scan found nothing to ship — a clean tree AND no unpushed local commits — the work is already live (the happy-path ship handled it) or there was nothing to deploy. Report `Already shipped — nothing to deploy; close complete.` and skip to the close's final cue. Do not bump or push.
 
-Otherwise (there is undeployed work — the solo ship+close case), present the deploy as a visually distinct step, followed by the Step 12 return/close cue and the silent deactivation of Step 13:
+Otherwise (there is undeployed work — the solo ship+close case), present the deploy as a visually distinct step, followed by the Step 12a atomic close (which clears `_active`) and then the Step 12b/12c return block and ✅ close cue:
 
 ```
 ────────────────────────────────────────────────
@@ -485,32 +468,51 @@ A Claude Code restart may be required to load the new version — note this if s
 Deployed: session v1.53.0 → v1.54.0 — pushed to master, reinstalled (live)
 ```
 
-### 12. Return Handoff & the Close Cue (acp-ajudd#94)
+### 12. The Atomic Close, Return Handoff & Close Cue (acp-ajudd#94/#103)
 
-**This close is the END of the loop, not the ship.** On the orchestrated happy path the coding session ALREADY emitted its `State: IMPLEMENTED-DEPLOYED` return block to dispatch at the **ship (build-end)**, and escape-hatch stop-reasons (`BLOCKED-QUESTION` / `FOUND-ISSUE` / `REQUIREMENTS-CHANGE`) are emitted mid-build via `/session:handoff` — **never here** (a stop is not a finish; finish runs only on the validated/happy close). So this step does **not** re-emit the return block for an orchestrated session. What it emits depends on WHO fed the session; orchestration is detected, not declared (Session Skill § The three roles, Pillar 4) — read the `## Picked up from inbox` provenance for the `<from-role>`:
+**12a. Run the atomic close — the single terminal record-write (acp-ajudd#103).** Everything the close must persist — the frontmatter/body/`_index` status flips, the `[DONE]` archive stamp, the `_history.md` append, the worklog append, and the `_active` removal — is performed by ONE call to `finish-close.py`, or nothing is. It is the mechanical counterpart to `inbox-id.py` / `session-list.py` / `session-archive.py`; it exists because "all-or-nothing" cannot be enforced by prose — three sessions in a row still needed a manual dispatch tie-out (#85/#96/#95). Having composed the free text in Steps 8 / 9 / 10 (and written the session-file body in Step 9), call it now:
+
+```bash
+ROOT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}"
+PYBIN=python3; command -v python3 >/dev/null 2>&1 || PYBIN=python
+"$PYBIN" "$ROOT/scripts/finish-close.py" \
+  --session-root "<session_root>" --slug "<slug>" --name "<name>" \
+  --type "<type>" --date "<YYYY-MM-DD>" --handle "<handle>" \
+  --item-id "<id-or-empty>" --title "<title-or-empty>" << 'JSON'
+{"history_line": "<the Step 8 line>", "worklog_entry": "<the Step 10 block, internal newlines escaped as \n>", "done_note": "<the Step 9 note, e.g. shipped v1.82.0 via session <name>>"}
+JSON
+```
+
+- `history_line` / `worklog_entry` / `done_note` are the content composed in Steps 8 / 10 / 9. `worklog_entry` is a JSON string value, so its internal newlines must be escaped as `\n`.
+- `--item-id` is the picked-up item's `<id>` (from the session file's `## Picked up from inbox` provenance); leave it **empty** for a bare `code <name>` session — the `[DONE]` stamp is then skipped. `--title` is the story/cab Jira summary; empty for plugin/personal preserves the existing `_index` title.
+- The script is **idempotent**: if a prior partial run wrote some surfaces, re-running converges without duplicating. On **malformed JSON or any hard precondition failure it writes nothing and exits non-zero** (fail-closed) — fix and re-run; do **NOT** fall back to hand-editing the surfaces (piecemeal hand-writes are exactly the drift #103 removes).
+- Relay the script's summary lines (they name each surface it wrote, plus any soft anomaly such as a missing `[CONSUMED]` line). For repo sessions, recompute the approved-hash (Step 9) now — after this call, so it covers the status-flipped file.
+
+**GATE — nothing below prints until `finish-close.py` exits 0 (acp-ajudd#103).** The safe-to-close cue and any return block are gated on the script's success: a session must not be able to signal "done" (the ✅ cue, the deactivation) unless the record close actually ran. If the script exits non-zero, **STOP** — report the error, do **not** emit the ✅ cue, do **not** treat the session as finished. It is still open until the close succeeds.
+
+**12b. Return handoff.** **This close is the END of the loop, not the ship.** On the orchestrated happy path the coding session ALREADY emitted its `State: IMPLEMENTED-DEPLOYED` return block to dispatch at the **ship (build-end)**, and escape-hatch stop-reasons (`BLOCKED-QUESTION` / `FOUND-ISSUE` / `REQUIREMENTS-CHANGE`) are emitted mid-build via `/session:handoff` — **never here** (a stop is not a finish; finish runs only on the validated/happy close). So this step does **not** re-emit the return block for an orchestrated session. What it emits depends on WHO fed the session; orchestration is detected, not declared (Session Skill § The three roles, Pillar 4) — read the `## Picked up from inbox` provenance for the `<from-role>`:
 
 - **Orchestrated (dispatch-fed) — the ship already reported.** The `CODING ──▶ DISPATCH` `IMPLEMENTED-DEPLOYED` block went out at build-end; dispatch validated it and signalled `SAFE-TO-CLOSE` (or sent an `Action: CLOSE` note) — which is *why* this close is running. Do **NOT** emit another return block. Go straight to the ✅ close cue below. (Edge case: if this finish is itself acting as ship+close for an orchestrated session that never separately shipped, emit the `CODING ──▶ DISPATCH` `IMPLEMENTED-DEPLOYED` block first — command-invoked via `/session:handoff`, two-ended title per acp-ajudd#69 — then the close cue.)
 - **Solo, planning-fed — a `planning ──▶ coding` handoff fed this session, dispatch bypassed (acp-ajudd#75).** No separate ship ran; this close IS ship+close. Emit a **courtesy** `CODING ──▶ PLANNING` return block (`State: IMPLEMENTED-DEPLOYED`) — a solo report explicitly outside the strict hub, not a `coding ──▶ dispatch` relay (Session Skill § The dispatch↔code loop, solo carve-out). Lead it with its `📤` courier header per §The courier line. Bypass cost: no independent validator ran — safe only for the doc-only, crisp-Done-when work such a direct handoff is meant for.
 - **Solo, truly unpaired — no handoff note ever received.** No return block. Just the ✅ close cue.
 
-**End with the ✅ close cue — the last thing on screen (acp-ajudd#94).** After the tie-out, print exactly one bold courier line from the fixed vocabulary (Session Skill § Cross-Session Paste Handoff → The courier line — UTF-8 chat markdown, not hook stdout, so the cp1252 ASCII rule does not apply):
+**12c. End with the ✅ close cue — the last thing on screen (acp-ajudd#94/#103).** Only after `finish-close.py` exited 0 (Step 12a gate), print exactly one bold courier line from the fixed vocabulary (Session Skill § Cross-Session Paste Handoff → The courier line — UTF-8 chat markdown, not hook stdout, so the cp1252 ASCII rule does not apply):
 ```
 **✅ <ids> — validated & closed. Safe to close this terminal.**
 ```
-This is the `✅` **close** cue — distinct from the `📤` **ship** cue printed earlier at build-end, and from dispatch's `SAFE-TO-CLOSE` signal. It fires only now, after the all-or-nothing close ran (Claude can't restart itself; the cue hands the terminal back to the human to close). When a return block is also emitted (planning-fed solo, or the orchestrated edge case), print its `📤` header above the block and the ✅ close cue after.
+This is the `✅` **close** cue — distinct from the `📤` **ship** cue printed earlier at build-end, and from dispatch's `SAFE-TO-CLOSE` signal. It fires only now, after the atomic close ran (Claude can't restart itself; the cue hands the terminal back to the human to close). When a return block is also emitted (planning-fed solo, or the orchestrated edge case), print its `📤` header above the block and the ✅ close cue after.
 
-For **personal** (also an inbox zone, can be orchestrated) the same applies without a version deploy. **story / cab / general are never dispatch-orchestrated** (Jira flow / no dispatch layer) — they get the standard close and no return block; their finish ends at deactivation (Step 13).
+For **personal** (also an inbox zone, can be orchestrated) the same applies without a version deploy. **story / cab / general are never dispatch-orchestrated** (Jira flow / no dispatch layer) — they get the standard close and no return block; their finish ends at the atomic close (Step 12a) + the ✅ cue.
 
-### 13. Deactivate Session (terminal action)
+### 13. Deactivation — folded into the atomic close (acp-ajudd#103)
 
-The true final action of finish — run **only after the deploy (Step 11) and any return handoff (Step 12) are done** (for plugin type), so the version bump and any other plugin-file edits during the deploy were still authorized by an active coding session. For non-plugin types Step 11 is skipped, so deactivation follows the session summary (or the Step 12 return handoff, if orchestrated) directly. This step edits no plugin files — it only removes the marker — so it is always safe to run last.
+**`_active` removal is no longer a separate step** — it is one of the surfaces the Step 12a atomic close (`finish-close.py`) removes, so deactivation happens as part of the single all-or-nothing write, gated by the same success check. Deploy (Step 11) still runs before Step 12a, so the version bump and any plugin-file edits during the deploy are still authorized by an active coding session; `_active` is cleared only once, by the close script, as the terminal write.
 
-Remove the active marker so no future conversation inherits stale state. `_active` is always local — do not touch the repo session directory for this step:
+No manual `rm` is needed. If you ever need to verify (or a legacy path skipped the script), a bare `_active` removal is always safe — it is local and edits no plugin files:
 
 ```bash
 rm -f ~/.claude/memory/sessions/<slug>/_active
 ```
+On PowerShell: `Remove-Item -ErrorAction SilentlyContinue ~/.claude/memory/sessions/<slug>/_active`
 
-On PowerShell use: `Remove-Item -ErrorAction SilentlyContinue ~/.claude/memory/sessions/<slug>/_active`
-
-Deactivation is silent — it produces no user-facing output. The last thing on screen is therefore the **Step 12 `✅` close cue** (`✅ <ids> — validated & closed. Safe to close this terminal.`) — printed after any return block this close emitted (planning-fed solo → a courtesy `CODING ──▶ PLANNING` block; the orchestrated edge case → a `CODING ──▶ DISPATCH` block). For the common orchestrated close, no return block is re-emitted (the ship already reported), so the ✅ close cue stands alone as the final line.
+Deactivation is silent — it produces no user-facing output. The last thing on screen is therefore the **Step 12c `✅` close cue** (`✅ <ids> — validated & closed. Safe to close this terminal.`) — printed after any return block this close emitted (planning-fed solo → a courtesy `CODING ──▶ PLANNING` block; the orchestrated edge case → a `CODING ──▶ DISPATCH` block). For the common orchestrated close, no return block is re-emitted (the ship already reported), so the ✅ close cue stands alone as the final line.
