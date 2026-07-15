@@ -347,6 +347,10 @@ def main():
     ap.add_argument("--rebuild-index", action="store_true",
                     help="when _index.md is absent/incomplete, derive rows from the "
                          "session files and persist the rebuilt cache (acp-ajudd#49)")
+    ap.add_argument("--compact", action="store_true",
+                    help="tight numbered list — just '# name' per row with stale/active/"
+                         "current-branch markers, no wide columns (acp-ajudd#130). The "
+                         "numbers still drive 'code <n>'. Additive: off unless passed.")
     args = ap.parse_args()
 
     # Windows consoles default to cp1252; the active marker is U+2190. Force UTF-8.
@@ -561,6 +565,38 @@ def main():
         out.append(f"  (no sessions to show — "
                    f"{summary['in-progress']} in-progress · {summary['paused']} paused · "
                    f"{summary['completed']} completed)")
+        for line in enc_notices:
+            out.append(f"  {line}")
+        for line in enc_warnings:
+            out.append(f"  ⚠ {line}")
+        sys.stdout.write("\n".join(out) + "\n")
+        return 0
+
+    # Compact mode (acp-ajudd#130) — tight numbered list, no wide columns. The
+    # numbers still index the same rows, so `code <n>` is unchanged; this only
+    # collapses the visual detail so the verbs headline stays the focus.
+    if args.compact:
+        out = []
+        name_w = max((len(r["name"]) for r in rows), default=0)
+        for kind, payload in printable:
+            if kind == "group":
+                suffix = " — resume by #" if payload == "In Progress" else ""
+                out.append(f"  {payload}{suffix}:")
+            else:
+                i, r = payload
+                trailing = ""
+                if r["active"]:
+                    trailing += "  ←"
+                if r["stale"]:
+                    trailing += "  ⚠"
+                if r.get("on_current_branch"):
+                    trailing += "  (current branch)"
+                out.append(f"    {str(i).rjust(2)}  {r['name'].ljust(name_w)}{trailing}".rstrip())
+        out.append(f"  {summary['in-progress']} in-progress · {summary['paused']} paused · "
+                   f"{summary['completed']} completed")
+        stale_shown = sum(1 for r in rows if r["stale"])
+        if stale_shown:
+            out.append(f"  ⚠ {stale_shown} not updated in >{stale_days}d — consider /session:finish")
         for line in enc_notices:
             out.append(f"  {line}")
         for line in enc_warnings:

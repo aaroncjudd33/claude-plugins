@@ -29,6 +29,8 @@ The listing is rendered by a helper script so its deterministic formatting (grou
    The prune runs first and completes before the listing (and before any commit a later step such as `migrate` might make). If it prints a `Retention: archived …` line, relay it to the user before the table so an archival is never silent.
    (`${CLAUDE_PLUGIN_ROOT}` is used when set; otherwise the script resolves from the marketplace clone — derive `<pluginMarketplaceName>` as in the dispatcher's Zone Detection.) The script reads `_index.md` (7-col current / 6-col legacy), the per-session inbox files (`_inbox_<name>.md`, archives excluded), the `_active` marker, and the session `.md` filenames itself, then prints the finished, aligned, grouped table — default columns, with completed and `refinement-*` sessions hidden. **Display its stdout exactly as printed: do not re-align, re-order, restate, or wrap it in a code fence.**
 
+**Work-zone ordering carve-out (acp-ajudd#130).** For the **story / cab** zones only, do **not** emit the session table in this step — run the retention prune above (and relay any `Retention:` line), but **defer the listing to Step 3**, which leads with the verbs headline and then renders a *compact* listing (`session-list.py --compact`). Every other zone (plugin / personal / general) emits the table here exactly as described — they are unchanged.
+
    **`_active` self-heal (acp-ajudd#94).** During this `--rebuild-index` pass the script also **clears an `_active` marker that points at a session whose status is `completed`** — a completed session can never be the active pointer. (Under the un-bundled ship/close model a session may legitimately sit *shipped but still active* until `/session:finish` runs; once it is `completed`, a lingering `_active` is stale and is removed here.) Fail-safe: a heal error never breaks the listing.
 
 2. **Step 3 inputs (same parallel batch):**
@@ -164,40 +166,46 @@ plus the shared **Search by** block (§ 87-97 above). The `dispatch` and `captur
 
 **Work project:**
 
-If the rendered inbox (Step 2, `inbox-render.py` over `<session_root>/_inbox/`) has logical items, show compactly before the routing line using **layout B** (description-first, provenance dim below — see `references/inbox-convention.md`). Flag `[spawn]` entries with ★:
-```
-Global inbox (N items):
-  ★ [spawn] <label>
-     ↳ <slug> / <session> (<type>) · MM-DD — ready to start
-  1  <description>
-     ↳ <slug> / <session> (<type>) · MM-DD
-```
-Rendering rules: drop `<slug>` when it equals the current repo slug; omit `(<type>)` for legacy entries; tolerate spaced/unspaced `/`. **List `work` only — `status: new` / `refining` / `ready`** — exclude `capture`-type entries; they surface via the captures-waiting glance below, never as pickable work. Full inbox handling (work/done/backlog/keep) happens at Step 5.
+**Verbs first — collapse the rest (acp-ajudd#130).** The happy path is *pick a verb + a target*, and that must be the focus of the screen. Lead with the three verbs, then a compact resumable list (so `code <n>` still works), then **one** collapsed "more" line — the inbox, the full table, and the search options are all one keystroke away, not on screen by default. Emit the panel in this exact order (each piece script-echoed):
 
-**Captures-waiting glance (acp-ajudd#10, § Captures inbound).** From the rendered inbox read, count `capture`-type entries; if any, show `Captures waiting: N — say "check captures" to read them` once (omit if zero). Read/disposition them only on request (promote / discard / absorb / feed → the three non-promote fates archive), per `references/inbox-convention.md` § Captures inbound.
+1. **Verbs headline** — run `routing-block.py --zone work --search none` and display its stdout verbatim (refine / code / cab — the primary call to action):
+   ```bash
+   ROOT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}"
+   python3 "$ROOT/scripts/routing-block.py" --zone work --search none
+   ```
+2. **Compact in-progress list** — the session listing deferred from Step 2, rendered tight with `--compact` (just `# name` + stale/active/current-branch markers). Its `#` numbers drive `code <n>` / `refine <n>`. Display verbatim:
+   ```bash
+   python3 "$ROOT/scripts/session-list.py" --session-root "<session_root>" --slug "<slug>" --handle "<handle>" --rebuild-index --compact
+   ```
+3. **Collapsed "more" line** — ONE dim line built from counts already gathered in Step 2 (consolidated-inbox `work` count from `inbox-render.py`; repo-memory count from the grep). Do **not** list the inbox items or the search options here:
+   ```
+   more:  inbox <N> · memory <N> · search      (type: inbox / sessions / search / all)
+   ```
+   Drop a term whose count is zero (no `inbox <N>` if the inbox has no `work`; no `memory <N>` if there's no repo memory). Always keep the `search` term and the `(type: …)` hint.
 
-**Output the routing block — script-rendered (acp-ajudd#123).** Run `routing-block.py` for this zone and display its stdout verbatim:
-```bash
-ROUTING="$ROOT/scripts/routing-block.py"
-if command -v python3 >/dev/null 2>&1 && [ -f "$ROUTING" ]; then
-  python3 "$ROUTING" --zone work
-fi
+Then wait for one free-text reply. **Do not use AskUserQuestion.**
+
+**Expand keywords (acp-ajudd#130) — the collapsed detail is one word away:**
+- `inbox` → render the consolidated inbox in full: run `inbox-render.py render` and show its `work` items in **layout B** (description-first, provenance dim below; `[spawn]` starred; drop `<slug>` when it equals the current repo; `work` only — `new`/`refining`/`ready`, capture-type excluded), then the captures-waiting glance `Captures waiting: N — say "check captures" to read them` (omit if zero). Then re-show the verbs headline. Full inbox handling (work/done/backlog/keep) happens at Step 5.
+- `sessions` → re-render the **full** session table (`session-list.py` *without* `--compact` — all columns), then re-show the verbs headline.
+- `search` → run `routing-block.py --zone work` (default `--search full`) to show the full **Search by** options, then wait again.
+- `all` → full table including completed (`session-list.py --show all`, no `--compact`).
+- `check captures` → read + disposition capture-type entries (promote / discard / absorb / feed — the three non-promote fates archive), per `references/inbox-convention.md` § Captures inbound.
+
+**Fallback (scripts unavailable)** — render the verbs headline yourself:
 ```
-**Fallback (script unavailable)** — render the block yourself, plus the shared **Search by** block (§ 87-97 above):
+  Pick one — a verb + your target:
+    refine <n|KEY>   scope/plan a story (sessionless)
+    code   <n|KEY>   open or resume a coding session
+    cab    <KEYS>    new CAB coding session
+                     (a # from the list below, or a story key you know)
 ```
-  Refine / Code:
-    refine [target]     — scope a Jira story (Gathering Requirements; planning, sessionless)
-                          bare = list your in-refinement stories · refine BPT2-XXXX = reopen one
-    code <n|KEY>        — open a coding session (the file decides):
-                          a story KEY graduates (→ In Progress) or resumes its session ·
-                          <n> resumes an in-progress session by table row
-    code cab BPT2-XXXX… — open a new CAB coding session for those stories
-```
+then a compact list (read `_index.md`, group by status, one `# name` per in-progress/paused row, mark stale), then the collapsed more-line above. `search` still expands to the shared **Search by** block (§ 87-97).
 
 **Type-specific accepted inputs** (plus the shared inputs above):
 - `code <KEY>` (e.g. `code BPT2-6429`) → open a coding session on that story — the file decides: a session already exists → resume it; no session yet → graduate the story (transition to *In Progress*, create the feature branch, kickoff). If no key in the reply after a bare `code`, ask "Story key or URL?" as follow-up.
-- `code <n>` → resume the in-progress session on sessions-table row `<n>`.
-- `code cab BPT2-XXXX [...]` → new CAB coding session for those stories (routes to `/release:create-cab`); if no keys in the reply, ask "Story keys? (space-separated)" as follow-up. Bare `cab BPT2-…` is accepted as a synonym.
+- `code <n>` → resume the in-progress session on the compact-list row `<n>`.
+- `cab BPT2-XXXX [...]` (bare `cab`, no `code` prefix) → new CAB coding session for those stories (routes to `/release:create-cab`); if no keys in the reply, ask "Story keys? (space-separated)" as follow-up. `code cab …` is still accepted as a legacy synonym.
 - `refine [target]` → scope a story first (see shared inputs) — creates/edits a Jira story in *Gathering Requirements*; never a session file. **New story work Heber hands over is already refined upstream — you'll mostly just `code BPT2-XXXX`.**
 - `code <n>` on a global inbox `[spawn]` item → route through the spawn flow.
 

@@ -44,13 +44,11 @@ PLUGIN_PERSONAL_BLOCK = """\
                         (sessionless; runs /session:capture)"""
 
 WORK_BLOCK = """\
-  Refine / Code:
-    refine [target]     — scope a Jira story (Gathering Requirements; planning, sessionless)
-                          bare = list your in-refinement stories · refine BPT2-XXXX = reopen one
-    code <n|KEY>        — open a coding session (the file decides):
-                          a story KEY graduates (→ In Progress) or resumes its session ·
-                          <n> resumes an in-progress session by table row
-    code cab BPT2-XXXX… — open a new CAB coding session for those stories"""
+  Pick one — a verb + your target:
+    refine <n|KEY>   scope/plan a story (sessionless)
+    code   <n|KEY>   open or resume a coding session
+    cab    <KEYS>    new CAB coding session
+                     (a # from the list below, or a story key you know)"""
 
 GENERAL_BLOCK = """\
   Refine / Code:
@@ -71,6 +69,11 @@ ZONE_BLOCKS = {
 def main():
     ap = argparse.ArgumentParser(description="Print the classic-flow routing block for a zone.")
     ap.add_argument("--zone", required=True, choices=sorted(set(ZONE_BLOCKS)))
+    ap.add_argument("--search", choices=["full", "none"], default="full",
+                    help="'full' appends the multi-line Search by block (default, "
+                         "unchanged for plugin/personal/general); 'none' prints just the "
+                         "verbs block so the caller can add its own collapsed more-line "
+                         "(work zone, acp-ajudd#130).")
     args = ap.parse_args()
 
     try:
@@ -81,7 +84,10 @@ def main():
     block = ZONE_BLOCKS.get(args.zone)
     if not block:
         return 1
-    sys.stdout.write(block + "\n\n" + SEARCH_BY + "\n")
+    if args.search == "none":
+        sys.stdout.write(block + "\n")
+    else:
+        sys.stdout.write(block + "\n\n" + SEARCH_BY + "\n")
     return 0
 
 
