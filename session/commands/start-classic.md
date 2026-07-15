@@ -177,15 +177,14 @@ plus the shared **Search by** block (§ 87-97 above). The `dispatch` and `captur
    ```bash
    python3 "$ROOT/scripts/session-list.py" --session-root "<session_root>" --slug "<slug>" --handle "<handle>" --rebuild-index --limit 5
    ```
-3. **"More" options — vertical, each clearly its own option (acp-ajudd#130)** — built from counts already gathered in Step 2 (consolidated-inbox `work` count from `inbox-render.py`; repo-memory count from the grep). Render each on its own line with its count and a short description, aligned like the Search-by block — the point is that inbox / sessions / memory / search read as **distinct openable options**, not one cramped line. Do **not** list the inbox items or expand search here:
+3. **Advanced — titled section, vertical (acp-ajudd#130 / #131)** — built from counts already gathered in Step 2 (consolidated-inbox `work` count from `inbox-render.py`; repo-memory count from the grep). Title the section **`Advanced`** (a parallel header to `Pick one` and `In Progress`); render the three options each on its own line with its count and a short description, aligned — distinct openable options, not one cramped line. Do **not** list the inbox items or expand search here:
    ```
-   More — type one to open:
-     inbox     <N> item(s)   — view the consolidated inbox
-     sessions                — full session list (all columns)
-     memory    <N> entries   — repo memory
-     search                  — mine · all · status <value> · <text>
+   Advanced
+     inbox    <N> item(s)   — view the consolidated inbox
+     memory   <N> entries   — repo memory notes
+     search                 — find a session, inbox item, or note
    ```
-   Omit the `inbox` line if the inbox has no `work`; omit `memory` if there's no repo memory. Keep `sessions` and `search` always.
+   Omit the `inbox` line if the inbox has no `work`; omit `memory` if there's no repo memory. Keep `search` always. (`sessions` / `all` remain accepted keywords — the full session list is reachable via the `… +M more — type 'sessions'` overflow line under In Progress, so it doesn't need its own Advanced row.) **Deferred (acp-ajudd#131):** whether "memory" is clear to teammates, whether `search` should name its scope, or whether these collapse into one search — see that item; not changed here.
 
 Then wait for one free-text reply. **Do not use AskUserQuestion.**
 
