@@ -29,6 +29,13 @@ PY=python3; command -v python3 >/dev/null 2>&1 || PY=python
 ```
 If neither `python3` nor `python` (nor the script) is available, fall back to reading `_inbox/*.md` directly (glob the dir; if it's absent, read a legacy `_inbox.md` if one is still present) — the read must always degrade, never block.
 
+**In-flight display — consumed items still in a live session (acp-ajudd#99).** The render helper also answers "what happened to this item?" without any role narrating it (§ Role-scoped reporting). `inbox-render.py in-flight` reads `_inbox_archive.md`, finds every block stamped `[CONSUMED … → session <name>]`, and prints the ones whose session is **still in-progress** as in-flight rows — they **drop off** when the session finishes (a line-leading `[DONE]` stamp lands, or the session leaves in-progress; the session-status check is authoritative, so a legacy consumed block whose session finished long ago without a re-stamp still correctly drops off). Display-only; nothing prints when nothing is in flight. Wire it into the board (dispatch) and the in-flight/listing views so concurrent state is legible at a glance.
+```bash
+"$PY" "$RENDER" in-flight --session-root "<session_root>" --slug "<slug>"   # stdout = in-flight rows (empty when none)
+```
+
+**State-exclusivity anomaly scan — read-time, warn-only (acp-ajudd#99).** The one cross-role fact any role surfaces regardless of focus is a #13 violation (§ State-exclusivity). `session-list.py` runs a cheap check on its `--rebuild-index` read — an id present **both** live (`_inbox/<id>.md`) **and** in `_inbox_archive.md` stamped `[CONSUMED]`/`[DONE]` (line-leading stamps only — a body merely *quoting* `[done]` never arms it) — and emits a `⚠ state-exclusivity (#13): <id> is live … AND archived …` line. **Warn only, never auto-fix** (which copy is authoritative isn't machine-decidable). Shares the read-time health surface with #114's encoding detect-warn — both are backstops that catch what slips past the discipline, not the discipline itself.
+
 **Writing — one item file at a time (this is what kills the race).** There is no write-through script; a command writes/edits/deletes exactly ONE `_inbox/<id>.md` file:
 - **Create a new item** (`/session:inbox`, `refine`, `spawn`, `capture`) → mint the id (`inbox-id.py`), then **write** `_inbox/<id-with-#→->.md>` containing the item block (header + `> [type: …]` line + body). Create the `_inbox/` dir if needed (`mkdir -p`).
 - **Edit an item in place** (refine iterate / promote / mark-ready; checkpoint/switch mark in-progress) → edit **only** that item's `_inbox/<id>.md` file.

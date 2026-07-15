@@ -87,8 +87,16 @@ Dispatch board — <slug>
 
   Still scoping (not ready — refine owns these):
     [acp-ajudd#QQ]  <description>   · refining
+
+  In-flight (consumed, session still building — display-only):
+    [acp-ajudd#RR]  → <session>   <description>
 ```
 Omit any empty group. Note **bundle candidates** — entries that touch the same files/sections and could be handed off as one `code` order. If nothing is dispatchable, say so plainly.
+
+**In-flight rows (acp-ajudd#99).** Populate the In-flight group from `inbox-render.py in-flight` — the `[CONSUMED → session]` items whose session is still in-progress. This is **display-only, expected background state** — dispatch shows it so the roadmap is legible, but does **NOT** narrate it as an event (the board growing/shrinking as work lands and is consumed is normal — § Role-scoped reporting). It drops off when the session finishes.
+```bash
+"$PY" "$RENDER" in-flight --session-root "~/.claude/memory/sessions/<slug>" --slug "<slug>"
+```
 
 ### 4. Choose the Operating Mode — both first-class (acp-ajudd#71)
 

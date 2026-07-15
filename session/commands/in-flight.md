@@ -35,6 +35,8 @@ For each session, count (using the **same inbox parser** as start / checkpoint /
 
 Render the consolidated inbox via `inbox-render.py` (auto-migrates on access — `references/inbox-convention.md` § Per-item storage mechanics) and count `work` the same way from its stdout (`## <id>` headers, skip the `> [type: … · status: …]` line, exclude `capture`-type entries) — or use `inbox-render.py count` which prints `work=N capture=M` directly. Extract any entries tagged `[spawn]` for separate display.
 
+**In-flight items (acp-ajudd#99).** Also run `inbox-render.py in-flight --session-root <session_root> --slug <slug>` — it prints the `[CONSUMED → session]` items whose session is **still in-progress** (they drop off when the session finishes). This is display-only and answers "what happened to this item?" without any role narrating it (§ Role-scoped reporting). Echo its stdout verbatim in Step 3 under an `In-flight:` heading; omit the heading when it prints nothing.
+
 ### 3. Output
 
 Print immediately — no prompts, no writes. Add mine-filter hint if multiple developers' sessions are visible:
@@ -46,6 +48,9 @@ Sessions in <slug>   (type '/session:in-flight mine' to filter to yours)
   ★ [spawn] <label>   ready to start — from <source-slug> / <source-session> (<type>)
 
 Global inbox: N items
+
+In-flight:                        ← acp-ajudd#99; omit heading if nothing in flight
+  <id>  → <session>   <title>
 ```
 
 Status values and display:

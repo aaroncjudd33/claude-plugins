@@ -95,6 +95,61 @@ def scan_encoding_health(root):
     return notices, warnings
 
 
+def scan_state_exclusivity(root):
+    """Detect #13 state-exclusivity anomalies at read time (acp-ajudd#99).
+
+    State-exclusivity (acp-ajudd#13): a piece of work is EITHER a live `work` entry
+    OR a consumed session — never both. The cheap, always-true-if-violated check is
+    an id present BOTH live (an `_inbox/<id>.md` file) AND in `_inbox_archive.md`
+    stamped `[CONSUMED …]`/`[DONE …]` — i.e. it was consumed (removed from live) yet
+    reappears live: a resurfaced or duplicated id. Warn only, never auto-fix — a
+    reconcile needs human eyes (which copy is authoritative isn't machine-decidable).
+
+    Shares the read-time health surface with #114's encoding scan (both run on the
+    --rebuild-index pass). Returns a list of one-line warning strings. Fully guarded
+    by the caller; any error must never break the listing.
+    """
+    warnings = []
+    inbox_dir = os.path.join(root, "_inbox")
+    live_ids = set()
+    for path in glob.glob(os.path.join(inbox_dir, "*.md")):
+        try:
+            with open(path, encoding="utf-8") as fh:
+                for line in fh:
+                    m = re.match(r"^##\s+(\S+)\s+·", line)
+                    if m:
+                        live_ids.add(m.group(1))
+                        break
+                    if line.startswith("## "):  # header without an id (legacy) — skip
+                        break
+        except OSError:
+            continue
+
+    archived_consumed = set()
+    archive = os.path.join(root, "_inbox_archive.md")
+    if os.path.isfile(archive):
+        try:
+            cur_id, stamped = None, False
+            with open(archive, encoding="utf-8") as fh:
+                for line in fh:
+                    hm = re.match(r"^##\s+(\S+)\s+·", line)
+                    if hm:
+                        cur_id, stamped = hm.group(1), False
+                        continue
+                    if cur_id and not stamped and re.match(r"^\s*\[(CONSUMED|DONE)\b", line):
+                        archived_consumed.add(cur_id)
+                        stamped = True
+        except OSError:
+            pass
+
+    for anomaly_id in sorted(live_ids & archived_consumed):
+        warnings.append(
+            "state-exclusivity (#13): %s is live in the inbox AND archived as "
+            "consumed/done — resurfaced or duplicated; reconcile manually "
+            "(no auto-fix)" % anomaly_id)
+    return warnings
+
+
 def fmt_date(iso):
     """2026-06-09 -> 'Jun 09'. Pass through anything unparseable."""
     if not iso or iso == "—":
@@ -353,6 +408,12 @@ def main():
             enc_notices, enc_warnings = scan_encoding_health(root)
         except Exception:
             enc_notices, enc_warnings = [], []
+        # #13 state-exclusivity anomaly scan (acp-ajudd#99) — same read-time surface
+        # as the encoding health pass. Folded into enc_warnings so both print together.
+        try:
+            enc_warnings = enc_warnings + scan_state_exclusivity(root)
+        except Exception:
+            pass
 
     handle = args.handle.lstrip("@")
 

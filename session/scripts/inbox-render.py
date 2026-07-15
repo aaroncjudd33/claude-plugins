@@ -33,6 +33,14 @@ Usage:
   inbox-render.py render       --session-root <dir> --slug <slug>   # default; ensure + print stream
   inbox-render.py ensure       --session-root <dir> --slug <slug>   # migrate only, print notice, no stream
   inbox-render.py count        --session-root <dir> --slug <slug>   # ensure + print "work=N capture=M"
+  inbox-render.py in-flight    --session-root <dir> --slug <slug>   # print [consumed -> session] rows whose session is still in-progress
+
+In-flight display (acp-ajudd#99): a `[CONSUMED <date> -> session <name>]` archive entry
+whose session is still in-progress is surfaced as an "in-flight" row so any role can see
+what happened to an item WITHOUT another role having to narrate it (role-scoped reporting —
+concurrent inbox churn is expected background state, not report-worthy). Display-only; rows
+drop off when the session finishes (a `[DONE]` stamp lands, or the session leaves
+in-progress). Rides this #102 read helper — it already knows the archive + session_root.
 
 On ANY error the script exits non-zero with nothing useful on stdout, so a caller can
 fall back to reading `_inbox/*.md` (or the legacy `_inbox.md`) directly. Never raises to
@@ -305,6 +313,124 @@ def render(session_root, slug):
     return header + "\n"
 
 
+# --- In-flight display (acp-ajudd#99) ------------------------------------------
+ARCHIVE_FILENAME = "_inbox_archive.md"
+# Real disposition stamps are LINE-LEADING (`[CONSUMED …]` / `[DONE …]` on their own
+# line), never inline prose. Anchoring to the line start (with `re.MULTILINE`) is what
+# keeps an item body that merely *quotes* `[done]` / `[consumed → session]` — like this
+# feature's own #99 entry — from being misread as a stamp. The arrow is a unicode → in
+# live files; tolerate the ASCII "->" too. The name runs to the closing bracket.
+CONSUMED_RE = re.compile(
+    r"^\s*\[CONSUMED\s+\S+\s*(?:→|->)\s*session\s+(.+?)\s*\]",
+    re.IGNORECASE | re.MULTILINE)
+DONE_RE = re.compile(r"^\s*\[DONE\b", re.IGNORECASE | re.MULTILINE)
+
+
+def _header_title(block):
+    """Return the short title after the header's ' — ' (em-dash), or '' if none."""
+    first = block.splitlines()[0] if block else ""
+    # Split on the LAST ' — ' so a description containing an em-dash is preserved.
+    if " — " in first:
+        return first.rsplit(" — ", 1)[1].strip()
+    if " - " in first:
+        return first.rsplit(" - ", 1)[1].strip()
+    return ""
+
+
+def session_status_map(session_root):
+    """Map session name -> status. Prefer _index.md; fall back to <name>.md frontmatter.
+
+    The index row is `name | ... | status | title` in both the 7-col current and
+    6-col legacy layouts, so status is always the second-to-last column. Never
+    raises — an unreadable index yields an empty map and callers degrade gracefully.
+    """
+    statuses = {}
+    index = os.path.join(session_root, "_index.md")
+    try:
+        with open(index, encoding="utf-8") as fh:
+            for line in fh:
+                line = line.rstrip("\n")
+                if not line.strip() or line.startswith("#"):
+                    continue
+                parts = [p.strip() for p in line.split("|")]
+                if len(parts) >= 6:
+                    statuses[parts[0]] = parts[-2].lower()
+    except OSError:
+        pass
+    return statuses
+
+
+def _status_of(session_root, name, cache):
+    """Status of session <name>: index first, then the session file's frontmatter.
+
+    Returns a lowercased status string, or '' when the session cannot be found
+    (deleted / retention-archived → treated as no-longer-in-flight by the caller).
+    """
+    if name in cache:
+        return cache[name]
+    st = ""
+    path = os.path.join(session_root, name + ".md")
+    try:
+        with open(path, encoding="utf-8") as fh:
+            text = fh.read()
+        if text.startswith("---"):
+            end = text.find("\n---", 3)
+            fm = text[3:end] if end != -1 else ""
+            m = re.search(r"^\s*status\s*:\s*(\S+)", fm, re.MULTILINE)
+            if m:
+                st = m.group(1).strip().lower()
+    except OSError:
+        st = ""
+    cache[name] = st
+    return st
+
+
+def in_flight_rows(session_root):
+    """Rows for [consumed -> session] items whose session is still in-progress.
+
+    Reads `_inbox_archive.md`, finds every block carrying a
+    `[CONSUMED … -> session <name>]` stamp, and keeps it iff the block has NO
+    `[DONE]` stamp AND session <name> is still `in-progress`. (The session-status
+    check is authoritative: a legacy consumed block whose session finished long ago
+    without a re-stamp still correctly drops off.) Returns a list of
+    dicts(id, session, title). Never raises.
+    """
+    archive = os.path.join(session_root, ARCHIVE_FILENAME)
+    try:
+        text = read_text(archive)
+    except OSError:
+        return []
+    cache = session_status_map(session_root)
+    rows = []
+    for block in parse_items(text):
+        m = CONSUMED_RE.search(block)
+        if not m:
+            continue
+        if DONE_RE.search(block):
+            continue  # dropped off — a [DONE] stamp landed
+        name = m.group(1).strip()
+        if _status_of(session_root, name, cache) != "in-progress":
+            continue  # session finished/paused/gone → no longer in-flight
+        rows.append(dict(id=(id_of(block) or "—"),
+                         session=name, title=_header_title(block)))
+    return rows
+
+
+def render_in_flight(session_root):
+    """Human-readable in-flight block for the board/listing. '' when none."""
+    rows = in_flight_rows(session_root)
+    if not rows:
+        return ""
+    out = ["In-flight (%d) — consumed, session still in progress:" % len(rows)]
+    idw = max(len(r["id"]) for r in rows)
+    for r in rows:
+        title = r["title"]
+        if len(title) > 60:
+            title = title[:57] + "..."
+        out.append("  %s  → %s   %s" % (r["id"].ljust(idw), r["session"], title))
+    return "\n".join(out) + "\n"
+
+
 def count_types(session_root, slug):
     """Return (work_count, capture_count) parsed from the rendered stream.
 
@@ -338,7 +464,7 @@ def count_types(session_root, slug):
 def main():
     ap = argparse.ArgumentParser(description="Render / migrate the per-item inbox (acp-ajudd#102).")
     ap.add_argument("command", nargs="?", default="render",
-                    choices=["render", "ensure", "count"])
+                    choices=["render", "ensure", "count", "in-flight"])
     ap.add_argument("--session-root", required=True,
                     help="dir holding _inbox/ (and any legacy _inbox.md)")
     ap.add_argument("--slug", default="", help="repo slug, for the synthesized header")
@@ -365,6 +491,10 @@ def main():
     if args.command == "count":
         work, capture = count_types(root, slug)
         sys.stdout.write("work=%d capture=%d\n" % (work, capture))
+        return 0
+    if args.command == "in-flight":
+        # Display-only; nothing printed when there is nothing in flight.
+        sys.stdout.write(render_in_flight(root))
         return 0
     # render (default)
     sys.stdout.write(render(root, slug))

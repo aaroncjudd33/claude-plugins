@@ -342,6 +342,23 @@ So capture **MAY** read/search code, assess rough difficulty/cost-benefit, and g
 
 **Concurrency-safe as a 4th window.** Capture only **appends new items** — it never forks or mutates an in-flight entry (consumed = frozen, item-immutability hold — § State-Exclusivity). It is safe as a fourth concurrent window because the atomic ID mint already landed (acp-ajudd#31 atomic mint, #66 self-heal); a pre-#31 fourth window appending IDs would have raced. `commands/capture.md` owns the mechanics.
 
+### Role-scoped reporting — each terminal reports only its own role's focus (acp-ajudd#99)
+
+The human runs **one terminal per role** (planning / dispatch / coding / capture) precisely to keep each focused. So each terminal **reports to the human only what is relevant to its own role** — and treats the *other* roles' concurrent activity as **expected background state, not something to narrate.** This **generalizes `feedback_dispatch_board_is_state_not_event`** (which said this for dispatch and the inbox board) to **all four roles**.
+
+- **planning / refine** reports its own work — scoping, refinement, the `work` entries + handoffs it produces.
+- **dispatch** reports orchestration — what it is dispatching, close-signals, escalations it relays (and the roadmap glance for the person, § The happy-path loop).
+- **code** reports the build it is doing.
+- **capture** reports the captures it is banking.
+
+**None of them narrate another role's concurrent activity.** Concurrent inbox mutation by other roles — dispatch authoring a split, refine promoting a capture, a coding session consuming an item on pickup — is **expected background state**, not report-worthy. The inbox growing or shrinking under you is the normal shape of a multi-window loop; do **not** flag it as an event ("the board grew while I validated", "#78 was consumed elsewhere"). The whole reason the roles live in separate terminals is to stop this cross-role noise — reporting it back defeats the split. (This is the same "board is state, not event" discipline dispatch already followed — now every role follows it about every other role.)
+
+**Two things every role surfaces regardless of its focus** — the deliberate exceptions to role-scoping, because they are always relevant:
+
+1. **A #13 state-exclusivity anomaly (always relevant, any role).** The one piece of *cross-role* state any role calls out is a genuine anomaly — a **state-exclusivity (#13) violation**: an id present **both live and archived** as `[CONSUMED]`/`[DONE]` (resurfaced or duplicated), a consumed/frozen entry edited, an id moved unexpectedly. #13 defines the anomaly set. A cheap **read-time check** — an id present live *and* archived — **warns; it never auto-fixes** (which copy is authoritative is not machine-decidable; a reconcile needs human eyes). This check shares the read-time health pass with #114's encoding detect-warn — both live in `session-list.py`'s `--rebuild-index` read (surfaced as a `⚠` line on the listing). **Only genuine violations warn** — normal churn (an item consumed, an entry promoted, the board resizing) is *not* an anomaly and must stay silent, or the whole point is lost.
+
+2. **In-flight visibility (display-only).** So no role has to reconstruct "what happened to this item," the read helper surfaces `[CONSUMED → session X]` entries whose session is **still in-progress** as **in-flight rows** in the board / listing (they drop off when the session finishes — a `[DONE]` stamp lands, or the session leaves in-progress). This makes concurrent state **legible without anyone narrating it**, which is exactly what lets the other roles stay quiet about it. It rides the #102 read helper (`inbox-render.py in-flight`); the session-status check is authoritative (a legacy consumed entry whose session finished long ago still drops off correctly). Instruction/display only — no hook (acp-ajudd#1).
+
 ## Cross-Session Paste Handoff (the handoff block)
 
 Three paths move work between sessions, and they split on **how the item travels**:
