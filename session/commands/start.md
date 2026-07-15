@@ -38,7 +38,7 @@ If arguments were passed to `/session:start`, attempt to resolve them before run
 2b. If arg is `code`, `code <target>`, or `code cab <keys>` (or bare `cab <keys>`): resolve `session_root`/`handle`, strip the `code` verb, and treat `<target>` exactly as a bare token in step 3 below (`code cab <keys>` / `cab <keys>` → new CAB kickoff). Skip Steps 1–3.
 3. Derive session type and target name from the arg (story key → type=story, name=BPT2-XXXX; CAB key → type=cab; `cab <keys>` / `code cab <keys>` → new CAB; any other bare token → the `code` target — a session NAME to resume, or a `work` entry to graduate).
 4. Check whether `<session_root>/<name>.md` exists (**this existence check IS "the file decides"** — a session file present means resume-coding; absent means graduate-work or kickoff):
-   - **Exists + plugin session** → go directly to the Plugin session resume path in `start-plugin-classic.md` Step 4 (no `start-impl.md` read needed).
+   - **Exists + plugin session** → go directly to the Plugin session resume path in `start-classic.md` Step 4 (no `start-impl.md` read needed).
    - **Exists + other type** → read `start-impl.md`, go directly to its Step 4 (Resume existing) with that session.
    - **Does not exist + story/cab** → new kickoff: before Step 6, render the consolidated inbox (`inbox-render.py`, which auto-migrates) and check for a `[spawn]` entry whose label matches the target name. If found, archive it immediately with stamp `[PICKED UP YYYY-MM-DD — <target-name>]` to `<session_root>/_inbox_archive.md` (creating the archive file if needed), then **delete its `_inbox/<id>.md` file** (acp-ajudd#102). Read `start-impl.md`, then go to Step 6.
    - **Does not exist + plugin/personal** → do NOT blank-create. These types are item-driven: fall through to Step 1 (full discovery + inbox flow) so the target can be `code`d from the inbox, or scoped fresh via `refine <topic>`.
@@ -64,13 +64,13 @@ Resolve `session_root`, `handle`, and `zone` using Path Resolution (`references/
 
 | zone | preferred file | fallback |
 |---|---|---|
-| plugin, story, cab, personal, general | `commands/start-wizard.md` when `startFlow == wizard` | `commands/start-plugin-classic.md` |
+| plugin, story, cab, personal, general | `commands/start-wizard.md` when `startFlow == wizard` | `commands/start-classic.md` |
 
 Check whether the preferred file exists:
 ```bash
 ROOT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}"
 test -f "$ROOT/commands/<candidate>.md" && echo exists || echo fallback
 ```
-If it doesn't exist, use the fallback. **This existence-check is the seam**: `start-wizard.md` (acp-ajudd#124 — one wizard, all zones, superseding the halted per-zone `start-work.md` and the never-built `start-plugin-wizard.md`) now exists, so every zone routes there by default — with **zero edits to this file**. Setting `startFlow: classic` (per-repo or globally) falls back to `start-plugin-classic.md` (renamed to `start-classic.md` once acp-ajudd#123 ships — same existence-check seam picks that up too).
+If it doesn't exist, use the fallback. **This existence-check is the seam**: `start-wizard.md` (acp-ajudd#124 — one wizard, all zones, superseding the halted per-zone `start-work.md` and the never-built `start-plugin-wizard.md`) now exists, so every zone routes there by default — with **zero edits to this file**. Setting `startFlow: classic` (per-repo or globally) falls back to `start-classic.md` (renamed from `start-plugin-classic.md` by acp-ajudd#123, which also script-rendered its generated blocks — same existence-check seam picked it up with zero further edits here).
 
 Read the resolved flow file and continue from its **Step 2**, carrying forward `slug`, `session_root`, `handle`, `zone`, and `filter_mine` (if Step 0 set it).

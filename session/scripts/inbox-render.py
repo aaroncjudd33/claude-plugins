@@ -34,6 +34,15 @@ Usage:
   inbox-render.py ensure       --session-root <dir> --slug <slug>   # migrate only, print notice, no stream
   inbox-render.py count        --session-root <dir> --slug <slug>   # ensure + print "work=N capture=M"
   inbox-render.py in-flight    --session-root <dir> --slug <slug>   # print [consumed -> session] rows whose session is still in-progress
+  inbox-render.py pickup       --session-root <dir> --slug <slug>   # print the formatted layout-B pickup
+                                                                     # list (acp-ajudd#123) — the "Inbox — code
+                                                                     # work, or refine new work (N):" block the
+                                                                     # plugin/personal classic flow Step 3 shows,
+                                                                     # plus the trailing "Captures waiting: N" glance
+  inbox-render.py resume       --session-root <dir> --slug <slug>   # print the layout-B "Inbox (N items):"
+                                                                     # block (acp-ajudd#123) for the plugin-session
+                                                                     # RESUME display, plus the captures-waiting
+                                                                     # glance, in that order
 
 In-flight display (acp-ajudd#99): a `[CONSUMED <date> -> session <name>]` archive entry
 whose session is still in-progress is surfaced as an "in-flight" row so any role can see
@@ -52,6 +61,7 @@ import os
 import re
 import sys
 import time
+from datetime import datetime
 
 # Locking for the migrate read-modify-write — same cross-platform O_EXCL discipline as
 # inbox-id.py / finish-close.py (Git-Bash-safe, stale-break, bounded retry). Copied, not
@@ -462,13 +472,232 @@ def count_types(session_root, slug):
     return work, capture
 
 
+# --- Pickup list rendering (layout B, acp-ajudd#123) ----------------------------
+# Formats the "Inbox — code work, or refine new work (N):" block that start-plugin-
+# classic.md's Step 3 (plugin/personal) previously had the model compose by hand
+# from the raw rendered stream. references/inbox-convention.md § Provenance
+# Rendering (layout B) and § Inbox Model are the spec this mirrors.
+
+# `## <id> · [date @handle] from <slug> / <session> (<type>) [spawn] — <description>`
+# Every group but the description is optional (legacy entries may omit id, date/
+# handle, slug/session, or type) — degrade to showing whatever is present rather
+# than breaking, per the convention doc.
+#
+# The description is split off FIRST (on the LAST ' — '/' - ', same technique as
+# this file's own _header_title()) rather than matched inline: a session/slug
+# name containing a bare hyphen (e.g. 'feature-x', 'BPT2-1') is otherwise
+# indistinguishable from the dash that introduces the description, and an
+# inline regex greedily/non-greedily misparses it (verified against exactly
+# this case while building this renderer).
+PREFIX_RE = re.compile(
+    r"^(?:(?P<id>\S+)\s*·\s*)?"
+    r"(?:\[(?P<date>\d{4}-\d{2}-\d{2})\s+@(?P<handle>\S+)\]\s*)?"
+    r"(?:from\s+(?P<slug>.+?)\s*/\s*(?P<session>.+?)\s*)?"
+    r"(?:\((?P<type>[^)]+)\)\s*)?"
+    r"(?P<spawn>\[spawn\]\s*)?$"
+)
+
+
+def parse_header(block):
+    """Parse a `## <id> · …` header line into its provenance fields.
+
+    Returns a dict with keys id, date, handle, slug, session, type, spawn (bool),
+    desc — any of which may be '' (or False for spawn) when the header omits or
+    doesn't match that part. Never raises; a header that doesn't match the shape
+    at all degrades to desc = the text after '## '.
+    """
+    first = block.splitlines()[0] if block else ""
+    if not first.startswith("## "):
+        return dict(id="", date="", handle="", slug="", session="", type="",
+                    spawn=False, desc=first)
+    rest = first[3:]
+
+    # Split off the description on the FIRST em-dash/hyphen separator (surrounded
+    # by spaces, so a hyphen glued inside a name never qualifies) — the provenance
+    # prefix (id/date/slug/session/type) never itself contains a spaced dash, so
+    # the first one found is always the real separator; splitting on the first
+    # (not last) occurrence is what correctly preserves a description that goes
+    # on to contain its own em-dash.
+    prefix, desc = rest, ""
+    for sep in (" — ", " - "):
+        if sep in rest:
+            prefix, desc = rest.split(sep, 1)
+            break
+
+    m = PREFIX_RE.match(prefix.strip())
+    if not m:
+        return dict(id="", date="", handle="", slug="", session="", type="",
+                    spawn=False, desc=desc.strip() or rest.strip())
+    g = m.groupdict()
+    return dict(
+        id=(g.get("id") or "").strip(),
+        date=(g.get("date") or "").strip(),
+        handle=(g.get("handle") or "").strip(),
+        slug=(g.get("slug") or "").strip(),
+        session=(g.get("session") or "").strip(),
+        type=(g.get("type") or "").strip(),
+        spawn=bool(g.get("spawn")),
+        desc=desc.strip(),
+    )
+
+
+def parse_type_status(block):
+    """Classify an item's `> [type: … · status: …]` line (or its absence/legacy form).
+
+    Returns (kind, status): kind in {'work', 'capture'}; status in
+    {'new', 'refining', 'ready', ''} — '' only for capture (no lifecycle).
+    Mirrors references/inbox-convention.md § Inbox Model's back-compat table.
+    Never raises — anything unrecognized defaults to work/ready (the same
+    default the doc gives "no line at all").
+    """
+    meta = ""
+    for ln in block.splitlines()[1:]:
+        s = ln.strip()
+        if s.startswith("> [") or s.startswith("["):
+            meta = s.lower()
+            break
+        if s and not s.startswith(">"):
+            break  # body started before any metadata line — none present
+    if not meta:
+        return "work", "ready"
+
+    if ("type: capture" in meta or "type: note" in meta or "type: data" in meta
+            or "intent: fyi" in meta or "intent: data" in meta):
+        return "capture", ""
+
+    has_type_work = "type: work" in meta or "type: story" in meta or "intent: story" in meta
+
+    m = re.search(r"status:\s*(new|refining|ready|capture|unread)", meta)
+    if m:
+        st = m.group(1)
+        if st in ("new", "refining", "ready"):
+            # Explicit `type: work` (or legacy `type: story`) confirms a work
+            # stage; a bare legacy `status: new` with no type prefix at all
+            # predates the type axis and meant "unscoped capture" back then.
+            if has_type_work or st in ("refining", "ready"):
+                return "work", st
+            return "capture", ""
+        # st in ("capture", "unread") — legacy raw/un-promoted stage.
+        return "capture", ""
+
+    if has_type_work:
+        return "work", "ready"
+    return "work", "ready"
+
+
+def collect_work_items(session_root, slug):
+    """Parse the rendered inbox into (work_items, capture_count).
+
+    work_items is a list of (header_dict, status) tuples, in file order
+    (== numeric id order, per item_files' sort_key). Shared by both layout-B
+    renderers below (acp-ajudd#123) so the parsing lives in exactly one place.
+    """
+    text = render(session_root, slug)
+    blocks = parse_items(text)
+    work_items, capture_count = [], 0
+    for b in blocks:
+        kind, status = parse_type_status(b)
+        if kind == "capture":
+            capture_count += 1
+            continue
+        work_items.append((parse_header(b), status))
+    return work_items, capture_count
+
+
+def _provenance_line(hdr, current_slug):
+    """The '     ↳ <slug> / <session> (<type>) · MM-DD' line under an entry, or '' ."""
+    prov_slug = hdr["slug"]
+    if prov_slug and prov_slug == current_slug:
+        prov_slug = ""
+    prov_bits = [b for b in (prov_slug, hdr["session"]) if b]
+    prov = " / ".join(prov_bits)
+    if hdr["type"]:
+        prov = (prov + " (%s)" % hdr["type"]) if prov else "(%s)" % hdr["type"]
+    date_bit = ""
+    if hdr["date"]:
+        try:
+            date_bit = " · " + datetime.strptime(hdr["date"], "%Y-%m-%d").strftime("%m-%d")
+        except ValueError:
+            date_bit = " · " + hdr["date"]
+    if not (prov or date_bit):
+        return ""
+    return "     ↳ %s%s" % (prov, date_bit)
+
+
+def render_pickup(session_root, slug, current_slug):
+    """Layout-B pickup list + captures-waiting glance (acp-ajudd#123).
+
+    The classic flow's Step 3 plugin/personal display: "Inbox — code work, or
+    refine new work (N):", `· <stage>` suffix on still-scoping work, `[spawn]`
+    entries starred. `work` entries only (new/refining/ready) — captures never
+    appear in the list, only in the trailing glance count. Empty work list
+    prints the "Inbox: none" line instead of a header with N=0.
+    """
+    work_items, capture_count = collect_work_items(session_root, slug)
+
+    out = []
+    if not work_items:
+        out.append("Inbox: none — scope new work with 'refine <topic>'")
+    else:
+        out.append("Inbox — code work, or refine new work (%d):" % len(work_items))
+        for i, (hdr, status) in enumerate(work_items, 1):
+            desc = hdr["desc"] or "(no description)"
+            if hdr["spawn"]:
+                desc = "★ [spawn] " + desc
+            elif status in ("new", "refining"):
+                desc = "%s  · %s" % (desc, status)
+            id_part = ("[%s]  " % hdr["id"]) if hdr["id"] else ""
+            out.append("  %d  %s%s" % (i, id_part, desc))
+            prov = _provenance_line(hdr, current_slug)
+            if prov:
+                out.append(prov)
+
+    if capture_count:
+        out.append('Captures waiting: %d — say "check captures" to read them' % capture_count)
+
+    return "\n".join(out) + "\n"
+
+
+def render_resume_inbox(session_root, slug, current_slug):
+    """Layout-B inbox block for the plugin-session RESUME display (acp-ajudd#123).
+
+    Same data and provenance rendering as render_pickup, but the plugin/
+    personal item-driven model has no in-progress marker (pickup consumes
+    immediately — references/inbox-convention.md § Lifecycle), so every listed
+    entry is inherently "pending"; the header text also differs ("Inbox (N
+    items):" vs the Step 3 pickup prompt). Captures-waiting glance is NOT
+    included here — the resume display shows it as a separate line only when
+    non-zero, same convention, but the caller composes that line itself
+    alongside the rest of the resume block's other fields.
+    """
+    work_items, capture_count = collect_work_items(session_root, slug)
+
+    if not work_items:
+        return "Inbox: none\n", capture_count
+
+    out = ["Inbox (%d items):" % len(work_items)]
+    for i, (hdr, status) in enumerate(work_items, 1):
+        desc = hdr["desc"] or "(no description)"
+        if hdr["spawn"]:
+            desc = "★ [spawn] " + desc
+        id_part = ("[%s]  " % hdr["id"]) if hdr["id"] else ""
+        out.append("  %d  %s%s — pending" % (i, id_part, desc))
+        prov = _provenance_line(hdr, current_slug)
+        if prov:
+            out.append(prov)
+    return "\n".join(out) + "\n", capture_count
+
+
 def main():
     ap = argparse.ArgumentParser(description="Render / migrate the per-item inbox (acp-ajudd#102).")
     ap.add_argument("command", nargs="?", default="render",
-                    choices=["render", "ensure", "count", "in-flight"])
+                    choices=["render", "ensure", "count", "in-flight", "pickup", "resume"])
     ap.add_argument("--session-root", required=True,
                     help="dir holding _inbox/ (and any legacy _inbox.md)")
     ap.add_argument("--slug", default="", help="repo slug, for the synthesized header")
+    ap.add_argument("--current-slug", default="",
+                    help="pickup only: current repo slug, to drop same-repo provenance "
+                         "(defaults to --slug when omitted)")
     args = ap.parse_args()
 
     # Windows consoles default to cp1252; item bodies carry U+2192, em-dashes, etc.
@@ -496,6 +725,18 @@ def main():
     if args.command == "in-flight":
         # Display-only; nothing printed when there is nothing in flight.
         sys.stdout.write(render_in_flight(root))
+        return 0
+    if args.command == "pickup":
+        current_slug = args.current_slug or slug
+        sys.stdout.write(render_pickup(root, slug, current_slug))
+        return 0
+    if args.command == "resume":
+        current_slug = args.current_slug or slug
+        inbox_block, capture_count = render_resume_inbox(root, slug, current_slug)
+        sys.stdout.write(inbox_block)
+        if capture_count:
+            sys.stdout.write(
+                'Captures waiting: %d — say "check captures" to read them\n' % capture_count)
         return 0
     # render (default)
     sys.stdout.write(render(root, slug))
