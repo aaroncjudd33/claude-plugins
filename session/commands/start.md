@@ -73,6 +73,6 @@ Check whether the preferred file exists:
 ROOT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}"
 test -f "$ROOT/commands/<candidate>.md" && echo exists || echo fallback
 ```
-If it doesn't exist, use the fallback. **This existence-check is the seam**: today only `start-plugin-classic.md` exists, so every zone resolves to it — identical behavior to before this dispatcher existed. When a future item ships `start-work.md` (lean work-repo flow) or `start-plugin-wizard.md` (question-first wizard, alongside a user setting `startFlow: wizard`), the same check starts routing to them with **zero edits to this file**.
+If it doesn't exist, use the fallback. **This existence-check is the seam**: `start-work.md` (acp-ajudd#121) now exists, so story/cab zones route there — with **zero edits to this file**, exactly as designed. `start-plugin-wizard.md` (question-first wizard, acp-ajudd#122) does not exist yet, so plugin/personal zones still fall back to `start-plugin-classic.md` regardless of `startFlow`; the same existence check will pick it up the moment it ships, again with zero edits here.
 
 Read the resolved flow file and continue from its **Step 2**, carrying forward `slug`, `session_root`, `handle`, `zone`, and `filter_mine` (if Step 0 set it).
