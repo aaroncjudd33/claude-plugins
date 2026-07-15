@@ -493,14 +493,18 @@ So report-back is **carried by the note**, with a sane solo default.
 **The default loop (Self-validate: yes, Self-finalize: yes):**
 ```
 dispatch ──PICK UP #X (Self-validate: yes · Self-finalize: yes)──▶ coding:
-  "PICK UP #X. Read the entry, build it, self-validate against the Done-whens,
-   and self-finalize (/session:finish) if clean. Come back only if you hit an issue."
+  "PICK UP #X. FIRST run /session:start code #X (this CONSUMES the item), then read
+   the entry, build it, self-validate against the Done-whens, and self-finalize
+   (/session:finish) if clean. Come back only if you hit an issue."
 
-coding: read entry → build → self-validate against the Done-whens → /session:finish
+coding: /session:start code #X (consumes the item — fold-then-archive #40) →
+        read entry → build → self-validate against the Done-whens → /session:finish
         (atomic #103/#107; deploys-if-not-already + closes) → done (🏆).
         Returns ONLY on the escape hatch (question / found-problem / disagreement / unclear).
 ```
 No `IMPLEMENTED-DEPLOYED` report, no dispatch validation, no `FINISH` note, no finish-confirmation on the happy path. The single terminal cue is the finish cue (`✅` / 🏆 — § The courier line), printed by `/session:finish`.
+
+**The mandatory first step — `/session:start code #X` CONSUMES the item; self-finalize does NOT skip it (acp-ajudd#115).** A dispatched coding session's **first action is always `/session:start code #X`** — the command that establishes the session AND *consumes* the inbox item (fold-then-archive, #40). **`Self-finalize` governs the CLOSE, not the START:** it is license to run `/session:finish` yourself at the end, never license to skip establishing the session / consuming the item at the beginning. Coding straight from the pasted work order without the pickup is the exact **state-exclusivity violation (#13)** #115 exists to end — the item sits live as `ready` while the session ships, so the work exists as *both* a live inbox item AND a consumed/shipped session (observed on the #109 build itself, 2026-07-15, which needed a manual `pick → finish` retire). **The structural safety net** (the load-bearing half, since a "remember to run pickup" instruction gets skipped under a fast code-from-paste flow, exactly as #94's prose "all-or-nothing close" kept failing until #103/#107 made it a script): if a session reaches `/session:finish` with its item still live, `finish-close.py` **reconciles** — it consumes the item (fold-then-archive with `[CONSUMED]` + `[DONE]`) atomically inside the close and prints a one-line `RECONCILED` note signalling the pickup was skipped. So #13 holds even if the explicit pickup was missed — but run the pickup first anyway; the reconcile is the net, not the plan. No hook (editing is never policed — #1); the net lives in the close script + this discipline.
 
 **The two toggles — FIELDS on the handoff block, no tooling (acp-ajudd#109).** Two header/footer fields carry the mode, both default **yes**:
 - **`Self-validate: yes|no`** — *yes*: the coding session validates its own build against the Done-whens. *no*: an external session (dispatch / planning) validates the working tree before the close (the independent-validator payoff of #94 leg 4, now opt-in).
@@ -525,7 +529,8 @@ Claude sets them when it composes the handoff (default yes/yes). **Nothing is bu
 
 **Rationale (the "why").** The default keeps the coding session moving straight to done — one command out (the pickup note), nothing back on the happy path — while the self-verifying close (#103/#107) makes "self-finalize" safe where #57's bundled finalize was not. When a second pair of eyes or a deliberate close gate is wanted, flip a toggle: the verbose #94 loop is one field-edit away, not gone. Token economy is unchanged — refine/dispatch stay long/lean, code stays fresh/ephemeral (§ The three roles).
 
-**Three load-bearing disciplines** (everything else is mechanics):
+**Four load-bearing disciplines** (everything else is mechanics):
+- **Pickup is the mandatory first step and CONSUMES the item (acp-ajudd#115).** The coding session runs `/session:start code #X` first — establishing the session and consuming the inbox item (fold-then-archive, #40) — *before* it builds. `Self-finalize` is a close-time toggle, never license to skip the start-time consume. The self-healing net: `finish-close.py` reconciles a still-live item at close, so state-exclusivity (#13) holds even if the pickup was skipped.
 - **Default is self-validate + self-finalize (acp-ajudd#109).** A dispatched coding session validates its own build against the Done-whens and runs `/session:finish` itself; it stops only for the escape hatch. This re-enables the #57 finalize-by-default direction #94 backed out for the shakeout.
 - **The close is atomic and self-verifying (acp-ajudd#103/#107).** Whether fired by self-finalize or by an `Action: FINISH` note, `/session:finish` ties out all five surfaces or changes nothing — a self-finalize can't silently partial-fail.
 - **Toggle-off restores independent validation (#94 leg 4, preserved).** `Self-validate: no` / `Self-finalize: no` bring back dispatch's post-hoc tree validation and the explicit close order — the #94 discipline preserved, now opt-in per note rather than mandatory.

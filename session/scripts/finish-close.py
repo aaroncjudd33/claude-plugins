@@ -18,6 +18,11 @@ What it does — ONE call, atomic:
      (plugin/personal), body `- **Status:**`, and the `_index.md` row.
   2. Stamp `[DONE <date> — <note>]` on the item's `_inbox_archive.md` entry
      (completion authority = coding-finish). Skipped when --item-id is empty.
+     Reconcile-consume (acp-ajudd#115): if the item is STILL LIVE at finish
+     (`_inbox/<id>.md` present — the mandatory pickup was skipped), consume it here
+     first — fold-then-archive with `[CONSUMED]`, delete the live file, then stamp
+     `[DONE]` — so a session can never end with its work both live-as-`ready` AND
+     shipped/consumed (state-exclusivity #13). A one-line note signals it had to.
   3. Remove the `_active` marker.
   4. Append the composed history entry to `_history.md`.
   5. Append the composed worklog entry to `~/.claude/memory/worklog/<date>.md`.
@@ -296,6 +301,51 @@ def compute_archive_stamp(text, item_id, date, done_note):
     return "\n".join(new_lines), "stamped %s" % stamp, True
 
 
+def inbox_item_path(session_root, item_id):
+    """Return the live inbox-item file path for `item_id`, or None if it can't be formed.
+
+    The per-item inbox stores each entry as `_inbox/<id-with-#->->.md>` (acp-ajudd#102);
+    a header/provenance id uses `#` (`acp-ajudd#115`) while the filename form uses `-`
+    (`acp-ajudd-115.md`), so normalize `#`->`-` before joining.
+    """
+    stem = item_id.strip()
+    if not stem:
+        return None
+    stem = stem.replace("#", "-")
+    if not stem.endswith(".md"):
+        stem += ".md"
+    return os.path.join(session_root, "_inbox", stem)
+
+
+def compute_consume_entry(item_text, date, name):
+    """Return the CONSUMED-stamped archive entry for a still-live inbox item
+    (acp-ajudd#115 reconcile).
+
+    Fold-then-archive semantics (acp-ajudd#40 / #102): the entry is the live item's
+    text verbatim with a `[CONSUMED <date> ...]` marker inserted immediately AFTER its
+    first `## <id> ·` header line — the same placement pickup uses and the same
+    header-bounded placement `compute_archive_stamp` requires (acp-ajudd#107 Defect
+    3-ii). The marker records that the consume happened at finish (pickup was skipped),
+    so the archive itself signals the anomaly. ASCII arrow keeps it locale-proof.
+    """
+    body = item_text.rstrip("\n")
+    marker = ("[CONSUMED %s -> session %s (reconciled at finish; pickup was skipped)]"
+              % (date, name))
+    lines = body.split("\n")
+    out = []
+    inserted = False
+    for ln in lines:
+        out.append(ln)
+        if not inserted and ln.startswith("## "):
+            out.append(marker)
+            inserted = True
+    if not inserted:
+        # Defensive: item body has no `## ` header — prepend the marker so the block is
+        # still locatable (never leave a consumed item unmarked).
+        out = [marker] + out
+    return "\n".join(out)
+
+
 def normalize_consumed_placement(text):
     """Relocate every stray stamp-before-`##` marker cluster below its header.
 
@@ -378,7 +428,8 @@ def _index_row_completed(text, name):
 
 
 def verify_close(paths, name, item_id, date, set_fm,
-                 expect_history, expect_worklog, expect_done):
+                 expect_history, expect_worklog, expect_done,
+                 expect_item_gone=None):
     """Re-read every surface and confirm the expected end state (acp-ajudd#107 FIX 0).
 
     Returns a list of human-readable failure strings (empty == all confirmed). The
@@ -424,6 +475,12 @@ def verify_close(paths, name, item_id, date, set_fm,
             _, bstart, bend = loc
             if not any(DONE_RE.match(ln) for ln in atext.split("\n")[bstart:bend]):
                 failures.append("[DONE] stamp not present in '%s' archive block" % item_id)
+
+    # Reconcile read-back (acp-ajudd#115): if the item was still live at finish, the
+    # close consumed it — the live `_inbox/<id>.md` MUST be gone (state-exclusivity #13).
+    if expect_item_gone and os.path.exists(expect_item_gone):
+        failures.append(
+            "live inbox item still present after reconcile: %s" % expect_item_gone)
 
     return failures
 
@@ -531,12 +588,44 @@ def main():
         archive_note = "skipped (no --item-id)"
         new_archive = None
         expect_done = False
+        reconciled = False
+        live_item_path = None
         if args.item_id.strip():
-            if os.path.isfile(archive_path):
-                archive_text = read_text(archive_path)
+            item_id = args.item_id.strip()
+            live_item_path = inbox_item_path(root, item_id)
+            archive_existing = read_text(archive_path) if os.path.isfile(archive_path) else None
+            if live_item_path and os.path.isfile(live_item_path):
+                # RECONCILE (acp-ajudd#115): the item is STILL LIVE at finish — the
+                # mandatory pickup (`/session:start code #X`, which consumes it) was
+                # skipped. Consume it now as part of this atomic close so a session can
+                # NEVER end with its work both live-as-`ready` AND shipped (#13). The
+                # live file is deleted in PHASE 2 (under the same lock).
+                reconciled = True
+                already_archived = (
+                    archive_existing is not None
+                    and _locate_entry(archive_existing.split("\n"), item_id) is not None)
+                if already_archived:
+                    # Odd double-state (live copy AND an archive entry). Don't append a
+                    # duplicate — just ensure [DONE] on the existing block; the live copy
+                    # is still deleted below.
+                    new_archive, stamp_note, expect_done = compute_archive_stamp(
+                        archive_existing, item_id, args.date, done_note)
+                    archive_note = ("item was still live but ALREADY archived (duplicate) "
+                                    "— removing live copy; %s" % stamp_note)
+                else:
+                    live_text = read_text(live_item_path)
+                    consumed_entry = compute_consume_entry(live_text, args.date, args.name)
+                    base = (archive_existing if archive_existing is not None
+                            else "# Inbox Archive — %s\n" % args.slug)
+                    combined = base.rstrip("\n") + "\n\n" + consumed_entry + "\n"
+                    new_archive, stamp_note, expect_done = compute_archive_stamp(
+                        combined, item_id, args.date, done_note)
+                    archive_note = ("RECONCILED — item was still live (pickup skipped); "
+                                    "consumed (fold-then-archive) + %s" % stamp_note)
+            elif archive_existing is not None:
                 new_archive, archive_note, expect_done = compute_archive_stamp(
-                    archive_text, args.item_id.strip(), args.date, done_note)
-                if new_archive == archive_text:
+                    archive_existing, item_id, args.date, done_note)
+                if new_archive == archive_existing:
                     new_archive = None  # nothing to write (idempotent / not found)
             else:
                 archive_note = "no _inbox_archive.md — [DONE] NOT stamped"
@@ -566,6 +655,8 @@ def main():
             "append entry" if worklog_changed else "unchanged (idempotent)"),
         "_active: remove (%s)" % ("present" if os.path.exists(active_path) else "already gone"),
     ]
+    if reconciled:
+        actions.insert(3, "_inbox/<id>.md: consume live item (reconcile — pickup was skipped)")
 
     if args.dry_run:
         print("finish-close DRY-RUN for %s (%s):" % (args.name, args.slug))
@@ -590,6 +681,12 @@ def main():
         if new_archive is not None:
             atomic_write(archive_path, new_archive)
             written.append("_inbox_archive.md")
+        if reconciled and live_item_path and os.path.isfile(live_item_path):
+            # Terminal half of the reconcile (acp-ajudd#115): the CONSUMED copy is now in
+            # the archive (recovery net), so remove the live item — completing
+            # fold-then-archive and restoring state-exclusivity (#13).
+            os.remove(live_item_path)
+            written.append("live inbox item consumed (reconcile)")
         if history_changed:
             atomic_write(history_path, new_history)
             written.append("_history.md")
@@ -625,7 +722,8 @@ def main():
         failures = verify_close(
             paths, args.name, args.item_id.strip(), args.date, set_fm,
             expect_history=bool(history_line), expect_worklog=bool(worklog_entry),
-            expect_done=expect_done)
+            expect_done=expect_done,
+            expect_item_gone=(live_item_path if reconciled else None))
     finally:
         release_lock(fd, lock_path)
 
@@ -642,6 +740,13 @@ def main():
           % (args.name, args.slug))
     for a in actions:
         print("  - " + a)
+    if reconciled:
+        # The one-line reconcile note (acp-ajudd#115): signals the mandatory pickup was
+        # skipped and the close had to consume the item itself. ASCII-only.
+        print("  ! RECONCILED: inbox item %s was STILL LIVE at finish — the mandatory "
+              "pickup (/session:start code %s) was skipped. Consumed it now "
+              "(fold-then-archive); state-exclusivity (#13) restored."
+              % (args.item_id.strip(), args.item_id.strip()))
     return 0
 
 

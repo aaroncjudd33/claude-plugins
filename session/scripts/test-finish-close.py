@@ -327,12 +327,160 @@ def test_defect1_integration():
     ok(wl2.count(DASH + " fixsess") == 1, "Defect 2: reworded re-run did NOT duplicate the worklog block")
 
 
+# ---------------------------------------------------------------------------
+# acp-ajudd#115 — reconcile-consume at finish when the mandatory pickup was skipped
+# (item still LIVE in _inbox/<id>.md at close). Unit helpers + a real CLI close.
+# ---------------------------------------------------------------------------
+
+def test_reconcile_helpers():
+    section("#115: reconcile helpers (inbox_item_path + compute_consume_entry)")
+
+    # inbox_item_path maps the header `#` id to the filename `-` form under _inbox/.
+    p = fc.inbox_item_path("/root/sroot", "acp-ajudd#115")
+    ok(p.replace("\\", "/").endswith("sroot/_inbox/acp-ajudd-115.md"),
+       "inbox_item_path: '#' -> '-' and .md under _inbox/")
+    ok(fc.inbox_item_path("/root", "") is None, "inbox_item_path: empty id -> None")
+
+    # compute_consume_entry inserts [CONSUMED ...] right AFTER the first `## ` header
+    # (the placement compute_archive_stamp / Defect 3-ii require).
+    item = ("## acp-ajudd#115 " + DASH + " make consume non-skippable\n"
+            "> [type: work " + DASH + " status: ready]\nbody line\n")
+    entry = fc.compute_consume_entry(item, "2026-07-15", "consume-reconcile")
+    el = entry.split("\n")
+    ok(el[0].startswith("## acp-ajudd#115"), "compute_consume_entry: header stays first")
+    ok(el[1].startswith("[CONSUMED 2026-07-15") and "reconciled at finish" in el[1],
+       "compute_consume_entry: CONSUMED marker right below header + signals reconcile")
+    ok("body line" in entry, "compute_consume_entry: original body preserved verbatim")
+    ok(fc.MARKER_RE.match(el[1]), "compute_consume_entry: CONSUMED marker is a MARKER_RE line")
+
+    # Defensive: an item with no `## ` header still gets marked (block stays locatable).
+    hdrless = fc.compute_consume_entry("just a body\n", "2026-07-15", "s")
+    ok(hdrless.split("\n")[0].startswith("[CONSUMED"),
+       "compute_consume_entry: header-less item gets a leading CONSUMED marker")
+
+
+def test_reconcile_integration():
+    section("#115: real CLI close reconciles a still-live item (pickup skipped)")
+    d = tempfile.mkdtemp()
+    sroot = os.path.join(d, "sroot")
+    sess_slug_dir = os.path.join(d, "sessroot", "testslug")
+    inbox_dir = os.path.join(sroot, "_inbox")
+    os.makedirs(inbox_dir)
+    os.makedirs(sess_slug_dir)
+
+    _write(os.path.join(sroot, "fixsess.md"),
+           "---\nupdated: 2026-07-15\ntype: plugin\nstatus: active\n---\n"
+           "# Session State " + DASH + " fixsess\n- **Status:** active\n")
+    _write(os.path.join(sroot, "_index.md"),
+           "# Index\nfixsess | @ajudd | 2026-07-15 | @ajudd | 2026-07-15 | active | -\n")
+    # Archive has a PRIOR entry only — NOT #300 (the item was never consumed at pickup).
+    _write(os.path.join(sroot, "_inbox_archive.md"),
+           "# Inbox Archive " + DASH + " testslug\n\n"
+           "## acp-ajudd#97 " + DASH + " prev\nbody\n"
+           "[CONSUMED 2026-07-14 -> session other]\n[DONE 2026-07-14 " + DASH + " shipped]\n")
+    # The item is STILL LIVE in the per-item inbox (the #115 anomaly).
+    live_item = os.path.join(inbox_dir, "acp-ajudd-300.md")
+    _write(live_item,
+           "## acp-ajudd#300 " + DASH + " a still-live item\n"
+           "> [type: work " + DASH + " status: ready]\nbody300 with em-dash " + DASH + "\n")
+    _write(os.path.join(sess_slug_dir, "_active"), "fixsess")
+    worklog = os.path.join(d, "wl", "2026-07-15.md")
+
+    payload = (
+        '{"history_line": "[2026-07-15 @ajudd] fixsess ' + DASH + ' reconcile test.", '
+        '"worklog_entry": "## 12:00 ' + DASH + ' fixsess\\n\\n**Accomplished:** x", '
+        '"done_note": "shipped v2.3.0"}'
+    )
+
+    def run(pl):
+        return subprocess.run(
+            [sys.executable, FC_PATH,
+             "--session-root", sroot, "--slug", "testslug", "--name", "fixsess",
+             "--type", "plugin", "--date", "2026-07-15", "--handle", "ajudd",
+             "--item-id", "acp-ajudd#300", "--sessions-root", os.path.join(d, "sessroot"),
+             "--worklog-path", worklog],
+            input=pl.encode("utf-8"), capture_output=True)
+
+    r = run(payload)
+    out = r.stdout.decode("utf-8")
+    ok(r.returncode == 0, "reconcile close exits 0 (self-verified)")
+    ok(not os.path.exists(live_item),
+       "#115: the still-live _inbox/acp-ajudd-300.md was consumed (deleted)")
+    ok("RECONCILED" in out, "#115: one-line reconcile note printed (signals skipped pickup)")
+
+    arc = open(os.path.join(sroot, "_inbox_archive.md"), encoding="utf-8").read()
+    al = arc.split("\n")
+    loc = fc._locate_entry(al, "acp-ajudd#300")
+    ok(loc is not None, "#115: #300 now has an archive entry (fold-then-archive)")
+    _, b3s, b3e = loc
+    blk = al[b3s:b3e]
+    ok(any(x.startswith("[CONSUMED") for x in blk), "#115: #300 block carries [CONSUMED]")
+    ok(any(x.startswith("[DONE") for x in blk), "#115: #300 block carries [DONE]")
+    ok("body300 with em-dash" in arc and "�" not in arc,
+       "#115: original item body folded verbatim (UTF-8 intact)")
+    # Prior #97 entry untouched.
+    _, b97s, b97e = fc._locate_entry(al, "acp-ajudd#97")
+    ok(sum(1 for x in al[b97s:b97e] if x.startswith("[DONE")) == 1,
+       "#115: prior #97 entry not disturbed")
+
+    # Idempotent retry: live file already gone -> normal path finds the archived entry,
+    # confirms [DONE], exits 0 without appending a duplicate.
+    _write(os.path.join(sess_slug_dir, "_active"), "fixsess")  # simulate a retry
+    r2 = run(payload)
+    ok(r2.returncode == 0, "#115: retry after reconcile exits 0 (idempotent)")
+    arc2 = open(os.path.join(sroot, "_inbox_archive.md"), encoding="utf-8").read()
+    ok(arc2.count("## acp-ajudd#300 ") == 1, "#115: retry did NOT append a duplicate #300 entry")
+
+
+def test_reconcile_duplicate_state():
+    section("#115: reconcile when item is live AND already archived (double-state)")
+    d = tempfile.mkdtemp()
+    sroot = os.path.join(d, "sroot")
+    sess_slug_dir = os.path.join(d, "sessroot", "testslug")
+    inbox_dir = os.path.join(sroot, "_inbox")
+    os.makedirs(inbox_dir)
+    os.makedirs(sess_slug_dir)
+
+    _write(os.path.join(sroot, "fixsess.md"),
+           "---\nupdated: 2026-07-15\ntype: plugin\nstatus: active\n---\n"
+           "# Session State " + DASH + " fixsess\n- **Status:** active\n")
+    _write(os.path.join(sroot, "_index.md"),
+           "# Index\nfixsess | @ajudd | 2026-07-15 | @ajudd | 2026-07-15 | active | -\n")
+    # #400 is ALREADY in the archive (consumed at pickup) AND a stray live copy exists.
+    _write(os.path.join(sroot, "_inbox_archive.md"),
+           "# Inbox Archive " + DASH + " testslug\n\n"
+           "## acp-ajudd#400 " + DASH + " t\n[CONSUMED 2026-07-15 -> session fixsess]\nbody400\n")
+    live_item = os.path.join(inbox_dir, "acp-ajudd-400.md")
+    _write(live_item, "## acp-ajudd#400 " + DASH + " t\n> [type: work]\nbody400\n")
+    _write(os.path.join(sess_slug_dir, "_active"), "fixsess")
+    worklog = os.path.join(d, "wl", "2026-07-15.md")
+
+    r = subprocess.run(
+        [sys.executable, FC_PATH,
+         "--session-root", sroot, "--slug", "testslug", "--name", "fixsess",
+         "--type", "plugin", "--date", "2026-07-15", "--handle", "ajudd",
+         "--item-id", "acp-ajudd#400", "--sessions-root", os.path.join(d, "sessroot"),
+         "--worklog-path", worklog],
+        input=b'{"history_line": "[2026-07-15 @ajudd] fixsess x", "worklog_entry": "", "done_note": "n"}',
+        capture_output=True)
+    ok(r.returncode == 0, "double-state: exits 0")
+    ok(not os.path.exists(live_item), "double-state: stray live copy removed")
+    arc = open(os.path.join(sroot, "_inbox_archive.md"), encoding="utf-8").read()
+    ok(arc.count("## acp-ajudd#400 ") == 1, "double-state: NO duplicate entry appended")
+    al = arc.split("\n")
+    _, bs, be = fc._locate_entry(al, "acp-ajudd#400")
+    ok(any(x.startswith("[DONE") for x in al[bs:be]), "double-state: existing block gets [DONE]")
+
+
 def main():
     test_defect3()
     test_migration()
     test_defect2()
     test_fix0_verify()
     test_defect1_integration()
+    test_reconcile_helpers()
+    test_reconcile_integration()
+    test_reconcile_duplicate_state()
     print("\n%d passed, %d failed" % (_passed, _failed))
     return 1 if _failed else 0
 

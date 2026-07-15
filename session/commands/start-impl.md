@@ -9,6 +9,8 @@ Loaded by `start.md` after the user makes their selection. Context already in sc
 
 **If this pickup was triggered by a pasted handoff block (a `dispatch ──▶ coding` work order), verify the note is for this terminal BEFORE acting on it (acp-ajudd#69).** Run the receiving-side check — a hard `Slug` match against `pwd` (always, even for this fresh coding terminal), and, since a fresh terminal has no role yet, **skip** the role check (the note legitimately assigns the coding role). **STOP + flag** on a `Slug` mismatch — a wrong-repo mispaste must not be acted on. The rule + mismatch messages live in **Session Skill § Cross-Session Paste Handoff → Receiving side — verify the target before acting**.
 
+**Running this pickup IS the mandatory consume — never code straight from the pasted order (acp-ajudd#115).** `/session:start code #X` is the coding session's required first action: it establishes the session AND **consumes the inbox item** (fold-then-archive at Work Pickup step 5 below, #40). **`Self-finalize` governs the CLOSE, not the START** — a `Self-finalize: yes` work order tells you to run `/session:finish` yourself at the end; it is *never* license to skip this pickup and build directly from the paste. Skipping it is the #13 state-exclusivity violation #115 ends (the item stays live as `ready` while the session ships). If it is ever skipped anyway, `finish-close.py` reconciles the still-live item at close (the structural net) — but the net is the backstop, not the plan: run this pickup first.
+
 ---
 
 ### 4. User Picks — Load or Create Session File
