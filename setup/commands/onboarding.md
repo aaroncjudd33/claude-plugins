@@ -375,6 +375,7 @@ About to write ~/.claude/plugins/user-config.json:
   pluginMarketplaceName:   <value>
   workReposDir:            <value or "(not set)">
   personalProjectsDir:     <value or "(not set)">
+  startFlow:               <value or "classic">   (advanced — controls the session plugin's start flow; see docs)
 ```
 
 Ask: "Write this config? (y/n)"
@@ -401,9 +402,12 @@ If yes, **read the existing `~/.claude/plugins/user-config.json` first** (if it 
     "pluginMarketplaceName": "<collected or preserved>",
     "workReposDir": "<collected or preserved or empty string>",
     "personalProjectsDir": "<collected or preserved or empty string>"
-  }
+  },
+  "startFlow": "<preserved, else \"classic\">"
 }
 ```
+
+**`startFlow` (acp-ajudd#120):** controls which `/session:start` flow file the session plugin's dispatcher loads for plugin/personal zones — `classic` (today's flow, and the only functional option right now) or `wizard` (a question-first flow, not yet built). Never overwrite an existing value on a re-run; write `"classic"` only when the key is absent. No prompt is asked for this — it's a forward-compatible placeholder until the wizard flow ships.
 
 **No session-enforcement config.** The session plugin never blocks edits — enforcement is command-level only (acp-ajudd#1), so there is no `sessionGate` block to write. If a pre-existing `~/.claude/plugins/user-config.json` still carries a `sessionGate` key from an older install, it is inert (nothing reads it); preserve it as-is on a merge rather than churning the file, or drop it — either is fine.
 

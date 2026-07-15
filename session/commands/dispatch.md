@@ -28,14 +28,9 @@ The dispatch model exists only where there is a **local inbox to dispatch from**
 
 ### 1. Resolve and Check Zone
 
-Run `pwd`, extract the repo slug (last path component). Read `handle` per the Session Skill's handle lookup. Read `~/.claude/plugins/user-config.json` → `paths` and classify the zone (same logic as `session:start` / `refine`):
+Run `pwd`, extract the repo slug (last path component). Read `handle` per the Session Skill's handle lookup. Classify the zone using the shared Zone Detection logic (`references/path-resolution.md` § Zone Detection, acp-ajudd#120) — the same table `session:start` / `capture` / `refine` all read from, single copy.
 
-| Zone | Detection | Dispatch applies? |
-|------|-----------|-------------------|
-| **plugin** | pwd contains `pluginMarketplaceName` | **yes** |
-| **personal** | pwd begins with `personalProjectsDir` (fallback: `/c/claude/`) | **yes** |
-| **work repo (story/cab)** | pwd begins with `workReposDir` (fallback: `/dev/`) | no — Jira flow, no local inbox |
-| **general** | anything else | no — no system of record |
+Dispatch applies only in **plugin** and **personal** zones. It stops in **story/cab** (Jira flow, no local inbox) and **general** (no system of record).
 
 **If the zone is work or general**, state plainly and stop — do not orient on an inbox:
 ```

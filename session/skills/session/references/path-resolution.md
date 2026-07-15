@@ -40,6 +40,22 @@ Session index (DERIVED render cache — NOT committed; acp-ajudd#49):
                      created-date/updated-date are ISO dates (YYYY-MM-DD); created-date is never overwritten after first write.
 ```
 
+## Zone Detection
+
+Read `~/.claude/plugins/user-config.json` and extract:
+- `paths.pluginMarketplaceName` — if absent, auto-detect by listing `~/.claude/plugins/marketplaces/` and using the first directory found
+- `paths.workReposDir` — e.g. `/c/dev` (may be empty)
+- `paths.personalProjectsDir` — e.g. `/c/claude` (may be empty)
+
+Detect zone from the current path (checked in order):
+- **plugin** — path contains the value of `pluginMarketplaceName`
+- **story / cab** — `workReposDir` is set and path begins with it; fallback: path contains `/dev/`
+- **personal** — `personalProjectsDir` is set and path begins with it; fallback: path contains `/c/claude/`
+- **general** — anything else
+
+Single shared copy (acp-ajudd#120) — every command that needs zone (`start.md`, `dispatch.md`,
+`capture.md`) reads it from here rather than carrying its own inline table.
+
 **Scope resolution for the scope guard:** If the session file's `Scope:` value is relative (no leading `/`, `~`, or drive letter), resolve it as `local_cfg.projectRoot + "/" + scope_value`. If absolute (old format), use as-is.
 
 **Cross-repo inbox writes** (e.g., story plugin writing to release plugin inbox): substitute the target slug and re-run path resolution to find the target session_root.
