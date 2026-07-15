@@ -13,6 +13,8 @@ Loaded by `start.md` (the dispatcher) once zone and the config-cascade have been
 
 **Fast-path args never reach this file** — `start.md`'s own Step 0 resolves `code BPT2-XXXX` / a bare key / an existing session name / `refine`/`dispatch`/`capture` directly, skipping Steps 2–3 entirely. This file only runs on a **bare** `/session:start` (no argument).
 
+**On `code` with no explicit target, always ask — never infer (acp-ajudd#126).** Every ask in this file — the Step 2 role prompt and every target-gathering ask in Step 3 below — is plain free-text; **never AskUserQuestion**, no exceptions. And when `code` reaches Step 3 with no target already carried in from Step 2, that ask must always fire: **never auto-infer the target from the current git branch** (or any other environmental signal) and silently resume it. Offering "resume `<current-branch session>`?" as one option in the ask is fine; resuming it without asking is the bug this closes. The "the file decides" existence-check auto-resolve applies only to a fast-path arg (`code BPT2-XXXX`) that skipped this file entirely — never to a bare `code` answered inside the wizard.
+
 ## Instructions
 
 ### 2. Ask: role prompt (zone-aware)
@@ -61,7 +63,7 @@ Wait for one free-text reply. **Do not use AskUserQuestion.**
 
 **`refine` path** (any zone):
 
-If no target was already carried in from Step 2, ask:
+If no target was already carried in from Step 2, ask (plain text — never AskUserQuestion, acp-ajudd#126):
 - story, cab → `story key to refine, or a new topic?`
 - plugin, personal → `item id to refine, or a new topic?`
 - general → `what are we refining? (a topic)`
@@ -79,7 +81,7 @@ Refine is sessionless — this path never creates a session file, never touches 
 
 **`code` path — story / cab zone:**
 
-If no target was already carried in from Step 2, ask:
+If no target was already carried in from Step 2, ask (plain text — never AskUserQuestion, never skip this ask by inferring the current branch's story instead, acp-ajudd#126):
 ```
 story key (e.g. BPT2-6429)? — or new / search
 ```
@@ -113,7 +115,7 @@ Wait for one free-text reply.
 
 **`code` path — general zone:**
 
-If no target was already carried in from Step 2, ask:
+If no target was already carried in from Step 2, ask (plain text — never AskUserQuestion, acp-ajudd#126):
 ```
 name — new session or resume?
 ```
@@ -131,7 +133,7 @@ Wait for one free-text reply.
 
 Sessions are item-driven: a `code` target is either an inbox `work` entry (by list `<n>` or stable `[id]`) that graduates into a fresh session, or an existing in-progress session (by name, or its sessions-table row) that resumes. There is no `new` verb here — new plugin/personal work is scoped first via `refine`, never created-and-coded in one gesture.
 
-If no target was already carried in from Step 2, ask:
+If no target was already carried in from Step 2, ask (plain text — never AskUserQuestion, acp-ajudd#126):
 ```
 inbox item # / id / name? — or search
 ```
