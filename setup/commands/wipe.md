@@ -97,6 +97,40 @@ awk '/# >>> ccs launcher/{skip=1} !skip{print} /# <<< ccs launcher/{skip=0}' "$f
 Report each: "Removed the ccs launcher from <profile>." On **no**, leave the profiles untouched.
 The profiles themselves are never deleted — only the marked block is removed.
 
+### 4b. Remove the Claude output conventions block (offer separately, acp-ajudd#116)
+
+Same rationale as 4a — this lives as a marked block inside `~/.claude/CLAUDE.md`, a
+hand-authored file, not a config file this command otherwise touches. Check for it:
+
+```bash
+CLAUDE_MD="$HOME/.claude/CLAUDE.md"
+[ -f "$CLAUDE_MD" ] && grep -qF "<!-- begin acp-output-conventions" "$CLAUDE_MD" && echo "$CLAUDE_MD"
+```
+
+If present, offer (do not remove silently):
+"Also remove the Claude output conventions block from ~/.claude/CLAUDE.md? (yes/no)"
+
+On **yes**, strip the block between (and including) the markers — python, not sed or
+PowerShell `Set-Content` (#114), so the block's non-ASCII characters don't corrupt the rest
+of the file on the way out:
+```bash
+python3 - "$CLAUDE_MD" <<'PY'
+import sys
+path = sys.argv[1]
+with open(path, encoding='utf-8') as f:
+    content = f.read()
+begin, end = '<!-- begin acp-output-conventions', '<!-- end acp-output-conventions -->'
+if begin in content:
+    start = content.index(begin)
+    stop = content.index(end, start) + len(end)
+    content = content[:start] + content[stop:]
+    with open(path, 'w', encoding='utf-8', newline='\n') as f:
+        f.write(content)
+PY
+```
+Report: "Removed the Claude output conventions block from ~/.claude/CLAUDE.md." On **no**,
+leave the file untouched. The file itself is never deleted — only the marked block.
+
 ### 5. Final report and next steps
 
 ```

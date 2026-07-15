@@ -134,6 +134,43 @@ base dir.
 
 ---
 
+## Claude Output Conventions
+
+A shared block of output-formatting conventions, installed into a dev's global
+`~/.claude/CLAUDE.md` by `/setup:onboarding` (Step 6b) and re-synced by `/setup:update`.
+Absorbs the verdict-placement (acp-ajudd#111) and read-priority-tier (acp-ajudd#112)
+preferences that previously existed only in Aaron's personal CLAUDE.md — this makes them
+portable, so every teammate gets the same conventions with zero manual editing
+(acp-ajudd#116).
+
+- **Source template:** `${CLAUDE_PLUGIN_ROOT}/scripts/output-conventions.md` — content:
+  read-priority tiers (`✓` skippable / no-marker standard / `⚠ read before proceeding:`
+  hard gate), verdict-at-bottom, no-all-caps, and the verbosity dial definition.
+- **Config-driven, baked at install:** onboarding substitutes one token —
+  `__VERBOSITY_DEFAULT__` — from `defaults.verbosityDefault` in `user-config.json`
+  (default `v1` if never set). The dial *definition* is shared; the default *level* is
+  per-user, same shared-content-plus-per-user-token split the `ccs` launcher uses above.
+- **Copy-body-with-markers, NOT dot-source** — same rationale as `ccs`: the plugin-root
+  path is version-stamped and goes stale every `/setup:update`. The block is written
+  between `<!-- begin acp-output-conventions -->` / `<!-- end acp-output-conventions -->`
+  in `~/.claude/CLAUDE.md`.
+- **Idempotent install + explicit re-sync:** re-running onboarding replaces the block in
+  place. Unlike `ccs`, `/setup:update` **also** re-syncs this block automatically (but only
+  if already installed — it never performs the first install) so content changes reach
+  every dev without them remembering to re-run onboarding.
+- **Two hard gotchas (same as `ccs`):** (1) substitute the token with **python, not sed**;
+  (2) write with explicit `encoding='utf-8'` — never PowerShell `Set-Content` /
+  `Get-Content -Raw` on `~/.claude/CLAUDE.md` (cp1252 round-trip risk, #114). This file is
+  load-bearing for every plugin, so a corrupting write here is worse than for a shell
+  profile.
+- `/setup:wipe` Step 4b offers to strip the block on teardown, mirroring `ccs`'s 4a.
+- **Reconciles, does not duplicate,** the existing "format signals type" rule some devs
+  (Aaron) may already have hand-written in their personal `~/.claude/CLAUDE.md` — the
+  block's read-priority-tiers section extends that same rule (✓-skippable / bold-decision)
+  into a third explicit tier, rather than introducing a second, parallel scheme.
+
+---
+
 ## Calendar
 
 <!-- SYNC NOTE: Mirrors setup/commands/calendar.md. Update both together. -->

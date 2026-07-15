@@ -357,6 +357,83 @@ Installed `ccs` into <profile(s)>. Open a new shell — or run `source ~/.bashrc
 
 On **skip**, note it's available later: "You can add it anytime by re-running `/setup:onboarding`."
 
+Proceed to Step 6b.
+
+### 6b. Offer to install the "Claude output conventions" block
+
+A shared block of output-formatting conventions (read-priority tiers, verdict placement,
+no-caps, the verbosity dial) is installed into your global `~/.claude/CLAUDE.md` so it
+applies the same way for every teammate, not just Aaron's personal machine. Same
+mechanism as the `ccs` launcher above — a marker-delimited block, baked at install time,
+idempotent on re-run.
+
+**Offer it explicitly — never install silently.**
+
+**1. Resolve the verbosity default.** Read `defaults.verbosityDefault` from the existing
+config if present; otherwise ask: "Preferred verbosity default? (0-5, e.g. 'v1' — see
+`/setup:guide setup` for what each level means) [v1]:". Accept a bare digit or `vN`; store
+normalized as `vN`.
+
+**2. Detect whether the block is already installed:**
+```bash
+CLAUDE_MD="$HOME/.claude/CLAUDE.md"
+if [ -f "$CLAUDE_MD" ] && grep -qF "<!-- begin acp-output-conventions" "$CLAUDE_MD"; then
+  echo "installed"
+else
+  echo "not installed"
+fi
+```
+
+**3. Offer** — plain-text routing:
+```
+Install the Claude output conventions block into ~/.claude/CLAUDE.md? — <not installed | installed (will re-sync with your verbosity default)>
+  yes / skip
+```
+
+**4. On accept**, substitute the token and install idempotently. Use python (not sed) —
+consistent with the `ccs` install above, and required here too so the block's non-ASCII
+characters (`✓`, `⚠`, the em dashes) survive the write without cp1252 mangling (#114):
+
+```bash
+TMPL="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/setup}/scripts/output-conventions.md"
+CLAUDE_MD="$HOME/.claude/CLAUDE.md"
+python3 - "$TMPL" "$CLAUDE_MD" "<verbosity_default>" <<'PY'
+import sys
+tmpl_path, target_path, default = sys.argv[1], sys.argv[2], sys.argv[3]
+block = open(tmpl_path, encoding='utf-8').read().replace('__VERBOSITY_DEFAULT__', default)
+try:
+    with open(target_path, encoding='utf-8') as f:
+        content = f.read()
+except FileNotFoundError:
+    content = ''
+begin, end = '<!-- begin acp-output-conventions', '<!-- end acp-output-conventions -->'
+if begin in content:
+    start = content.index(begin)
+    stop = content.index(end, start) + len(end)
+    content = content[:start] + block.rstrip('\n') + content[stop:]
+else:
+    sep = '\n\n' if content and not content.endswith('\n\n') else ''
+    content = content + sep + block
+with open(target_path, 'w', encoding='utf-8', newline='\n') as f:
+    f.write(content)
+PY
+```
+- If the markers already exist → **replace in place** (never double-append), same rule as `ccs`.
+- Else → append with a blank-line separator (create the file if it doesn't exist).
+- This is a **write to a file every plugin depends on staying intact** — never use PowerShell
+  `Set-Content` / `Get-Content -Raw` for this (cp1252 round-trip risk, #114); python with
+  explicit `encoding='utf-8'` only.
+
+**5. Confirm:**
+```
+Installed the Claude output conventions block into ~/.claude/CLAUDE.md (default: v<N>).
+Re-run /setup:onboarding or /setup:update any time to re-sync it.
+```
+
+On **skip**, note: "You can add it anytime by re-running `/setup:onboarding`."
+
+Store the resolved verbosity default for use in Step 7 (`defaults.verbosityDefault`).
+
 Proceed to Step 7.
 
 ### 7. Confirm and write user config
@@ -376,6 +453,7 @@ About to write ~/.claude/plugins/user-config.json:
   workReposDir:            <value or "(not set)">
   personalProjectsDir:     <value or "(not set)">
   startFlow:               <value or "classic">   (advanced — controls the session plugin's start flow; see docs)
+  verbosityDefault:        <value or "v1">        (the Claude output conventions block's Default: line)
 ```
 
 Ask: "Write this config? (y/n)"
@@ -394,7 +472,8 @@ If yes, **read the existing `~/.claude/plugins/user-config.json` first** (if it 
   "defaults": {
     "jiraProject": "<collected or preserved>",
     "atlassianCloudId": "9de6eb2b-2683-44e6-89ff-c622027e09b4",
-    "jiraProjectId": "12844"
+    "jiraProjectId": "12844",
+    "verbosityDefault": "<collected or preserved, else \"v1\">"
   },
   "paths": {
     "browserLinksFile": "~/.claude/browser-links.json",
@@ -408,6 +487,10 @@ If yes, **read the existing `~/.claude/plugins/user-config.json` first** (if it 
 ```
 
 **`startFlow` (acp-ajudd#120):** controls which `/session:start` flow file the session plugin's dispatcher loads for plugin/personal zones — `classic` (today's flow, and the only functional option right now) or `wizard` (a question-first flow, not yet built). Never overwrite an existing value on a re-run; write `"classic"` only when the key is absent. No prompt is asked for this — it's a forward-compatible placeholder until the wizard flow ships.
+
+**`defaults.verbosityDefault` (acp-ajudd#116):** the per-user default baked into the `Default:`
+line of the installed Claude output conventions block (Step 6b). Write `"v1"` only when the
+key is absent; otherwise preserve the existing value unless the user changed it in Step 6b.
 
 **No session-enforcement config.** The session plugin never blocks edits — enforcement is command-level only (acp-ajudd#1), so there is no `sessionGate` block to write. If a pre-existing `~/.claude/plugins/user-config.json` still carries a `sessionGate` key from an older install, it is inert (nothing reads it); preserve it as-is on a merge rather than churning the file, or drop it — either is fine.
 
