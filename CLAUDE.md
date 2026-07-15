@@ -72,7 +72,18 @@ refinement time keeps the deployed version number honest. (acp-ajudd#61)
   hook. Enumerate/anchor deliberately and comment the fragility.
 - **Fail-open:** any parse error exits 0. An enforcement bug must never wedge normal
   work. Keep printed messages ASCII-only (Windows `python` fallback stdout may be
-  cp1252 — a non-ASCII char raises `UnicodeEncodeError` and crashes the hook).
+  cp1252 — a non-ASCII char raises `UnicodeEncodeError` and crashes the hook). **The
+  same cp1252 hazard bites file *writes*, not just stdout:** PS 5.1 `Get-Content -Raw`
+  reads a BOM-less UTF-8 file as cp1252 and `Set-Content -Encoding UTF8` writes it back
+  double-encoded + adds a BOM — silently mojibaking every `·` / `—` / `→` in a
+  session/inbox/archive file (observed live corrupting `_inbox/*.md`, acp-ajudd#114).
+  So **edit session/inbox/archive files only with UTF-8-safe I/O** — the Read/Edit
+  tools, Python `open(..., encoding='utf-8')`, or bash — **never** PS 5.1 `Set-Content`
+  / `Get-Content -Raw` round-trips. If PowerShell must touch them, use
+  `[System.IO.File]::ReadAllText` / `WriteAllText` with an explicit UTF-8 (no-BOM)
+  encoding, not the 5.1 cmdlets. `session-list.py` carries a detect-and-warn backstop
+  (auto-strips a lone BOM, flags mojibake for manual repair) — but the discipline is
+  the fix; the guard only catches what slips. (acp-ajudd#114)
 - Preserve the `python3 → python` fallback in hook commands for Windows.
 - **Block via the JSON deny contract, not exit 2.** To block a `PreToolUse` call
   *and* surface the reason to the assistant, print the documented JSON to stdout and

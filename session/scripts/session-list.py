@@ -28,6 +28,72 @@ from datetime import datetime
 # marker + a trailing /session:finish nudge. Tune here or override with --stale-days.
 STALE_DAYS_DEFAULT = 14
 
+# UTF-8 corruption markers (acp-ajudd#114). A PS 5.1 `Get-Content -Raw` /
+# `Set-Content -Encoding UTF8` round-trip re-encodes a UTF-8 file through cp1252,
+# leaving these telltale double-encoding sequences in place of `·` / `—` / `→` etc.
+MOJIBAKE_MARKERS = ("Â", "â€", "â†", "Ã")
+_UTF8_BOM = b"\xef\xbb\xbf"
+
+
+def _strip_code_spans(text):
+    """Drop fenced blocks and inline-code spans before the mojibake scan.
+
+    A session/inbox/archive file that *documents* these markers (this very
+    feature's item, its archived copy, the history entry) quotes them inside
+    backticks — real cp1252-round-trip corruption never is. Stripping code
+    spans removes that self-reference false positive generically, without any
+    #114-specific special-casing.
+    """
+    text = re.sub(r"```.*?```", " ", text, flags=re.DOTALL)
+    text = re.sub(r"`[^`]*`", " ", text)
+    return text
+
+
+def scan_encoding_health(root):
+    """Detect UTF-8 corruption in session/inbox/archive files (acp-ajudd#114).
+
+    Detect-and-warn only — the fix is the UTF-8-safe-I/O discipline documented in
+    references/inbox-convention.md; this is the backstop that catches slips.
+      * A lone UTF-8 BOM is auto-stripped (safe + idempotent: the remaining bytes
+        are rewritten verbatim, no decode/re-encode) with a one-line notice.
+      * Mojibake markers are flagged for manual repair and NEVER auto-reversed:
+        the cp1252->utf8 reversal is only clean on a uniform single round-trip, so
+        auto-fixing a mixed-encoding file (some glyphs already correct — seen on
+        #107) could worsen it. Leave repair to a human/Python with eyes on it.
+
+    Scans root-level *.md (session files, _index/_history/_backlog/_inbox_archive)
+    plus the per-item _inbox/*.md files. Returns (notices, warnings) — lists of
+    one-line strings. Fully guarded by the caller; any error must never break the
+    listing.
+    """
+    notices, warnings = [], []
+    targets = glob.glob(os.path.join(root, "*.md"))
+    targets += glob.glob(os.path.join(root, "_inbox", "*.md"))
+    for path in sorted(set(targets)):
+        try:
+            with open(path, "rb") as fh:
+                raw = fh.read()
+        except OSError:
+            continue
+        rel = os.path.relpath(path, root)
+        if raw.startswith(_UTF8_BOM):
+            try:
+                with open(path, "wb") as fh:  # rewrite bytes verbatim, sans BOM
+                    fh.write(raw[len(_UTF8_BOM):])
+                notices.append(f"encoding: stripped a UTF-8 BOM from {rel}")
+                raw = raw[len(_UTF8_BOM):]
+            except OSError:
+                warnings.append(
+                    f"encoding: {rel} carries a UTF-8 BOM (auto-strip failed — "
+                    f"remove it manually)")
+        text = _strip_code_spans(raw.decode("utf-8", errors="replace"))
+        if any(m in text for m in MOJIBAKE_MARKERS):
+            warnings.append(
+                f"encoding: {rel} looks mojibaked (cp1252 round-trip markers "
+                f"{'/'.join(MOJIBAKE_MARKERS)}) — repair manually as UTF-8; "
+                f"do NOT use PS 5.1 Set-Content")
+    return notices, warnings
+
 
 def fmt_date(iso):
     """2026-06-09 -> 'Jun 09'. Pass through anything unparseable."""
@@ -277,6 +343,17 @@ def main():
             except OSError:
                 pass
 
+    # Encoding health guard (acp-ajudd#114). Run on the real session:start pass
+    # (--rebuild-index), same gate as the retention prune / _active heal — not on
+    # filter re-renders. Auto-strips a lone BOM (notice); flags mojibake (warning,
+    # no auto-reverse). Guarded — a scan error must never break the listing.
+    enc_notices, enc_warnings = [], []
+    if args.rebuild_index:
+        try:
+            enc_notices, enc_warnings = scan_encoding_health(root)
+        except Exception:
+            enc_notices, enc_warnings = [], []
+
     handle = args.handle.lstrip("@")
 
     # Stale detection: an in-progress session whose updated-date is older than the
@@ -401,6 +478,10 @@ def main():
         out.append(f"  (no sessions to show — "
                    f"{summary['in-progress']} in-progress · {summary['paused']} paused · "
                    f"{summary['completed']} completed)")
+        for line in enc_notices:
+            out.append(f"  {line}")
+        for line in enc_warnings:
+            out.append(f"  ⚠ {line}")
         sys.stdout.write("\n".join(out) + "\n")
         return 0
 
@@ -445,6 +526,10 @@ def main():
     # zeroes index_incomplete on success).
     if index_incomplete and not args.rebuild_index:
         out.append("  (index cache rebuilt from session files — type 'index' to persist it)")
+    for line in enc_notices:
+        out.append(f"  {line}")
+    for line in enc_warnings:
+        out.append(f"  ⚠ {line}")
 
     sys.stdout.write("\n".join(out) + "\n")
     return 0
