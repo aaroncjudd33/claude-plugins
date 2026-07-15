@@ -1,25 +1,27 @@
 ---
 name: start-wizard
-description: Session start — one wizard flow for all zones (Step 2 onward). Loaded by start.md's dispatcher once zone and the config-cascade are resolved, when startFlow == wizard.
+description: Session start — one wizard flow for all zones (Step 2 onward). Loaded by start.md's dispatcher after the role-prompt reply is already in hand and session_root/handle have just been resolved, when startFlow == wizard.
 ---
 
 # Session Start — Wizard Flow (Step 2 onward)
 
-Loaded by `start.md` (the dispatcher) once zone and the config-cascade have been resolved, for **every zone** (`plugin` | `story` | `cab` | `personal` | `general`) when `startFlow == wizard` (the default). Context already in scope: `slug`, `session_root`, `handle`, `zone`, and `filter_mine` (if Step 0's `mine` fast-path set it).
+Loaded by `start.md` (the dispatcher) for **every zone** (`plugin` | `story` | `cab` | `personal` | `general`) when `startFlow == wizard` (the default) — **after** the zone-aware role prompt has already been asked and answered in `start.md` Step 1a, and `session_root`/`handle` have just been resolved in Step 1b (acp-ajudd#127). Context already in scope: `slug`, `session_root`, `handle`, `zone`, `filter_mine` (if Step 0's `mine` fast-path set it), and the reply.
 
-**One file, zone-aware inside — not a per-zone split (acp-ajudd#124, re-entry of halted #121, folds #122).** The wizard works the same way everywhere; the *only* per-zone difference is how many options Step 2 offers and what a `code`/`refine` target looks like. This supersedes the standalone `start-work.md` (deleted — its story/cab logic is folded in below) and the never-built `start-plugin-wizard.md` (not created).
+**One file, zone-aware inside — not a per-zone split (acp-ajudd#124, re-entry of halted #121, folds #122).** The wizard works the same way everywhere; the *only* per-zone difference is how many options the role prompt offers and what a `code`/`refine` target looks like. This supersedes the standalone `start-work.md` (deleted — its story/cab logic is folded in below) and the never-built `start-plugin-wizard.md` (not created).
 
 **No listing by default, in any zone.** Unlike the classic flow, this file never renders the sessions table or the inbox as a first move — only a one-line captures-waiting glance (plugin/personal). A full listing is one `search`/`list` away. **Never front data-drift** — if the reconcile/approval-hash checks inside `start-impl.md` surface one during a resume, let it surface there, lightly, after the user has already picked a target.
 
 **Fast-path args never reach this file** — `start.md`'s own Step 0 resolves `code BPT2-XXXX` / a bare key / an existing session name / `refine`/`dispatch`/`capture` directly, skipping Steps 2–3 entirely. This file only runs on a **bare** `/session:start` (no argument).
 
-**On `code` with no explicit target, always ask — never infer (acp-ajudd#126).** Every ask in this file — the Step 2 role prompt and every target-gathering ask in Step 3 below — is plain free-text; **never AskUserQuestion**, no exceptions. And when `code` reaches Step 3 with no target already carried in from Step 2, that ask must always fire: **never auto-infer the target from the current git branch** (or any other environmental signal) and silently resume it. Offering "resume `<current-branch session>`?" as one option in the ask is fine; resuming it without asking is the bug this closes. The "the file decides" existence-check auto-resolve applies only to a fast-path arg (`code BPT2-XXXX`) that skipped this file entirely — never to a bare `code` answered inside the wizard.
+**On `code` with no explicit target, always ask — never infer (acp-ajudd#126).** Every ask in this file — every target-gathering ask in Step 3 below — is plain free-text; **never AskUserQuestion**, no exceptions. And when `code` reaches Step 3 with no target already carried in from Step 2, that ask must always fire: **never auto-infer the target from the current git branch** (or any other environmental signal) and silently resume it. Offering "resume `<current-branch session>`?" as one option in the ask is fine; resuming it without asking is the bug this closes. The "the file decides" existence-check auto-resolve applies only to a fast-path arg (`code BPT2-XXXX`) that skipped this file entirely — never to a bare `code` answered inside the wizard.
+
+**The Step 2 role prompt already fired in `start.md` (acp-ajudd#127) — this file starts from the reply.** `start.md`'s Step 1a asks the zone-aware prompt (`refine or code?` / `refine, code, dispatch, or capture?`) right after resolving zone + startFlow, *before* `session_root`/`handle` are resolved and before this file is even read. By the time this file loads (Step 1b), the reply is already in hand and `session_root`/`handle` have just been resolved. This file's job starts with the captures-waiting glance and eager inference below — never re-print the prompt.
 
 ## Instructions
 
-### 2. Ask: role prompt (zone-aware)
+### 2. Process the Reply (zone-aware)
 
-**Captures-waiting glance (plugin/personal only).** Before asking, render the consolidated inbox (`inbox-render.py`, auto-migrates) and count `capture`-type entries — this is a count, not a listing:
+**Captures-waiting glance (plugin/personal only).** First thing this file does — render the consolidated inbox (`inbox-render.py`, auto-migrates) and count `capture`-type entries — this is a count, not a listing:
 ```bash
 ROOT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}"
 RENDER="$ROOT/scripts/inbox-render.py"
@@ -27,35 +29,22 @@ if command -v python3 >/dev/null 2>&1 && [ -f "$RENDER" ]; then
   python3 "$RENDER" render --session-root "<session_root>" --slug "<slug>"
 fi
 ```
-If any `capture`-type entries exist, show `Captures waiting: N — say "check captures" to read them` right before the prompt below (omit if zero). Story/cab/general zones skip this entirely — they have no consolidated inbox.
-
-**Prompt — options vary by zone only:**
-
-- **story, cab, general** (no inbox; 2 options):
-  ```
-  refine or code?
-  ```
-- **plugin, personal** (item-driven inbox; 4 options):
-  ```
-  refine, code, dispatch, or capture?
-  ```
-
-Wait for one free-text reply. **Do not use AskUserQuestion.**
+If any `capture`-type entries exist, show `Captures waiting: N — say "check captures" to read them` before acting on the reply (omit if zero). Story/cab/general zones skip this entirely — they have no consolidated inbox.
 
 **Infer eagerly before falling back to the plain options** — the whole point of this flow is speed, so don't make the user answer twice when the first reply already carries the answer:
 - A bare Jira story key (`BPT2-6429`) or CAB key (`CAB-456`) (story/cab/general zone) → implicit `code` on that key; skip straight to the **code path — story/cab zone** below with it.
 - A bare inbox `[id]` (e.g. `acp-ajudd#7`), a list `<n>` (only meaningful after a `search`), or an existing session name (plugin/personal zone) → implicit `code` on that target; skip straight to the **code path — plugin/personal zone** below.
 - `code <target>` / `refine <target>` / `cab <keys>` → explicit, skip straight to the matching Step 3 branch with the target already carried.
 - `dispatch` / `capture` (plugin/personal only) → skip straight to that role below.
-- `search` / `list` → run the on-demand listing for this zone (see the zone's code branch below), then re-ask the same prompt.
+- `search` / `list` → run the on-demand listing for this zone (see the zone's code branch below), then re-ask the same role prompt (the zone-aware ask from `start.md` Step 1a).
 - Bare `refine` / `code` / `dispatch` / `capture` → go to the matching Step 3 branch with no target.
-- Anything else that doesn't parse → ask once more, the same prompt (do not guess a third way).
+- Anything else that doesn't parse → ask once more, the same role prompt (do not guess a third way).
 
 ---
 
 ### 3. Act by role
 
-**`dispatch`** (plugin/personal only) → read `commands/dispatch.md` and run it (sessionless, assume the dispatch role, orient on the inbox). Not offered in story/cab/general — if typed there anyway, note `dispatch is plugin/personal only` and re-ask the Step 2 prompt.
+**`dispatch`** (plugin/personal only) → read `commands/dispatch.md` and run it (sessionless, assume the dispatch role, orient on the inbox). Not offered in story/cab/general — if typed there anyway, note `dispatch is plugin/personal only` and re-ask the same role prompt (from `start.md` Step 1a).
 
 **`capture`** (plugin/personal only) → read `commands/capture.md` and run it (sessionless, assume the capture role, bank ideas). Same zone restriction as `dispatch`.
 

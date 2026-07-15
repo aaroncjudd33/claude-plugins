@@ -48,29 +48,59 @@ If arguments were passed to `/session:start`, attempt to resolve them before run
 
 ---
 
-### 1. Detect Zone, Resolve Cascade, and Route to Flow File
+### 1. Detect Zone + startFlow, Then Route
 
 This is the dispatcher's own job — the only step that decides *which flow file* runs. It carries no per-zone or per-role branching itself; that lives in whichever flow file it hands off to.
 
-Run `pwd` and extract the **last path component** as the repo slug (if not already done in Step 0):
-- `/c/Users/ajudd/.claude/plugins/marketplaces/ajudd-claude-plugins` → `ajudd-claude-plugins`
-- `/c/dev/gen-leadership-bonus` → `gen-leadership-bonus`
+**Lean by design (acp-ajudd#127).** The wizard's first move is a two-option ask ("refine or code?") — nothing before it should require more than knowing *which zone* and *which flow* to use. Everything else this command eventually needs (`session_root`, `handle`, the flow file's own content, the captures-waiting glance) is real work only once a target is being acted on, so it is **deferred until after the user answers** instead of front-loaded before they've said a word. This step therefore does exactly one combined read, in one shell call:
 
-Resolve `session_root`, `handle`, and `zone` using Path Resolution (`references/path-resolution.md` — core resolution + § Zone Detection). If repo-based and `~/.claude/config/<slug>.json` is missing, auto-create it silently (see First-Run Auto-Config in `references/path-resolution.md`).
-
-**Resolve `startFlow`** — every zone now (the one wizard, acp-ajudd#124, works the same way everywhere): read Config Cascade (`references/config-cascade.md`), key `startFlow`, hardcoded default `wizard`.
-
-**Pick the target flow file**, checked in this order with a fallback:
-
-| zone | preferred file | fallback |
-|---|---|---|
-| plugin, story, cab, personal, general | `commands/start-wizard.md` when `startFlow == wizard` | `commands/start-classic.md` |
-
-Check whether the preferred file exists:
 ```bash
-ROOT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}"
-test -f "$ROOT/commands/<candidate>.md" && echo exists || echo fallback
+SLUG=$(basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)")
+UC="$HOME/.claude/plugins/user-config.json"
+PC="$HOME/.claude/config/$SLUG.json"
+echo "slug=$SLUG"
+echo "--- user-config ---"
+[ -f "$UC" ] && cat "$UC" || echo "{}"
+echo "--- project-config ---"
+[ -f "$PC" ] && cat "$PC" || echo "{}"
 ```
-If it doesn't exist, use the fallback. **This existence-check is the seam**: `start-wizard.md` (acp-ajudd#124 — one wizard, all zones, superseding the halted per-zone `start-work.md` and the never-built `start-plugin-wizard.md`) now exists, so every zone routes there by default — with **zero edits to this file**. Setting `startFlow: classic` (per-repo or globally) falls back to `start-classic.md` (renamed from `start-plugin-classic.md` by acp-ajudd#123, which also script-rendered its generated blocks — same existence-check seam picked it up with zero further edits here).
 
-Read the resolved flow file and continue from its **Step 2**, carrying forward `slug`, `session_root`, `handle`, `zone`, and `filter_mine` (if Step 0 set it).
+From that single output, compute (no further tool calls — this is plain reasoning over the text just read):
+
+- **`zone`** — Zone Detection algorithm (`references/path-resolution.md` § Zone Detection) using `pwd` + the `user-config` fields (`paths.pluginMarketplaceName`, `paths.workReposDir`, `paths.personalProjectsDir`).
+- **`startFlow`** — Config Cascade (`references/config-cascade.md`), key `startFlow`, hardcoded default `wizard`: `project-config.startFlow`, else `user-config.startFlow`, else `wizard`. (The `project-config` read above doubles as this tier's lookup — no separate file access needed.)
+
+**Do not** resolve `session_root`/`handle` yet, run the wizard/classic existence check, or read the target flow file yet — see Step 1a (wizard) / Step 1b (classic) below for when each of those happens.
+
+**`startFlow == classic`** (opt-in fallback, unchanged from before #127 — classic's own Step 2 is a listing, not an ask, so there's no ask to move earlier): resolve `session_root`/`handle` now via full Path Resolution (`references/path-resolution.md` — core resolution; auto-create `~/.claude/config/<slug>.json` per § First-Run Auto-Config if missing), read `commands/start-classic.md`, and continue from its Step 2, carrying forward `slug`, `session_root`, `handle`, `zone`, and `filter_mine` (if Step 0 set it).
+
+**`startFlow == wizard`** (default) → go to **Step 1a** below: ask immediately, before doing any more file I/O.
+
+---
+
+### 1a. Ask (wizard only) — the ~2-round-trip path
+
+Print the zone-aware prompt below and wait for one free-text reply. **Do not use AskUserQuestion.**
+
+- **story, cab, general** (no inbox; 2 options):
+  ```
+  refine or code?
+  ```
+- **plugin, personal** (item-driven inbox; 4 options):
+  ```
+  refine, code, dispatch, or capture?
+  ```
+
+This is the entire pre-ask sequence: one bash call (Step 1 above) + this one ask = the ~2 round trips the user sees before being asked anything, down from resolving full path state, existence-checking the flow file, reading it, and rendering a captures glance first (~8 round trips pre-#127). No behavior downstream of the reply changes — see Step 1b.
+
+---
+
+### 1b. After the Reply — Resolve, Open the Flow File, Continue (unchanged behavior)
+
+Once the free-text reply above is in hand, do the work that used to happen *before* the ask, now that it's actually needed:
+
+1. Resolve `session_root` and `handle` via full Path Resolution (`references/path-resolution.md` — core resolution). Reuse the `project-config` JSON already read in Step 1 rather than re-reading it. If `~/.claude/config/<slug>.json` was missing (empty `{}` in Step 1's output), auto-create it now per § First-Run Auto-Config.
+2. Read `commands/start-wizard.md`. If it is missing for some reason, fall back to `commands/start-classic.md` instead (re-ask its Step 2 prompt in that case, since classic's flow shape differs — this fallback is not expected to trigger since #124 shipped the wizard file, but keeps the seam alive).
+3. Continue in `start-wizard.md` from its **Step 2 processing** with the reply already collected — it does the captures-waiting glance and the eager-inference matching against this reply, then proceeds to Step 3 exactly as it always has. Carry forward `slug`, `session_root`, `handle`, `zone`, `filter_mine` (if Step 0 set it), and the reply.
+
+Nothing about how a reply is interpreted, how targets resolve, or what happens after the pick changes — only *when* the path resolution / flow-file read / captures glance happen shifts from before the ask to after it.
