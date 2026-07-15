@@ -13,6 +13,9 @@ Reads its own inputs (no data passed in beyond locating args):
   --status VALUE        restrict to a single status group
   --mine                restrict to sessions created or updated by --handle
   --stale-days N        in-progress sessions not updated in > N days get a ⚠ nudge (default 14)
+  --current-branch REF  mark the row whose session file's Branch: field matches REF with
+                         "(current branch)" — one highlighted row among the list, never
+                         auto-selected (acp-ajudd#128); omit or leave blank to skip the check
 
 On success prints the block and exits 0. On ANY error exits non-zero with nothing
 on stdout, so the caller falls back to model rendering. Never raises to the shell.
@@ -212,6 +215,18 @@ def ensure_at(h):
     return h or "—"
 
 
+def read_branch(root, name):
+    """Return the session file's `- **Branch:** <value>` field, or '' if absent/unreadable."""
+    path = os.path.join(root, name + ".md")
+    try:
+        with open(path, encoding="utf-8") as fh:
+            text = fh.read()
+    except OSError:
+        return ""
+    m = re.search(r"^-\s*\*\*Branch:\*\*\s*(.+)$", text, re.MULTILINE)
+    return m.group(1).strip() if m else ""
+
+
 def read_session_meta(root, name):
     """Derive an index row directly from a session <name>.md file.
 
@@ -326,6 +341,9 @@ def main():
     ap.add_argument("--status", default="")
     ap.add_argument("--mine", action="store_true")
     ap.add_argument("--stale-days", type=int, default=STALE_DAYS_DEFAULT)
+    ap.add_argument("--current-branch", default="",
+                    help="highlight the session whose Branch: field matches this ref "
+                         "(acp-ajudd#128) — never auto-selects it")
     ap.add_argument("--rebuild-index", action="store_true",
                     help="when _index.md is absent/incomplete, derive rows from the "
                          "session files and persist the rebuilt cache (acp-ajudd#49)")
@@ -435,11 +453,14 @@ def main():
             return False
         return (today - d).days > stale_days
 
+    current_branch = (args.current_branch or "").strip()
+
     rows = []
     for name in all_names:
         meta = meta_by_name.get(name, {})
         status = (meta.get("status") or "in-progress").strip()
         is_refine = name in refinement
+        on_current_branch = bool(current_branch) and read_branch(root, name) == current_branch
         rows.append(dict(
             name=name,
             title=trunc_title(meta.get("title")),
@@ -453,6 +474,7 @@ def main():
             refine=is_refine,
             active=(name == active),
             stale=is_stale(status, meta.get("updated_date", "—")),
+            on_current_branch=on_current_branch,
         ))
 
     # Filters
@@ -573,6 +595,8 @@ def main():
                 trailing += "  ←"
             if r["stale"]:
                 trailing += "  ⚠ stale"
+            if r.get("on_current_branch"):
+                trailing += "  (current branch)"
             out.append(fmt_line(row_cells(i, r), trailing))
     out.append("")
     out.append(f"  {summary['in-progress']} in-progress · {summary['paused']} paused · "

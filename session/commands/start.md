@@ -80,18 +80,24 @@ From that single output, compute (no further tool calls — this is plain reason
 
 ### 1a. Ask (wizard only) — the ~2-round-trip path
 
-Print the zone-aware prompt below and wait for one free-text reply. **Do not use AskUserQuestion.**
+Print the zone-aware **labeled** role menu below and wait for one free-text reply — a bare "X or Y?" line doesn't tell a user what each verb *does*, so every option gets a one-line label (acp-ajudd#128). **Do not use AskUserQuestion.**
 
 - **story, cab, general** (no inbox; 2 options):
   ```
   refine or code?
+    refine — scope/plan work (sessionless)
+    code   — open or resume a coding session
   ```
 - **plugin, personal** (item-driven inbox; 4 options):
   ```
   refine, code, dispatch, or capture?
+    refine    — scope/plan work (sessionless)
+    code      — open or resume a coding session
+    dispatch  — coordinate the inbox (sessionless)
+    capture   — bank a raw idea (sessionless)
   ```
 
-This is the entire pre-ask sequence: one bash call (Step 1 above) + this one ask = the ~2 round trips the user sees before being asked anything, down from resolving full path state, existence-checking the flow file, reading it, and rendering a captures glance first (~8 round trips pre-#127). No behavior downstream of the reply changes — see Step 1b.
+This is still the entire pre-ask sequence: one bash call (Step 1 above) + this one ask = the ~2 round trips the user sees before being asked anything, down from resolving full path state, existence-checking the flow file, reading it, and rendering a captures glance first (~8 round trips pre-#127). Labeling the options adds no extra round trip — it's the same one print, just self-explanatory. No behavior downstream of the reply changes — see Step 1b.
 
 ---
 
