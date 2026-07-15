@@ -68,13 +68,13 @@ echo "--- project-config ---"
 From that single output, compute (no further tool calls — this is plain reasoning over the text just read):
 
 - **`zone`** — Zone Detection algorithm (`references/path-resolution.md` § Zone Detection) using `pwd` + the `user-config` fields (`paths.pluginMarketplaceName`, `paths.workReposDir`, `paths.personalProjectsDir`).
-- **`startFlow`** — Config Cascade (`references/config-cascade.md`), key `startFlow`, hardcoded default `wizard`: `project-config.startFlow`, else `user-config.startFlow`, else `wizard`. (The `project-config` read above doubles as this tier's lookup — no separate file access needed.)
+- **`startFlow`** — Config Cascade (`references/config-cascade.md`), key `startFlow`, hardcoded default `classic`: `project-config.startFlow`, else `user-config.startFlow`, else `classic`. (The `project-config` read above doubles as this tier's lookup — no separate file access needed.) The `wizard` flow is **shelved/experimental** as of v2.14.1 — opt in explicitly via `startFlow: wizard`; see acp-ajudd#129 for the open threads before re-enabling it as default.
 
 **Do not** resolve `session_root`/`handle` yet, run the wizard/classic existence check, or read the target flow file yet — see Step 1a (wizard) / Step 1b (classic) below for when each of those happens.
 
-**`startFlow == classic`** (opt-in fallback, unchanged from before #127 — classic's own Step 2 is a listing, not an ask, so there's no ask to move earlier): resolve `session_root`/`handle` now via full Path Resolution (`references/path-resolution.md` — core resolution; auto-create `~/.claude/config/<slug>.json` per § First-Run Auto-Config if missing), read `commands/start-classic.md`, and continue from its Step 2, carrying forward `slug`, `session_root`, `handle`, `zone`, and `filter_mine` (if Step 0 set it).
+**`startFlow == classic`** (default — the stable, tested flow; classic's own Step 2 is a listing, not an ask, so there's no ask to move earlier): resolve `session_root`/`handle` now via full Path Resolution (`references/path-resolution.md` — core resolution; auto-create `~/.claude/config/<slug>.json` per § First-Run Auto-Config if missing), read `commands/start-classic.md`, and continue from its Step 2, carrying forward `slug`, `session_root`, `handle`, `zone`, and `filter_mine` (if Step 0 set it).
 
-**`startFlow == wizard`** (default) → go to **Step 1a** below: ask immediately, before doing any more file I/O.
+**`startFlow == wizard`** (opt-in — experimental, shelved for revisit per acp-ajudd#129) → go to **Step 1a** below: ask immediately, before doing any more file I/O.
 
 ---
 
