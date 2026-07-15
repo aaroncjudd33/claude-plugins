@@ -351,6 +351,10 @@ def main():
                     help="tight numbered list — just '# name' per row with stale/active/"
                          "current-branch markers, no wide columns (acp-ajudd#130). The "
                          "numbers still drive 'code <n>'. Additive: off unless passed.")
+    ap.add_argument("--limit", type=int, default=0,
+                    help="cap the number of (most-recently-touched) rows shown; append a "
+                         "'+M more' overflow hint pointing at the full list (acp-ajudd#130). "
+                         "0 = no cap. Applies in both normal and --compact rendering.")
     args = ap.parse_args()
 
     # Windows consoles default to cp1252; the active marker is U+2190. Force UTF-8.
@@ -503,6 +507,13 @@ def main():
     # Sort each group by updated_date desc, then name.
     rows.sort(key=lambda r: (r["updated_date"], r["name"]), reverse=True)
 
+    # Row cap (acp-ajudd#130) — keep the N most-recently-touched visible rows; the
+    # rest are one 'sessions' keystroke away. Summary counts below stay full totals.
+    overflow = 0
+    if args.limit and len(rows) > args.limit:
+        overflow = len(rows) - args.limit
+        rows = rows[:args.limit]
+
     # Group order: in-progress, paused, any other non-completed, refinement, completed.
     def group_key(s):
         order = {"in-progress": 0, "paused": 1}
@@ -594,6 +605,8 @@ def main():
                 out.append(f"    {str(i).rjust(2)}  {r['name'].ljust(name_w)}{trailing}".rstrip())
         out.append(f"  {summary['in-progress']} in-progress · {summary['paused']} paused · "
                    f"{summary['completed']} completed")
+        if overflow:
+            out.append(f"  … +{overflow} more — type 'sessions' for the full list")
         stale_shown = sum(1 for r in rows if r["stale"])
         if stale_shown:
             out.append(f"  ⚠ {stale_shown} not updated in >{stale_days}d — consider /session:finish")
@@ -637,6 +650,8 @@ def main():
     out.append("")
     out.append(f"  {summary['in-progress']} in-progress · {summary['paused']} paused · "
                f"{summary['completed']} completed")
+    if overflow:
+        out.append(f"  … +{overflow} more — type 'sessions' for the full list")
     stale_shown = sum(1 for r in rows if r["stale"])
     if stale_shown:
         out.append(f"  ⚠ {stale_shown} in-progress not updated in >{stale_days}d — "

@@ -173,15 +173,19 @@ plus the shared **Search by** block (§ 87-97 above). The `dispatch` and `captur
    ROOT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}"
    python3 "$ROOT/scripts/routing-block.py" --zone work --search none
    ```
-2. **Compact in-progress list** — the session listing deferred from Step 2, rendered tight with `--compact` (just `# name` + stale/active/current-branch markers). Its `#` numbers drive `code <n>` / `refine <n>`. Display verbatim:
+2. **In-progress list, detailed but capped (acp-ajudd#130)** — the session listing deferred from Step 2, rendered with its **normal detail columns** (name / title / status / in / last edit + stale markers) but **capped at 5 rows** (`--limit 5`) so it stays tight; the script appends a `… +M more — type 'sessions'` overflow line when there are more. Its `#` numbers drive `code <n>` / `refine <n>`. Display verbatim:
    ```bash
-   python3 "$ROOT/scripts/session-list.py" --session-root "<session_root>" --slug "<slug>" --handle "<handle>" --rebuild-index --compact
+   python3 "$ROOT/scripts/session-list.py" --session-root "<session_root>" --slug "<slug>" --handle "<handle>" --rebuild-index --limit 5
    ```
-3. **Collapsed "more" line** — ONE dim line built from counts already gathered in Step 2 (consolidated-inbox `work` count from `inbox-render.py`; repo-memory count from the grep). Do **not** list the inbox items or the search options here:
+3. **"More" options — vertical, each clearly its own option (acp-ajudd#130)** — built from counts already gathered in Step 2 (consolidated-inbox `work` count from `inbox-render.py`; repo-memory count from the grep). Render each on its own line with its count and a short description, aligned like the Search-by block — the point is that inbox / sessions / memory / search read as **distinct openable options**, not one cramped line. Do **not** list the inbox items or expand search here:
    ```
-   more:  inbox <N> · memory <N> · search      (type: inbox / sessions / search / all)
+   More — type one to open:
+     inbox     <N> item(s)   — view the consolidated inbox
+     sessions                — full session list (all columns)
+     memory    <N> entries   — repo memory
+     search                  — mine · all · status <value> · <text>
    ```
-   Drop a term whose count is zero (no `inbox <N>` if the inbox has no `work`; no `memory <N>` if there's no repo memory). Always keep the `search` term and the `(type: …)` hint.
+   Omit the `inbox` line if the inbox has no `work`; omit `memory` if there's no repo memory. Keep `sessions` and `search` always.
 
 Then wait for one free-text reply. **Do not use AskUserQuestion.**
 
