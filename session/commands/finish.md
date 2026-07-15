@@ -451,6 +451,8 @@ DEPLOY  (bump → commit → push → reinstall → live)
 ────────────────────────────────────────────────
 ```
 
+**Deploy discipline for storage-format bumps (acp-ajudd#110).** A storage-format MAJOR bump (a change to the on-disk session/inbox/history file layout — e.g. #102's per-item inbox) migrates the shared data instantly, but every *other* open terminal (planning / dispatch / capture) keeps running the prior plugin code against the new data until it is manually restarted — a migrated-data / old-code split observed live on #102's deploy. The clean way to avoid it: **before running this deploy, close the other role terminals for this slug; deploy; then reopen them.** Do the structural change in one pass rather than leaving other terminals to straggle across the boundary. The 11e notice below is the backstop for when a terminal is missed anyway — it is not a substitute for this discipline.
+
 **11a. Derive the target plugin(s) from changed paths** — not from the session name. Using the Step 2 git scan (uncommitted changes + unpushed local commits), map each changed file under the marketplace root to its top-level plugin directory (e.g. `session/commands/finish.md` → `session`). Collect the distinct set. A deploy may span multiple plugins; each affected plugin gets its own bump.
 
 **11b. Version bump — prompted, never silent.** For each affected plugin, read the current version from `<plugin>/.claude-plugin/plugin.json` and suggest a level + next version (one bump per plugin per feature):
@@ -465,6 +467,8 @@ Deploy bump:
 go / <plugin> <level> / cancel
 ```
 Apply the confirmed version to each affected `plugin.json`. On **cancel**, stop — nothing is committed, pushed, or reinstalled (the session is already closed; the deploy can be re-run later by re-opening).
+
+**Storage-format flag (acp-ajudd#110) — only when the confirmed level is MAJOR.** Ask one follow-up: `Storage-format change — does this bump alter the on-disk session/inbox/history file layout (not just command behavior)? (yes/no, default no)`. A `yes` sets a flag carried into 11e (the one-time restart notice); a `no` (or any non-MAJOR bump) skips it silently — this is the only place the flag is asked, and it costs nothing on the read hot path.
 
 **11c. Commit + push to master.** Stage the plugin changes (edited files + bumped `plugin.json`), draft a commit message summarizing the shipped work in the repo's style (`git log --oneline -5`), commit, and **push to master**. Any unpushed local commits made via `session:commit` during the session ride along in the push. End the commit message with the Co-Authored-By trailer per the repo convention (see CLAUDE.md). Direct pushes to `master` on this repo are authorized — no PR.
 
@@ -483,6 +487,11 @@ A Claude Code restart may be required to load the new version — note this if s
 **11e. Record + report.** Append the deploy commit to the session file's `Commits:` field (one-line append — SHA + subject; the file was written in Step 9). Then print the deploy result (Step 12's return/close cue follows it):
 ```
 Deployed: session v1.53.0 → v1.54.0 — pushed to master, reinstalled (live)
+```
+
+**Coordinated-restart notice (acp-ajudd#110) — only if 11b's storage-format flag was set `yes`.** Print immediately after the deploy line, one time:
+```
+⚠ Storage-format change — restart all other open terminals (planning / dispatch / capture) for this slug now; they are still running the prior on-disk format until restarted.
 ```
 
 ### 12. The Atomic Close, Return Handoff & Close Cue (acp-ajudd#94/#103)

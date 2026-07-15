@@ -275,7 +275,8 @@ def ensure_inbox_migrated(session_root):
             os.remove(legacy)
         except OSError:
             pass
-        notice = ("Migrated inbox to per-item storage (%d item%s)."
+        notice = ("Migrated inbox to per-item storage (%d item%s). "
+                  "Other terminals on the prior version must restart before touching this inbox."
                   % (written, "" if written == 1 else "s"))
         return written, notice
     finally:
