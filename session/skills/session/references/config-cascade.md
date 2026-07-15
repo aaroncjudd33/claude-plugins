@@ -27,7 +27,7 @@ before `project_value`.
 
 | Key | Values | Hardcoded default | Consumed by |
 |-----|--------|--------------------|-------------|
-| `startFlow` | `wizard` \| `classic` | `classic` | `start.md` — picks which flow file to load for plugin/personal zones (acp-ajudd#120; `wizard` becomes real once acp-ajudd#122 ships `start-plugin-wizard.md`) |
+| `startFlow` | `wizard` \| `classic` | `wizard` | `start.md` — picks which flow file to load, all zones (acp-ajudd#120; `wizard` is `start-wizard.md`, one file for every zone, shipped acp-ajudd#124) |
 
 **Adding a new cascade-able key:** document its allowed values + hardcoded default in the
 table above, write it at whichever tier(s) need an override, and resolve it with the same

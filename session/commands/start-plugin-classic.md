@@ -5,7 +5,7 @@ description: Session start — classic flow (Steps 2-4). Loaded by the start.md 
 
 # Session Start — Classic Flow (Steps 2-4)
 
-Loaded by `start.md` (the dispatcher) once zone and the config-cascade have been resolved. Context already in scope: `slug`, `session_root`, `handle`, `zone` (`plugin` | `story` | `cab` | `personal` | `general`), and `filter_mine` (if Step 0's `mine` fast-path set it). This file reproduces the session-start behavior that existed before the dispatcher split (acp-ajudd#120) — behavior-preserving, byte-for-byte from the user's perspective. It is the default flow every zone currently routes to; `startFlow: wizard` (acp-ajudd#122) and the lean work-repo flow (acp-ajudd#121) are separate flow files the dispatcher will pick instead, once they exist.
+Loaded by `start.md` (the dispatcher) once zone and the config-cascade have been resolved. Context already in scope: `slug`, `session_root`, `handle`, `zone` (`plugin` | `story` | `cab` | `personal` | `general`), and `filter_mine` (if Step 0's `mine` fast-path set it). This file reproduces the session-start behavior that existed before the dispatcher split (acp-ajudd#120) — behavior-preserving, byte-for-byte from the user's perspective. It is now the **`startFlow: classic`** fallback for every zone; the default flow is `start-wizard.md` (acp-ajudd#124 — one wizard, all zones, zone-aware step-1 options). This file is slated for a rename to `start-classic.md` (acp-ajudd#123, not yet done — still `start-plugin-classic.md` today).
 
 ## Instructions
 

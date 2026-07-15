@@ -58,21 +58,19 @@ Run `pwd` and extract the **last path component** as the repo slug (if not alrea
 
 Resolve `session_root`, `handle`, and `zone` using Path Resolution (`references/path-resolution.md` — core resolution + § Zone Detection). If repo-based and `~/.claude/config/<slug>.json` is missing, auto-create it silently (see First-Run Auto-Config in `references/path-resolution.md`).
 
-**Resolve `startFlow`** — plugin/personal zones only (story/cab/general have no wizard alternative planned, so treat them as `classic` without resolving the cascade): read Config Cascade (`references/config-cascade.md`), key `startFlow`, hardcoded default `classic`.
+**Resolve `startFlow`** — every zone now (the one wizard, acp-ajudd#124, works the same way everywhere): read Config Cascade (`references/config-cascade.md`), key `startFlow`, hardcoded default `wizard`.
 
 **Pick the target flow file**, checked in this order with a fallback:
 
 | zone | preferred file | fallback |
 |---|---|---|
-| story, cab | `commands/start-work.md` | `commands/start-plugin-classic.md` |
-| plugin, personal | `commands/start-plugin-wizard.md` when `startFlow == wizard` | `commands/start-plugin-classic.md` |
-| general | — | `commands/start-plugin-classic.md` |
+| plugin, story, cab, personal, general | `commands/start-wizard.md` when `startFlow == wizard` | `commands/start-plugin-classic.md` |
 
 Check whether the preferred file exists:
 ```bash
 ROOT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}"
 test -f "$ROOT/commands/<candidate>.md" && echo exists || echo fallback
 ```
-If it doesn't exist, use the fallback. **This existence-check is the seam**: `start-work.md` (acp-ajudd#121) now exists, so story/cab zones route there — with **zero edits to this file**, exactly as designed. `start-plugin-wizard.md` (question-first wizard, acp-ajudd#122) does not exist yet, so plugin/personal zones still fall back to `start-plugin-classic.md` regardless of `startFlow`; the same existence check will pick it up the moment it ships, again with zero edits here.
+If it doesn't exist, use the fallback. **This existence-check is the seam**: `start-wizard.md` (acp-ajudd#124 — one wizard, all zones, superseding the halted per-zone `start-work.md` and the never-built `start-plugin-wizard.md`) now exists, so every zone routes there by default — with **zero edits to this file**. Setting `startFlow: classic` (per-repo or globally) falls back to `start-plugin-classic.md` (renamed to `start-classic.md` once acp-ajudd#123 ships — same existence-check seam picks that up too).
 
 Read the resolved flow file and continue from its **Step 2**, carrying forward `slug`, `session_root`, `handle`, `zone`, and `filter_mine` (if Step 0 set it).
