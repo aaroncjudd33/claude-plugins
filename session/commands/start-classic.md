@@ -29,7 +29,7 @@ The listing is rendered by a helper script so its deterministic formatting (grou
    The prune runs first and completes before the listing (and before any commit a later step such as `migrate` might make). If it prints a `Retention: archived …` line, relay it to the user before the table so an archival is never silent.
    (`${CLAUDE_PLUGIN_ROOT}` is used when set; otherwise the script resolves from the marketplace clone — derive `<pluginMarketplaceName>` as in the dispatcher's Zone Detection.) The script reads `_index.md` (7-col current / 6-col legacy), the per-session inbox files (`_inbox_<name>.md`, archives excluded), the `_active` marker, and the session `.md` filenames itself, then prints the finished, aligned, grouped table — default columns, with completed and `refinement-*` sessions hidden. **Display its stdout exactly as printed: do not re-align, re-order, restate, or wrap it in a code fence.**
 
-**Work-zone ordering carve-out (acp-ajudd#130).** For the **story / cab** zones only, do **not** emit the session table in this step — run the retention prune above (and relay any `Retention:` line), but **defer the listing to Step 3**, which leads with the verbs headline and then renders a *compact* listing (`session-list.py --compact`). Every other zone (plugin / personal / general) emits the table here exactly as described — they are unchanged.
+**Work-zone ordering carve-out (acp-ajudd#130 / #132).** For the **story / cab** zones only, do **not** emit the session table in this step — run the retention prune above (and relay any `Retention:` line), but **defer the whole panel to Step 3**, which renders it in one shot via `start-panel.py` (verbs → In Progress → Advanced). Every other zone (plugin / personal / general) emits the table here exactly as described — they are unchanged.
 
    **`_active` self-heal (acp-ajudd#94).** During this `--rebuild-index` pass the script also **clears an `_active` marker that points at a session whose status is `completed`** — a completed session can never be the active pointer. (Under the un-bundled ship/close model a session may legitimately sit *shipped but still active* until `/session:finish` runs; once it is `completed`, a lingering `_active` is stale and is removed here.) Fail-safe: a heal error never breaks the listing.
 
@@ -166,44 +166,26 @@ plus the shared **Search by** block (§ 87-97 above). The `dispatch` and `captur
 
 **Work project:**
 
-**Verbs first — collapse the rest (acp-ajudd#130).** The happy path is *pick a verb + a target*, and that must be the focus of the screen. Lead with the three verbs, then a compact resumable list (so `code <n>` still works), then **one** collapsed "more" line — the inbox, the full table, and the search options are all one keystroke away, not on screen by default. Emit the panel in this exact order (each piece script-echoed):
-
-1. **Verbs headline** — run `routing-block.py --zone work --search none` and display its stdout verbatim (refine / code / cab — the primary call to action):
-   ```bash
-   ROOT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}"
-   python3 "$ROOT/scripts/routing-block.py" --zone work --search none
-   ```
-2. **In-progress list, detailed but capped (acp-ajudd#130)** — the session listing deferred from Step 2, rendered with its **normal detail columns** (name / title / status / in / last edit + stale markers) but **capped at 5 rows** (`--limit 5`) so it stays tight; the script appends a `… +M more — type 'sessions'` overflow line when there are more. Its `#` numbers drive `code <n>` / `refine <n>`. Display verbatim:
-   ```bash
-   python3 "$ROOT/scripts/session-list.py" --session-root "<session_root>" --slug "<slug>" --handle "<handle>" --rebuild-index --limit 5
-   ```
-3. **Advanced — titled section, vertical (acp-ajudd#130 / #131)** — built from counts already gathered in Step 2 (consolidated-inbox `work` count from `inbox-render.py`; repo-memory count from the grep). Title the section **`Advanced`** (a parallel header to `Pick one` and `In Progress`); render the three options each on its own line with its count and a short description, aligned — distinct openable options, not one cramped line. Do **not** list the inbox items or expand search here:
-   ```
-   Advanced
-     inbox    <N> item(s)   — view the consolidated inbox
-     memory   <N> entries   — repo memory notes
-     search                 — find a session, inbox item, or note
-   ```
-   Omit the `inbox` line if the inbox has no `work`; omit `memory` if there's no repo memory. Keep `search` always. (`sessions` / `all` remain accepted keywords — the full session list is reachable via the `… +M more — type 'sessions'` overflow line under In Progress, so it doesn't need its own Advanced row.) **Deferred (acp-ajudd#131):** whether "memory" is clear to teammates, whether `search` should name its scope, or whether these collapse into one search — see that item; not changed here.
+**One echoed panel (acp-ajudd#132).** The whole work-zone panel — `Quick start` (verbs), `In Progress` (detailed, capped, underlined headers), `Advanced` (inbox / memory / search), and the branch note — is rendered by **one script** so the command just echoes it verbatim. Do **not** re-order, re-render, hand-format, or "improve" any part: that latitude is exactly what made the panel drift (compact vs detailed In Progress two runs apart from the same instruction). Run it and display stdout **exactly as printed** — no code fence, no restating:
+```bash
+ROOT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}"
+BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+RTOP=$(git rev-parse --show-toplevel 2>/dev/null)
+python3 "$ROOT/scripts/start-panel.py" --session-root "<session_root>" --slug "<slug>" \
+  --handle "<handle>" --current-branch "$BRANCH" --repo-root "$RTOP" --limit 5
+```
+`start-panel.py` reuses `session-list.py`'s parsers (so its In Progress rows match the `sessions` full list), folds the active/completed/stale summary into the `In Progress` header, caps at `--limit` with a `… +M more — type 'sessions'` overflow, shows `@who` when the session records it (else just the date), and prints the branch note only when that session isn't already in the list. (This replaces the former three-piece assembly of `routing-block.py --search none` + `session-list.py --limit` + a hand-written more-line — the assembly the model kept deviating from.) If Step 2's prune printed a `Retention:` line, it was already relayed there.
 
 Then wait for one free-text reply. **Do not use AskUserQuestion.**
 
-**Expand keywords (acp-ajudd#130) — the collapsed detail is one word away:**
-- `inbox` → render the consolidated inbox in full: run `inbox-render.py render` and show its `work` items in **layout B** (description-first, provenance dim below; `[spawn]` starred; drop `<slug>` when it equals the current repo; `work` only — `new`/`refining`/`ready`, capture-type excluded), then the captures-waiting glance `Captures waiting: N — say "check captures" to read them` (omit if zero). Then re-show the verbs headline. Full inbox handling (work/done/backlog/keep) happens at Step 5.
-- `sessions` → re-render the **full** session table (`session-list.py` *without* `--compact` — all columns), then re-show the verbs headline.
+**Expand keywords — the collapsed detail is one word away:**
+- `inbox` → render the consolidated inbox in full: run `inbox-render.py render` and show its `work` items in **layout B** (description-first, provenance dim below; `[spawn]` starred; drop `<slug>` when it equals the current repo; `work` only — `new`/`refining`/`ready`, capture-type excluded), then the captures-waiting glance `Captures waiting: N — say "check captures" to read them` (omit if zero). Then re-show the panel. Full inbox handling (work/done/backlog/keep) happens at Step 5.
+- `sessions` / `all` → re-render the **full** session table (`session-list.py --rebuild-index`, no `--limit`; add `--show all` for `all`), then re-show the panel.
 - `search` → run `routing-block.py --zone work` (default `--search full`) to show the full **Search by** options, then wait again.
-- `all` → full table including completed (`session-list.py --show all`, no `--compact`).
+- `memory` → the on-demand `load memory [topic]` capability (repo memory); surface only on this keyword.
 - `check captures` → read + disposition capture-type entries (promote / discard / absorb / feed — the three non-promote fates archive), per `references/inbox-convention.md` § Captures inbound.
 
-**Fallback (scripts unavailable)** — render the verbs headline yourself:
-```
-  Pick one — a verb + your target:
-    refine <n|KEY>   scope/plan a story (sessionless)
-    code   <n|KEY>   open or resume a coding session
-    cab    <KEYS>    new CAB coding session
-                     (a # from the list below, or a story key you know)
-```
-then a compact list (read `_index.md`, group by status, one `# name` per in-progress/paused row, mark stale), then the collapsed more-line above. `search` still expands to the shared **Search by** block (§ 87-97).
+**Fallback (start-panel.py unavailable)** — if `python3` is absent, the script exits non-zero, or stdout is empty, render the panel yourself in the same order and shape: the `Quick start` verbs (refine `<n|KEY>` / code `<n|KEY>` / cab `<KEYS>`, underlined header), then a detailed `In Progress` list from `session-list.py --limit 5` (or `_index.md` if that also fails), then an `Advanced` block (`inbox` / `memory` / `search`). Keep the underlined headers and the folded summary.
 
 **Type-specific accepted inputs** (plus the shared inputs above):
 - `code <KEY>` (e.g. `code BPT2-6429`) → open a coding session on that story — the file decides: a session already exists → resume it; no session yet → graduate the story (transition to *In Progress*, create the feature branch, kickoff). If no key in the reply after a bare `code`, ask "Story key or URL?" as follow-up.
