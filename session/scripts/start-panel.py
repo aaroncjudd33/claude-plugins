@@ -92,7 +92,12 @@ def _count_work_sections(text):
 
 
 def count_inbox_work(session_root):
-    """Count consolidated-inbox `work` items — per-item `_inbox/*.md` or legacy `_inbox.md`."""
+    """Count consolidated-inbox `work` items — per-item `_inbox/*.md` or legacy `_inbox.md`.
+
+    This is the plugin/personal item-driven inbox model. Story/cab/general repos
+    don't use this directory at all (see count_inbox_per_session below) — for them
+    this always correctly returns 0, it is not a mismeasurement.
+    """
     files = sorted(glob.glob(os.path.join(session_root, "_inbox", "*.md")))
     if files:
         total = 0
@@ -111,6 +116,20 @@ def count_inbox_work(session_root):
         except OSError:
             return 0
     return 0
+
+
+def count_inbox_per_session(session_root, sl, names):
+    """Sum of story/cab/general per-session inbox files (`_inbox_<name>.md`).
+
+    acp-ajudd#135 iteration 1: the work-zone panel previously only called
+    count_inbox_work() above, which reads the plugin/personal `_inbox/` dir — a
+    directory story/cab repos never have. So a work repo's real per-session inbox
+    content (`_inbox_BPT2-6377.md` etc.) was silently never counted, and the
+    Advanced inbox line came out 0 and got hidden even when work was pending.
+    Reuses session-list.py's own count_inbox(), which already computes this
+    correctly for the full `sessions` listing's per-row `in` column.
+    """
+    return sum(sl.count_inbox(session_root, name) for name in names)
 
 
 def count_memory(repo_root):
@@ -201,7 +220,7 @@ def build_inprogress(sl, root, handle, stale_days):
         ))
 
     rows.sort(key=lambda r: (r["updated_date"], r["name"]), reverse=True)
-    return rows, summary, meta_by_name
+    return rows, summary, meta_by_name, all_names
 
 
 def main():
@@ -226,14 +245,14 @@ def main():
     sl = _load_sibling("session-list.py")
     stale_days = getattr(sl, "STALE_DAYS_DEFAULT", 14)
 
-    rows, summary, meta_by_name = build_inprogress(sl, root, args.handle, stale_days)
+    rows, summary, meta_by_name, all_names = build_inprogress(sl, root, args.handle, stale_days)
 
     overflow = 0
     if args.limit and len(rows) > args.limit:
         overflow = len(rows) - args.limit
         rows = rows[:args.limit]
 
-    inbox_n = count_inbox_work(root)
+    inbox_n = count_inbox_work(root) + count_inbox_per_session(root, sl, all_names)
     mem_n = count_memory(args.repo_root)
 
     out = []
@@ -288,13 +307,15 @@ def main():
     out.append("")
 
     # Advanced (parked — acp-ajudd#131). Aligned columns: label · count · desc.
+    # acp-ajudd#135: a menu line is never hidden because its count is 0 — the line's
+    # presence tells the user the capability exists here. A 0 renders as "0", it is
+    # not omitted. Only a genuine zone/project-type difference may drop a section.
     out.append(rule("Advanced  (functionality still being refined)"))
-    adv = []
-    if inbox_n:
-        adv.append(("inbox", f"{inbox_n} item(s)", "view the consolidated inbox"))
-    if mem_n:
-        adv.append(("memory", f"{mem_n} notes", "search repo memory"))
-    adv.append(("search", "", "find a session, inbox item, or note"))
+    adv = [
+        ("inbox", f"{inbox_n} item(s)", "view pending items across session inboxes"),
+        ("memory", f"{mem_n} notes", "search repo memory"),
+        ("search", "", "find a session, inbox item, or note"),
+    ]
     for label, cnt, desc in adv:
         out.append(f"    {label:<8}{cnt:<11}{desc}".rstrip())
 
