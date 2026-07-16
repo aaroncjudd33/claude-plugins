@@ -422,6 +422,13 @@ Where `<title-or-dash>` = `Title:` field for story/cab; `—` for other types.
 
 **Story — new kickoff:**
 1. `getJiraIssue` → transition to In Progress → create feature branch.
+
+   **Resolve the real base branch first — never guess or infer from the remote branch list (acp-ajudd#136).** A repo's actual integration branch is not always `develop`, and picking one because it "showed up in the list" has produced a wrong-base branch in practice. Resolve it deterministically:
+   ```bash
+   BASE=$(git remote show origin 2>/dev/null | grep "HEAD branch" | awk '{print $NF}')
+   [ -z "$BASE" ] && BASE=$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name 2>/dev/null)
+   ```
+   `BASE` is now the repo's true default branch (e.g. `master`, `main`, or `develop` — whichever it actually is for this repo) with zero configuration and nothing that can go stale. Create the feature branch from `origin/$BASE`, never from a branch chosen by inspection of the branch list or from memory of "what this repo usually uses." If both commands fail to resolve `BASE` (e.g. no `gh` and no network), stop and ask which branch to use rather than guessing.
 2. Check for Epic Link in the Jira issue. If an epic key is present:
    - Check whether `~/.claude/memory/epics/<epic-key>.md` exists.
    - **Not found:** output and wait:

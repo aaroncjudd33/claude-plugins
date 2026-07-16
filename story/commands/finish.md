@@ -71,6 +71,13 @@ git branch --show-current       # current branch
 git ls-remote --heads origin "feature/*<story-key>*"  # does feature branch exist on remote?
 ```
 
+**Resolve the real base branch — never hardcode `develop` (acp-ajudd#136).** Cases B and C below open a PR / cut a cleanup branch against the repo's actual integration branch, which is not always `develop`. Resolve it deterministically before either case runs:
+```bash
+BASE=$(git remote show origin 2>/dev/null | grep "HEAD branch" | awk '{print $NF}')
+[ -z "$BASE" ] && BASE=$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name 2>/dev/null)
+```
+If both fail to resolve `BASE`, stop and ask which branch to target rather than guessing or defaulting to `develop`.
+
 **Case A — currently on the feature branch:**
 Commit and push. Stay on the feature branch.
 ```bash
@@ -80,29 +87,29 @@ git push
 ```
 
 **Case B — not on feature branch, but it still exists on remote:**
-Switch to it, commit, push, open a new PR to develop. Stay on the feature branch.
+Switch to it, commit, push, open a new PR to the resolved base branch. Stay on the feature branch.
 ```bash
 git checkout feature/<branch-name>
 git add .claude/sessions/<story-key>.md .claude/sessions/_history.md .claude/sessions/_inbox.md
 git commit -m "<story-key>: Close session — update state and cab-prep handoff"
 git push
-gh pr create --base develop --title "<story-key>: Close session files" --body "Session state and cab-prep handoff after story close."
+gh pr create --base "$BASE" --title "<story-key>: Close session files" --body "Session state and cab-prep handoff after story close."
 ```
 
 **Case C — feature branch deleted (not found on remote):**
-Create a cleanup branch from develop, commit, push, PR. Stay on the cleanup branch.
+Create a cleanup branch from the resolved base branch, commit, push, PR. Stay on the cleanup branch.
 ```bash
-git checkout develop && git pull
+git checkout "$BASE" && git pull
 git checkout -b feature/<story-key>-session-close
 git add .claude/sessions/<story-key>.md .claude/sessions/_history.md .claude/sessions/_inbox.md
 git commit -m "<story-key>: Close session — update state and cab-prep handoff"
 git push -u origin feature/<story-key>-session-close
-gh pr create --base develop --title "<story-key>: Close session files" --body "Session state and cab-prep handoff after story close."
+gh pr create --base "$BASE" --title "<story-key>: Close session files" --body "Session state and cab-prep handoff after story close."
 ```
 
 **Branching rules (non-negotiable):**
-- Never commit directly to `develop` or `master` — always via PR
-- Stay on the feature/cleanup branch when done — do not switch back to develop
+- Never commit directly to the resolved base branch — always via PR
+- Stay on the feature/cleanup branch when done — do not switch back to the base branch
 - No two open PRs to the same target branch at once
 
 ### 7. Report
