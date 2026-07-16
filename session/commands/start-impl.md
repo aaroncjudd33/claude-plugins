@@ -341,9 +341,11 @@ Before I write the session file:
 Reply with overrides or "go".
 ```
 
+**Output that block, then STOP (acp-ajudd#138).** This is an "output and wait" prompt like every other one in this file — the batch block is your entire output for this step. Do not write Step 8's outcome, do not narrate the default as already decided (never write something like "no Teams chat found — defaulting to skip" as a statement of fact), and do not create the branch, transition Jira, or write the session file until the user actually replies with an override or "go". A silently-applied default is exactly the failure this note exists to prevent — it already happened once live (VO ran the entire new-kickoff flow — Jira transition, branch creation, session-file write, ready-for-edit prompt — in one uninterrupted turn with the batch never printed and no reply ever given, acp-ajudd#138).
+
 - Omit item (1) if a Teams chat was already found (Step 7's "Found" branch) — nothing to ask.
 - If nothing applies, skip this batch entirely — proceed straight to Step 8.
-- **Teams chat defaults to skip** — creating a chat is a visible, shared-state action, so "go" should never silently create one uninvited.
+- **Teams chat defaults to skip** — creating a chat is a visible, shared-state action, so "go" should never silently create one uninvited. "Defaults to skip" describes what happens **after the user replies "go"** — it is not license to skip the reply itself.
 - **Memory scan is no longer an interactive prompt at kickoff (acp-ajudd#137d — Aaron: "I don't want the prompt, it slows things down").** Do not ask about it here at all. Default silently to not scanning, and note it once, inline, as an FYI rather than a question — e.g. `(project memory available — say "load memory" to scan it)` — only when project memory genuinely exists for this repo/slug. Say nothing at all if none exists. This never blocks or waits; it is not part of the batch above and needs no reply. A user who wants memory loaded says so on demand (`load memory`, `/memory:scan`) at any point, including right after the session file is written.
 - Apply the Teams-chat answer before Step 8 so the session file is written once, complete.
 
