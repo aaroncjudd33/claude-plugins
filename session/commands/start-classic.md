@@ -181,6 +181,8 @@ python3 "$ROOT/scripts/start-panel.py" --session-root "<session_root>" --slug "<
 
 **How to apply it:** run the `start-panel.py` call above, take its stdout, and output that stdout as your entire message — no code fence around it, no leading "Session panel loaded" line, no trailing question in your own words. If you notice yourself about to write a sentence describing the panel instead of pasting it, that is exactly the drift this note exists to stop — paste the stdout instead. (See `project_script_echo_compliance` memory for the root cause: this is a model-mediated slash command, so echo-compliance must be re-earned by instruction on every read of this file, not assumed as a given.)
 
+**A subtler form of the same drift (acp-ajudd#138): dropping ONE header/rule line while every content line survives.** Observed live twice in a row on `virtual-office` — the `Advanced` section's own header+underline line went missing from the reply while its `inbox` / `memory` / `search` content rows printed correctly, verbatim, in the right place. This is not a wholesale summary-instead-of-paste failure (§ above) — it is a partial one, and worth naming separately because it is easy to mistake for a script bug (it is not: `start-panel.py` writes its entire output as a single atomic string; there is no code path that omits one header while keeping that same section's content). If your reply is missing a header or rule line that the stdout above clearly contains, that is this drift — the fix is the same: reproduce the stdout exactly, including every header and rule line, not just the "informative" rows.
+
 Then wait for one free-text reply. **Do not use AskUserQuestion.**
 
 **Expand keywords — the collapsed detail is one word away:**

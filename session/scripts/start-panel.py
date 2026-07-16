@@ -23,9 +23,9 @@ Panel (approved layout, acp-ajudd#130/#132):
         1   BPT2-6479   VO: Bring Claude session & memory…   @ajudd  Jun 10  ⚠
         …
 
-    Advanced  (functionality still being refined)
-    ─────────────────────────────────────────────
-        inbox    1 item(s)   view the consolidated inbox
+    Advanced
+    ────────
+        inbox    1 item(s)   view pending items across session inboxes
         memory   59 notes    search repo memory
         search               find a session, inbox item, or note
 
@@ -310,7 +310,12 @@ def main():
     # acp-ajudd#135: a menu line is never hidden because its count is 0 — the line's
     # presence tells the user the capability exists here. A 0 renders as "0", it is
     # not omitted. Only a genuine zone/project-type difference may drop a section.
-    out.append(rule("Advanced  (functionality still being refined)"))
+    # acp-ajudd#138: header shortened from "Advanced  (functionality still being
+    # refined)" — the long qualifier was observed dropped by the echoing model twice
+    # live (content rows survived, this header+rule line didn't); a shorter trailing
+    # header reduces that risk surface. Also just more honest — inbox/memory are no
+    # longer "being refined," they're verified working.
+    out.append(rule("Advanced"))
     adv = [
         ("inbox", f"{inbox_n} item(s)", "view pending items across session inboxes"),
         ("memory", f"{mem_n} notes", "search repo memory"),
