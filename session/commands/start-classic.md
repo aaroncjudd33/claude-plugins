@@ -176,6 +176,11 @@ python3 "$ROOT/scripts/start-panel.py" --session-root "<session_root>" --slug "<
 ```
 `start-panel.py` reuses `session-list.py`'s parsers (so its In Progress rows match the `sessions` full list), folds the active/completed/stale summary into the `In Progress` header, caps at `--limit` with a `… +M more — type 'sessions'` overflow, shows `@who` when the session records it (else just the date), and prints the branch note only when that session isn't already in the list. (This replaces the former three-piece assembly of `routing-block.py --search none` + `session-list.py --limit` + a hand-written more-line — the assembly the model kept deviating from.) If Step 2's prune printed a `Retention:` line, it was already relayed there.
 
+**Echo-compliance is not automatic (acp-ajudd#133).** This step's failure mode observed in practice is not a script or layout bug — it's the model discarding `start-panel.py`'s stdout and substituting its own conversational summary ("Session panel loaded for X … 8 active sessions … what would you like to do?") or, worse, an `AskUserQuestion` picker. Both are violations of this step, not acceptable alternatives. So the rule for this specific step is absolute and overrides any general instinct to summarize or to offer a picker:
+> **Your entire response for this step is the command's stdout, character-for-character — nothing else.** Do not write a preamble, a summary sentence, a restated question, or any text of your own before or after it. Do not call `AskUserQuestion`. The panel already contains the verbs, the list, and the prompt — paste it, then stop.
+
+**How to apply it:** run the `start-panel.py` call above, take its stdout, and output that stdout as your entire message — no code fence around it, no leading "Session panel loaded" line, no trailing question in your own words. If you notice yourself about to write a sentence describing the panel instead of pasting it, that is exactly the drift this note exists to stop — paste the stdout instead. (See `project_script_echo_compliance` memory for the root cause: this is a model-mediated slash command, so echo-compliance must be re-earned by instruction on every read of this file, not assumed as a given.)
+
 Then wait for one free-text reply. **Do not use AskUserQuestion.**
 
 **Expand keywords — the collapsed detail is one word away:**
