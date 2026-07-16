@@ -40,16 +40,26 @@ Merge results, dedupe, rank label matches above description-only matches.
 
 ### 4. Present Candidates
 
-```
-Found N relevant memories:
+**Lead with a simple top-level fork — never require reviewing the itemized list first (acp-ajudd#137e — Aaron: "why was it never an option to just pick defaults, skip, or manually choose?").** Plain text, never a selectable picker/`AskUserQuestion`:
 
+```
+Found N relevant memories for <feature-area(s)>.
+  (1) Load them? — load recommended (default) / skip / manually choose
+
+Reply with an override, or "go" to accept the default.
+```
+
+- **load recommended / go:** load every **label-matched (precise)** candidate automatically — skip description-only (fuzzy) matches. Report `Loaded: <name>` for each. Done — no further prompt.
+- **skip:** load nothing. Stop here.
+- **manually choose:** only now show the full itemized list, including the fuzzy matches, for hand-picking:
+  ```
   1  checkout-payment-validation   [feature:checkout/payment-validation]
      Payment validation rules and edge cases at checkout
   2  cart-totals                   [feature:cart/totals]
      How line-item totals and tax are computed
 
-Load which? (numbers / all / none)
-```
+  Load which? (numbers / all / none)
+  ```
 
 If none matched: "No memories matched <terms>. Try `/memory:load <topic>` with a different term, or `/memory:save` to record what you learn." and stop.
 
