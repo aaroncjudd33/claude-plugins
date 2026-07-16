@@ -11,7 +11,7 @@ Loaded by `finish.md` **only when the session type is `story` or `cab`** (type i
 Silently perform Jira actions before the batch block.
 
 **story:**
-- Is the story status current? Transition if needed.
+- Is the story status current? Transition if needed — offer `ready-for-test` (transition ID `21`) as an explicit option alongside `done` / `approved-for-release`, not just an implicit "transition if needed." This is a developer call, not something to infer from PR/CI/deploy completion (Aaron 2026-07-16) — surface it at this same close-out point every time there's a status decision to make, mirroring `/story:finish` Step 3's option list.
 - Post a closing Jira comment: what was accomplished this session, what's next (testing, CAB, deployment). Business-readable — no file paths or class names. Check the most recent existing comment first; only post if it doesn't already cover this session's work.
 - Read the session file's `Epic` field and fetch Jira issue data to determine if the story was just transitioned to Ready For Test, Approved for Release, or Done this session. Record this for the batch block (slot B below).
 

@@ -30,10 +30,10 @@ Ask:
 
 Output and wait:
 ```
-  done  ·  approved-for-release  ·  skip
+  ready-for-test  ·  done  ·  approved-for-release  ·  skip
 ```
 
-Apply the transition if selected (see transition IDs in the story skill reference).
+Apply the transition if selected (see transition IDs in the story skill reference — `ready-for-test` → transition ID `21`, "Ready For Test"). Aaron 2026-07-16: whether a story is ready for test is a developer call, not something to infer from PR/CI/deploy completion — this stays a manual option offered at the same close-out point as the other transitions, not a separate automated trigger.
 
 ### 4. Update session file
 
