@@ -7,6 +7,10 @@ description: "This skill governs session lifecycle across all project types. Loa
 
 Governs session lifecycle across all project types (plugin, story, cab, personal, general).
 
+## Never a selectable picker — a blanket rule, not a per-step reminder (acp-ajudd#139)
+
+**No `/session:*` flow ever asks a question via `AskUserQuestion` or any other selectable/arrow-key widget — including a question you improvise yourself, not just the scripted batch prompts documented elsewhere.** Every question, at every decision point, in every command this skill governs, is plain text the user replies to by typing. This rule stands on its own here — not only as a reminder attached to specific scripted prompts (start-impl.md §7a, finish.md's batch, etc.) — because the failure mode observed in practice is a session **hitting a decision that isn't scripted anywhere** (e.g. "what should this PR's base branch be?" — not a documented finish step) and reaching for a picker widget precisely because no per-step reminder was in front of it at that moment. Prose reminders scoped to specific prompts don't cover the questions a session invents on its own — this rule has to hold even then. If you are about to ask anything and a picker widget is available, don't use it: write the question and the options as plain text and wait for a typed reply.
+
 ## Terminology — the canonical glossary (acp-ajudd#64, #70)
 
 **This section is the single source of truth for what each load-bearing term MEANS.** Every other doc — `references/*.md`, `commands/*.md`, the Confluence page — may describe how a term *behaves in a flow* (its mechanics) but must **not re-define the term**: it points here instead. The payoff is bounded but real (acp-ajudd#70): a **conceptual** change (what a term means, how the roles relate) becomes a one-entry edit here instead of an N-file rewrite. A pure **rename** (e.g. `work` → something else) still needs a find/replace of the term wherever it is *used* — the glossary removes the N re-explanations, not every occurrence.
