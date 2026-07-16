@@ -337,20 +337,15 @@ When the user refers to a chat informally ("my team chat", "the group chat", "ca
 Before I write the session file:
 
   (1) Teams chat: no existing chat found for "<teams_chat>" — skip (default) / create it / use different
-  (2) Project memory: check for anything relevant to this <work/story>? — scan for me / show me a list to pick / skip (default)
 
 Reply with overrides or "go".
 ```
 
 - Omit item (1) if a Teams chat was already found (Step 7's "Found" branch) — nothing to ask.
-- Omit item (2) if no project memory exists for this repo/slug at all — see the existence check below. If neither item applies, skip this batch entirely — proceed straight to Step 8.
+- If nothing applies, skip this batch entirely — proceed straight to Step 8.
 - **Teams chat defaults to skip** — creating a chat is a visible, shared-state action, so "go" should never silently create one uninvited.
-- **Memory prompt is back (acp-ajudd#137e — reverses acp-ajudd#137d, "Aaron: I want a prompt so a new user knows this is an option").** The prompt itself must be free — plain static text, no candidate matching run before it's shown; matching only happens after the user picks an option that requires it. Default is **skip**, so replying `go` costs nothing and preserves the speed #137d asked for — the prompt exists purely for discoverability, not to force a review every time.
-  - **scan for me:** run the memory plugin's `/memory:scan` flow (Feature-Area Detection + Match) and auto-load the top-ranked match(es) yourself — no further per-item confirmation. Report what was loaded, record to `Loaded memories:`.
-  - **show me a list to pick:** run the same match, then present the full candidate list (`/memory:scan` Step 4's `numbers / all / none` picker) and wait for the user's picks.
-  - **skip / go:** do nothing. No FYI note needed — the option was already visible in the batch line itself.
-- **Existence check must look past the current working tree (acp-ajudd#137e).** `<repo_root>/.claude/memory/` can be committed on one branch and absent from another — the same working-tree-is-not-the-repo gap documented in `references/path-resolution.md` for `.claude/sessions/`. Before omitting item (2) as "no project memory," also check history: `git log --all -- .claude/memory/MEMORY.md` (or the equivalent path under `memory_root`). If it exists only on another branch, still show item (2) — note inline `(found on <branch>, not yet merged)` — and read it via `git show <branch>:<path>` rather than a local file read for the rest of this flow.
-- Apply the Teams-chat and memory answers before Step 8 so the session file is written once, complete — a `scan for me` / `show me a list` pick populates `Loaded memories:` in the same write rather than a follow-up edit.
+- **Memory scan is no longer an interactive prompt at kickoff (acp-ajudd#137d — Aaron: "I don't want the prompt, it slows things down").** Do not ask about it here at all. Default silently to not scanning, and note it once, inline, as an FYI rather than a question — e.g. `(project memory available — say "load memory" to scan it)` — only when project memory genuinely exists for this repo/slug. Say nothing at all if none exists. This never blocks or waits; it is not part of the batch above and needs no reply. A user who wants memory loaded says so on demand (`load memory`, `/memory:scan`) at any point, including right after the session file is written.
+- Apply the Teams-chat answer before Step 8 so the session file is written once, complete.
 
 ### 8. Write Session State
 
@@ -428,7 +423,7 @@ Where `<title-or-dash>` = `Title:` field for story/cab; `—` for other types.
 
 **Plugin — feature session (new, via `code` on a record):**
 1. **Determine the target plugin(s)** from the folded item body / feature scope. If the work targets one or more existing plugins, **read in parallel** their `plugin.json`, `SKILL.md` (if present), and all files under each skill's `references/` directory. **Do not pre-read individual command `.md` files** — load them on demand when the task targets a specific command. If the feature is scaffolding a brand-new plugin, skip this read; the folder/marketplace work happens within the session.
-2. **Memory scan** — already resolved in the § 7a combined batch (acp-ajudd#137e) using the feature name + folded item as the feature-area signal. If `scan for me` was chosen there, matches are already loaded and recorded. If `show me a list` was chosen, candidates were already presented and picks recorded. If `skip`/`go`, nothing further needed here — the user can still say `load memory` / `/memory:scan` on demand at any point.
+2. **Memory scan** — not prompted at kickoff (§ 7a). If project memory exists, an FYI note was already shown there; the scan only runs if the user says so on demand (`load memory`, `/memory:scan`) — then run `/memory:scan` using the feature name + folded item as the feature-area signal, present candidates, load picks, record to `Loaded memories:`.
 3. Confirm approach before making changes.
 
 **Plugin — resume feature session:**
@@ -485,7 +480,7 @@ Where `<title-or-dash>` = `Title:` field for story/cab; `—` for other types.
      - **yes:** create `~/.claude/memory/epics/<key>.md` with pre-populated structure: epic title from Jira, story map row for the current story. Use `references/epic-template.md` from the session skill as the structural template.
    - **Found:** note "Epic memory loaded for <key>" — file is already in context.
    - Set `Epic: <key>` in the session file.
-3. **Memory scan** — already resolved in the § 7a combined batch (acp-ajudd#137e) using the story title and branch as the feature-area signal. If `scan for me` was chosen there, matches are already loaded and recorded to `Loaded memories:`. If `show me a list` was chosen, candidates were already presented and picks recorded. If `skip`/`go`, nothing further needed here — the user can still say `load memory` / `/memory:scan` on demand at any point.
+3. **Memory scan** — not prompted at kickoff (§ 7a). If project memory exists, an FYI note was already shown there; the scan only runs if the user says so on demand (`load memory`, `/memory:scan`) — then run `/memory:scan` using the story title and branch as the feature-area signal, present candidates, load the user's picks, and record them to the session's `Loaded memories:` field.
 4. Investigate codebase, confirm Teams chat exists, check Confluence page.
 
 **CAB — new:**
@@ -508,7 +503,7 @@ Where `<title-or-dash>` = `Title:` field for story/cab; `—` for other types.
 **Personal — feature session (new, via `code` on a record):**
 1. The session name and folded item come from Item Pickup (Step 4) — do NOT ask for a project name.
 2. Check current git branch, record it in the session file.
-3. **Memory scan** — already resolved in the § 7a combined batch (acp-ajudd#137e). If `scan for me` was chosen there, matches are already loaded and recorded to `Loaded memories:`. If `show me a list` was chosen, candidates were already presented and picks recorded. If `skip`/`go`, nothing further needed here — the user can still say `load memory` / `/memory:scan` on demand at any point.
+3. **Memory scan** — not prompted at kickoff (§ 7a). If project memory exists, an FYI note was already shown there; the scan only runs if the user says so on demand (`load memory`, `/memory:scan`) — then run `/memory:scan` and record picks to `Loaded memories:`. This is the parity point with story work: project memory is surfaced as an on-demand option, not a blocking question.
 4. Understand the task, confirm approach, proceed.
 
 **General:**
