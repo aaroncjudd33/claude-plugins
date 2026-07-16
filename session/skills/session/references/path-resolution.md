@@ -4,6 +4,8 @@ Mechanics for resolving `slug`, `session_root`, and `handle`. Loaded on demand b
 
 **All session commands use this logic.** Do not hardcode `~/.claude/memory/sessions/<slug>/` — check for repo-based sessions first.
 
+**This is a live, per-working-tree check — not a cached fact about "this repo" (acp-ajudd#137b).** Whether `<repo_root>/.claude/sessions/` exists depends on which branch is currently checked out, not on the repo as a whole — one branch can have it committed while another (e.g. a fresh branch cut from an integration branch the migration hasn't reached yet) does not. Any flow that changes the working tree mid-command (most notably a new story/CAB kickoff creating and checking out a fresh branch) **must re-run this existence check against the new working tree** before deciding `session_root` — never carry forward a resolution made before the checkout.
+
 ```
 slug = basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
        ← the current repo's folder name (e.g. `ajudd-claude-plugins`).

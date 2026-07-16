@@ -459,6 +459,16 @@ Where `<title-or-dash>` = `Title:` field for story/cab; `—` for other types.
    [ -z "$BASE" ] && BASE=$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name 2>/dev/null)
    ```
    `BASE` is now the repo's true default branch (e.g. `master`, `main`, or `develop` — whichever it actually is for this repo) with zero configuration and nothing that can go stale. Create the feature branch from `origin/$BASE`, never from a branch chosen by inspection of the branch list or from memory of "what this repo usually uses." If both commands fail to resolve `BASE` (e.g. no `gh` and no network), stop and ask which branch to use rather than guessing.
+
+   **Re-resolve `session_root` NOW, against the branch just created — never carry forward the value resolved before this checkout (acp-ajudd#137b).** `session_root` was determined once, early, from whatever branch happened to be checked out when `/session:start` began — that branch may be entirely different from the one just created here, and its `.claude/sessions/` presence is a property of the *working tree*, not a fact about "this repo" in general. A repo can legitimately have committed sessions on one branch and none on another (e.g. a migration commit that hasn't reached the integration branch yet). Re-run the Path Resolution existence check (`references/path-resolution.md` § core resolution) against the current working tree right now:
+   ```bash
+   if [ -d "$(git rev-parse --show-toplevel)/.claude/sessions" ]; then
+     echo "repo-based"
+   else
+     echo "local-fallback"
+   fi
+   ```
+   If this disagrees with the `session_root` already in scope, **update it** to match what the check says *now* — repo path if the directory exists on this branch's working tree, local `~/.claude/memory/sessions/<slug>/` if it does not. Do not assume continuity from the branch active before this kickoff.
 2. Check for Epic Link in the Jira issue. If an epic key is present:
    - Check whether `~/.claude/memory/epics/<epic-key>.md` exists.
    - **Not found:** output and wait:
