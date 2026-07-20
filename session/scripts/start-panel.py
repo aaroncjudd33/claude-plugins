@@ -1,13 +1,36 @@
 #!/usr/bin/env python3
-"""Render the ENTIRE session:start work-zone panel as ONE echoed block (acp-ajudd#132).
+"""Render the ENTIRE session:start panel, for ANY zone, as ONE echoed block.
 
-Why one script: the work-zone start panel drifted run-to-run (compact In Progress
-one run, detailed the next, from the *same* instruction) because the model
-assembled it from several script outputs plus generated framing/headers — it had
+acp-ajudd#132 shipped this for the work zone only (a speed/risk call for a
+demo, never the design intent). acp-ajudd#142 (merging #135's unfinished
+cross-zone scope + #131's Advanced-tail semantics) makes it zone-aware, so
+plugin/personal/general get the same deterministic, always-fully-rendered,
+one-echoed-block treatment instead of the older per-zone assembly of
+routing-block.py + inbox-render.py's `pickup` call + session-list.py.
+
+Why one script per zone, still: the panel drifted run-to-run when the model
+assembled it from several script outputs plus generated framing — it had
 latitude and used it. This renders the whole panel deterministically so the
 command just runs it and echoes stdout verbatim: zero latitude, no drift.
 
-Panel (approved layout, acp-ajudd#130/#132):
+Zone-appropriate sections (acp-ajudd#142):
+  - Verbs line varies: work -> refine/code/cab; plugin/personal ->
+    refine/code + dispatch/capture; general -> refine/code.
+  - Primary content varies: work/general -> In Progress sessions only.
+    plugin/personal -> Inbox work items AND In Progress sessions are BOTH
+    primary (not collapsed) -- these zones' happy path is "pick an inbox
+    item," so inbox can't live in a collapsed Advanced tail the way it does
+    for work.
+  - Advanced tail: work/general keep inbox/memory/search (acp-ajudd#135:
+    every count-bearing line always renders, 0 included -- only a genuine
+    zone difference may drop a section, never a zero count). plugin/personal
+    narrow to memory/search only, since inbox is primary there already.
+  - search is scoped to sessions + project memory only, never inbox
+    (acp-ajudd#131 resolved 2026-07-20: inbox is small and self-pruning by
+    design -- act on an item and it's gone -- so it never accumulates enough
+    to need searching; its own glance-count line is sufficient).
+
+Panel (work zone, approved layout, acp-ajudd#130/#132/#142):
 
     <slug>  ·  work repo  ·  branch: <branch>
 
@@ -27,16 +50,43 @@ Panel (approved layout, acp-ajudd#130/#132):
     ────────
         inbox    1 item(s)   view pending items across session inboxes
         memory   59 notes    search repo memory
-        search               find a session, inbox item, or note
+        search               find a session or memory note
 
     You're on BPT2-6499's branch (completed)   →   code BPT2-6499
 
-Reuses session-list.py's parsing helpers (same dir) so the In Progress rows are
-identical to the standalone `sessions` full list. On ANY error, exits non-zero
-with nothing on stdout so the caller falls back to model rendering. Never raises.
+Panel (plugin/personal zone, acp-ajudd#142):
+
+    <slug>  ·  plugin repo
+
+    Quick start — type a verb + a target
+    ────────────────────────────────────
+        refine [target]   scope work → a work entry          (sessionless)
+        code   <n|id>     open a coding session (inbox item or in-progress)
+        dispatch          coordinate the inbox                (sessionless)
+        capture           bank a raw idea                     (sessionless)
+
+    Inbox — code work, or refine new work (2):
+      1  [acp-ajudd#86]  Refresh Confluence "Story Plugin" reference page
+      2  [acp-ajudd#87]  Refresh Confluence "Release Plugin" reference page
+
+    In Progress   ·   2 active · 5 completed
+    ─────────────────────────────────────────
+        1   start-panel-all-zones   Unify start-panel.py…   @ajudd  Jul 20
+
+    Advanced
+    ────────
+        memory   59 notes    search repo memory
+        search               find a session or memory note
+
+Reuses session-list.py's parsing helpers and inbox-render.py's pickup-list
+logic (same dir, imported not subprocessed) so rows are identical to the
+standalone `sessions` full list and the prior pickup display. On ANY error,
+exits non-zero with nothing on stdout so the caller falls back to model
+rendering. Never raises.
 
 Usage:
-  start-panel.py --session-root PATH --slug SLUG --handle HANDLE
+  start-panel.py --zone {work|plugin|personal|general} --session-root PATH
+                 --slug SLUG --handle HANDLE
                  [--current-branch REF] [--repo-root PATH] [--limit N]
 """
 import argparse
@@ -154,7 +204,8 @@ def build_inprogress(sl, root, handle, stale_days):
     """Return (rows, summary) using session-list's exact parsers for consistency.
 
     rows: in-progress only, most-recent first, each dict(name,title,updated_by,
-    updated_date,stale). summary: dict(active,paused,completed,stale).
+    updated_date,stale). summary: dict(active,paused,completed,stale). Zone-
+    agnostic — reads _index.md / session files the same way for every type.
     """
     idx = sl.parse_index(os.path.join(root, "_index.md"))
     file_names, refinement = sl.discover_session_files(root)
@@ -223,8 +274,182 @@ def build_inprogress(sl, root, handle, stale_days):
     return rows, summary, meta_by_name, all_names
 
 
+def render_inprogress_section(sl, rows, summary, overflow, stale_days, show_title):
+    """The 'In Progress' ruled section — identical shape for every zone.
+
+    `show_title` gates the title column: only story/cab sessions ever populate
+    a `Title:` field (from Jira) — plugin/personal/general structurally never
+    have one (the session name is already the descriptive label; see the
+    session-file write template). Rendering "(untitled)" for every row in
+    those zones would misrepresent an absent-by-design field as a missing one
+    — session-list.py's own baseline listing already omits the column there
+    (a plain `—`), so this mirrors that rather than inventing new behavior.
+    """
+    out = []
+    bits = [f"{summary['active']} active"]
+    if summary["paused"]:
+        bits.append(f"{summary['paused']} paused")
+    bits.append(f"{summary['completed']} completed")
+    if summary["stale"]:
+        bits.append(f"⚠ {summary['stale']} stale (>{stale_days}d)")
+    out.append(rule("In Progress   ·   " + " · ".join(bits)))
+    if rows:
+        name_w = max(len(r["name"]) for r in rows)
+        for i, r in enumerate(rows, 1):
+            date = sl.fmt_date(r["updated_date"])
+            who = r["updated_by"]
+            last = f"{who}  {date}".strip() if who not in ("—", "") else date
+            mark = "  ⚠" if r["stale"] else ""
+            if show_title:
+                title = r["title"].strip() if r["title"].strip() not in ("", "—") else "(untitled)"
+                if len(title) > TITLE_W:
+                    title = title[:TITLE_W - 1] + "…"
+                out.append(f"    {i}   {r['name'].ljust(name_w)}   {title.ljust(TITLE_W)}   {last}{mark}".rstrip())
+            else:
+                out.append(f"    {i}   {r['name'].ljust(name_w)}   {last}{mark}".rstrip())
+        if overflow:
+            out.append(f"    … +{overflow} more — type 'sessions' for the full list")
+    else:
+        out.append("    (none in progress — start with a verb above)")
+    return out
+
+
+def render_inbox_section(root, slug):
+    """The primary 'Inbox' section for plugin/personal — reuses inbox-render.py's
+    render_pickup() verbatim (acp-ajudd#142) rather than reimplementing its
+    formatting, so spawn stars, maturity-stage suffixes, provenance dimming, and
+    the captures-waiting glance all carry over with zero drift risk.
+    """
+    ir = _load_sibling("inbox-render.py")
+    text = ir.render_pickup(root, slug, slug).rstrip("\n")
+    return text.split("\n")
+
+
+def render_advanced_section(inbox_n, mem_n, include_inbox):
+    """The 'Advanced' ruled section. acp-ajudd#135: every count-bearing line
+    always renders, 0 included — only a genuine zone difference (include_inbox)
+    may drop a line, never a zero count. acp-ajudd#131 resolved 2026-07-20:
+    search is scoped to sessions + project memory only, never inbox — inbox is
+    small and self-pruning by design (act on an item, it's gone), so it never
+    needs searching; its own glance-count line already covers it.
+    """
+    out = [rule("Advanced")]
+    adv = []
+    if include_inbox:
+        adv.append(("inbox", f"{inbox_n} item(s)", "view pending items across session inboxes"))
+    adv.append(("memory", f"{mem_n} notes", "search repo memory"))
+    adv.append(("search", "", "find a session or memory note"))
+    for label, cnt, desc in adv:
+        out.append(f"    {label:<8}{cnt:<11}{desc}".rstrip())
+    return out
+
+
+def render_work(args, root, slug, branch, sl, stale_days):
+    rows, summary, meta_by_name, all_names = build_inprogress(sl, root, args.handle, stale_days)
+    overflow = 0
+    if args.limit and len(rows) > args.limit:
+        overflow = len(rows) - args.limit
+        rows = rows[:args.limit]
+    inbox_n = count_inbox_work(root) + count_inbox_per_session(root, sl, all_names)
+    mem_n = count_memory(args.repo_root)
+
+    out = [f"{slug}  ·  work repo" + (f"  ·  branch: {branch}" if branch else ""), ""]
+
+    out.append(rule("Quick start — type a verb + a target"))
+    out.append("    refine <n|KEY>   scope / plan a story           (sessionless)")
+    out.append("    code   <n|KEY>   open or resume a session       (story or CAB)")
+    out.append("    cab    <KEYS>    start a NEW CAB from story keys")
+    ex_i = ex_name = None
+    for i, r in enumerate(rows, 1):
+        if r["name"].upper().startswith("CAB-"):
+            ex_i, ex_name = i, r["name"]
+            break
+    if ex_name is None and rows:
+        ex_i, ex_name = 1, rows[0]["name"]
+    if ex_name:
+        out.append(f"    ›  resume anything below by its #   —   e.g.  {ex_i}  →  {ex_name}")
+    out.append("")
+
+    out.extend(render_inprogress_section(sl, rows, summary, overflow, stale_days, show_title=True))
+    out.append("")
+    out.extend(render_advanced_section(inbox_n, mem_n, include_inbox=True))
+
+    # Branch note — deterministic: extract a key from the branch and offer to
+    # code it, but ONLY when that session isn't already shown in the list above
+    # (no point pointing at a row the user can already see and number).
+    m = re.search(r"(BPT2-\d+|CAB-\d+)", branch, re.I)
+    if m:
+        key = m.group(1).upper()
+        if key not in {r["name"].upper() for r in rows}:
+            kmeta = meta_by_name.get(key)
+            status = (kmeta.get("status") or "").strip() if kmeta else ""
+            suffix = f" ({status})" if status else ""
+            out.append("")
+            out.append(f"You're on {key}'s branch{suffix}   →   code {key}")
+    return out
+
+
+def render_plugin_personal(args, root, slug, branch, sl, stale_days, zone_label):
+    rows, summary, _meta_by_name, _all_names = build_inprogress(sl, root, args.handle, stale_days)
+    overflow = 0
+    if args.limit and len(rows) > args.limit:
+        overflow = len(rows) - args.limit
+        rows = rows[:args.limit]
+    mem_n = count_memory(args.repo_root)
+
+    out = [f"{slug}  ·  {zone_label} repo" + (f"  ·  branch: {branch}" if branch else ""), ""]
+
+    out.append(rule("Quick start — type a verb + a target"))
+    out.append("    refine [target]   scope work → a work entry            (sessionless)")
+    out.append("    code   <n|id>     open a coding session (inbox item or in-progress)")
+    out.append("    dispatch          coordinate the inbox                 (sessionless)")
+    out.append("    capture           bank a raw idea                      (sessionless)")
+    out.append("")
+
+    # Inbox is PRIMARY for plugin/personal (acp-ajudd#142) — the happy path is
+    # "pick an inbox item," so it never lives in a collapsed Advanced tail the
+    # way it does for the work zone.
+    out.extend(render_inbox_section(root, slug))
+    out.append("")
+
+    out.extend(render_inprogress_section(sl, rows, summary, overflow, stale_days, show_title=False))
+    out.append("")
+
+    # Advanced narrows to memory/search only — inbox already shown above as primary.
+    out.extend(render_advanced_section(inbox_n=0, mem_n=mem_n, include_inbox=False))
+    return out
+
+
+def render_general(args, root, slug, branch, sl, stale_days):
+    rows, summary, _meta_by_name, all_names = build_inprogress(sl, root, args.handle, stale_days)
+    overflow = 0
+    if args.limit and len(rows) > args.limit:
+        overflow = len(rows) - args.limit
+        rows = rows[:args.limit]
+    # General has no formal work-item system (refine creates nothing there —
+    # see refine.md's zone table), but a `work`-type entry could in principle
+    # land in its inbox via a cross-repo /session:inbox handoff, so still count
+    # it rather than assume zero — the always-render rule (acp-ajudd#135) means
+    # this shows "0" honestly rather than guessing the section never applies.
+    inbox_n = count_inbox_work(root) + count_inbox_per_session(root, sl, all_names)
+    mem_n = count_memory(args.repo_root)
+
+    out = [f"{slug}  ·  general repo" + (f"  ·  branch: {branch}" if branch else ""), ""]
+
+    out.append(rule("Quick start — type a verb + a target"))
+    out.append("    refine [topic]   scope work verbally               (sessionless, no system of record)")
+    out.append("    code   [name]    open a coding session (new kickoff or resume)")
+    out.append("")
+
+    out.extend(render_inprogress_section(sl, rows, summary, overflow, stale_days, show_title=False))
+    out.append("")
+    out.extend(render_advanced_section(inbox_n, mem_n, include_inbox=True))
+    return out
+
+
 def main():
-    ap = argparse.ArgumentParser(description="Render the whole work-zone start panel.")
+    ap = argparse.ArgumentParser(description="Render the whole session:start panel for any zone.")
+    ap.add_argument("--zone", choices=["work", "plugin", "personal", "general"], default="work")
     ap.add_argument("--session-root", required=True)
     ap.add_argument("--slug", default="")
     ap.add_argument("--handle", default="")
@@ -245,97 +470,12 @@ def main():
     sl = _load_sibling("session-list.py")
     stale_days = getattr(sl, "STALE_DAYS_DEFAULT", 14)
 
-    rows, summary, meta_by_name, all_names = build_inprogress(sl, root, args.handle, stale_days)
-
-    overflow = 0
-    if args.limit and len(rows) > args.limit:
-        overflow = len(rows) - args.limit
-        rows = rows[:args.limit]
-
-    inbox_n = count_inbox_work(root) + count_inbox_per_session(root, sl, all_names)
-    mem_n = count_memory(args.repo_root)
-
-    out = []
-
-    # Header line.
-    head = f"{slug}  ·  work repo"
-    if branch:
-        head += f"  ·  branch: {branch}"
-    out.append(head)
-    out.append("")
-
-    # Quick start (verbs).
-    out.append(rule("Quick start — type a verb + a target"))
-    out.append("    refine <n|KEY>   scope / plan a story           (sessionless)")
-    out.append("    code   <n|KEY>   open or resume a session       (story or CAB)")
-    out.append("    cab    <KEYS>    start a NEW CAB from story keys")
-    # Example hint — prefer a CAB row so the "resume a CAB by #" point lands.
-    ex_i = ex_name = None
-    for i, r in enumerate(rows, 1):
-        if r["name"].upper().startswith("CAB-"):
-            ex_i, ex_name = i, r["name"]
-            break
-    if ex_name is None and rows:
-        ex_i, ex_name = 1, rows[0]["name"]
-    if ex_name:
-        out.append(f"    ›  resume anything below by its #   —   e.g.  {ex_i}  →  {ex_name}")
-    out.append("")
-
-    # In Progress (detailed, capped) with the summary folded into the header.
-    bits = [f"{summary['active']} active"]
-    if summary["paused"]:
-        bits.append(f"{summary['paused']} paused")
-    bits.append(f"{summary['completed']} completed")
-    if summary["stale"]:
-        bits.append(f"⚠ {summary['stale']} stale (>{stale_days}d)")
-    out.append(rule("In Progress   ·   " + " · ".join(bits)))
-    if rows:
-        name_w = max(len(r["name"]) for r in rows)
-        for i, r in enumerate(rows, 1):
-            title = r["title"].strip() if r["title"].strip() not in ("", "—") else "(untitled)"
-            if len(title) > TITLE_W:
-                title = title[:TITLE_W - 1] + "…"
-            date = sl.fmt_date(r["updated_date"])
-            who = r["updated_by"]
-            last = f"{who}  {date}".strip() if who not in ("—", "") else date
-            mark = "  ⚠" if r["stale"] else ""
-            out.append(f"    {i}   {r['name'].ljust(name_w)}   {title.ljust(TITLE_W)}   {last}{mark}".rstrip())
-        if overflow:
-            out.append(f"    … +{overflow} more — type 'sessions' for the full list")
+    if args.zone == "work":
+        out = render_work(args, root, slug, branch, sl, stale_days)
+    elif args.zone in ("plugin", "personal"):
+        out = render_plugin_personal(args, root, slug, branch, sl, stale_days, args.zone)
     else:
-        out.append("    (none in progress — start with a verb above)")
-    out.append("")
-
-    # Advanced (parked — acp-ajudd#131). Aligned columns: label · count · desc.
-    # acp-ajudd#135: a menu line is never hidden because its count is 0 — the line's
-    # presence tells the user the capability exists here. A 0 renders as "0", it is
-    # not omitted. Only a genuine zone/project-type difference may drop a section.
-    # acp-ajudd#138: header shortened from "Advanced  (functionality still being
-    # refined)" — the long qualifier was observed dropped by the echoing model twice
-    # live (content rows survived, this header+rule line didn't); a shorter trailing
-    # header reduces that risk surface. Also just more honest — inbox/memory are no
-    # longer "being refined," they're verified working.
-    out.append(rule("Advanced"))
-    adv = [
-        ("inbox", f"{inbox_n} item(s)", "view pending items across session inboxes"),
-        ("memory", f"{mem_n} notes", "search repo memory"),
-        ("search", "", "find a session, inbox item, or note"),
-    ]
-    for label, cnt, desc in adv:
-        out.append(f"    {label:<8}{cnt:<11}{desc}".rstrip())
-
-    # Branch note — deterministic: extract a key from the branch and offer to
-    # code it, but ONLY when that session isn't already shown in the list above
-    # (no point pointing at a row the user can already see and number).
-    m = re.search(r"(BPT2-\d+|CAB-\d+)", branch, re.I)
-    if m:
-        key = m.group(1).upper()
-        if key not in {r["name"].upper() for r in rows}:
-            kmeta = meta_by_name.get(key)
-            status = (kmeta.get("status") or "").strip() if kmeta else ""
-            suffix = f" ({status})" if status else ""
-            out.append("")
-            out.append(f"You're on {key}'s branch{suffix}   →   code {key}")
+        out = render_general(args, root, slug, branch, sl, stale_days)
 
     sys.stdout.write("\n".join(out) + "\n")
     return 0

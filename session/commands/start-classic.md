@@ -5,7 +5,7 @@ description: Session start — classic flow (Steps 2-4). Loaded by the start.md 
 
 # Session Start — Classic Flow (Steps 2-4)
 
-Loaded by `start.md` (the dispatcher) once zone and the config-cascade have been resolved. Context already in scope: `slug`, `session_root`, `handle`, `zone` (`plugin` | `story` | `cab` | `personal` | `general`), and `filter_mine` (if Step 0's `mine` fast-path set it). This is the **`startFlow: classic`** fallback for every zone — one file, zone-aware inside, same shape as `start-wizard.md` (acp-ajudd#124); the default flow is `start-wizard.md`, classic is opt-in via `startFlow: classic`. Renamed from `start-plugin-classic.md` (acp-ajudd#123 perf-tune), which also pushed this flow's three model-generated blocks — the Step 3 routing block, the plugin/personal inbox display, and the plugin-session resume block — into scripts (`routing-block.py`; `inbox-render.py`'s `pickup`/`resume` modes; `resume-block.py`), so the command echoes deterministic stdout instead of composing that text token-by-token on every session:start. Each call still has a documented model-rendered fallback for when the script is unavailable — behavior is unchanged either way, only the common-path cost drops.
+Loaded by `start.md` (the dispatcher) once zone and the config-cascade have been resolved. Context already in scope: `slug`, `session_root`, `handle`, `zone` (`plugin` | `story` | `cab` | `personal` | `general`), and `filter_mine` (if Step 0's `mine` fast-path set it). This is the **`startFlow: classic`** fallback for every zone — one file, zone-aware inside, same shape as `start-wizard.md` (acp-ajudd#124); the default flow is `start-wizard.md`, classic is opt-in via `startFlow: classic`. Renamed from `start-plugin-classic.md` (acp-ajudd#123 perf-tune), which also pushed this flow's three model-generated blocks — the Step 3 routing block, the plugin/personal inbox display, and the plugin-session resume block — into scripts (`routing-block.py`; `inbox-render.py`'s `pickup`/`resume` modes; `resume-block.py`), so the command echoes deterministic stdout instead of composing that text token-by-token on every session:start. Each call still has a documented model-rendered fallback for when the script is unavailable — behavior is unchanged either way, only the common-path cost drops. **acp-ajudd#132 later collapsed the story/cab Step 3 render into one script (`start-panel.py`); acp-ajudd#142 (2026-07-20) made `start-panel.py` zone-aware and extended the same one-echoed-block treatment to plugin/personal/general, retiring their `routing-block.py` + `inbox-render.py pickup` + `session-list.py` assembly.**
 
 ## Instructions
 
@@ -29,7 +29,7 @@ The listing is rendered by a helper script so its deterministic formatting (grou
    The prune runs first and completes before the listing (and before any commit a later step such as `migrate` might make). If it prints a `Retention: archived …` line, relay it to the user before the table so an archival is never silent.
    (`${CLAUDE_PLUGIN_ROOT}` is used when set; otherwise the script resolves from the marketplace clone — derive `<pluginMarketplaceName>` as in the dispatcher's Zone Detection.) The script reads `_index.md` (7-col current / 6-col legacy), the per-session inbox files (`_inbox_<name>.md`, archives excluded), the `_active` marker, and the session `.md` filenames itself, then prints the finished, aligned, grouped table — default columns, with completed and `refinement-*` sessions hidden. **Display its stdout exactly as printed: do not re-align, re-order, restate, or wrap it in a code fence.**
 
-**Work-zone ordering carve-out (acp-ajudd#130 / #132).** For the **story / cab** zones only, do **not** emit the session table in this step — run the retention prune above (and relay any `Retention:` line), but **defer the whole panel to Step 3**, which renders it in one shot via `start-panel.py` (verbs → In Progress → Advanced). Every other zone (plugin / personal / general) emits the table here exactly as described — they are unchanged.
+**Every zone defers to the one-echoed-block panel (acp-ajudd#130/#132/#142).** Do **not** emit the session table in this step for **any** zone — run the retention prune above (and relay any `Retention:` line), but **defer the whole panel to Step 3**, which renders it in one shot via `start-panel.py --zone <zone>` (verbs → primary content → Advanced, shaped per zone). This was originally a story/cab-only carve-out (#130/#132); #142 extends it to plugin/personal/general too, retiring their old three-piece assembly (`routing-block.py` + `inbox-render.py`'s `pickup` call + `session-list.py`) the same way story/cab already collapsed to one script call.
 
    **`_active` self-heal (acp-ajudd#94).** During this `--rebuild-index` pass the script also **clears an `_active` marker that points at a session whose status is `completed`** — a completed session can never be the active pointer. (Under the un-bundled ship/close model a session may legitimately sit *shipped but still active* until `/session:finish` runs; once it is `completed`, a lingering `_active` is stale and is removed here.) Fail-safe: a heal error never breaks the listing.
 
@@ -113,44 +113,21 @@ Every type also accepts these same inputs (in addition to its type-specific ones
 
 **Plugin project:**
 
-Sessions are **item-driven**: new work always starts from a `work` entry in the inbox — there are no blank or plugin-named sessions. The sessions table (above) lists in-progress feature sessions to `code` (resume); the consolidated inbox below holds the `work` you `code` (graduate) and any `capture`s awaiting disposition. Scoping new work first is `refine`.
+Sessions are **item-driven**: new work always starts from a `work` entry in the inbox — there are no blank or plugin-named sessions. Scoping new work first is `refine`.
 
-**Show the consolidated inbox — script-rendered (acp-ajudd#123).** Run `inbox-render.py`'s `pickup` mode and display its stdout verbatim (no re-ordering, no re-formatting) — it applies **layout B** (description-first, provenance dim on a second line — full spec in `references/inbox-convention.md`) directly:
+**One echoed panel (acp-ajudd#132/#142).** The whole plugin-zone panel — `Quick start` (verbs, including the secondary `dispatch`/`capture` lines), `Inbox` (primary — the pickup list you `code` to graduate), `In Progress` (sessions), and `Advanced` (`memory`/`search` only — inbox is already primary above, not collapsed here) — is rendered by **one script**, the same `start-panel.py` the work zone uses, zone-branched via `--zone plugin`. This retires the old three-piece assembly (`routing-block.py` + `inbox-render.py`'s `pickup` call + `session-list.py`) — do **not** reassemble it by hand. Run it and display stdout **exactly as printed** — no code fence, no restating:
 ```bash
 ROOT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}"
-IR="$ROOT/scripts/inbox-render.py"
-if command -v python3 >/dev/null 2>&1 && [ -f "$IR" ]; then
-  python3 "$IR" pickup --session-root "<session_root>" --slug "<slug>" --current-slug "<slug>"
-fi
+BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+RTOP=$(git rev-parse --show-toplevel 2>/dev/null)
+python3 "$ROOT/scripts/start-panel.py" --zone plugin --session-root "<session_root>" --slug "<slug>" \
+  --handle "<handle>" --current-branch "$BRANCH" --repo-root "$RTOP" --limit 5
 ```
-Its stdout is the numbered pickup list (`work`-only — `new`/`refining`/`ready`, spawns included and starred) plus the trailing "Captures waiting: N" glance line, or `Inbox: none — scope new work with 'refine <topic>'` when there is no work. Reading captures (on request only — `check captures`, or "read the capture from `<repo>`") still follows `references/inbox-convention.md` § Captures inbound: disposition each — **promote** (→ `refining`), **discard**, **absorb into the current session**, or **feed a refinement** — the three non-promote fates **archive** the capture.
+`start-panel.py`'s Inbox section reuses `inbox-render.py`'s `render_pickup()`/`collect_work_items()` as library calls (not a second subprocess) — layout B, `[spawn]` starred, `· <stage>` suffix for `new`/`refining`, provenance dimmed, and the trailing "Captures waiting: N" glance all carry over unchanged. Reading captures (on request only — `check captures`, or "read the capture from `<repo>`") still follows `references/inbox-convention.md` § Captures inbound: disposition each — **promote** (→ `refining`), **discard**, **absorb into the current session**, or **feed a refinement** — the three non-promote fates **archive** the capture.
 
-**Fallback (script unavailable)** — if `python3` is absent, the script exits non-zero, or stdout is empty, render it yourself using the Step 2 rendered inbox: number each `work` entry (`status: new`/`refining`/`ready`) with its stable `[<id>]` before the description, `[spawn]` starred, `· <stage>` suffix for `new`/`refining`, provenance dimmed on the line below (drop `<slug>` when it equals the current repo slug; omit `(<source-type>)` for legacy items; tolerate spaced/unspaced `/`); parse the `> [type: … · status: …]` line under each header (legacy forms tolerated — see `references/inbox-convention.md` § Inbox Model back-compat; missing line → `type: work · status: ready`); `capture`-type entries never appear in the list — count them for a trailing `Captures waiting: N — say "check captures" to read them` line instead (omit if zero); if there is no `work`: `Inbox: none — scope new work with 'refine <topic>'`.
+**Echo-compliance applies here exactly as it does for the work zone (acp-ajudd#133/#138) — see that section below for the full note; it is not repeated per zone.** Your entire response for this step is the command's stdout, character-for-character — no preamble, no restated question, no `AskUserQuestion`, and no dropped header/rule line.
 
-**Output the routing block — script-rendered (acp-ajudd#123).** Run `routing-block.py` for this zone and display its stdout verbatim — it prints the type-specific `Refine / Code` + `Coordinate (advanced)` lines followed by the shared **Search by** block in one call:
-```bash
-ROUTING="$ROOT/scripts/routing-block.py"
-if command -v python3 >/dev/null 2>&1 && [ -f "$ROUTING" ]; then
-  python3 "$ROUTING" --zone plugin
-fi
-```
-**Fallback (script unavailable)** — render the block yourself:
-```
-  Refine / Code:
-    refine [target]   — scope work → a `work` entry (planning, sessionless; never a session file)
-                        bare = new work · refine <n|id> = edit an existing entry
-    code <n|id|name>  — open a coding session (the file decides):
-                        a `work` entry (by list <n> / [id]) graduates into a fresh session ·
-                        an in-progress session (by name, or its table #) resumes
-
-  Coordinate (advanced):
-    dispatch          — assume the dispatch role: read the inbox, sequence/bundle ready work,
-                        hand notes to coding sessions (sessionless; runs /session:dispatch)
-    capture           — assume the capture role: bank a raw idea (with an optional viability
-                        sniff) as a `capture`-type entry for refine to triage
-                        (sessionless; runs /session:capture)
-```
-plus the shared **Search by** block (§ 87-97 above). The `dispatch` and `capture` lines are **secondary/advanced lines under the primary two verbs** — keep the refine/code headline clean; the coordination/ideation stations are discoverable in-zone without cluttering it (acp-ajudd#71 / #96). They appear **only in plugin/personal** (the inbox zones where the dispatch model applies), never in work/general.
+**Fallback (script unavailable)** — if `python3` is absent, the script exits non-zero, or stdout is empty, render it yourself in the same order and shape: the verbs block (refine/code + dispatch/capture, underlined header), then the Inbox list (number each `work` entry with its stable `[<id>]`, `[spawn]` starred, `· <stage>` suffix, provenance dimmed below — parse the `> [type: … · status: …]` line per `references/inbox-convention.md` § Inbox Model back-compat; `capture`-type entries never appear in the list, only in the trailing `Captures waiting: N` glance; `Inbox: none — scope new work with 'refine <topic>'` if empty), then `In Progress` (`session-list.py --limit 5`, no title column), then `Advanced` (`memory`/`search` only).
 
 **Type-specific accepted inputs** (plus the shared inputs above):
 - `dispatch` → read `commands/dispatch.md` and run it (assume the dispatch role, orient on the inbox — sessionless; creates no session file).
@@ -171,7 +148,7 @@ plus the shared **Search by** block (§ 87-97 above). The `dispatch` and `captur
 ROOT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}"
 BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
 RTOP=$(git rev-parse --show-toplevel 2>/dev/null)
-python3 "$ROOT/scripts/start-panel.py" --session-root "<session_root>" --slug "<slug>" \
+python3 "$ROOT/scripts/start-panel.py" --zone work --session-root "<session_root>" --slug "<slug>" \
   --handle "<handle>" --current-branch "$BRANCH" --repo-root "$RTOP" --limit 5
 ```
 `start-panel.py` reuses `session-list.py`'s parsers (so its In Progress rows match the `sessions` full list), folds the active/completed/stale summary into the `In Progress` header, caps at `--limit` with a `… +M more — type 'sessions'` overflow, shows `@who` when the session records it (else just the date), and prints the branch note only when that session isn't already in the list. (This replaces the former three-piece assembly of `routing-block.py --search none` + `session-list.py --limit` + a hand-written more-line — the assembly the model kept deviating from.) If Step 2's prune printed a `Retention:` line, it was already relayed there.
@@ -207,40 +184,15 @@ Then wait for one free-text reply. **Do not use AskUserQuestion.**
 
 Identical model to plugin (per design — plugin and personal behave the same). Sessions are item-driven: new work starts from a `work` entry in the inbox, never blank.
 
-**Show the consolidated inbox — script-rendered (acp-ajudd#123), identical call to the plugin block:**
+**One echoed panel, identical mechanics to the plugin block above (acp-ajudd#132/#142) — only `--zone personal` differs:**
 ```bash
 ROOT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}"
-IR="$ROOT/scripts/inbox-render.py"
-if command -v python3 >/dev/null 2>&1 && [ -f "$IR" ]; then
-  python3 "$IR" pickup --session-root "<session_root>" --slug "<slug>" --current-slug "<slug>"
-fi
+BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+RTOP=$(git rev-parse --show-toplevel 2>/dev/null)
+python3 "$ROOT/scripts/start-panel.py" --zone personal --session-root "<session_root>" --slug "<slug>" \
+  --handle "<handle>" --current-branch "$BRANCH" --repo-root "$RTOP" --limit 5
 ```
-Its stdout is the numbered layout-B pickup list plus the trailing "Captures waiting: N" glance line — see the plugin block above for the full rendering-rules fallback (identical for personal). Reading captures on request follows the same `references/inbox-convention.md` § Captures inbound flow.
-
-**Output the routing block — script-rendered (acp-ajudd#123), identical call to the plugin block:**
-```bash
-ROUTING="$ROOT/scripts/routing-block.py"
-if command -v python3 >/dev/null 2>&1 && [ -f "$ROUTING" ]; then
-  python3 "$ROUTING" --zone personal
-fi
-```
-**Fallback (script unavailable)** — render the block yourself (identical to the plugin block's fallback above), plus the shared **Search by** block:
-```
-  Refine / Code:
-    refine [target]   — scope work → a `work` entry (planning, sessionless; never a session file)
-                        bare = new work · refine <n|id> = edit an existing entry
-    code <n|id|name>  — open a coding session (the file decides):
-                        a `work` entry (by list <n> / [id]) graduates into a fresh session ·
-                        an in-progress session (by name, or its table #) resumes
-
-  Coordinate (advanced):
-    dispatch          — assume the dispatch role: read the inbox, sequence/bundle ready work,
-                        hand notes to coding sessions (sessionless; runs /session:dispatch)
-    capture           — assume the capture role: bank a raw idea (with an optional viability
-                        sniff) as a `capture`-type entry for refine to triage
-                        (sessionless; runs /session:capture)
-```
-Same as the plugin block: the `dispatch` and `capture` lines are secondary/advanced lines under refine/code, shown only in plugin/personal (acp-ajudd#71 / #96).
+Same `Quick start` / `Inbox` (primary) / `In Progress` / `Advanced` (`memory`/`search` only) shape, same echo-compliance rule, same fallback (render it yourself in the same order and shape — see the plugin block above for the full fallback description, identical for personal). Reading captures on request follows the same `references/inbox-convention.md` § Captures inbound flow.
 
 **Type-specific accepted inputs** (plus the shared inputs above):
 - `dispatch` → read `commands/dispatch.md` and run it (assume the dispatch role, orient on the inbox — sessionless; creates no session file).
@@ -254,22 +206,17 @@ Same as the plugin block: the `dispatch` and `capture` lines are secondary/advan
 
 **General / unknown project:**
 
-If the rendered inbox (Step 2) has entries, show a compact summary of the `work` (`status: new` / `refining` / `ready`) before the routing line. Exclude `capture`-type entries; if any exist, show one line `Captures waiting: N — say "check captures" to read them` (captures-waiting glance — acp-ajudd#10; read/disposition only on request, per `references/inbox-convention.md` § Captures inbound).
-
-**Output the routing block — script-rendered (acp-ajudd#123).** Run `routing-block.py` for this zone and display its stdout verbatim:
+**One echoed panel (acp-ajudd#132/#142).** General has no formal work-item system (`refine` creates nothing here — a general repo has no system of record), so there is no primary Inbox section — just `Quick start` (`refine`/`code` only — no `cab`, no `dispatch`/`capture`), `In Progress` (sessions), and `Advanced` (`inbox`/`memory`/`search`, all always-rendered per acp-ajudd#135 even though inbox is normally 0 here — a `work`-type entry could in principle still land in this zone's inbox via a cross-repo `/session:inbox` handoff, so it's counted honestly rather than assumed away):
 ```bash
-ROUTING="$ROOT/scripts/routing-block.py"
-if command -v python3 >/dev/null 2>&1 && [ -f "$ROUTING" ]; then
-  python3 "$ROUTING" --zone general
-fi
+ROOT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/session}"
+BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+RTOP=$(git rev-parse --show-toplevel 2>/dev/null)
+python3 "$ROOT/scripts/start-panel.py" --zone general --session-root "<session_root>" --slug "<slug>" \
+  --handle "<handle>" --current-branch "$BRANCH" --repo-root "$RTOP" --limit 5
 ```
-**Fallback (script unavailable)** — render the block yourself, plus the shared **Search by** block (§ 87-97 above):
-```
-  Refine / Code:
-    refine [topic]   — scope work verbally (a general repo has no system of record; planning, sessionless)
-    code [name]      — open a coding session (the file decides):
-                       a name with no session yet → new kickoff · an existing session → resume
-```
+Same echo-compliance rule as the other zones (§ Work project above). If any `capture`-type entries exist in this zone's inbox, they still surface only via the "Captures waiting: N" glance (never in a primary list) — read/disposition only on request, per `references/inbox-convention.md` § Captures inbound.
+
+**Fallback (script unavailable)** — render the panel yourself in the same order and shape: `Quick start` (`refine [topic]` / `code [name]`, underlined header), `In Progress` (`session-list.py --limit 5`, no title column), `Advanced` (`inbox`/`memory`/`search`).
 
 **Type-specific accepted inputs** (plus the shared inputs above):
 - `code <name>` → open a coding session named `<name>` — the file decides: no session file with that name → new kickoff (if no name/context in the reply, ask "Name and what you're working on?" as follow-up); existing session → resume it.
