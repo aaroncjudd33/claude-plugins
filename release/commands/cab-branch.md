@@ -7,6 +7,16 @@ description: Phase 2 — Create the release branch and GitHub PR. Run after all 
 
 Creates the release branch and GitHub PR. This phase requires code to be ready — feature PRs merged (CDK) or feature branches built (VO).
 
+**Print progress as you go — one line per major step (acp-ajudd#146).** Print one line immediately after each step completes, before starting the next:
+```
+✓ Session state loaded
+✓ Readiness confirmed
+✓ Release branch created: release/<CAB-XXX>
+✓ PR opened: #<n>
+✓ PR approval requested
+✓ Session state updated
+```
+
 ## Instructions
 
 ### 1. Load session state

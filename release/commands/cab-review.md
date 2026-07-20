@@ -7,6 +7,17 @@ description: Phase 4 — Submit the CAB card for review (Send For Review transit
 
 Submits the CAB card for review via the Send For Review Jira transition and assigns Sudhakar Seerapu as the post-review assignee.
 
+**Print progress as you go — one line per major step (acp-ajudd#146).** Print one line immediately after each step completes, before starting the next:
+```
+✓ Session state loaded, readiness confirmed
+✓ Sent for review
+✓ Post-review manager assigned
+✓ CAB chat notified               ← or "skipped"
+✓ Story chats notified            ← or "skipped"
+✓ Calendar invite sent            ← or "skipped"
+✓ Session state updated
+```
+
 ## Instructions
 
 ### 1. Load session state

@@ -7,6 +7,15 @@ description: Phase 3 — Populate all CAB card ADF fields, add deployment commen
 
 Populates the CAB card's ADF fields, adds deployment comments to BPT2 stories, and registers all artifacts in the browser links registry. Story-to-CAB issue links are already established in Phase 1.
 
+**Print progress as you go — one line per major step (acp-ajudd#146).** Print one line immediately after each step completes, before starting the next:
+```
+✓ Session state loaded
+✓ ADF fields populated
+✓ Comments posted to BPT2 stories + CAB
+✓ Browser links registered
+✓ Session state updated
+```
+
 ## Instructions
 
 ### 1. Load session state

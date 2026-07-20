@@ -11,6 +11,17 @@ Loaded either by `start.md`'s Step 0 fast-path (an arg that resolves directly to
 
 **Running this pickup IS the mandatory consume — never code straight from the pasted order (acp-ajudd#115).** `/session:start code #X` is the coding session's required first action: it establishes the session AND **consumes the inbox item** (fold-then-archive at Work Pickup step 5 below, #40). **`Self-finalize` governs the CLOSE, not the START** — a `Self-finalize: yes` work order tells you to run `/session:finish` yourself at the end; it is *never* license to skip this pickup and build directly from the paste. Skipping it is the #13 state-exclusivity violation #115 ends (the item stays live as `ready` while the session ships). If it is ever skipped anyway, `finish-close.py` reconciles the still-live item at close (the structural net) — but the net is the backstop, not the plan: run this pickup first.
 
+**Print progress as you go — one line per major step, for any NEW session kickoff (story/CAB/plugin/personal), not silence until the end (acp-ajudd#146).** A new-kickoff route chains several slow, sequential operations — Jira transition, git branch creation, epic-memory check, Teams chat resolution, session-file write, index update — and a user watching it run has no way to tell "still working" from "stuck" without per-step feedback. This was observed live: a story kickoff (`/session:start BPT2-6532`) ran for 12m57s end-to-end with nothing but generic batched summaries ("Searched for N patterns, ran M shell commands") — no indication of which of the several steps was in progress or just completed. After each major step below completes, print one line immediately — before starting the next step, not batched at the end:
+```
+✓ Jira BPT2-XXXX transitioned to In Progress
+✓ Branch feature/BPT2-XXXX-... created from origin/<base>
+✓ Epic memory checked/loaded          ← story/cab only; omit if no epic step for this type
+✓ Teams chat resolved: <name>         ← or "skipped"
+✓ Session file written
+✓ Session index updated
+```
+Adapt the checklist to whichever type/route is actually running (Plugin/Personal graduation has no Jira-transition or branch-base-resolution lines; CAB new routes to `/release:create` and inherits its own progress lines instead). This is in addition to, not instead of, each step's own existing output (batch prompts, the final summary) — a lightweight running checkmark so silence is never mistaken for a hang. Applies to every "new kickoff" route in Step 9, not only Story.
+
 ---
 
 ### 4. User Picks — Load or Create Session File
