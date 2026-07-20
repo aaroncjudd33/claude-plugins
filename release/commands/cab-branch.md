@@ -9,12 +9,12 @@ Creates the release branch and GitHub PR. This phase requires code to be ready �
 
 **Print progress as you go — one line per major step (acp-ajudd#146).** Print one line immediately after each step completes, before starting the next:
 ```
-✓ Session state loaded
-✓ Readiness confirmed
-✓ Release branch created: release/<CAB-XXX>
-✓ PR opened: #<n>
-✓ PR approval requested
-✓ Session state updated
+✨ Session state loaded
+✨ Readiness confirmed
+✨ Release branch created: release/<CAB-XXX>
+✨ PR opened: #<n>
+✨ PR approval requested
+✨ Session state updated
 ```
 **This overrides the general "batch independent tool calls in parallel" habit (acp-ajudd#146 follow-up).** Each line above is a hard turn boundary — stop and print the checkmark as your entire response for that turn before making the next tool call, even if batching would be faster.
 

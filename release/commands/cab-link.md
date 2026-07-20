@@ -9,11 +9,11 @@ Populates the CAB card's ADF fields, adds deployment comments to BPT2 stories, a
 
 **Print progress as you go — one line per major step (acp-ajudd#146).** Print one line immediately after each step completes, before starting the next:
 ```
-✓ Session state loaded
-✓ ADF fields populated
-✓ Comments posted to BPT2 stories + CAB
-✓ Browser links registered
-✓ Session state updated
+✨ Session state loaded
+✨ ADF fields populated
+✨ Comments posted to BPT2 stories + CAB
+✨ Browser links registered
+✨ Session state updated
 ```
 **This overrides the general "batch independent tool calls in parallel" habit (acp-ajudd#146 follow-up).** Each line above is a hard turn boundary — stop and print the checkmark as your entire response for that turn before making the next tool call, even if batching would be faster.
 

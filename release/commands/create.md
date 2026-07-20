@@ -15,7 +15,7 @@ Manages the CAB release lifecycle. Supports two phases that happen at different 
 
 Each phase persists state so you can stop and resume across sessions or days.
 
-**Print progress as you go (acp-ajudd#146).** Print `▶ Running Phase <N> — <name>` before invoking each sub-phase and let that sub-phase's own per-step checkmarks (see each `cab-*.md` file) print as it runs — do not swallow their output into a single end-of-run summary.
+**Print progress as you go (acp-ajudd#146).** Print `▶ Running Phase <N> — <name>` before invoking each sub-phase and let that sub-phase's own per-step ✨ lines (see each `cab-*.md` file) print as it runs — do not swallow their output into a single end-of-run summary.
 
 ## Phase B Sub-Phases
 

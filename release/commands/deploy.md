@@ -19,17 +19,17 @@ Before invoking this command, confirm:
 
 **Print progress as you go — one line per major step (acp-ajudd#146).** A deploy runs several slow sequential steps (PR merge, CI monitoring, prod-gate wait, post-deploy checks) with real gaps between them — print one line immediately after each completes, before starting the next, so a multi-minute wait is never mistaken for a hang:
 ```
-✓ CAB card identified: <CAB-XXX>
-✓ Project type detected: <CDK|VO>
-✓ Readiness confirmed (Implementation status)
-✓ Deploy calendar invite sent      ← or "skipped"
-✓ PR found: #<n>
-✓ Merged/pushed to master
-✓ Build/test job passed
-✓ Prod deploy gate cleared         ← or "waiting on approval — notified"
-✓ Deploy job completed
-✓ Post-deploy verification passed
-✓ CAB card closed
+✨ CAB card identified: <CAB-XXX>
+✨ Project type detected: <CDK|VO>
+✨ Readiness confirmed (Implementation status)
+✨ Deploy calendar invite sent      ← or "skipped"
+✨ PR found: #<n>
+✨ Merged/pushed to master
+✨ Build/test job passed
+✨ Prod deploy gate cleared         ← or "waiting on approval — notified"
+✨ Deploy job completed
+✨ Post-deploy verification passed
+✨ CAB card closed
 ```
 Adapt the checklist to whichever branch (CDK vs VO) is actually running.
 

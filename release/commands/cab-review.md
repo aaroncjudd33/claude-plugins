@@ -9,13 +9,13 @@ Submits the CAB card for review via the Send For Review Jira transition and assi
 
 **Print progress as you go — one line per major step (acp-ajudd#146).** Print one line immediately after each step completes, before starting the next:
 ```
-✓ Session state loaded, readiness confirmed
-✓ Sent for review
-✓ Post-review manager assigned
-✓ CAB chat notified               ← or "skipped"
-✓ Story chats notified            ← or "skipped"
-✓ Calendar invite sent            ← or "skipped"
-✓ Session state updated
+✨ Session state loaded, readiness confirmed
+✨ Sent for review
+✨ Post-review manager assigned
+✨ CAB chat notified               ← or "skipped"
+✨ Story chats notified            ← or "skipped"
+✨ Calendar invite sent            ← or "skipped"
+✨ Session state updated
 ```
 **This overrides the general "batch independent tool calls in parallel" habit (acp-ajudd#146 follow-up).** Each line above is a hard turn boundary — stop and print the checkmark as your entire response for that turn before making the next tool call, even if batching would be faster.
 

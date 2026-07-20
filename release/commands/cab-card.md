@@ -13,18 +13,18 @@ Creates the CAB card in Jira and initializes the release session file. This phas
 - **BPT2 stories** — feature/bug-fix stories being deployed
 - **CAB card** — IT Software Change in the CAB Jira project (what this phase creates)
 
-**Print progress as you go — one line per major step (acp-ajudd#146).** This phase chains several slow Jira/Teams calls in sequence; print one line immediately after each completes, before starting the next — do not batch silently until the final summary:
+**Print progress as you go — one line per major step (acp-ajudd#146).** Before Step 1 does anything else, print `Got it — starting CAB Card (Phase 1). I'll post a ✨ line after each step.` as a plain one-line statement (no reply needed). This phase then chains several slow Jira/Teams calls in sequence; print one line immediately after each completes, before starting the next — do not batch silently until the final summary:
 ```
-✓ Context loaded (story keys, team roster, known chats)
-✓ BPT2 CAB confirmed: <key>
-✓ BPT2 stories fetched: N
-✓ CAB card created: <CAB-XXX>
-✓ BPT2 CAB story assigned + transitioned
-✓ Stories linked to CAB card
-✓ CAB Teams chat resolved: <name>  ← or "skipped"
-✓ Session state written
+✨ Context loaded (story keys, team roster, known chats)
+✨ BPT2 CAB confirmed: <key>
+✨ BPT2 stories fetched: N
+✨ CAB card created: <CAB-XXX>
+✨ BPT2 CAB story assigned + transitioned
+✨ Stories linked to CAB card
+✨ CAB Teams chat resolved: <name>  ← or "skipped"
+✨ Session state written
 ```
-**This overrides the general "batch independent tool calls in parallel" habit (acp-ajudd#146 follow-up).** Each line above is a hard turn boundary — after the tool call(s) for that step resolve, your entire response for that turn is the checkmark line, then stop. Do not fold the next step's tool call into the same response just because it would be faster. An extra turn is cheaper than a silent multi-minute gap.
+**This overrides the general "batch independent tool calls in parallel" habit (acp-ajudd#146 follow-up).** Each line above is a hard turn boundary — after the tool call(s) for that step resolve, your entire response for that turn is the ✨ line, then stop. Do not fold the next step's tool call into the same response just because it would be faster. An extra turn is cheaper than a silent multi-minute gap.
 
 ## Instructions
 
