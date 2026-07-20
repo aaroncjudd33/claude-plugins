@@ -1,14 +1,26 @@
 ---
 name: migrate
 description: One-time migration — move session files AND project memories from local ~/.claude into the repo under .claude/ so they are git-tracked and shared across developers.
-argument-hint: "[--force]"
+argument-hint: "[--force] [--vetted]"
 ---
 
 # Session Migrate
 
 Move **the current repo's** session files from local memory into the git repo under `.claude/sessions/`. Run this from within any session on any repo — it uses `pwd` to determine which repo to migrate. After migration all session reads and writes use the repo path. Local files are preserved as a backup but no longer updated.
 
-Run once per project. Use `--force` to re-sync local → repo if repo sessions get corrupted.
+Run once per project. Use `--force` to re-sync local → repo if repo sessions get corrupted. Use `--vetted` to skip the two reasoning-heavy steps (secrets/PII scan in Step 5a, feature-label walkthrough in Step 11b's 2a) when the content has already been reviewed — the flag is the confirmation, no extra prompt, same precedent as `--force`.
+
+**Print progress as you go — one line per major step, not silence until the end (acp-ajudd#145).** This command has enough sequential steps (secrets scan, session copy, history copy, inbox copy, memory copy, labeling, `MEMORY.md` regen, commit) that a user watching it run has no way to tell "still working" from "stuck" without per-step feedback. After each major step below completes, print one line before moving to the next:
+```
+✓ Secrets/PII scan complete — N file(s) flagged  ← or "skipped (--vetted)"
+✓ Session files copied — N file(s)
+✓ History + inbox/backlog copied
+✓ Project memory copied — N file(s) added, K skipped
+✓ Feature labels applied  ← or "skipped (--vetted)"
+✓ MEMORY.md regenerated
+✓ Committed and pushed
+```
+This is in addition to, not instead of, each step's own existing output (the batch confirmations, the final summary) — it's a lightweight running checkmark so silence never gets mistaken for a hang.
 
 **Example:** Working in a VO story session and want to migrate that repo's sessions? Just run `/session:migrate` — it picks up `pwd` and migrates the VO repo's local session files into `<vo-repo>/.claude/sessions/`. You don't need to leave your current session or context.
 
@@ -26,6 +38,7 @@ git rev-parse --show-toplevel
 
 - **Not a git repo:** stop — "Session migrate requires a git repository."
 - **`--force` flag present:** skip the "already migrated" guard in step 2 and proceed.
+- **`--vetted` flag present:** note it for Steps 5a and 11b's label walkthrough (both skip below) — the flag itself is the user's explicit assertion that this content was already reviewed; no separate confirmation prompt (same precedent as `--force`).
 
 ### 2. Guard Against Re-Run
 
@@ -89,7 +102,9 @@ Read `handle` from `~/.claude/plugins/user-config.json` (`user.handle`). If abse
 
 ### 5a. Pre-Migration Secrets & PII Scan (BLOCKING)
 
-**Before copying anything into the repo, scan every candidate file for secrets and PII.** Migration git-tracks these files permanently — a credential committed here lives in the git history forever, even if removed later. The pre-commit guard (`session-commit-guard.py`) is the backstop, but catch it here first, where files can be excluded or scrubbed cleanly before they ever enter the tree.
+**Skip this entire step if `--vetted` was passed.** Print `✓ Secrets/PII scan complete — skipped (--vetted)` and proceed directly to Step 6. `--vetted` asserts the user has already reviewed this content (e.g. re-migrating the same local files after a stranded-branch situation where they were scanned once already) — the flag itself is the confirmation, same as `--force` needs no separate prompt. This is a real trade: the PII/secrets safety net is off for this run, which is why it requires the explicit flag rather than being a default.
+
+**Otherwise, before copying anything into the repo, scan every candidate file for secrets and PII.** Migration git-tracks these files permanently — a credential committed here lives in the git history forever, even if removed later. The pre-commit guard (`session-commit-guard.py`) is the backstop, but catch it here first, where files can be excluded or scrubbed cleanly before they ever enter the tree.
 
 **Scan the full content of every file about to be migrated** — session `.md` files, `_history.md`, all top-level `_inbox*.md`, every per-item `_inbox/*.md` (acp-ajudd#102), and the project memory files from Step 11b. (`_context_*.md` pre-clear dumps are **never migrated** — they are always-local personal stashes, out of migrate scope entirely — so they never need scanning here.)
 
@@ -320,7 +335,7 @@ Confirm: "Proceed? (Yes / Skip)"
 1. Create `<repo_root>/.claude/memory/` if it does not exist.
 
 2. For each `*.md` file in local memory (not `MEMORY.md`, not `.migrated-to-repo`):
-   **Apply the Step 5a secrets/PII scan to these files too** (if 11b runs standalone via the guard path and 5a did not execute, run the scan here against the memory files before copying). Honor exclude/scrub/keep dispositions.
+   **Apply the Step 5a secrets/PII scan to these files too** (if 11b runs standalone via the guard path and 5a did not execute, run the scan here against the memory files before copying). Honor exclude/scrub/keep dispositions. **Skip this scan if `--vetted` was passed** — same as Step 5a, the flag already covers these files.
    a. If `<repo_root>/.claude/memory/<filename>` already exists → skip.
    b. If not present:
       - Read local file.
@@ -334,7 +349,7 @@ Confirm: "Proceed? (Yes / Skip)"
         Get mtime via: `python3 -c "import os,datetime; t=os.path.getmtime('<path>'); print(datetime.date.fromtimestamp(t))"`
       - Write to `<repo_root>/.claude/memory/<filename>`.
 
-2a. **Label walk-through** — apply the memory plugin's feature-label convention to every file being added. Read `~/.claude/plugins/marketplaces/<pluginMarketplaceName>/memory/skills/memory/references/label-convention.md` first (derive `pluginMarketplaceName` from `~/.claude/plugins/user-config.json`). If the memory plugin is not installed, skip this sub-step silently and leave files unlabeled.
+2a. **Label walk-through** — apply the memory plugin's feature-label convention to every file being added. **Skip this entire sub-step if `--vetted` was passed** — print `✓ Feature labels applied — skipped (--vetted)` and leave all files unlabeled; they remain findable by description and can be labeled later via `/memory:groom` or a manual relabel pass. Otherwise: read `~/.claude/plugins/marketplaces/<pluginMarketplaceName>/memory/skills/memory/references/label-convention.md` first (derive `pluginMarketplaceName` from `~/.claude/plugins/user-config.json`). If the memory plugin is not installed, skip this sub-step silently and leave files unlabeled.
 
    For each file being added that does not already have a `label:` field, read its content and propose a `feature:<area>/<subcategory>` label inferred from its `name`, `description`, and body. Present all proposals as one batch (do not prompt one file at a time):
    ```
