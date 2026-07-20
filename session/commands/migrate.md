@@ -10,17 +10,22 @@ Move **the current repo's** session files from local memory into the git repo un
 
 Run once per project. Use `--force` to re-sync local → repo if repo sessions get corrupted. Use `--vetted` to skip the two reasoning-heavy steps (secrets/PII scan in Step 5a, feature-label walkthrough in Step 11b's 2a) when the content has already been reviewed — the flag is the confirmation, no extra prompt, same precedent as `--force`.
 
+**`--vetted` scope — say what it does and doesn't cover (acp-ajudd#146 follow-up).** `--vetted` means "I am personally certifying every file in this migration set is already clean — skip re-checking it." It does **not** mean the content has been scanned and found clean by this tool; it means the scan is being skipped on your word. Two things this does not cover, so print them once, right where the skip is reported, not buried in docs:
+1. **It doesn't override the harness's own independent safety classifier.** Claude Code can still flag/block on content it judges sensitive regardless of `--vetted` — that's a separate layer this flag has no authority over.
+2. **It never retroactively cleans anything, in either direction.** If content turns out not to be clean, `--vetted` didn't create the problem and re-running without it doesn't erase history already written — it only controls whether *this run's* scan happens.
+When printing the skip line in the progress checklist, use: `✨ Secrets/PII scan skipped (--vetted — asserted clean, not verified clean)` instead of the bare "skipped (--vetted)" — the parenthetical is the point.
+
 **Print progress as you go — one line per major step, not silence until the end (acp-ajudd#145).** This command has enough sequential steps (secrets scan, session copy, history copy, inbox copy, memory copy, labeling, `MEMORY.md` regen, commit) that a user watching it run has no way to tell "still working" from "stuck" without per-step feedback. After each major step below completes, print one line before moving to the next:
 ```
-✓ Secrets/PII scan complete — N file(s) flagged  ← or "skipped (--vetted)"
-✓ Session files copied — N file(s)
-✓ History + inbox/backlog copied
-✓ Project memory copied — N file(s) added, K skipped
-✓ Feature labels applied  ← or "skipped (--vetted)"
-✓ MEMORY.md regenerated
-✓ Committed and pushed
+✨ Secrets/PII scan complete — N file(s) flagged  ← or "skipped (--vetted — asserted clean, not verified clean)"
+✨ Session files copied — N file(s)
+✨ History + inbox/backlog copied
+✨ Project memory copied — N file(s) added, K skipped
+✨ Feature labels applied  ← or "skipped (--vetted)"
+✨ MEMORY.md regenerated
+✨ Committed and pushed
 ```
-This is in addition to, not instead of, each step's own existing output (the batch confirmations, the final summary) — it's a lightweight running checkmark so silence never gets mistaken for a hang.
+This is in addition to, not instead of, each step's own existing output (the batch confirmations, the final summary) — it's a lightweight running progress marker so silence never gets mistaken for a hang. **This is a hard turn boundary per line** (acp-ajudd#146 follow-up) — print the line for a completed step before starting the next tool call, do not batch multiple steps silently into one turn.
 
 **Example:** Working in a VO story session and want to migrate that repo's sessions? Just run `/session:migrate` — it picks up `pwd` and migrates the VO repo's local session files into `<vo-repo>/.claude/sessions/`. You don't need to leave your current session or context.
 
@@ -131,11 +136,13 @@ Reply per file, e.g. "scrub _history.md BPT2-5558.md".
 ```
 
 Apply before the copy steps:
-- **exclude:** drop the file from the migration set entirely — skip it in Steps 6/8/9/11b. Note it in the final summary as "excluded (secrets/PII)".
-- **scrub:** copy it, but replace each flagged value with a placeholder (`<REDACTED>` for secrets, `<test-member>` / `<custid>` for PII) during the transform. Preserve surrounding context.
-- **keep:** migrate unchanged — only on explicit per-file confirmation; warn once more that it lands in git history.
+- **exclude:** drop the file from the migration set entirely — skip it in Steps 6/8/9/11b. Note it in the final summary as "excluded (secrets/PII)". The local original is untouched — `exclude` means "stay local-only," not "also clean the local copy."
+- **scrub:** copy it, but replace each flagged value with a placeholder (`<REDACTED>` for secrets, `<test-member>` / `<custid>` for PII) during the transform. Preserve surrounding context. **Also apply the same redaction to the local source file in place, in this step** (acp-ajudd#146 follow-up) — not just the repo-bound copy. Without this, the unredacted value keeps living in `~/.claude/memory/sessions/<slug>/<name>.md` forever and re-surfaces on every future `--force`/re-migrate of this slug, which is exactly the confusing "I thought we already vetted this" loop this note exists to close. Report both writes: `scrubbed <name>.md (repo copy + local original)`.
+- **keep:** migrate unchanged — only on explicit per-file confirmation; warn once more that it lands in git history. Local original untouched (nothing to clean — user explicitly chose to keep the value).
 
 **Default bias:** recommend `exclude` for any file whose value is purely a secret (e.g. a credentials dump); recommend `scrub` for session/history files that carry real record but happen to name a person. Do not proceed to Step 6 until every flagged file has a disposition.
+
+**Why "vetted" alone can't guarantee a clean local tree:** this step is the *only* layer that ever inspects the content of a regular session `.md` file for PII (`/session:store`'s scan only covers `_context_*.md` pre-clear stashes — see the Secrets/PII Defense design). A file that was never scrubbed here — because an earlier migrate run used `--vetted`, or because it was written/edited after the last scan — carries no record of having been checked. "We went through it before" is only true for files that were actually scrubbed *here*, not for the local tree as a whole. If PII turns up on a `--vetted` run, that's this step being skipped as instructed, not a bug — the fix is to re-run without `--vetted` at least once per file that's never been through this scan.
 
 ### 6. Copy and Transform Session State Files
 
