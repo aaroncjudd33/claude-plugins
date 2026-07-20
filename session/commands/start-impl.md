@@ -22,6 +22,8 @@ Loaded either by `start.md`'s Step 0 fast-path (an arg that resolves directly to
 ```
 Adapt the checklist to whichever type/route is actually running (Plugin/Personal graduation has no Jira-transition or branch-base-resolution lines; CAB new routes to `/release:create` and inherits its own progress lines instead). This is in addition to, not instead of, each step's own existing output (batch prompts, the final summary) — a lightweight running checkmark so silence is never mistaken for a hang. Applies to every "new kickoff" route in Step 9, not only Story.
 
+**This overrides the general "batch independent tool calls in parallel" habit — do not apply it here (acp-ajudd#146 follow-up, observed live: a full turn ran `getJiraIssue` + `transitionJiraIssue` + the base-branch git commands + branch creation back-to-back with zero text output for 4+ minutes before anything printed).** Each checklist line above marks a **hard turn boundary**: after the tool call(s) for that one line resolve, your response for that turn is the checkmark line and nothing else — do not also include the next step's tool call in the same response, even though it would be faster to batch. Two steps that are genuinely independent within the checklist (e.g. nothing here — every line depends on the previous one completing) may still be batched **only if they share the same checkmark line**; every other case gets its own stop-and-print turn. Silence between two checkmarks is the exact failure this section exists to prevent — prefer an extra turn over saving one.
+
 ---
 
 ### 4. User Picks — Load or Create Session File

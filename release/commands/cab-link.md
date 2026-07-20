@@ -15,6 +15,7 @@ Populates the CAB card's ADF fields, adds deployment comments to BPT2 stories, a
 ✓ Browser links registered
 ✓ Session state updated
 ```
+**This overrides the general "batch independent tool calls in parallel" habit (acp-ajudd#146 follow-up).** Each line above is a hard turn boundary — stop and print the checkmark as your entire response for that turn before making the next tool call, even if batching would be faster.
 
 ## Instructions
 

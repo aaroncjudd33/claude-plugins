@@ -33,6 +33,8 @@ Before invoking this command, confirm:
 ```
 Adapt the checklist to whichever branch (CDK vs VO) is actually running.
 
+**This overrides the general "batch independent tool calls in parallel" habit (acp-ajudd#146 follow-up).** Each line above is a hard turn boundary — stop and print the checkmark as your entire response for that turn before making the next tool call, even if batching would be faster. This matters most here: several of these steps (build/test job, prod gate, deploy job) involve real multi-minute waits, so the checkmark boundary is what keeps the user oriented during them.
+
 ## Instructions
 
 ### 0. Identify the CAB card

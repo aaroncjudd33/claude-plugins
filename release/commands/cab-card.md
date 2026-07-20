@@ -24,6 +24,7 @@ Creates the CAB card in Jira and initializes the release session file. This phas
 ✓ CAB Teams chat resolved: <name>  ← or "skipped"
 ✓ Session state written
 ```
+**This overrides the general "batch independent tool calls in parallel" habit (acp-ajudd#146 follow-up).** Each line above is a hard turn boundary — after the tool call(s) for that step resolve, your entire response for that turn is the checkmark line, then stop. Do not fold the next step's tool call into the same response just because it would be faster. An extra turn is cheaper than a silent multi-minute gap.
 
 ## Instructions
 
