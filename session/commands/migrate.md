@@ -148,8 +148,15 @@ Apply before the copy steps:
 
 For each `<name>.md` not starting with `_` in `~/.claude/memory/sessions/<slug>/`:
 
-1. Read the file.
-2. Remove the `- **Project:** ...` line entirely.
+**Bulk-copy first, then edit the destination in place — never Read-a-file-then-Write-its-full-content-back (acp-ajudd#146 follow-up, observed live: 12 session files took ~1 model turn each to fully regenerate via `Write`, the dominant cost in a 24-minute run).** The per-file changes below are small, targeted edits — a handful of lines out of a file that's otherwise unchanged — so they belong on the small-diff tool (`Edit`) or a single shell pass, not a full-file `Write` that forces the model to reproduce every unchanged line as output tokens.
+
+0. **Bulk copy every candidate file in one shell call**, then edit each destination copy:
+   ```bash
+   cp ~/.claude/memory/sessions/<slug>/*.md "<repo_root>/.claude/sessions/" 2>/dev/null
+   # excludes: skip files starting with `_` (handled separately in Steps 7-9) and any file with an `exclude` disposition from Step 5a
+   ```
+1. ~~Read the file~~ — not needed as a separate step; Edit reads what it touches.
+2. Remove the `- **Project:** ...` line entirely — `Edit` with an empty replacement, or `sed -i '/^- \*\*Project:\*\*/d'` across all destination files in one shell call.
 3. Convert `Scope:` from absolute path to relative:
    - Strip the absolute project root prefix and any leading separator.
    - For plugin sessions the absolute scope was `<marketplace-root>/<plugin-name>` → relative scope = `<plugin-name>/`
@@ -161,10 +168,11 @@ For each `<name>.md` not starting with `_` in `~/.claude/memory/sessions/<slug>/
 6. Tag any untagged Open items: for each item under `- **Open items:**` that does not start with `[YYYY-MM-DD @`, prepend `[today @<handle>] `.
 7. Scan body text for absolute local paths and report them:
    ```bash
-   grep -n "C:\\dev\|C:\\temp\|C:\\Users\|/c/dev\|~/.claude/memory\|~/.claude/projects" "<name>.md"
+   grep -n "C:\\dev\|C:\\temp\|C:\\Users\|/c/dev\|~/.claude/memory\|~/.claude/projects" "<repo_root>/.claude/sessions/<name>.md"
    ```
    If any found, show them and note: "These paths may need manual cleanup — they reference local machine paths that won't resolve for other developers." Do not block the migration; report after all files are processed.
-8. Write to `<repo_root>/.claude/sessions/<name>.md`.
+
+Apply steps 2-6 per file with `Edit` (targeted old-string/new-string replacements against the destination copy already sitting at `<repo_root>/.claude/sessions/<name>.md` from step 0) — most files need 2-4 small edits, each touching only the changed lines. A file with no PII disposition from Step 5a and no absolute paths from step 7 may need zero edits beyond the frontmatter/tag additions; don't force a rewrite where the bulk copy already produced a correct result. **A `scrub` disposition from Step 5a is also an `Edit` here** — replace the flagged value with its placeholder directly in the destination copy (and per Step 5a, in the local original too), not a full-file regeneration.
 
 ### 7. Retroactively Tag History
 
@@ -181,9 +189,9 @@ Lines already containing `@` are left unchanged.
 
 **The consolidated inbox is a per-item dir (acp-ajudd#102).** Copy the whole `_inbox/` directory — every `_inbox/*.md` item file — to `<repo_root>/.claude/sessions/_inbox/`. These per-item files are shared work records and commit like the old `_inbox.md` did. (A legacy single `_inbox.md`, if one is still present pre-migration, is copied too; the lazy auto-migration in `inbox-render.py` will split it into the dir on first access in the new location.)
 
-For each file matching `_inbox*.md`, `_backlog*.md` at the top level of `~/.claude/memory/sessions/<slug>/`, AND each `_inbox/*.md` item file:
+**Same bulk-copy-then-edit approach as Step 6 (acp-ajudd#146 follow-up)** — `cp` everything matching `_inbox*.md`, `_backlog*.md`, and the whole `_inbox/` dir in one shell call, then apply the header-tag rewrite to the destination copies with `Edit` (or a single `sed` pass across all of them), not per-file Read+Write:
 
-1. Copy to `<repo_root>/.claude/sessions/` (item files → `<repo_root>/.claude/sessions/_inbox/`).
+1. Bulk-copy to `<repo_root>/.claude/sessions/` (item files → `<repo_root>/.claude/sessions/_inbox/`).
 2. For each entry header line matching `## [YYYY-MM-DD] from` (no handle present):
    - Rewrite as `## [YYYY-MM-DD @<handle>] from`
 
