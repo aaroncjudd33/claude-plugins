@@ -113,9 +113,15 @@ Read `handle` from `~/.claude/plugins/user-config.json` (`user.handle`). If abse
 
 **Scan the full content of every file about to be migrated** — session `.md` files, `_history.md`, all top-level `_inbox*.md`, every per-item `_inbox/*.md` (acp-ajudd#102), and the project memory files from Step 11b. (`_context_*.md` pre-clear dumps are **never migrated** — they are always-local personal stashes, out of migrate scope entirely — so they never need scanning here.)
 
+**A mechanical grep alone is not a scan (acp-ajudd#146 follow-up — observed live: a run reported "0 files flagged" via a single shell command, while two files actually sitting in the migration set carried a real member name↔ID pairing and two real member emails↔MIDs that a `SECRET_PATTERNS`-only grep cannot match).** Run *both* of these, and do not report the scan as complete until both have run:
+1. **Mechanical backstop grep — run this literally and show its raw output** (catches the shapes that don't need judgment):
+   ```bash
+   grep -nE '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|\b(MID|custid|CustID)[[:space:]]*[:#]?[[:space:]]*[0-9]{4,9}\b' <files>
+   ```
+2. **Full-content read per file for fuzzy PII a regex can't shape-match** — a named individual next to an ID with no keyword nearby (e.g. `Faith Teo (#1336599)`), addresses, anything a human would recognize as "this identifies a real person" on sight. This requires actually reading the file content, not inferring from a filename or a grep miss.
 Flag:
 - **Secrets / credentials** — DB connection strings with passwords (e.g. `user/PASS@host:port`), `password=`/`pwd:` assignments, API keys, `AKIA…` AWS keys, JWTs, `-----BEGIN … PRIVATE KEY-----`. (Same patterns as `SECRET_PATTERNS` in the commit guard.)
-- **PII** — real person name ↔ member/custid pairings, `fedTaxNum`/`ssn`/`taxId` fields, addresses tied to a named individual. PII detection is fuzzy — surface anything plausible for the user to judge.
+- **PII** — real person name ↔ member/custid pairings, real emails, `fedTaxNum`/`ssn`/`taxId` fields, addresses tied to a named individual. PII detection is fuzzy — surface anything plausible for the user to judge. **"Flagging nothing" is a claim that must be backed by having actually run both passes above — never the default outcome of skipping straight to the copy because the user said not to be bothered with prompts.** An instruction to skip *prompts* is not an instruction to skip the *scan itself* — those are different steps; collapsing them is exactly the failure this note exists to prevent.
 
 For each flagged file, present a per-file disposition (never silent, never auto-decide):
 ```
@@ -135,9 +141,9 @@ Handle each before migrating:
 Reply per file, e.g. "scrub _history.md BPT2-5558.md".
 ```
 
-Apply before the copy steps:
+Apply before the copy steps — **and apply `scrub` to the local original FIRST, in place, before Step 6's bulk copy even runs (acp-ajudd#146 follow-up)** — not as a follow-up edit to the destination after copying. This is the order that actually matches "frozen local state that other branches can just copy without re-scrubbing": scrub the source once, here, so every copy of it downstream (this migration's bulk `cp`, a future `--force` re-sync, a teammate's fresh migrate off the same local files) is copying already-clean content. It also removes the ambiguity that trips the harness's own safety classifier on a bare `cp` — by the time Step 6 copies anything, the local file has already been visibly edited, so the copy is provably copying clean content rather than asserting it:
 - **exclude:** drop the file from the migration set entirely — skip it in Steps 6/8/9/11b. Note it in the final summary as "excluded (secrets/PII)". The local original is untouched — `exclude` means "stay local-only," not "also clean the local copy."
-- **scrub:** copy it, but replace each flagged value with a placeholder (`<REDACTED>` for secrets, `<test-member>` / `<custid>` for PII) during the transform. Preserve surrounding context. **Also apply the same redaction to the local source file in place, in this step** (acp-ajudd#146 follow-up) — not just the repo-bound copy. Without this, the unredacted value keeps living in `~/.claude/memory/sessions/<slug>/<name>.md` forever and re-surfaces on every future `--force`/re-migrate of this slug, which is exactly the confusing "I thought we already vetted this" loop this note exists to close. Report both writes: `scrubbed <name>.md (repo copy + local original)`.
+- **scrub:** edit the local source file in place first — replace each flagged value with a placeholder (`<REDACTED>` for secrets, `<test-member>` / `<custid>` for PII), preserving surrounding context — then let Step 6's bulk copy pick up the now-clean file like any other. Report: `scrubbed <name>.md (local source, before copy)`. Do not additionally edit the destination copy — it's already clean because it was copied from an already-clean source.
 - **keep:** migrate unchanged — only on explicit per-file confirmation; warn once more that it lands in git history. Local original untouched (nothing to clean — user explicitly chose to keep the value).
 
 **Default bias:** recommend `exclude` for any file whose value is purely a secret (e.g. a credentials dump); recommend `scrub` for session/history files that carry real record but happen to name a person. Do not proceed to Step 6 until every flagged file has a disposition.
@@ -172,7 +178,7 @@ For each `<name>.md` not starting with `_` in `~/.claude/memory/sessions/<slug>/
    ```
    If any found, show them and note: "These paths may need manual cleanup — they reference local machine paths that won't resolve for other developers." Do not block the migration; report after all files are processed.
 
-Apply steps 2-6 per file with `Edit` (targeted old-string/new-string replacements against the destination copy already sitting at `<repo_root>/.claude/sessions/<name>.md` from step 0) — most files need 2-4 small edits, each touching only the changed lines. A file with no PII disposition from Step 5a and no absolute paths from step 7 may need zero edits beyond the frontmatter/tag additions; don't force a rewrite where the bulk copy already produced a correct result. **A `scrub` disposition from Step 5a is also an `Edit` here** — replace the flagged value with its placeholder directly in the destination copy (and per Step 5a, in the local original too), not a full-file regeneration.
+Apply steps 2-6 per file with `Edit` (targeted old-string/new-string replacements against the destination copy already sitting at `<repo_root>/.claude/sessions/<name>.md` from step 0) — most files need 2-4 small edits, each touching only the changed lines. A file with no absolute paths from step 7 may need zero edits beyond the frontmatter/tag additions; don't force a rewrite where the bulk copy already produced a correct result. **Any `scrub` disposition from Step 5a was already applied to the local source before this step ran** — the destination copy inherited it via the bulk `cp` in step 0, so there is nothing further to redact here.
 
 ### 7. Retroactively Tag History
 
