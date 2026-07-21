@@ -357,22 +357,18 @@ Confirm: "Proceed? (Yes / Skip)"
 
 1. Create `<repo_root>/.claude/memory/` if it does not exist.
 
-2. For each `*.md` file in local memory (not `MEMORY.md`, not `.migrated-to-repo`):
-   **Apply the Step 5a secrets/PII scan to these files too** (if 11b runs standalone via the guard path and 5a did not execute, run the scan here against the memory files before copying). Honor exclude/scrub/keep dispositions. **Skip this scan if `--vetted` was passed** — same as Step 5a, the flag already covers these files.
-   a. If `<repo_root>/.claude/memory/<filename>` already exists → skip.
-   b. If not present:
-      - Read local file.
-      - Add attribution to frontmatter (after the closing `---` of the existing metadata block, before the body). Insert these fields inside the frontmatter block (before its closing `---`):
-        ```
-        created-by: "@<handle>"
-        created-date: "<file mtime — YYYY-MM-DD format>"
-        updated-by: "@<handle>"
-        updated-date: "<file mtime — YYYY-MM-DD format>"
-        ```
-        Get mtime via: `python3 -c "import os,datetime; t=os.path.getmtime('<path>'); print(datetime.date.fromtimestamp(t))"`
-      - Write to `<repo_root>/.claude/memory/<filename>`.
+2. **Apply the Step 5a secrets/PII scan to these files too** (if 11b runs standalone via the guard path and 5a did not execute, run the scan here against the memory files before copying). Honor exclude/scrub/keep dispositions — apply any `scrub` to the local source file in place, same as Step 5a, before the copy below runs. **Skip this scan if `--vetted` was passed** — same as Step 5a, the flag already covers these files.
 
-2a. **Label walk-through** — apply the memory plugin's feature-label convention to every file being added. **Skip this entire sub-step if `--vetted` was passed** — print `✓ Feature labels applied — skipped (--vetted)` and leave all files unlabeled; they remain findable by description and can be labeled later via `/memory:groom` or a manual relabel pass. Otherwise: read `~/.claude/plugins/marketplaces/<pluginMarketplaceName>/memory/skills/memory/references/label-convention.md` first (derive `pluginMarketplaceName` from `~/.claude/plugins/user-config.json`). If the memory plugin is not installed, skip this sub-step silently and leave files unlabeled.
+3. **Bulk-copy via script — never per-file Read+Write (acp-ajudd#146 follow-up 2, observed live: 60 memory files each fully regenerated via `Write` was the dominant cost of a 1h+ migrate run — `--vetted` did not skip it, because this loop was never wired to check the flag).** The attribution insert is a fixed 4-line block computed from file mtime — no content judgment needed, so do it in one script call, not one model turn per file:
+   ```bash
+   python3 "$HOME/.claude/plugins/marketplaces/<marketplace>/session/scripts/memory-copy.py" \
+     --local-dir "~/.claude/projects/<encoded>/memory" \
+     --repo-dir "<repo_root>/.claude/memory" \
+     --handle "<handle>"
+   ```
+   Resolve `<marketplace>` the same way as Step 11's pre-commit shim (`~/.claude/plugins/user-config.json` → `pluginMarketplaceName`). The script skips any file whose destination already exists (reports it as skipped) and prints `added: <filename>` for each newly-copied file — collect that list; it feeds Step 11b 3a (labeling) and Step 11b 4 (`MEMORY.md` regen) below, which still need to read the *newly added* files' content (for label inference and name/description extraction respectively) but never rewrite them wholesale.
+
+3a. **Label walk-through** — apply the memory plugin's feature-label convention to every file being added. **Skip this entire sub-step if `--vetted` was passed** — print `✓ Feature labels applied — skipped (--vetted)` and leave all files unlabeled; they remain findable by description and can be labeled later via `/memory:groom` or a manual relabel pass. Otherwise: read `~/.claude/plugins/marketplaces/<pluginMarketplaceName>/memory/skills/memory/references/label-convention.md` first (derive `pluginMarketplaceName` from `~/.claude/plugins/user-config.json`). If the memory plugin is not installed, skip this sub-step silently and leave files unlabeled.
 
    For each file being added that does not already have a `label:` field, read its content and propose a `feature:<area>/<subcategory>` label inferred from its `name`, `description`, and body. Present all proposals as one batch (do not prompt one file at a time):
    ```
@@ -387,7 +383,7 @@ Confirm: "Proceed? (Yes / Skip)"
    - On `go` (with any overrides applied): add the chosen `label:` line and a `written: <created-date>` line to each file's frontmatter (use the mtime-derived created-date as `written`).
    - This is the one-time relabel pass the memory plugin's `scan`/`load` depend on. Files left unlabeled remain findable by description but won't match label-based searches.
 
-3. Regenerate `<repo_root>/.claude/memory/MEMORY.md` fresh from all files now present:
+4. Regenerate `<repo_root>/.claude/memory/MEMORY.md` fresh from all files now present:
    - Read all `*.md` files in `.claude/memory/` (not `MEMORY.md` itself, not `.migrated-to-repo`)
    - For each, extract `name:` and `description:` from frontmatter
    - Write `MEMORY.md`:
@@ -398,13 +394,13 @@ Confirm: "Proceed? (Yes / Skip)"
      ```
    - One line per file, sorted alphabetically by filename.
 
-4. Write local sentinel file:
+5. Write local sentinel file:
    ```
    ~/.claude/projects/<encoded-path>/memory/.migrated-to-repo
    ```
    Content: `"Migrated to repo: <repo_root>/.claude/memory/ on <today>"`
 
-5. **Do NOT create or modify `<repo_root>/.claude/CLAUDE.md`.** Project memory is loaded **on demand only** by the memory plugin — never auto-loaded. Adding an `@.claude/memory/MEMORY.md` import to `CLAUDE.md` would force the index into every developer's context the moment they open the repo, without invoking any command, with real token cost — the exact overhead this design rejects.
+6. **Do NOT create or modify `<repo_root>/.claude/CLAUDE.md`.** Project memory is loaded **on demand only** by the memory plugin — never auto-loaded. Adding an `@.claude/memory/MEMORY.md` import to `CLAUDE.md` would force the index into every developer's context the moment they open the repo, without invoking any command, with real token cost — the exact overhead this design rejects.
 
    Instead: the memory plugin resolves `.claude/memory/` via its own Path Resolution. It reads `MEMORY.md` and individual files only when the user runs `/memory:load`, `/memory:scan`, `/memory:groom`, or a session command that surfaces them. It writes new memories to `.claude/memory/` via `/memory:save`. No `CLAUDE.md` redirect is needed — the plugin already knows the path.
 
