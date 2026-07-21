@@ -54,7 +54,8 @@ Memory enters context only when:
 
 1. The user explicitly runs `/memory:load`, `/memory:scan`, or `/memory:groom`, or
 2. A session command surfaces the session's recorded `Loaded memories:` and the user opts to reload them, or
-3. The session-start scan offer presents candidates and the user accepts some (a prompt — never a silent read).
+3. The session-start scan offer presents candidates and the user accepts some (a prompt — never a silent read), or
+4. **A subagent is spawned specifically to answer a "what's our convention for X" question (acp-ajudd#153).** That question is an explicit demand for exactly what project memory holds — checking it is the subagent's first move, not a fallback after inferring from git history. A prior PR (especially one that was reverted) is precedent for nothing; treating it as authoritative in place of a documented convention is how a subagent can rediscover, the hard way, a rule that was already written down. This does not loosen rule 1–3's on-demand boundary — the "demand" here is the subagent's own explicit task, not speculative background reading.
 
 Do **not** proactively read memory files at session start or speculatively during work. This is the primary defense against context rot: a stale memory that is never loaded cannot mislead anyone. Rot becomes inert, not infectious — an unmaintained file simply sits unused rather than corrupting a teammate's context.
 
