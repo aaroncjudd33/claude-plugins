@@ -161,7 +161,7 @@ For each `<name>.md` not starting with `_` in `~/.claude/memory/sessions/<slug>/
    cp ~/.claude/memory/sessions/<slug>/*.md "<repo_root>/.claude/sessions/" 2>/dev/null
    # excludes: skip files starting with `_` (handled separately in Steps 7-9) and any file with an `exclude` disposition from Step 5a
    ```
-1. ~~Read the file~~ — not needed as a separate step; Edit reads what it touches.
+1. **Read every destination file first, in one batch** (the `Edit` tool requires a prior `Read` of each file it touches, or it errors "File must be read first") — read all bulk-copied destination files up front, then apply every file's edits without re-reading.
 2. Remove the `- **Project:** ...` line entirely — `Edit` with an empty replacement, or `sed -i '/^- \*\*Project:\*\*/d'` across all destination files in one shell call.
 3. Convert `Scope:` from absolute path to relative:
    - Strip the absolute project root prefix and any leading separator.
