@@ -240,11 +240,14 @@ Same echo-compliance rule as the other zones (§ Work project above). If any `ca
 
 Once the user replies, act immediately. **Do not read start-impl.md first** for the plugin resume path below.
 
-**One-of-each advisory (read-only — acp-ajudd#41).** Before acting on a **`code`** action (whether it graduates a `work` entry or resumes a session), reuse the in-progress sessions already gathered in Step 2 (or `_active` + `_index.md` status — do **not** run a new scan). If an in-progress **coding session other than the one about to be started or resumed** already exists for this slug, print exactly this one line, then proceed normally:
+**One-of-each advisory (read-only — acp-ajudd#41).** Before acting on a **`code`** action (whether it graduates a `work` entry or resumes a session), reuse the in-progress sessions already gathered in Step 2 (or `_active` + `_index.md` status — do **not** run a new scan). If an in-progress **coding session other than the one about to be started or resumed** already exists for this slug, print one line surfacing it, then proceed normally. This is an **honor-system nudge, not a rule** — "one coding session per repo" (acp-ajudd#30) has no hook enforcing it (acp-ajudd#1), so the only way it stays true is if starting a second one is made visible when it happens.
 
-  `Note: coding session '<name>' is already active for this slug — starting here makes two (one-of-each discipline).`
+Reuse the ⚠ stale flag Step 2 already computed (`session-list.py --stale-days`, default 14 days) to make the note concrete instead of generic:
 
-This is **read-only** — it never blocks, prompts, or asks; it just surfaces the fact once. Same "one glance, no monitoring" spirit as the captures-waiting glance (acp-ajudd#10, § Captures inbound), and it keeps the honor-system "one planning + one coding per repo" invariant (acp-ajudd#30) visible without a hook (acp-ajudd#1). It does **not** apply to the Refine path below — refine is sessionless planning and carries its own advisory in `commands/refine.md`.
+- **Other session is flagged stale:** `Note: coding session '<name>' is already active for this slug and hasn't been updated in over 14 days — starting here makes two. Finish or checkpoint '<name>' first if it's done, or ignore this if it's still genuinely in progress.`
+- **Other session is not stale:** `Note: coding session '<name>' is already active for this slug — starting here makes two. That's fine if both are genuinely in progress; otherwise finish or checkpoint '<name>' first.`
+
+Either way this is **read-only** — it never blocks, prompts, or asks; it just surfaces the fact once, with enough context to act on it without a follow-up question about what it means. Same "one glance, no monitoring" spirit as the captures-waiting glance (acp-ajudd#10, § Captures inbound). It does **not** apply to the Refine path below — refine is sessionless planning and carries its own advisory in `commands/refine.md`.
 
 ---
 
