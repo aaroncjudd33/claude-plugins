@@ -34,21 +34,27 @@ No session established for <slug>. Run /session:start first.
 
 This is the whole enforcement model: editing files is never blocked, but the session commands refuse to run without a session. (`start` / `refine` and read-only views are exempt.)
 
-**Sessionless variant (acp-ajudd#154/#143 — `references/sessionless-mode.md`).** If `_active` matches `sessionless:<id>` rather than a plain session name, there IS active work for this slug — just no session file. Do not treat this as "no session" and do not silently pick a side; prompt:
+**Lite variant (acp-ajudd#154/#143 — `references/lite-mode.md`, all zones).** If `_active` matches `lite:<id>` rather than a plain session name, there IS active work for this slug — just no session file. Do not treat this as "no session" and do not silently pick a side; prompt:
 ```
 No session file for the active work (<id>) — create a session file now, or
-just add a note to the source item?
-  create — graduate now (start-impl.md § Work Pickup steps 2–5 on the still-
-    live item), then continue this command's steps below against the new
+just add a note to the source record?
+  create — graduate now (plugin/personal: start-impl.md § Work Pickup steps
+    2–5 on the still-live item; story/CAB: derive/confirm a session name,
+    resolve Teams chat, write the session file seeded from the Jira comment
+    trail), then continue this command's steps below against the new
     session file.
   note — do the real commit (stage, commit, and push/skip-push per the type
-    table above) exactly as below, but write Steps 3–7's record into
-    `_inbox/<id>.md` (a progress-log append) instead of a session `<name>.md`
-    — skip Step 6's session-file write and its `_index.md`/approved-hash
-    updates, and skip Step 7's session-type-keyed worklog header in favor of
-    a plain `## <HH:MM> — <id> (sessionless)` entry.
+    table above) exactly as below, but record it on the native record instead
+    of a session file:
+      plugin/personal — write Steps 3–7's record into `_inbox/<id>.md` (a
+        progress-log append) instead of a session `<name>.md`.
+      story/CAB — Step 2a's Jira comment already runs regardless of session
+        choice; there's simply no session `Commits:` field to also update.
+    Either way, skip Step 6's session-file write and its `_index.md`/
+    approved-hash updates, and skip Step 7's session-type-keyed worklog
+    header in favor of a plain `## <HH:MM> — <id> (lite)` entry.
 ```
-On `create`, once the session file exists, continue this command's Steps 1–7 normally. On `note`, continue Steps 1–5 unchanged (the git operations and their type-based push rule are not session-file-dependent), then substitute Steps 6–7 as described above.
+On `create`, once the session file exists, continue this command's Steps 1–7 normally. On `note`, continue Steps 1–5 unchanged (the git operations and their type-based push rule, and Step 2a's Jira comment for story/cab, are not session-file-dependent), then substitute Steps 6–7 as described above.
 
 Read `<session_root>/<name>.md` and extract all fields. Minimally:
 - `type` (plugin / story / cab / personal / general)

@@ -25,18 +25,21 @@ No session established for <slug>. Run /session:start first.
 
 Editing files is never blocked; the session commands are what require a session. (`start` / `refine` and read-only views are exempt.)
 
-**Sessionless variant (acp-ajudd#154/#143 — `references/sessionless-mode.md`).** If `_active` matches `sessionless:<id>` rather than a plain session name, there IS active work for this slug — just no session file. Prompt rather than treating it as "no session" or silently deciding:
+**Lite variant (acp-ajudd#154/#143 — `references/lite-mode.md`, all zones).** If `_active` matches `lite:<id>` rather than a plain session name, there IS active work for this slug — just no session file. Prompt rather than treating it as "no session" or silently deciding:
 ```
 No session file for the active work (<id>) — create a session file now, or
-just add a note to the source item?
-  create — graduate now (start-impl.md § Work Pickup steps 2–5 on the still-
-    live item), then continue this command's steps below against the new
-    session file.
+just add a note to the source record?
+  create — graduate now (plugin/personal: start-impl.md § Work Pickup steps
+    2–5 on the still-live item; story/CAB: derive/confirm a session name,
+    resolve Teams chat, write the session file), then continue this
+    command's steps below against the new session file.
   note — do the real checkpoint capture (git scan, memory review) exactly as
-    below, but append the resulting state as a progress-log entry in
-    `_inbox/<id>.md` instead of writing a session `<name>.md`.
+    below, but record the resulting state on the native record instead of a
+    session file: plugin/personal — append a progress-log entry to
+    `_inbox/<id>.md`; story/CAB — post a Jira comment (same convention as
+    commit.md § 2a).
 ```
-On `create`, once the session file exists, continue this command's steps normally. On `note`, run the remaining steps unchanged except the final session-state write, which targets the item's progress log instead of a session file.
+On `create`, once the session file exists, continue this command's steps normally. On `note`, run the remaining steps unchanged except the final session-state write, which targets the native record instead of a session file.
 
 Read `<session_root>/<name>.md` and extract:
 - `type` (plugin / story / cab / personal / general)

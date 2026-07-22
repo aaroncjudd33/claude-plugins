@@ -28,13 +28,14 @@ else:
 
 Always local / never committed (gitignored in repo-based sessions — acp-ajudd#48/#49):
     _active        → ~/.claude/memory/sessions/<slug>/_active   (per-user pointer — always the local path)
-                     Two shapes (acp-ajudd#154/#143 — references/sessionless-mode.md):
+                     Two shapes (acp-ajudd#154/#143 — references/lite-mode.md):
                        a plain session name (existing, e.g. `BPT2-1234`) → <session_root>/<name>.md must exist.
-                       `sessionless:<id>` (e.g. `sessionless:acp-ajudd#154`) → active work with NO session file;
-                       the work's record is the inbox item `_inbox/<id>.md` itself (plugin/personal only, v1).
+                       `lite:<id>` (e.g. `lite:acp-ajudd#154`, `lite:BPT2-6429`, `lite:CAB-456`) → active work
+                       with NO session file; the work's own native record is the only state — an inbox item
+                       for plugin/personal, Jira comments for story/CAB. Every zone.
                        commit/checkpoint/finish resolve _active and branch on which shape it is — a
-                       `sessionless:` value is NOT "no session established"; it prompts (create a session
-                       file now, or keep working via a note on the item) rather than stopping or guessing.
+                       `lite:` value is NOT "no session established"; it prompts (create a session
+                       file now, or keep working via a note on the native record) rather than stopping or guessing.
     _context_*     → <session_root>/_context_*.md               (pre-clear / planning-resume stash — store + handoff)
     _history.md    → <session_root>/_history.md                 (worklog glimpse — duplicates the global worklog; created on demand)
     _index.md      → <session_root>/_index.md                   (listing render cache — see below)

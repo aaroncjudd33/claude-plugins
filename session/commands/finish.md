@@ -38,26 +38,35 @@ No session established for <slug>. Run /session:start first.
 
 Editing files is never blocked; the session commands are what require a session. (`start` / `refine` and read-only views are exempt.)
 
-**Sessionless variant (acp-ajudd#154/#143 — `references/sessionless-mode.md`).** If `_active` matches `sessionless:<id>` rather than a plain session name, there IS active work — just no session file, and none of `finish-close.py`'s five session-file surfaces (frontmatter/body status, `_index.md` row, session-level `_active` clear, session history + worklog) apply. Prompt rather than silently deciding:
+**Lite variant (acp-ajudd#154/#143 — `references/lite-mode.md`, all zones).** If `_active` matches `lite:<id>` rather than a plain session name, there IS active work — just no session file, and none of `finish-close.py`'s five session-file surfaces (frontmatter/body status, `_index.md` row, session-level `_active` clear, session history + worklog) apply. Prompt rather than silently deciding:
 ```
 No session file for the active work (<id>) — create a session file now, or
-just add a note to the source item?
-  create — graduate now (start-impl.md § Work Pickup steps 2–5 on the still-
-    live item), then continue finish's full checklist below against the new
-    session file (including finish-close.py).
-  note — stay sessionless: still run the REAL deploy (version bump, commit,
-    push, reinstall — those never depended on a session file existing), then
-    close by appending a closing summary to `_inbox/<id>.md`'s progress log,
-    stamping `[DONE YYYY-MM-DD]` immediately under its header, appending the
-    stamped item verbatim to `_inbox_archive.md`, deleting the live
-    `_inbox/<id>.md` file, and clearing `~/.claude/memory/sessions/<slug>/_active`.
-    This is the sessionless closing act — same completion authority as any
-    other `[DONE]` stamp (only a real close may write it — acp-ajudd#42), just
-    without `finish-close.py`'s session-file surfaces (there is no session
-    file to flip status on). Still append a worklog entry (§ Work Log below),
-    using `## <HH:MM> — <id> (sessionless)` as the header.
+just add a note to the source record?
+  create — graduate now (plugin/personal: start-impl.md § Work Pickup steps
+    2–5 on the still-live item; story/CAB: derive/confirm a session name,
+    resolve Teams chat, write the session file), then continue finish's full
+    checklist below against the new session file (including finish-close.py).
+  note — stay lite: still run the REAL deploy/close (version bump, commit,
+    push, reinstall for plugin — none of that ever depended on a session
+    file existing; for story/CAB, the actual Jira-side close), then close
+    the native record instead of a session file:
+      plugin/personal — append a closing summary to `_inbox/<id>.md`'s
+        progress log, stamp `[DONE YYYY-MM-DD]` immediately under its
+        header, append the stamped item verbatim to `_inbox_archive.md`,
+        delete the live `_inbox/<id>.md` file.
+      story — post a final Jira comment summarizing what shipped, transition
+        the story per its normal terminal-status flow (same Jira-side
+        behavior `/story:finish` already does).
+      CAB — post a final Jira comment on the CAB issue noting deploy status,
+        same Jira-side behavior as a normal CAB close.
+    In every case, clear `~/.claude/memory/sessions/<slug>/_active`. This is
+    the lite closing act — same completion authority as any other close
+    (only a real close may stamp completion — acp-ajudd#42), just without
+    `finish-close.py`'s session-file surfaces (there is no session file to
+    flip status on). Still append a worklog entry (§ Work Log below), using
+    `## <HH:MM> — <id> (lite)` as the header.
 ```
-On `create`, once the session file exists, run finish's full checklist normally (including `finish-close.py`). On `note`, run the deploy-relevant steps below that don't depend on a session file (version bump, commit, push, reinstall), skip the session-file-specific steps, and close per the `note` branch above instead of `finish-close.py`.
+On `create`, once the session file exists, run finish's full checklist normally (including `finish-close.py`). On `note`, run the deploy/close steps below that don't depend on a session file (version bump/commit/push/reinstall for plugin, or the Jira-side close for story/CAB), skip the session-file-specific steps, and close per the `note` branch above instead of `finish-close.py`.
 
 Read `<session_root>/<name>.md` and extract:
 - `type` (plugin / story / cab / personal / general)

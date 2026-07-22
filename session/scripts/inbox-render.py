@@ -546,10 +546,10 @@ def parse_type_status(block):
 
     Returns (kind, status): kind in {'work', 'capture'}; status in
     {'new', 'refining', 'ready', 'in-progress', ''} — '' only for capture (no
-    lifecycle). `in-progress` is the sessionless-pickup stage (references/
-    sessionless-mode.md) — a `work` item being actively built without a
+    lifecycle). `in-progress` is the lite-pickup stage (references/
+    lite-mode.md) — a `work` item being actively built without a
     session file; a session-graduated pickup never lingers in the inbox at
-    all (fold-then-archive), so this status is reachable only via sessionless
+    all (fold-then-archive), so this status is reachable only via a lite
     pickup. Mirrors references/inbox-convention.md § Inbox Model's back-compat
     table. Never raises — anything unrecognized defaults to work/ready (the
     same default the doc gives "no line at all").
@@ -651,7 +651,7 @@ def render_pickup(session_root, slug, current_slug):
             if hdr["spawn"]:
                 desc = "★ [spawn] " + desc
             elif status == "in-progress":
-                desc = "%s  · in-progress (sessionless)" % desc
+                desc = "%s  · in-progress (lite)" % desc
             elif status in ("new", "refining"):
                 desc = "%s  · %s" % (desc, status)
             id_part = ("[%s]  " % hdr["id"]) if hdr["id"] else ""
@@ -674,8 +674,8 @@ def render_resume_inbox(session_root, slug, current_slug):
     pickup (pickup consumes immediately — references/inbox-convention.md
     § Lifecycle), so a session-graduated entry never lingers here at all;
     every listed entry is "pending" EXCEPT a `status: in-progress` item,
-    which is sessionless active work still living in the inbox by design
-    (references/sessionless-mode.md) and reads "in progress (sessionless)"
+    which is lite active work still living in the inbox by design
+    (references/lite-mode.md) and reads "in progress (lite)"
     instead. The header text also differs ("Inbox (N items):" vs the Step 3
     pickup prompt). Captures-waiting glance is NOT
     included here — the resume display shows it as a separate line only when
@@ -693,7 +693,7 @@ def render_resume_inbox(session_root, slug, current_slug):
         if hdr["spawn"]:
             desc = "★ [spawn] " + desc
         id_part = ("[%s]  " % hdr["id"]) if hdr["id"] else ""
-        state = "in progress (sessionless)" if status == "in-progress" else "pending"
+        state = "in progress (lite)" if status == "in-progress" else "pending"
         out.append("  %d  %s%s — %s" % (i, id_part, desc, state))
         prov = _provenance_line(hdr, current_slug)
         if prov:
