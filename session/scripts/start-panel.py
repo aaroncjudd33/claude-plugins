@@ -16,11 +16,15 @@ command just runs it and echoes stdout verbatim: zero latitude, no drift.
 Zone-appropriate sections (acp-ajudd#142):
   - Verbs line varies: work -> refine/code/cab; plugin/personal ->
     refine/code + dispatch/capture; general -> refine/code.
-  - Primary content varies: work/general -> In Progress sessions only.
-    plugin/personal -> Inbox work items AND In Progress sessions are BOTH
+  - Primary content varies: work/general -> Recent Sessions only.
+    plugin/personal -> Inbox work items AND Recent Sessions are BOTH
     primary (not collapsed) -- these zones' happy path is "pick an inbox
     item," so inbox can't live in a collapsed Advanced tail the way it does
     for work.
+  - Recent Sessions (renamed from "In Progress", acp-ajudd#160) includes
+    lite/sessionless in-progress work (acp-ajudd#154) alongside session-file
+    rows, sourced from `_inbox/*.md` items at `status: in-progress` -- not
+    just `_index.md` + session files.
   - Advanced tail: work/general keep inbox/memory/search (acp-ajudd#135:
     every count-bearing line always renders, 0 included -- only a genuine
     zone difference may drop a section, never a zero count). plugin/personal
@@ -42,8 +46,8 @@ Panel (work zone, approved layout, acp-ajudd#130/#132/#142):
         ›  resume anything below by its #   —   e.g.  2  →  CAB-9240
         ›  add 'lite' to skip the session file   —   e.g.  code BPT2-6532 lite
 
-    In Progress   ·   4 active · 7 completed · ⚠ 4 stale (>14d)
-    ──────────────────────────────────────────────────────────
+    Recent Sessions   ·   4 active · 7 completed · ⚠ 4 stale (>14d)
+    ──────────────────────────────────────────────────────────────
         1   BPT2-6479   VO: Bring Claude session & memory…   @ajudd  Jun 10  ⚠
         …
 
@@ -71,9 +75,10 @@ Panel (plugin/personal zone, acp-ajudd#142):
       1  [acp-ajudd#86]  Refresh Confluence "Story Plugin" reference page
       2  [acp-ajudd#87]  Refresh Confluence "Release Plugin" reference page
 
-    In Progress   ·   2 active · 5 completed
-    ─────────────────────────────────────────
+    Recent Sessions   ·   2 active · 5 completed
+    ─────────────────────────────────────────────
         1   start-panel-all-zones   Unify start-panel.py…   @ajudd  Jul 20
+        2   [acp-ajudd#160]         Rename In Progress…     @ajudd  Jul 22  (lite)
 
     Advanced
     ────────
@@ -202,12 +207,93 @@ def count_memory(repo_root):
     return n
 
 
+# A progress-log entry line, e.g. "- 2026-07-22 @ajudd — picked up." or the
+# bold variant "**2026-07-22 @ajudd — ...**" (see lite-mode.md's own dogfooded
+# entries) -- used to source a lite row's updated-by/updated-date from its most
+# recent activity rather than its original pickup date.
+PROGRESS_ENTRY_RE = re.compile(r"^\s*-?\s*\*{0,2}(\d{4}-\d{2}-\d{2})\s+@(\S+)", re.MULTILINE)
+
+
+def _latest_progress_entry(block):
+    """Return (date, handle) from the last line under a '### Progress log'
+    heading, or (None, None) if there is no such section or no matching line.
+    """
+    idx = block.find("### Progress log")
+    if idx == -1:
+        return None, None
+    matches = PROGRESS_ENTRY_RE.findall(block[idx:])
+    if not matches:
+        return None, None
+    date, handle = matches[-1]
+    return date, handle
+
+
+def _lite_rows(root, stale_days, today):
+    """Recent-Sessions rows for lite/sessionless in-progress work (acp-ajudd#154,
+    acp-ajudd#160) -- inbox `work` items at `status: in-progress`, which never
+    get a session file (references/lite-mode.md). Sourced entirely from the
+    item itself: name = its stable id, title = its header description,
+    updated_by/updated_date = its latest progress-log entry, falling back to
+    the item's original provenance date/handle when no log entry parses.
+
+    Reads `_inbox/*.md` directly, so this naturally returns [] for zones that
+    don't use that directory (story/cab/general) -- same degrade-to-empty
+    pattern count_inbox_work() already relies on elsewhere in this file.
+
+    No double-count guard is needed against a lite item later promoted to a
+    full session file: promotion fold-then-archives the inbox item
+    (lite-mode.md § Toggle), so it stops existing here at the exact moment its
+    session-file row starts existing -- the two can never overlap.
+    """
+    ir = _load_sibling("inbox-render.py")
+    try:
+        text = ir.render(root, os.path.basename(root.rstrip("/\\")))
+        blocks = ir.parse_items(text)
+    except Exception:
+        return []
+
+    rows = []
+    for block in blocks:
+        try:
+            kind, status = ir.parse_type_status(block)
+        except Exception:
+            continue
+        if kind != "work" or status != "in-progress":
+            continue
+        hdr = ir.parse_header(block)
+        date, who = _latest_progress_entry(block)
+        if not date:
+            date = hdr.get("date") or "—"
+        if not who:
+            who = hdr.get("handle") or ""
+        # Session rows store the "@" prefix baked into updated_by (see
+        # _index.md rows) -- match that so the rendered column lines up.
+        who = f"@{who}" if who else "—"
+        stale = False
+        if today is not None and date not in ("", "—"):
+            try:
+                stale = (today - datetime.strptime(date, "%Y-%m-%d")).days > stale_days
+            except ValueError:
+                stale = False
+        rows.append(dict(
+            name=(hdr.get("id") or hdr.get("desc") or "lite"),
+            title=(hdr.get("desc") or "—"),
+            updated_by=who,
+            updated_date=date,
+            stale=stale,
+            lite=True,
+        ))
+    return rows
+
+
 def build_inprogress(sl, root, handle, stale_days):
     """Return (rows, summary) using session-list's exact parsers for consistency.
 
     rows: in-progress only, most-recent first, each dict(name,title,updated_by,
     updated_date,stale). summary: dict(active,paused,completed,stale). Zone-
-    agnostic — reads _index.md / session files the same way for every type.
+    agnostic — reads _index.md / session files the same way for every type,
+    PLUS lite/sessionless in-progress inbox items (acp-ajudd#160, see
+    _lite_rows above) merged into the same list and sort.
     """
     idx = sl.parse_index(os.path.join(root, "_index.md"))
     file_names, refinement = sl.discover_session_files(root)
@@ -270,14 +356,25 @@ def build_inprogress(sl, root, handle, stale_days):
             updated_by=who,
             updated_date=meta.get("updated_date", "—"),
             stale=stale,
+            lite=False,
         ))
+
+    existing_names = {r["name"] for r in rows}
+    for lr in _lite_rows(root, stale_days, today):
+        if lr["name"] in existing_names:
+            continue  # already represented by a promoted session-file row
+        rows.append(lr)
+        summary["active"] += 1
+        if lr["stale"]:
+            summary["stale"] += 1
 
     rows.sort(key=lambda r: (r["updated_date"], r["name"]), reverse=True)
     return rows, summary, meta_by_name, all_names
 
 
 def render_inprogress_section(sl, rows, summary, overflow, stale_days, show_title):
-    """The 'In Progress' ruled section — identical shape for every zone.
+    """The 'Recent Sessions' ruled section (renamed from 'In Progress',
+    acp-ajudd#160) — identical shape for every zone.
 
     `show_title` gates the title column: only story/cab sessions ever populate
     a `Title:` field (from Jira) — plugin/personal/general structurally never
@@ -286,6 +383,10 @@ def render_inprogress_section(sl, rows, summary, overflow, stale_days, show_titl
     those zones would misrepresent an absent-by-design field as a missing one
     — session-list.py's own baseline listing already omits the column there
     (a plain `—`), so this mirrors that rather than inventing new behavior.
+
+    A row carrying `lite=True` (acp-ajudd#154 work with no session file) gets
+    a trailing `(lite)` marker distinguishing it from a session-file row —
+    they share the same list/sort but not the same underlying state.
     """
     out = []
     bits = [f"{summary['active']} active"]
@@ -294,7 +395,7 @@ def render_inprogress_section(sl, rows, summary, overflow, stale_days, show_titl
     bits.append(f"{summary['completed']} completed")
     if summary["stale"]:
         bits.append(f"⚠ {summary['stale']} stale (>{stale_days}d)")
-    out.append(rule("In Progress   ·   " + " · ".join(bits)))
+    out.append(rule("Recent Sessions   ·   " + " · ".join(bits)))
     if rows:
         name_w = max(len(r["name"]) for r in rows)
         for i, r in enumerate(rows, 1):
@@ -302,6 +403,8 @@ def render_inprogress_section(sl, rows, summary, overflow, stale_days, show_titl
             who = r["updated_by"]
             last = f"{who}  {date}".strip() if who not in ("—", "") else date
             mark = "  ⚠" if r["stale"] else ""
+            if r.get("lite"):
+                mark = "  (lite)" + mark
             if show_title:
                 title = r["title"].strip() if r["title"].strip() not in ("", "—") else "(untitled)"
                 if len(title) > TITLE_W:
