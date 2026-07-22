@@ -1,6 +1,6 @@
 {
   "name": "story",
-  "version": "1.13.4",
+  "version": "1.14.0",
   "description": "Create and manage BPT2 stories. Handles required fields, markdown-to-ADF quirks, assignment, lifecycle rules, and status transitions.",
   "author": {
     "name": "Aaron Judd",
@@ -9,6 +9,7 @@
   "skills": ["./skills/story"],
   "commands": [
     "./commands/create.md",
+    "./commands/status.md",
     "./commands/dashboard.md",
     "./commands/workspace.md",
     "./commands/comment.md",
