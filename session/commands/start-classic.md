@@ -80,6 +80,11 @@ If `session_root` does not exist or is empty, skip this section.
 
 ### 3. Present Routing Block and Wait
 
+**Unmatched fast-path target (acp-ajudd#155).** If `start.md`'s Step 0 fast-path fell through into this flow with `unmatched_target` set (a plugin/personal arg that matched no session file), don't silently present the bare panel as if nothing was typed — run this step's own free-text matcher (§ Free-text and search below) against `unmatched_target`, using the inbox/session data already rendered in Step 2, *before* waiting for a reply:
+- **Matches one or more** inbox items or sessions by name/title/id → show them filtered (`(filtered by '<unmatched_target>')`), same as a typed free-text reply would.
+- **Matches nothing** → say so plainly instead of dead-ending: `No inbox item or session matches '<unmatched_target>'. Start fresh: refine <unmatched_target> to scope it, then code it when ready.`
+Either way, still show the full panel below it (the match result is a supplement, not a replacement) — the point is the target is never dropped without at least one attempt to place it.
+
 Output the routing block and wait for one free-text reply. **Do not use AskUserQuestion.** Output the routing block as plain text — do not wrap it in a fenced code block and do not add a separator line (`---`) before it.
 
 **Free-text and search:** If the user types text that doesn't match a routing action, interpret it as a natural-language filter — match against name, title, handle, status, inbox count, or any session field. Accept plain descriptions like `has inbox`, `updated by nivi`, `created by me`, `paused`, `completed this week`. Re-display the filtered table with `(filtered by '<query>')` and re-show the routing block. If no sessions match and the text looks like intent rather than a filter, proceed naturally. Keywords `mine`, `all`, `backlog`, `index`, `status`, `refine`, `code` are handled directly (see Step 2 and the `refine`/`code` entries in the shared inputs below).
