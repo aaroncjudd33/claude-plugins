@@ -18,19 +18,22 @@ Zone-appropriate sections (acp-ajudd#142, verbs updated acp-ajudd#158):
     cab verb as the primary CAB entry point -- cab/code cab still accepted
     as legacy synonyms, just no longer advertised in this panel);
     plugin/personal -> refine/code + dispatch/capture; general -> refine/code.
-  - Primary content varies: work/general -> Recent Sessions only.
-    plugin/personal -> Inbox work items AND Recent Sessions are BOTH
-    primary (not collapsed) -- these zones' happy path is "pick an inbox
-    item," so inbox can't live in a collapsed Advanced tail the way it does
-    for work.
+  - Primary content: Recent Sessions, every zone (acp-ajudd#159 collapsed
+    plugin/personal's inbox out of primary content -- see Advanced below.
+    This reverses #135/#142's deliberate "inbox primary" call now that
+    start-time speed outweighs an always-visible inbox list).
   - Recent Sessions (renamed from "In Progress", acp-ajudd#160) includes
     lite/sessionless in-progress work (acp-ajudd#154) alongside session-file
     rows, sourced from `_inbox/*.md` items at `status: in-progress` -- not
     just `_index.md` + session files.
-  - Advanced tail: work/general keep inbox/memory/search (acp-ajudd#135:
-    every count-bearing line always renders, 0 included -- only a genuine
-    zone difference may drop a section, never a zero count). plugin/personal
-    narrow to memory/search only, since inbox is primary there already.
+  - Advanced tail: every zone collapses inbox to a count line here
+    alongside memory/search (acp-ajudd#135: every count-bearing line always
+    renders, 0 included -- only a genuine zone difference may drop a
+    section, never a zero count). plugin/personal used to keep the full
+    inbox pickup list as primary content instead of this collapsed line
+    (acp-ajudd#142); acp-ajudd#159 collapses it to match work/general -- the
+    full list is still one `inbox` word away (reuses inbox-render.py's
+    pickup-list logic unchanged).
   - search is scoped to sessions + project memory only, never inbox
     (acp-ajudd#131 resolved 2026-07-20: inbox is small and self-pruning by
     design -- act on an item and it's gone -- so it never accumulates enough
@@ -62,7 +65,8 @@ Panel (work zone, approved layout, acp-ajudd#130/#132/#142):
 
     You're on BPT2-6499's branch (completed)   →   code BPT2-6499
 
-Panel (plugin/personal zone, acp-ajudd#142):
+Panel (plugin/personal zone, acp-ajudd#159 collapsed the Inbox section
+shown below into the Advanced tail's `inbox N item(s)` line):
 
     <slug>  ·  plugin repo
 
@@ -74,10 +78,6 @@ Panel (plugin/personal zone, acp-ajudd#142):
         capture                  bank a raw idea
         ›  add 'lite' to skip the session file   —   e.g.  code 3 lite
 
-    Inbox — code work, or refine new work (2):
-      1  [acp-ajudd#86]  Refresh Confluence "Story Plugin" reference page
-      2  [acp-ajudd#87]  Refresh Confluence "Release Plugin" reference page
-
     Recent Sessions   ·   2 active · 5 completed
     ─────────────────────────────────────────────
         1   start-panel-all-zones   Unify start-panel.py…   @ajudd  Jul 20
@@ -85,6 +85,7 @@ Panel (plugin/personal zone, acp-ajudd#142):
 
     Advanced
     ────────
+        inbox    2 item(s)   view pending items across session inboxes
         memory   59 notes    search repo memory
         search               find a session or memory note
 
@@ -422,17 +423,6 @@ def render_inprogress_section(sl, rows, summary, overflow, stale_days, show_titl
     return out
 
 
-def render_inbox_section(root, slug):
-    """The primary 'Inbox' section for plugin/personal — reuses inbox-render.py's
-    render_pickup() verbatim (acp-ajudd#142) rather than reimplementing its
-    formatting, so spawn stars, maturity-stage suffixes, provenance dimming, and
-    the captures-waiting glance all carry over with zero drift risk.
-    """
-    ir = _load_sibling("inbox-render.py")
-    text = ir.render_pickup(root, slug, slug).rstrip("\n")
-    return text.split("\n")
-
-
 def render_advanced_section(inbox_n, mem_n, include_inbox, include_sync=False):
     """The 'Advanced' ruled section. acp-ajudd#135: every count-bearing line
     always renders, 0 included — only a genuine zone difference (include_inbox)
@@ -510,6 +500,7 @@ def render_plugin_personal(args, root, slug, branch, sl, stale_days, zone_label)
     if args.limit and len(rows) > args.limit:
         overflow = len(rows) - args.limit
         rows = rows[:args.limit]
+    inbox_n = count_inbox_work(root)
     mem_n = count_memory(args.repo_root)
 
     out = [f"{slug}  ·  {zone_label} repo" + (f"  ·  branch: {branch}" if branch else ""), ""]
@@ -522,17 +513,15 @@ def render_plugin_personal(args, root, slug, branch, sl, stale_days, zone_label)
     out.append("    ›  add 'lite' to skip the session file   —   e.g.  code 3 lite")
     out.append("")
 
-    # Inbox is PRIMARY for plugin/personal (acp-ajudd#142) — the happy path is
-    # "pick an inbox item," so it never lives in a collapsed Advanced tail the
-    # way it does for the work zone.
-    out.extend(render_inbox_section(root, slug))
-    out.append("")
-
     out.extend(render_inprogress_section(sl, rows, summary, overflow, stale_days, show_title=False))
     out.append("")
 
-    # Advanced narrows to memory/search only — inbox already shown above as primary.
-    out.extend(render_advanced_section(inbox_n=0, mem_n=mem_n, include_inbox=False))
+    # acp-ajudd#159: inbox collapses to a count line in Advanced, matching
+    # work/general — reverses #135/#142's deliberate "inbox primary" call now
+    # that start-time speed outweighs an always-visible inbox list. The full
+    # pickup list is still one `inbox` word away (inbox-render.py's
+    # render_pickup(), unchanged), just no longer rendered here by default.
+    out.extend(render_advanced_section(inbox_n=inbox_n, mem_n=mem_n, include_inbox=True))
     return out
 
 
