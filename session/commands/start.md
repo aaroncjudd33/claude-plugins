@@ -13,6 +13,8 @@ Begin a working session. Establishes session identity, Teams chat, and routes in
 
 If arguments were passed to `/session:start`, attempt to resolve them before running the full discovery flow.
 
+**`lite` trailing token (acp-ajudd#154/#143 — `references/lite-mode.md`, story/CAB/plugin/personal).** Before matching against the table below, check whether the argument string ends with a standalone trailing word `lite` (case-insensitive) — e.g. `/session:start BPT2-6532 lite`, `/session:start code BPT2-6532 lite`, `/session:start cab BPT2-6532 BPT2-6540 lite`. If so, strip that trailing token, set `lite_requested = true`, and match the remainder against the table normally. Carry `lite_requested` forward through the fast-path flow into `start-impl.md` / `start-classic.md`'s new-kickoff routes: when it's `true`, the session-vs-lite question they'd otherwise ask is answered already — skip the prompt and take the lite path directly (still print what was decided, same one-line style as any other applied default, so it's never silently invisible). When absent (`lite_requested` unset), behavior is unchanged — the interactive question is asked as documented, defaulting to session.
+
 **Two verbs — `refine` (planning, sessionless) and `code` (coding session).** The mode is never something you set; it is **read from the file you're touching** — a target with no session file is **work** you're still scoping (planning/refining), a target that already has a session file is *coding*. `code` and `refine` just name which side you're on. (`new`, `resume`, and `pick` are retired — folded into these two.)
 
 **Detect arg type** (checked in order):

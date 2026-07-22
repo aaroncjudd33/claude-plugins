@@ -36,10 +36,11 @@ Panel (work zone, approved layout, acp-ajudd#130/#132/#142):
 
     Quick start — type a verb + a target
     ────────────────────────────────────
-        refine <n|KEY>   scope / plan a story           (sessionless)
-        code   <n|KEY>   open or resume a session       (story or CAB)
-        cab    <KEYS>    start a NEW CAB from story keys
+        refine <n|KEY>          scope / plan a story
+        code   <n|KEY> [lite]   open or resume a session       (story or CAB)
+        cab    <KEYS>  [lite]   start a NEW CAB from story keys
         ›  resume anything below by its #   —   e.g.  2  →  CAB-9240
+        ›  add 'lite' to skip the session file   —   e.g.  code BPT2-6532 lite
 
     In Progress   ·   4 active · 7 completed · ⚠ 4 stale (>14d)
     ──────────────────────────────────────────────────────────
@@ -60,10 +61,11 @@ Panel (plugin/personal zone, acp-ajudd#142):
 
     Quick start — type a verb + a target
     ────────────────────────────────────
-        refine [target]   scope work → a work entry          (sessionless)
-        code   <n|id>     open a coding session (inbox item or in-progress)
-        dispatch          coordinate the inbox                (sessionless)
-        capture           bank a raw idea                     (sessionless)
+        refine [target]          scope work → a work entry
+        code   <n|id> [lite]     open a coding session (inbox item or in-progress)
+        dispatch                 coordinate the inbox
+        capture                  bank a raw idea
+        ›  add 'lite' to skip the session file   —   e.g.  code 3 lite
 
     Inbox — code work, or refine new work (2):
       1  [acp-ajudd#86]  Refresh Confluence "Story Plugin" reference page
@@ -356,9 +358,9 @@ def render_work(args, root, slug, branch, sl, stale_days):
     out = [f"{slug}  ·  work repo" + (f"  ·  branch: {branch}" if branch else ""), ""]
 
     out.append(rule("Quick start — type a verb + a target"))
-    out.append("    refine <n|KEY>   scope / plan a story           (sessionless)")
-    out.append("    code   <n|KEY>   open or resume a session       (story or CAB)")
-    out.append("    cab    <KEYS>    start a NEW CAB from story keys")
+    out.append("    refine <n|KEY>          scope / plan a story")
+    out.append("    code   <n|KEY> [lite]   open or resume a session       (story or CAB)")
+    out.append("    cab    <KEYS>  [lite]   start a NEW CAB from story keys")
     ex_i = ex_name = None
     for i, r in enumerate(rows, 1):
         if r["name"].upper().startswith("CAB-"):
@@ -368,6 +370,7 @@ def render_work(args, root, slug, branch, sl, stale_days):
         ex_i, ex_name = 1, rows[0]["name"]
     if ex_name:
         out.append(f"    ›  resume anything below by its #   —   e.g.  {ex_i}  →  {ex_name}")
+    out.append("    ›  add 'lite' to skip the session file   —   e.g.  code BPT2-6532 lite")
     out.append("")
 
     out.extend(render_inprogress_section(sl, rows, summary, overflow, stale_days, show_title=True))
@@ -400,10 +403,11 @@ def render_plugin_personal(args, root, slug, branch, sl, stale_days, zone_label)
     out = [f"{slug}  ·  {zone_label} repo" + (f"  ·  branch: {branch}" if branch else ""), ""]
 
     out.append(rule("Quick start — type a verb + a target"))
-    out.append("    refine [target]   scope work → a work entry            (sessionless)")
-    out.append("    code   <n|id>     open a coding session (inbox item or in-progress)")
-    out.append("    dispatch          coordinate the inbox                 (sessionless)")
-    out.append("    capture           bank a raw idea                      (sessionless)")
+    out.append("    refine [target]          scope work → a work entry")
+    out.append("    code   <n|id> [lite]     open a coding session (inbox item or in-progress)")
+    out.append("    dispatch                 coordinate the inbox")
+    out.append("    capture                  bank a raw idea")
+    out.append("    ›  add 'lite' to skip the session file   —   e.g.  code 3 lite")
     out.append("")
 
     # Inbox is PRIMARY for plugin/personal (acp-ajudd#142) — the happy path is
@@ -437,7 +441,7 @@ def render_general(args, root, slug, branch, sl, stale_days):
     out = [f"{slug}  ·  general repo" + (f"  ·  branch: {branch}" if branch else ""), ""]
 
     out.append(rule("Quick start — type a verb + a target"))
-    out.append("    refine [topic]   scope work verbally               (sessionless, no system of record)")
+    out.append("    refine [topic]   scope work verbally               (no system of record)")
     out.append("    code   [name]    open a coding session (new kickoff or resume)")
     out.append("")
 
