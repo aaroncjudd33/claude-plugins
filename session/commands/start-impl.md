@@ -576,12 +576,12 @@ Where `<title-or-dash>` = `Title:` field for story/cab; `—` for other types.
 3. **Memory scan** — not prompted at kickoff (§ 7a). If project memory exists, an FYI note was already shown there; the scan only runs if the user says so on demand (`load memory`, `/memory:scan`) — then run `/memory:scan` using the story title and branch as the feature-area signal, present candidates, load the user's picks, and record them to the session's `Loaded memories:` field.
 4. Investigate codebase, confirm Teams chat exists, check Confluence page.
 
-**CAB — new:**
-- The session-vs-lite question is asked in `start-classic.md`'s `cab <KEYS>` handling, **before** routing to `/release:create-cab` (`references/lite-mode.md`) — CAB kickoff mechanics (the card, branch, PR) belong to the `release` plugin regardless of the answer; lite only changes whether `session` also keeps a parallel state file on top.
+**CAB — new (entered via `release <story-keys>`, primary — `cab <keys>` / `code cab <keys>` still accepted as legacy synonyms — acp-ajudd#158):**
+- The session-vs-lite question is asked in `start-classic.md`'s `release <KEYS>` handling, **before** routing to `/release:create-cab` (`references/lite-mode.md`) — CAB kickoff mechanics (the card, branch, PR) belong to the `release` plugin regardless of the answer; lite only changes whether `session` also keeps a parallel state file on top.
 - **`session` / `go`** → route to `/release:create-cab` as documented, then continue as today (session identity/Teams/write-state at Steps 6–8).
 - **`lite`** → still route to `/release:create-cab` (unchanged — the CAB card/branch/PR are not session-file ceremony), but write `_active` as `lite:<CAB-KEY>` instead of a session name, and skip Steps 6–8. Updates post as Jira comments on the CAB issue.
 
-**CAB — resume:**
+**CAB — resume (entered via `release <CAB-KEY>`, same as `code <CAB-KEY>` — the file decides):**
 1. **Lite-resume check first (same pattern as story, above).** `_active` reads `lite:<CAB-KEY>` (matching this target) → resume lite: check release branch status, continue via Jira comments on the CAB issue, no session file. `_active` doesn't match and the CAB card is already past its fresh-pickup state → ask (same resume-lite / start-session / not-mine choice as story). Otherwise → session-file resume, unchanged:
 2. Read the CAB card from Jira.
 3. Check release branch status.

@@ -13,9 +13,11 @@ assembled it from several script outputs plus generated framing — it had
 latitude and used it. This renders the whole panel deterministically so the
 command just runs it and echoes stdout verbatim: zero latitude, no drift.
 
-Zone-appropriate sections (acp-ajudd#142):
-  - Verbs line varies: work -> refine/code/cab; plugin/personal ->
-    refine/code + dispatch/capture; general -> refine/code.
+Zone-appropriate sections (acp-ajudd#142, verbs updated acp-ajudd#158):
+  - Verbs line varies: work -> refine/code/release (release replaces the old
+    cab verb as the primary CAB entry point -- cab/code cab still accepted
+    as legacy synonyms, just no longer advertised in this panel);
+    plugin/personal -> refine/code + dispatch/capture; general -> refine/code.
   - Primary content varies: work/general -> Recent Sessions only.
     plugin/personal -> Inbox work items AND Recent Sessions are BOTH
     primary (not collapsed) -- these zones' happy path is "pick an inbox
@@ -40,9 +42,9 @@ Panel (work zone, approved layout, acp-ajudd#130/#132/#142):
 
     Quick start — type a verb + a target
     ────────────────────────────────────
-        refine <n|KEY>          scope / plan a story
-        code   <n|KEY> [lite]   open or resume a session       (story or CAB)
-        cab    <KEYS>  [lite]   start a NEW CAB from story keys
+        refine  <n|KEY>          scope / plan a story
+        code    <n|KEY> [lite]   open or resume a session      (story or CAB)
+        release <KEYS>  [lite]   start or resume a CAB release
         ›  resume anything below by its #   —   e.g.  2  →  CAB-9240
         ›  add 'lite' to skip the session file   —   e.g.  code BPT2-6532 lite
 
@@ -461,9 +463,9 @@ def render_work(args, root, slug, branch, sl, stale_days):
     out = [f"{slug}  ·  work repo" + (f"  ·  branch: {branch}" if branch else ""), ""]
 
     out.append(rule("Quick start — type a verb + a target"))
-    out.append("    refine <n|KEY>          scope / plan a story")
-    out.append("    code   <n|KEY> [lite]   open or resume a session       (story or CAB)")
-    out.append("    cab    <KEYS>  [lite]   start a NEW CAB from story keys")
+    out.append("    refine  <n|KEY>          scope / plan a story")
+    out.append("    code    <n|KEY> [lite]   open or resume a session      (story or CAB)")
+    out.append("    release <KEYS>  [lite]   start or resume a CAB release")
     ex_i = ex_name = None
     for i, r in enumerate(rows, 1):
         if r["name"].upper().startswith("CAB-"):

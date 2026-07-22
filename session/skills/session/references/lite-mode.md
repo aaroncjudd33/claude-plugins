@@ -34,8 +34,9 @@ always pays the full cost regardless of size. Lite lets the size of the work dec
 **Story** — at `code <KEY>` new kickoff (`start-impl.md` § Story — new kickoff), **before**
 the Jira transition + branch creation:
 
-**CAB** — at `cab <KEYS>` / `code cab <KEYS>` new kickoff (`start-classic.md`'s Work
-project type-specific inputs), **before** routing to `/release:create-cab`:
+**CAB** — at `release <KEYS>` new kickoff (`start-classic.md`'s Work project
+type-specific inputs; `cab <KEYS>` / `code cab <KEYS>` still accepted as legacy
+synonyms — acp-ajudd#158), **before** routing to `/release:create-cab`:
 
 All three ask the same shape of question (plain text, not a picker — same rule as every
 other prompt in this flow):
@@ -60,17 +61,18 @@ Where `<record>` is:
 - CAB → "the CAB Jira issue (via comments)"
 
 **Discoverable, and skippable via a trailing `lite` token.** The quick-start panel
-(`start-panel.py`) advertises this directly on the `code`/`cab` lines (`code <n|KEY>
-[lite]`, `cab <KEYS> [lite]`) plus a one-line hint with a worked example — the point
+(`start-panel.py`) advertises this directly on the `code`/`release` lines (`code <n|KEY>
+[lite]`, `release <KEYS> [lite]`) plus a one-line hint with a worked example — the point
 isn't a hidden feature you have to already know about. And you don't have to wait for
 the interactive prompt: append `lite` to the command itself — `/session:start BPT2-6532
-lite`, `code BPT2-6532 lite`, `cab BPT2-6532 BPT2-6540 lite` — and the question is
+lite`, `code BPT2-6532 lite`, `release BPT2-6532 BPT2-6540 lite` — and the question is
 pre-answered, never asked. This works from the bare `/session:start <target> lite`
-fast-path (`start.md` Step 0) or from typing `code <target> lite` / `cab <keys> lite` at
-the routing-block reply (`start-classic.md`) — both set the same `lite_requested` flag
+fast-path (`start.md` Step 0) or from typing `code <target> lite` / `release <keys> lite`
+at the routing-block reply (`start-classic.md`) — both set the same `lite_requested` flag
 that `start-impl.md`'s three prompt sites check before asking. Skipping the prompt still
 announces the choice with one line (never silent) — it just doesn't stop and wait for a
-reply.
+reply. (`cab <keys> lite` / `code cab <keys> lite` still work too, as legacy synonyms —
+acp-ajudd#158.)
 
 **Default stays session — this is a deliberate opt-*in* to less ceremony, never a
 silent opt-out of it.** "go" (or any reply that doesn't say `lite`) takes the session

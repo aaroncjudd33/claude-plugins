@@ -35,9 +35,10 @@ If any `capture`-type entries exist, show `Captures waiting: N — say "check ca
 - A bare Jira story key (`BPT2-6429`) or CAB key (`CAB-456`) (story/cab/general zone) → implicit `code` on that key; skip straight to the **code path — story/cab zone** below with it.
 - A bare inbox `[id]` (e.g. `acp-ajudd#7`), a list `<n>` (only meaningful after a `search`), or an existing session name (plugin/personal zone) → implicit `code` on that target; skip straight to the **code path — plugin/personal zone** below.
 - `code <target>` / `refine <target>` / `cab <keys>` → explicit, skip straight to the matching Step 3 branch with the target already carried.
+- `release <target>` (story/cab zone only — acp-ajudd#158) → explicit, skip straight to the **release path — story/cab zone** below with the target already carried. `cab <keys>` / `code cab <keys>` are still accepted (they route into the same code-path CAB handling as always) — `release` is just the new primary spelling.
 - `dispatch` / `capture` (plugin/personal only) → skip straight to that role below.
 - `search` / `list` → run the on-demand listing for this zone (see the zone's code branch below), then re-ask the same role prompt (the zone-aware ask from `start.md` Step 1a).
-- Bare `refine` / `code` / `dispatch` / `capture` → go to the matching Step 3 branch with no target.
+- Bare `refine` / `code` / `release` / `dispatch` / `capture` → go to the matching Step 3 branch with no target.
 - Anything else that doesn't parse → ask once more, the same role prompt (do not guess a third way).
 
 ---
@@ -99,6 +100,24 @@ Wait for one free-text reply.
   3. Once the key exists, treat it exactly like a fresh key with no session file above: read `start-impl.md`, go to Step 6 → **Story — new kickoff** (transitions Ready For Work → In Progress as part of that same flow).
 - **`search`** → re-run the render above (refresh) and re-display, then re-ask `story key (e.g. BPT2-6429)? — or new` (drop `search` from the reprompt).
 - **Anything else** → treat as a nudge, not a filter (this flow doesn't support free-text filtering — that's what `search` is for): ask once more, `Story key, or new / search?`.
+
+---
+
+**`release` path — story / cab zone only (acp-ajudd#158):**
+
+`release` is the primary verb for CAB work — symmetric with `code`'s "the file decides" behavior, scoped to CAB targets specifically. Not offered in plugin/personal/general (mirrors `dispatch`/`capture`'s zone restriction — if typed there anyway, note `release is story/cab only` and re-ask the same role prompt from `start.md` Step 1a).
+
+If no target was already carried in from Step 2, ask directly (no separate render needed beyond what `code`'s render above would show — reuse it if already on screen this turn):
+```
+story key(s) to start a new CAB, or an existing CAB-XXXX to resume?
+```
+Wait for one free-text reply.
+
+- **One or more story keys** (`BPT2-6429`, `BPT2-6429 BPT2-6430`) → new CAB kickoff: route to `/release:create-cab` for those stories, same mechanics `start-classic.md`'s Work project `cab <keys>` handling already documents (session-vs-lite choice before routing, per `references/lite-mode.md`). Read `start-impl.md`, go to **Step 9 → "CAB — new"**.
+- **A single `CAB-XXXX` key** → resolves exactly like `code CAB-XXXX`: check whether `<session_root>/<CAB-XXXX>.md` exists — **exists** → read `start-impl.md`, go directly to its **Step 4 (Resume existing)**; **does not exist** (e.g. a lite CAB with no session file) → the lite-resume check in `start-impl.md`'s **CAB — resume** section handles it.
+- **Anything else** → ask once more, `Story key(s), or an existing CAB-XXXX?`.
+
+`cab <keys>` / `code cab <keys>` remain accepted as documented legacy synonyms wherever they were accepted before this change — this section only adds `release` as the new primary entry point, it does not remove the old ones.
 
 ---
 

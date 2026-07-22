@@ -71,14 +71,14 @@ Sessions are typed, and the type determines whether there's an **external system
 | **plugin** | none — the session *is* the work | item-driven only: `code` a refined `work` entry (new work is `refine`d first); named after the **feature** | command-level: session commands require a session |
 | **personal** | none — the session *is* the work | item-driven only (identical to plugin) | command-level: session commands require a session |
 | **story** | Jira story (BPT2-XXXX) | keyed to the story; `code BPT2-XXXX` | command-level: session commands require a session |
-| **cab** | CAB card (Jira) | keyed to the CAB; `code cab <keys>` | command-level: session commands require a session |
+| **cab** | CAB card (Jira) | keyed to the CAB; `release <keys>` (legacy synonyms: `cab <keys>` / `code cab <keys>`) | command-level: session commands require a session |
 | **general** | none (lightweight) | `code <name>` (named by the user) | command-level: session commands require a session |
 
 **Why plugin/personal differ from story/cab:** story and CAB work already have an authoritative external unit of work (the ticket) that says what's being done and tracks its lifecycle. Plugin and personal work have no such anchor — so the session itself becomes the unit of work: it can only exist by `code`-ing (graduating) a refined `work` entry, and it's named after the feature. That is what makes "the session is the work" real rather than aspirational. (The *creation path* differs by type; the *command-level enforcement* — session commands need a session — is uniform across all types.)
 
 **A session file exists only for implementation — it is always a coding session (1:1).** Planning and refinement are **sessionless**: they are the `refine` flow, which writes **work** (a Jira story in a work repo, or a `work` entry at `refining`/`ready` in plugin/personal) and never a session file. There is no session "mode" — **the file dictates the mode** (see below): scoping happens in `refine` (no file), building happens in a session (one file). `ready` work is graduated into a coding session by a separate `code` gesture; refine itself never crosses that line.
 
-### The file dictates the mode — two verbs (acp-ajudd#56)
+### The file dictates the mode — two verbs, plus a scoped third (acp-ajudd#56/#158)
 
 **You are never in a "mode" you set — the mode is read from the file you're touching.** A target with **no session file** is a *`work` entry* (or Jira story) → **planning / refining**. A target that **has a session file** is *coding*. The verb a user types just names which side they're on, so the vocabulary and the file state are the same fact said twice. There are exactly **two verbs**, and `new` / `resume` / `pick` are all retired into them:
 
@@ -86,6 +86,8 @@ Sessions are typed, and the type determines whether there's an **external system
 - **`code <n|name|KEY>`** — **coding.** Be in a coding session. If the target is a **`work` entry** → graduate it and a session file is born (Jira story → *In Progress*; `work` entry → consume/fold-archive). If the target **already has a session** → resume it (this absorbs the old `resume`, and graduating work absorbs the old `pick`). One verb; the file decides which.
 
 `new` reintroduced coding-without-a-scoped-unit, so it's gone — scope-first *by workflow*, not by policing (acp-ajudd#1). `resume` was redundant with `code` — `code BPT2-6508` and the old `resume BPT2-6508` did the identical thing, since the file already tells the system whether to graduate or re-enter. **Cross-zone uniformity is the payoff:** identical two-verb feel everywhere; only where the *work* lives differs (a `work` entry vs a Jira story). A dev in virtual-office types `code BPT2-XXXX`; a plugin session types `code <n>`. Same word, same meaning. **Warn, never block** on `code` of ungraduated work (acp-ajudd#1); **refine never offers to `code`** (see § Session Stance and `commands/refine.md`).
+
+**`release <keys|CAB-KEY>` — a scoped third verb, work-repo zone only (acp-ajudd#158).** This does **not** introduce a third *stance* — the two-stance model (planning / coding, § Session Stance) is unchanged. `release` is a second **coding**-stance verb, a peer of `code` that is specific to CAB targets, promoted from what used to be a bare-token special case buried inside `code` (`code cab <keys>` / bare `cab <keys>`). Same "the file decides" shape as `code`: one or more story keys → new CAB coding session (routes to `/release:create-cab`); an existing `CAB-XXXX` key → resume it (identical to `code CAB-XXXX`). Scope is deliberately narrow — `release` exists only where CAB is a real workflow (story/cab, i.e. the work-repo zone); plugin, personal, and general keep exactly the two verbs. `cab <keys>` / `code cab <keys>` remain accepted, documented legacy synonyms — promoting `release` to a peer verb didn't remove the old spellings.
 
 ## Session Stance — planning is default, coding is explicit and immutable (acp-ajudd#28/#30/#32)
 

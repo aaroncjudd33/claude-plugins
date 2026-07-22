@@ -17,6 +17,8 @@ If arguments were passed to `/session:start`, attempt to resolve them before run
 
 **Two verbs — `refine` (planning, sessionless) and `code` (coding session).** The mode is never something you set; it is **read from the file you're touching** — a target with no session file is **work** you're still scoping (planning/refining), a target that already has a session file is *coding*. `code` and `refine` just name which side you're on. (`new`, `resume`, and `pick` are retired — folded into these two.)
 
+**A third verb, `release`, scoped to the work-repo zone only (acp-ajudd#158).** This does **not** add a third stance — `release` is a second **coding**-stance verb, a peer of `code` that is CAB-specific, exactly the way `code cab <keys>` already worked before this change. It is symmetric with `code`'s "the file decides" behavior: `release <story-keys>` starts a **new** CAB coding session from those story keys (the old `cab <keys>` new-kickoff), and `release <CAB-KEY>` **resumes** an existing CAB coding session (same as `code <CAB-KEY>`). `release` only appears in the work-repo zone (story/cab) — plugin, personal, and general keep exactly the two verbs, unchanged. `cab <keys>` and `code cab <keys>` remain accepted as documented legacy synonyms — never silently dropped.
+
 **Detect arg type** (checked in order):
 
 | Pattern | Example | Resolves to |
@@ -28,7 +30,8 @@ If arguments were passed to `/session:start`, attempt to resolve them before run
 | `code <target>` | `/session:start code BPT2-6429` | coding session on `<target>` — the file decides: a **`work` entry** graduates into a fresh session, an existing **session** resumes |
 | `BPT2-XXXX` (Jira story key) | `/session:start BPT2-6429` | coding session on that story (bare key = implicit `code`) |
 | `CAB-XXXX` (CAB key) | `/session:start CAB-9260` | coding session on that CAB (bare key = implicit `code`) |
-| `code cab BPT2-XXXX [...]` | `/session:start code cab BPT2-6429 BPT2-6430` | new CAB coding session for those stories (bare `cab BPT2-…` also accepted) |
+| `release BPT2-XXXX [...]` | `/session:start release BPT2-6429 BPT2-6430` | new CAB coding session for those stories — the primary verb (`cab BPT2-…` / `code cab BPT2-…` accepted as legacy synonyms) |
+| `release CAB-XXXX` | `/session:start release CAB-9260` | resume that CAB coding session (same as `code CAB-9260`) |
 | Existing session name | `/session:start release` | coding session — resume it (bare name = implicit `code`; any type, incl. legacy plugin-named + feature sessions) |
 
 **Fast-path flow:**
@@ -38,7 +41,8 @@ If arguments were passed to `/session:start`, attempt to resolve them before run
 2a′. If arg is `dispatch`: resolve `session_root`/`handle`, then read `commands/dispatch.md` and run it from Step 1 (assume the dispatch role, orient on the inbox — sessionless). Skip Steps 1–3. (Dispatch applies only in plugin/personal; `dispatch.md` itself stops cleanly in work/general.)
 2a″. If arg is `capture` or `capture <idea>`: resolve `session_root`/`handle`, then read `commands/capture.md` and run it from Step 1 (assume the capture role, bank ideas as `capture`-type inbox entries — sessionless), passing any `<idea>` as the first idea to sniff. Skip Steps 1–3. (Capture applies only in plugin/personal; `capture.md` itself stops cleanly in work/general.)
 2b. If arg is `code`, `code <target>`, or `code cab <keys>` (or bare `cab <keys>`): resolve `session_root`/`handle`, strip the `code` verb, and treat `<target>` exactly as a bare token in step 3 below (`code cab <keys>` / `cab <keys>` → new CAB kickoff). Skip Steps 1–3.
-3. Derive session type and target name from the arg (story key → type=story, name=BPT2-XXXX; CAB key → type=cab; `cab <keys>` / `code cab <keys>` → new CAB; any other bare token → the `code` target — a session NAME to resume, or a `work` entry to graduate).
+2b′. If arg is `release <target>` (work-repo zone only): resolve `session_root`/`handle`, strip the `release` verb, and treat `<target>` exactly as a bare `cab <keys>` token would be in step 3 below — one or more story keys → new CAB kickoff; a single existing `CAB-XXXX` key → resolves like `code CAB-XXXX` (resume). Skip Steps 1–3. (`release` is the primary verb for this; `cab <keys>` / `code cab <keys>` remain accepted legacy synonyms per 2b above.)
+3. Derive session type and target name from the arg (story key → type=story, name=BPT2-XXXX; CAB key → type=cab; `release <keys>` / `cab <keys>` / `code cab <keys>` → new CAB; any other bare token → the `code` target — a session NAME to resume, or a `work` entry to graduate).
 4. Check whether `<session_root>/<name>.md` exists (**this existence check IS "the file decides"** — a session file present means resume-coding; absent means graduate-work or kickoff):
    - **Exists + plugin session** → go directly to the Plugin session resume path in `start-classic.md` Step 4 (no `start-impl.md` read needed).
    - **Exists + other type** → read `start-impl.md`, go directly to its Step 4 (Resume existing) with that session.
@@ -84,7 +88,14 @@ From that single output, compute (no further tool calls — this is plain reason
 
 Print the zone-aware **labeled** role menu below and wait for one free-text reply — a bare "X or Y?" line doesn't tell a user what each verb *does*, so every option gets a one-line label (acp-ajudd#128). **Do not use AskUserQuestion.**
 
-- **story, cab, general** (no inbox; 2 options):
+- **story, cab** (work-repo zone; no inbox; 3 options — acp-ajudd#158):
+  ```
+  refine, code, or release?
+    refine   — scope/plan work (sessionless)
+    code     — open or resume a coding session
+    release  — start or resume a CAB release
+  ```
+- **general** (no inbox; 2 options):
   ```
   refine or code?
     refine — scope/plan work (sessionless)
