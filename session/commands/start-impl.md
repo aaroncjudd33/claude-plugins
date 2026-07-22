@@ -195,11 +195,20 @@ Plugin and personal sessions are created ONLY by graduating a `work` entry — n
    Reply with an override, or "go" to accept session (default).
    ```
    **`session` / `go`** → continue at step 2 below exactly as documented (unchanged).
-   **`lite`** → skip steps 2–5 below (no feature name, no Scope field, no fold, no
+   **`lite`** → skip steps 2, 4, 5 below (no feature name, no fold, no
    fold-then-archive consume) and Steps 6–8 further down (no session identity, no Teams
-   chat, no session-file write). Instead:
-   - Change the item's metadata line to `> [type: work · status: in-progress]` in place
-     (`_inbox/<id>.md` stays live — it is not archived).
+   chat, no session-file write). Step 3 (Scope) still runs — a lite item needs a
+   scope-equivalent declaration exactly as much as a session file does (acp-ajudd#161):
+   - **Derive scope, using step 3's logic verbatim** (single- vs multi-plugin, same
+     confirm-once on ambiguity) — the only difference is *where* it's written: instead of
+     a session file's `Scope:` field, write it into the item's own metadata line:
+     `> [type: work · status: in-progress · scope: <derived set>]` (e.g.
+     `scope: session/, setup/` for a multi-plugin item, `scope: session/` for the common
+     single-plugin case). Parsed the same tolerant way `type`/`status` already are
+     (`references/inbox-convention.md`) — an older lite item with no `scope:` field
+     behaves exactly like a session file with no `Scope:` field (the Scope Scan step
+     skips it, never errors).
+   - `_inbox/<id>.md` stays live — it is not archived.
    - Write `~/.claude/memory/sessions/<slug>/_active` as `lite:<id>` (not a session
      name) — see `references/path-resolution.md` for the two `_active` shapes this
      creates and `references/lite-mode.md` for how `commit`/`checkpoint`/`finish`

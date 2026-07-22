@@ -117,10 +117,18 @@ kickoff mechanics belong to the `release` plugin, not this one; lite only change
 
 ## What lite does instead
 
-1. **Plugin / personal — status flip, in place.** Change the item's metadata line to
-   `> [type: work · status: in-progress]` — a lifecycle stage reachable only via a lite
-   pickup (a session-graduated pickup never lingers in the inbox, so this status never
-   appears on a session-consumed item). `inbox-render.py` renders it distinctly: `· in-
+1. **Plugin / personal — status flip, in place, plus a scope declaration (acp-ajudd#161).**
+   Change the item's metadata line to
+   `> [type: work · status: in-progress · scope: <derived set>]` — a lifecycle stage
+   reachable only via a lite pickup (a session-graduated pickup never lingers in the
+   inbox, so this status never appears on a session-consumed item). The `scope:` field is
+   derived at pickup using the same single- vs multi-plugin logic a session file's
+   `Scope:` field uses (`start-impl.md` § Work Pickup step 3) — it exists so
+   `checkpoint`/`commit`/`finish`'s Scope Scan step can run for lite work exactly as it
+   does for a session file (§ Command behavior below), instead of silently not running at
+   all. Parsed the same tolerant way `type`/`status` already are; absent on an older lite
+   item (predating this field) → Scope Scan just skips, same as a session file with no
+   `Scope:` field. `inbox-render.py` renders it distinctly: `· in-
    progress (lite)` in the pickup list, `— in progress (lite)` in the resume-inbox block
    (see `inbox-convention.md` § Lifecycle for how this sits alongside the existing
    per-session in-progress marker — same slot, different inbox kind).

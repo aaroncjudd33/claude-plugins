@@ -153,9 +153,9 @@ Save what's missing. Report: "Saved: [list]" or "Memory: nothing new to save."
 
 ### 5. Scope Scan
 
-Read the `Scope:` field from the session file. If the field is missing or the session type is `general`, skip this step.
+**Lite-aware read (acp-ajudd#161).** If `_active` is `lite:<id>` (no session file — the `note` branch of Step 0's lite prompt), read the scope declaration from `_inbox/<id>.md`'s metadata line instead of a session file's `Scope:` field: parse `scope: <set>` off `> [type: work · status: in-progress · scope: <set>]` the same tolerant way `type`/`status` are already parsed (`references/inbox-convention.md`). If the item predates this field (no `scope:` present) or the session type is `general`, skip this step — same as a session file with no `Scope:` field, never an error. Otherwise (a plain session name), read the `Scope:` field from the session file as documented below. If the field is missing, skip this step.
 
-The `Scope:` field may hold **one path or a comma-separated set** (a multi-plugin feature declares every plugin dir it touches — acp-ajudd#54). Split on `,`, trim each entry, and resolve each: if an entry is relative, resolve it as `local_cfg.projectRoot + "/" + entry` (read `local_cfg` from `~/.claude/config/<slug>.json`); for legacy sessions with absolute scope, use as-is.
+The scope value (either source) may hold **one path or a comma-separated set** (a multi-plugin feature declares every plugin dir it touches — acp-ajudd#54). Split on `,`, trim each entry, and resolve each: if an entry is relative, resolve it as `local_cfg.projectRoot + "/" + entry` (read `local_cfg` from `~/.claude/config/<slug>.json`); for legacy sessions with absolute scope, use as-is.
 
 Review file paths that were accessed or modified during this conversation (Read, Edit, Write, Bash file operations). A path is in-scope if it begins with **any** of the resolved scope paths; only paths under **none** of them are out-of-scope. A multi-plugin feature's own declared surface is in-scope by design — only edits outside the item's declared plugin set are the leakage this scan is for (acp-ajudd#54).
 
@@ -172,7 +172,7 @@ Resolve before closing:
 ```
 
 - **yes (route):** invoke `/session:inbox` flow with the out-of-scope item pre-populated. Choosing `route` IS the go-ahead — `/session:inbox` writes it directly and surfaces the `Sent inbox item <id> to <target> inbox` line (free rein + visible, never silent — acp-ajudd#5; no separate pre-write approval). Once routed, continue to batch block.
-- **note:** record excluded work in Open items, no inbox write. Continue.
+- **note:** record excluded work in Open items (lite: as a progress-log note on `_inbox/<id>.md` instead — no Open items field exists), no inbox write. Continue.
 - **cancel:** stop. Do not write session summary or deactivate.
 
 Only proceed to the batch block once all flagged items are resolved.
