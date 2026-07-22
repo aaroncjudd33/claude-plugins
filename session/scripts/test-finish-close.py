@@ -206,6 +206,7 @@ def test_fix0_verify():
             index=_write(os.path.join(d, "_index.md"),
                          "# i\nfixsess | @a | 2026-07-14 | @a | 2026-07-14 | completed | " + DASH + "\n"),
             active=os.path.join(d, "_active"),  # absent = cleared
+            dirty=os.path.join(d, "_active.dirty"),  # absent = cleared
             history=_write(os.path.join(d, "_history.md"),
                            "[2026-07-14 @ajudd] fixsess " + DASH + " did it.\n"),
             worklog=_write(os.path.join(d, "wl.md"), "## 12:00 " + DASH + " fixsess\n\nx\n"),
@@ -325,6 +326,77 @@ def test_defect1_integration():
     ok(hist2.count("] fixsess ") == 1, "Defect 2: reworded re-run did NOT duplicate the history row")
     wl2 = open(worklog, encoding="utf-8").read()
     ok(wl2.count(DASH + " fixsess") == 1, "Defect 2: reworded re-run did NOT duplicate the worklog block")
+
+
+# ---------------------------------------------------------------------------
+# acp-ajudd#163 — a close whose target is NOT the currently active session (the
+# session:sync reconcile case) must not stomp another in-progress session's
+# _active pointer.
+# ---------------------------------------------------------------------------
+
+def test_active_not_owned_by_target():
+    section("#163: closing a non-active session leaves _active untouched")
+    d = tempfile.mkdtemp()
+    sroot = os.path.join(d, "sroot")
+    sess_slug_dir = os.path.join(d, "sessroot", "workslug")
+    os.makedirs(sroot)
+    os.makedirs(sess_slug_dir)
+
+    _write(os.path.join(sroot, "BPT2-1.md"),
+           "- **Status:** in-progress\n")
+    _write(os.path.join(sroot, "_index.md"),
+           "# Index\nBPT2-1 | @ajudd | 2026-07-10 | @ajudd | 2026-07-10 | in-progress | t\n")
+    # _active names a DIFFERENT session — someone else's coding session is live right now.
+    _write(os.path.join(sess_slug_dir, "_active"), "BPT2-2")
+    dirty_path = os.path.join(sess_slug_dir, "_active.dirty")
+    _write(dirty_path, "1")
+    worklog = os.path.join(d, "wl", "2026-07-14.md")
+
+    payload = '{"history_line": "", "worklog_entry": "", "done_note": "synced from Jira"}'
+    r = subprocess.run(
+        [sys.executable, FC_PATH,
+         "--session-root", sroot, "--slug", "workslug", "--name", "BPT2-1",
+         "--type", "story", "--date", "2026-07-14", "--handle", "ajudd",
+         "--sessions-root", os.path.join(d, "sessroot"), "--worklog-path", worklog],
+        input=payload.encode("utf-8"), capture_output=True)
+    ok(r.returncode == 0, "CLI close of the non-active session exits 0 (self-verified)")
+
+    active_after = open(os.path.join(sess_slug_dir, "_active"), encoding="utf-8").read().strip()
+    ok(active_after == "BPT2-2", "_active still names the OTHER (actually active) session")
+    ok(os.path.isfile(dirty_path), "_active.dirty (the other session's) left in place")
+
+    body = open(os.path.join(sroot, "BPT2-1.md"), encoding="utf-8").read()
+    ok("- **Status:** completed" in body, "the TARGET session's own status still flips to completed")
+    idx = open(os.path.join(sroot, "_index.md"), encoding="utf-8").read()
+    ok(" completed " in idx, "_index.md row for the target still flips to completed")
+
+
+def test_active_owned_by_target_still_clears():
+    section("#163: closing the ACTUAL active session still clears _active (unchanged behavior)")
+    d = tempfile.mkdtemp()
+    sroot = os.path.join(d, "sroot")
+    sess_slug_dir = os.path.join(d, "sessroot", "workslug")
+    os.makedirs(sroot)
+    os.makedirs(sess_slug_dir)
+
+    _write(os.path.join(sroot, "BPT2-3.md"), "- **Status:** in-progress\n")
+    _write(os.path.join(sroot, "_index.md"),
+           "# Index\nBPT2-3 | @ajudd | 2026-07-10 | @ajudd | 2026-07-10 | in-progress | t\n")
+    _write(os.path.join(sess_slug_dir, "_active"), "BPT2-3")
+    dirty_path = os.path.join(sess_slug_dir, "_active.dirty")
+    _write(dirty_path, "1")
+    worklog = os.path.join(d, "wl", "2026-07-14.md")
+
+    payload = '{"history_line": "", "worklog_entry": "", "done_note": ""}'
+    r = subprocess.run(
+        [sys.executable, FC_PATH,
+         "--session-root", sroot, "--slug", "workslug", "--name", "BPT2-3",
+         "--type", "story", "--date", "2026-07-14", "--handle", "ajudd",
+         "--sessions-root", os.path.join(d, "sessroot"), "--worklog-path", worklog],
+        input=payload.encode("utf-8"), capture_output=True)
+    ok(r.returncode == 0, "CLI close of the actually-active session exits 0 (self-verified)")
+    ok(not os.path.exists(os.path.join(sess_slug_dir, "_active")), "_active cleared as before")
+    ok(not os.path.exists(dirty_path), "_active.dirty cleared as before")
 
 
 # ---------------------------------------------------------------------------
@@ -478,6 +550,8 @@ def main():
     test_defect2()
     test_fix0_verify()
     test_defect1_integration()
+    test_active_not_owned_by_target()
+    test_active_owned_by_target_still_clears()
     test_reconcile_helpers()
     test_reconcile_integration()
     test_reconcile_duplicate_state()

@@ -25,7 +25,10 @@ What it does — ONE call, atomic:
      shipped/consumed (state-exclusivity #13). A one-line note signals it had to.
   3. Remove the `_active` marker and its `_active.dirty` close-safety sentinel
      (acp-ajudd#157 — the statusline's "unsaved" light; cleared here since the close
-     just persisted everything, so nothing is pending anymore).
+     just persisted everything, so nothing is pending anymore). Only when `_active`
+     actually names THIS session (acp-ajudd#163) — a reconcile-style close of a
+     session that isn't the current active one (session:sync) leaves another
+     in-progress session's active pointer untouched.
   4. Append the composed history entry to `_history.md`.
   5. Append the composed worklog entry to `~/.claude/memory/worklog/<date>.md`.
 
@@ -431,7 +434,7 @@ def _index_row_completed(text, name):
 
 def verify_close(paths, name, item_id, date, set_fm,
                  expect_history, expect_worklog, expect_done,
-                 expect_item_gone=None):
+                 expect_item_gone=None, expect_active_cleared=True):
     """Re-read every surface and confirm the expected end state (acp-ajudd#107 FIX 0).
 
     Returns a list of human-readable failure strings (empty == all confirmed). The
@@ -455,11 +458,12 @@ def verify_close(paths, name, item_id, date, set_fm,
     if not _index_row_completed(index_text, name):
         failures.append("_index.md row '%s' not 'completed'" % name)
 
-    if os.path.exists(paths["active"]):
-        failures.append("_active marker still present")
+    if expect_active_cleared:
+        if os.path.exists(paths["active"]):
+            failures.append("_active marker still present")
 
-    if os.path.exists(paths["dirty"]):
-        failures.append("_active.dirty sentinel still present")
+        if os.path.exists(paths["dirty"]):
+            failures.append("_active.dirty sentinel still present")
 
     if expect_history:
         htext = read_text(paths["history"]) if os.path.isfile(paths["history"]) else ""
@@ -578,6 +582,22 @@ def main():
 
     set_fm = args.type.strip().lower() in TYPES_WITH_FRONTMATTER_STATUS
 
+    # `_active` names at most one session per slug at a time (single-active-session
+    # invariant). Every caller until acp-ajudd#163 was that one active session closing
+    # itself, so blind removal was always correct. A reconcile-style caller (session:sync)
+    # can close a session that is NOT the currently active one — e.g. a different
+    # in-progress session is live right now while this one is being tidied up after an
+    # out-of-band Jira close. Only clear `_active`/`_active.dirty` when they actually name
+    # THIS session (or are already absent); otherwise leave them untouched and don't
+    # require their absence at verify time.
+    active_text = None
+    if os.path.isfile(active_path):
+        try:
+            active_text = read_text(active_path).strip()
+        except OSError:
+            active_text = None
+    clear_active = (active_text is None) or (active_text == args.name)
+
     # ---- PHASE 1: read + validate + compute everything (no writes) ----
     try:
         if not os.path.isfile(session_path):
@@ -659,10 +679,15 @@ def main():
         "worklog %s: %s" % (
             os.path.basename(worklog_path),
             "append entry" if worklog_changed else "unchanged (idempotent)"),
-        "_active: remove (%s)" % ("present" if os.path.exists(active_path) else "already gone"),
-        "_active.dirty: remove (%s)" % (
-            "present" if os.path.exists(dirty_path) else "already gone"),
     ]
+    if clear_active:
+        actions.append("_active: remove (%s)" % (
+            "present" if os.path.exists(active_path) else "already gone"))
+        actions.append("_active.dirty: remove (%s)" % (
+            "present" if os.path.exists(dirty_path) else "already gone"))
+    else:
+        actions.append(
+            "_active: left alone (names a different session: %s)" % active_text)
     if reconciled:
         actions.insert(3, "_inbox/<id>.md: consume live item (reconcile — pickup was skipped)")
 
@@ -702,19 +727,24 @@ def main():
             os.makedirs(os.path.dirname(worklog_path), exist_ok=True)
             atomic_write(worklog_path, new_worklog)
             written.append("worklog")
-        # _active removal is the terminal write — rm -f semantics.
-        try:
-            os.remove(active_path)
-        except FileNotFoundError:
-            pass
-        written.append("_active cleared")
-        # Close-safety sentinel (acp-ajudd#157) clears in the same atomic write —
-        # the close just persisted everything, so nothing is pending anymore.
-        try:
-            os.remove(dirty_path)
-        except FileNotFoundError:
-            pass
-        written.append("_active.dirty cleared")
+        # _active removal is the terminal write — rm -f semantics. Only when it names
+        # THIS session (acp-ajudd#163) — a sync-style close of a non-active session must
+        # never stomp another in-progress session's active pointer.
+        if clear_active:
+            try:
+                os.remove(active_path)
+            except FileNotFoundError:
+                pass
+            written.append("_active cleared")
+            # Close-safety sentinel (acp-ajudd#157) clears in the same atomic write —
+            # the close just persisted everything, so nothing is pending anymore.
+            try:
+                os.remove(dirty_path)
+            except FileNotFoundError:
+                pass
+            written.append("_active.dirty cleared")
+        else:
+            written.append("_active left alone (belongs to a different session)")
     except OSError as exc:
         # A write failed mid-phase. Idempotency makes a re-run safe; tell the caller
         # what landed so the retry (or a human) knows the partial state.
@@ -739,7 +769,8 @@ def main():
             paths, args.name, args.item_id.strip(), args.date, set_fm,
             expect_history=bool(history_line), expect_worklog=bool(worklog_entry),
             expect_done=expect_done,
-            expect_item_gone=(live_item_path if reconciled else None))
+            expect_item_gone=(live_item_path if reconciled else None),
+            expect_active_cleared=clear_active)
     finally:
         release_lock(fd, lock_path)
 

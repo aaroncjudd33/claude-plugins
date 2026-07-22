@@ -58,6 +58,7 @@ Panel (work zone, approved layout, acp-ajudd#130/#132/#142):
         inbox    1 item(s)   view pending items across session inboxes
         memory   59 notes    search repo memory
         search               find a session or memory note
+        sync                 reconcile local sessions against live Jira status
 
     You're on BPT2-6499's branch (completed)   →   code BPT2-6499
 
@@ -432,13 +433,17 @@ def render_inbox_section(root, slug):
     return text.split("\n")
 
 
-def render_advanced_section(inbox_n, mem_n, include_inbox):
+def render_advanced_section(inbox_n, mem_n, include_inbox, include_sync=False):
     """The 'Advanced' ruled section. acp-ajudd#135: every count-bearing line
     always renders, 0 included — only a genuine zone difference (include_inbox)
     may drop a line, never a zero count. acp-ajudd#131 resolved 2026-07-20:
     search is scoped to sessions + project memory only, never inbox — inbox is
     small and self-pruning by design (act on an item, it's gone), so it never
     needs searching; its own glance-count line already covers it.
+
+    include_sync (acp-ajudd#163): surfaces `sync` — work-repo (story/CAB) zone
+    only, since it reconciles local sessions against Jira, a system of record
+    plugin/personal/general don't have.
     """
     out = [rule("Advanced")]
     adv = []
@@ -446,6 +451,8 @@ def render_advanced_section(inbox_n, mem_n, include_inbox):
         adv.append(("inbox", f"{inbox_n} item(s)", "view pending items across session inboxes"))
     adv.append(("memory", f"{mem_n} notes", "search repo memory"))
     adv.append(("search", "", "find a session or memory note"))
+    if include_sync:
+        adv.append(("sync", "", "reconcile local sessions against live Jira status"))
     for label, cnt, desc in adv:
         out.append(f"    {label:<8}{cnt:<11}{desc}".rstrip())
     return out
@@ -480,7 +487,7 @@ def render_work(args, root, slug, branch, sl, stale_days):
 
     out.extend(render_inprogress_section(sl, rows, summary, overflow, stale_days, show_title=True))
     out.append("")
-    out.extend(render_advanced_section(inbox_n, mem_n, include_inbox=True))
+    out.extend(render_advanced_section(inbox_n, mem_n, include_inbox=True, include_sync=True))
 
     # Branch note — deterministic: extract a key from the branch and offer to
     # code it, but ONLY when that session isn't already shown in the list above
