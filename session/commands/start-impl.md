@@ -129,7 +129,7 @@ Adapt the checklist to whichever type/route is actually running (Plugin/Personal
   ```
   Epic context: <key> — <title>
     Open questions: N open
-    Blockers:       N active (🔴 N critical / 🟡 N watch)
+    Blockers:       N active (N critical / N watch)
     Last decision:  [most recent decision title]
   ```
   If the epic file does not exist, note: "Epic file for <key> not found."

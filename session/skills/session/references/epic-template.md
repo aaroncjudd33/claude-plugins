@@ -79,7 +79,7 @@ picking up a story cold — what context do they need before writing any code?>
 <!-- Active blockers only. Remove when resolved. -->
 | # | Description | Owner | Status |
 |---|-------------|-------|--------|
-| 1 | <blocker> | <owner> | 🔴 Critical / 🟡 Watch |
+| 1 | <blocker> | <owner> | Critical / Watch |
 
 ---
 
