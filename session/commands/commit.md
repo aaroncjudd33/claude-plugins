@@ -277,4 +277,15 @@ Entry format varies by type:
 **Open items:** <open items from session state, or "none">
 ```
 
+### 8. Clear Close-Safety Sentinel (acp-ajudd#157)
+
+The commit just persisted state (git committed, session state / progress-log note updated, history + worklog appended) — clear the pending-checkpoint sentinel the statusline's close-safety light reads (SKILL.md § The close-safety cue):
+
+```bash
+rm -f ~/.claude/memory/sessions/<slug>/_active.dirty
+```
+On PowerShell: `Remove-Item -ErrorAction SilentlyContinue ~/.claude/memory/sessions/<slug>/_active.dirty`
+
+Always the local path — same rule as `_active` itself (Path Resolution § core resolution), regardless of whether `session_root` is repo-based. Applies to the lite `note` path too (§0 above) — a Jira/progress-log note IS the commit for lite work, so the sentinel clears the same way. Fail-open: if the file doesn't exist, this is a no-op.
+
 Multiple entries per day are expected — always append, never overwrite.

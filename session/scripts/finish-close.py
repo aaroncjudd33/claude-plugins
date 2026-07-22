@@ -23,7 +23,9 @@ What it does — ONE call, atomic:
      first — fold-then-archive with `[CONSUMED]`, delete the live file, then stamp
      `[DONE]` — so a session can never end with its work both live-as-`ready` AND
      shipped/consumed (state-exclusivity #13). A one-line note signals it had to.
-  3. Remove the `_active` marker.
+  3. Remove the `_active` marker and its `_active.dirty` close-safety sentinel
+     (acp-ajudd#157 — the statusline's "unsaved" light; cleared here since the close
+     just persisted everything, so nothing is pending anymore).
   4. Append the composed history entry to `_history.md`.
   5. Append the composed worklog entry to `~/.claude/memory/worklog/<date>.md`.
 
@@ -456,6 +458,9 @@ def verify_close(paths, name, item_id, date, set_fm,
     if os.path.exists(paths["active"]):
         failures.append("_active marker still present")
 
+    if os.path.exists(paths["dirty"]):
+        failures.append("_active.dirty sentinel still present")
+
     if expect_history:
         htext = read_text(paths["history"]) if os.path.isfile(paths["history"]) else ""
         if not _key_present(htext, re.compile(r"^\[" + re.escape(date)), name):
@@ -566,6 +571,7 @@ def main():
     history_path = os.path.join(root, "_history.md")
     active_path = os.path.join(
         os.path.expanduser(args.sessions_root), args.slug, "_active")
+    dirty_path = os.path.join(os.path.dirname(active_path), "_active.dirty")
     worklog_path = os.path.expanduser(
         args.worklog_path
         or os.path.join("~/.claude/memory/worklog", args.date + ".md"))
@@ -654,6 +660,8 @@ def main():
             os.path.basename(worklog_path),
             "append entry" if worklog_changed else "unchanged (idempotent)"),
         "_active: remove (%s)" % ("present" if os.path.exists(active_path) else "already gone"),
+        "_active.dirty: remove (%s)" % (
+            "present" if os.path.exists(dirty_path) else "already gone"),
     ]
     if reconciled:
         actions.insert(3, "_inbox/<id>.md: consume live item (reconcile — pickup was skipped)")
@@ -700,6 +708,13 @@ def main():
         except FileNotFoundError:
             pass
         written.append("_active cleared")
+        # Close-safety sentinel (acp-ajudd#157) clears in the same atomic write —
+        # the close just persisted everything, so nothing is pending anymore.
+        try:
+            os.remove(dirty_path)
+        except FileNotFoundError:
+            pass
+        written.append("_active.dirty cleared")
     except OSError as exc:
         # A write failed mid-phase. Idempotency makes a re-run safe; tell the caller
         # what landed so the retry (or a human) knows the partial state.
@@ -717,6 +732,7 @@ def main():
     paths = {
         "session": session_path, "index": index_path, "active": active_path,
         "history": history_path, "worklog": worklog_path, "archive": archive_path,
+        "dirty": dirty_path,
     }
     try:
         failures = verify_close(

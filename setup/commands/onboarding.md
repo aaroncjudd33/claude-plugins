@@ -434,6 +434,154 @@ On **skip**, note: "You can add it anytime by re-running `/setup:onboarding`."
 
 Store the resolved verbosity default for use in Step 7 (`defaults.verbosityDefault`).
 
+Proceed to Step 6c.
+
+### 6c. Offer to install the Response Tiers icon block
+
+A separate opt-in from the base output-conventions block above (Step 6b) — a teammate can take
+the baseline conventions without committing to the fuller tier system. Same marker-delimited,
+idempotent mechanism, different block and different toggle.
+
+**Offer it explicitly — never install silently. Explain it before asking:**
+```
+The Response Tiers block adds 4 inline attention icons (💭 self-talk, ✨ did-this-for-you,
+💡 explanation, ⚠ needs-you) so Claude's own narration is easier to scan. It pairs with the
+close-safety-light statusline script (next step) but works fine on its own.
+```
+
+**1. Detect whether the block is already installed:**
+```bash
+CLAUDE_MD="$HOME/.claude/CLAUDE.md"
+if [ -f "$CLAUDE_MD" ] && grep -qF "<!-- begin acp-response-tiers" "$CLAUDE_MD"; then
+  echo "installed"
+else
+  echo "not installed"
+fi
+```
+
+**2. Offer** — plain-text routing:
+```
+Install the Response Tiers icon block? — <not installed | installed (will re-sync)>
+  yes / skip
+```
+
+**3. On accept**, install idempotently — same python marker-replace routine as Step 6b (never
+`sed`/PowerShell `Set-Content`, for the same non-ASCII cp1252 reason, #114):
+```bash
+TMPL="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/setup}/scripts/response-tiers.md"
+CLAUDE_MD="$HOME/.claude/CLAUDE.md"
+python3 - "$TMPL" "$CLAUDE_MD" <<'PY'
+import sys
+tmpl_path, target_path = sys.argv[1], sys.argv[2]
+block = open(tmpl_path, encoding='utf-8').read()
+try:
+    with open(target_path, encoding='utf-8') as f:
+        content = f.read()
+except FileNotFoundError:
+    content = ''
+begin, end = '<!-- begin acp-response-tiers', '<!-- end acp-response-tiers -->'
+if begin in content:
+    start = content.index(begin)
+    stop = content.index(end, start) + len(end)
+    content = content[:start] + block.rstrip('\n') + content[stop:]
+else:
+    sep = '\n\n' if content and not content.endswith('\n\n') else ''
+    content = content + sep + block
+with open(target_path, 'w', encoding='utf-8', newline='\n') as f:
+    f.write(content)
+PY
+```
+- If the markers already exist → **replace in place** (never double-append), same rule as 6a/6b.
+- Else → append with a blank-line separator (create the file if it doesn't exist).
+
+**4. Confirm:** "Installed the Response Tiers block into ~/.claude/CLAUDE.md. Re-run
+`/setup:onboarding` or `/setup:update` any time to re-sync it."
+
+On **skip**, note: "You can add it anytime by re-running `/setup:onboarding`."
+
+Proceed to Step 6d.
+
+### 6d. Offer to install the close-safety-light statusline script
+
+Requires installing a script AND pointing Claude Code's `settings.json` at it — the first
+onboarding step that touches `settings.json` rather than a `.md`/shell-profile file. `statusLine`
+has no plugin-relative path token and no auto-discovery (confirmed against the official
+[statusline docs](https://code.claude.com/docs/en/statusline.md) — unlike hooks, which
+auto-activate via `${CLAUDE_PLUGIN_ROOT}` when a plugin is enabled), so this can't be a hook-style
+auto-wired artifact. The workaround, same class as the `ccs` launcher (Step 6a): copy the script
+to a **stable path outside the version-pinned plugin cache**, then point `settings.json` at that
+stable path once.
+
+**Offer it explicitly — never install silently. Explain it before asking:**
+```
+The close-safety light shows in your terminal status line whether you have
+un-checkpointed work (🛑 unsaved), everything's saved (✅ safe), or a session is
+fully closed out (🏆 done) -- so you can tell at a glance whether it's safe to
+close a terminal window. Requires installing a small script and pointing your
+Claude Code settings at it.
+```
+
+**1. Detect current state:**
+```bash
+STATUSLINE="$HOME/.claude/statusline-command.sh"
+if [ -f "$STATUSLINE" ] && grep -qF "acp-ajudd#157" "$STATUSLINE"; then
+  echo "installed"
+else
+  echo "not installed"
+fi
+```
+Also read `~/.claude/settings.json`'s `statusLine.command` (if present) — if it already points
+somewhere else (a different custom script), note this so Step 3 below can ask rather than
+silently overwrite.
+
+**2. Offer** — plain-text routing:
+```
+Install the close-safety-light statusline script? — <not installed | installed (will update)>
+  yes / skip
+```
+
+**3. On accept:**
+- Copy the template to the stable path — never reference the plugin cache path directly, it is
+  version-pinned and would break on the next plugin update:
+  ```bash
+  cp "${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins/marketplaces/<pluginMarketplaceName>/setup}/scripts/statusline-command.sh" "$HOME/.claude/statusline-command.sh"
+  chmod +x "$HOME/.claude/statusline-command.sh"
+  ```
+- Patch `~/.claude/settings.json`'s `statusLine` key via JSON load/merge/dump — **never** a text
+  replace, `settings.json` may have unrelated keys that must survive untouched:
+  ```bash
+  SETTINGS="$HOME/.claude/settings.json"
+  python3 - "$SETTINGS" <<'PY'
+import json, os, sys
+path = sys.argv[1]
+# os.path.expanduser mixes separators on Windows (backslash for the home portion,
+# forward-slash for the rest) -- normalize to forward-slash for a clean JSON value
+# (acp-ajudd#157 finding).
+statusline_path = os.path.expanduser('~/.claude/statusline-command.sh').replace(chr(92), '/')
+try:
+    with open(path, encoding='utf-8') as f:
+        cfg = json.load(f)
+except FileNotFoundError:
+    cfg = {}
+cfg['statusLine'] = {
+    "type": "command",
+    "command": 'bash "' + statusline_path + '"',
+}
+with open(path, 'w', encoding='utf-8', newline='\n') as f:
+    json.dump(cfg, f, indent=2)
+    f.write('\n')
+PY
+  ```
+- **If Step 1 found a different existing custom `statusLine.command`** (not this script, not
+  already this exact line), ask before overwriting rather than silently replacing someone's own
+  customization: `"Your settings.json already points statusLine at '<existing command>' — replace
+  it with the close-safety-light script? (yes / skip)"`.
+
+**4. Confirm:** "Installed close-safety-light statusline script; settings.json updated. Restart
+Claude Code (or open a new terminal) to see it."
+
+On **skip**, note: "You can add it anytime by re-running `/setup:onboarding`."
+
 Proceed to Step 7.
 
 ### 7. Confirm and write user config

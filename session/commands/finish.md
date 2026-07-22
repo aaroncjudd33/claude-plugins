@@ -564,13 +564,13 @@ For **personal** (also an inbox zone, can be orchestrated) the same applies with
 
 ### 13. Deactivation — folded into the atomic close (acp-ajudd#103)
 
-**`_active` removal is no longer a separate step** — it is one of the surfaces the Step 12a atomic close (`finish-close.py`) removes, so deactivation happens as part of the single all-or-nothing write, gated by the same success check. Deploy (Step 11) still runs before Step 12a, so the version bump and any plugin-file edits during the deploy are still authorized by an active coding session; `_active` is cleared only once, by the close script, as the terminal write.
+**`_active` removal is no longer a separate step** — it is one of the surfaces the Step 12a atomic close (`finish-close.py`) removes, so deactivation happens as part of the single all-or-nothing write, gated by the same success check. Deploy (Step 11) still runs before Step 12a, so the version bump and any plugin-file edits during the deploy are still authorized by an active coding session; `_active` is cleared only once, by the close script, as the terminal write. **The `_active.dirty` close-safety sentinel (acp-ajudd#157 — SKILL.md § The close-safety cue) clears in the same write** — the close just persisted everything, so nothing is pending anymore; the `statusline-command.sh` "unsaved" light drops the moment this step completes.
 
-No manual `rm` is needed. If you ever need to verify (or a legacy path skipped the script), a bare `_active` removal is always safe — it is local and edits no plugin files:
+No manual `rm` is needed. If you ever need to verify (or a legacy path skipped the script), a bare removal of either file is always safe — both are local and edit no plugin files:
 
 ```bash
-rm -f ~/.claude/memory/sessions/<slug>/_active
+rm -f ~/.claude/memory/sessions/<slug>/_active ~/.claude/memory/sessions/<slug>/_active.dirty
 ```
-On PowerShell: `Remove-Item -ErrorAction SilentlyContinue ~/.claude/memory/sessions/<slug>/_active`
+On PowerShell: `Remove-Item -ErrorAction SilentlyContinue ~/.claude/memory/sessions/<slug>/_active, ~/.claude/memory/sessions/<slug>/_active.dirty`
 
 Deactivation is silent — it produces no user-facing output. The last thing on screen is therefore the **Step 12c `✅` close cue** (`✅ <ids> — validated & closed. Safe to close this terminal.`) — printed after any return block this close emitted: planning-fed solo → a courtesy `coding ──▶ planning` block; **orchestrated default (dispatch-fed) → a fire-and-forget `coding ──▶ dispatch` `finished` block (acp-ajudd#118)**; `Self-finalize: no` → the finish-confirmation block. Only a **truly-solo** close (no handoff ever received) emits no return block, so the ✅ close cue stands alone as the final line.
